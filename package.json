@@ -1,0 +1,21 @@
+{
+  "name": "project-q",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FawkQ Telegram bot + reward distribution service (Phase 1)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "distribute": "node jobs/distribute.js",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.3",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
