@@ -59,6 +59,37 @@ app.get('/debug/chatid', (req, res) => {
   });
 });
 
+app.get('/debug/env', (req, res) => {
+  const plain = (name) => process.env[name] ?? '(unset)';
+  const masked = (name) => {
+    const v = process.env[name];
+    if (!v) return '(unset)';
+    if (v.length <= 8) return `len=${v.length}`;
+    return `${v.slice(0, 4)}...${v.slice(-4)} (len=${v.length})`;
+  };
+
+  res.status(200).json({
+    plain: {
+      NODE_ENV: plain('NODE_ENV'),
+      PORT: plain('PORT'),
+      TELEGRAM_CHAT_ID: plain('TELEGRAM_CHAT_ID'),
+      TELEGRAM_TOPIC_IDS: plain('TELEGRAM_TOPIC_IDS'),
+      FAWKQ_WEBSITE_URL: plain('FAWKQ_WEBSITE_URL'),
+      TOKEN_MINT: plain('TOKEN_MINT'),
+      XP_PER_SOL: plain('XP_PER_SOL'),
+      SUPABASE_URL: plain('SUPABASE_URL'),
+      HELIUS_RPC_URL: plain('HELIUS_RPC_URL'),
+    },
+    masked: {
+      TELEGRAM_BOT_TOKEN: masked('TELEGRAM_BOT_TOKEN'),
+      TELEGRAM_WEBHOOK_SECRET: masked('TELEGRAM_WEBHOOK_SECRET'),
+      BAGWORK_SECRET: masked('BAGWORK_SECRET'),
+      SUPABASE_SERVICE_ROLE_KEY: masked('SUPABASE_SERVICE_ROLE_KEY'),
+      HELIUS_API_KEY: masked('HELIUS_API_KEY'),
+    },
+  });
+});
+
 app.get('/debug/send', async (req, res) => {
   try {
     const result = await telegram.sendMessage(
