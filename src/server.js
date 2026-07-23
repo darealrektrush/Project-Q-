@@ -31,6 +31,16 @@ app.get('/version', (req, res) =>
   })
 );
 
+// Temporary diagnostic route — remove once the silent /start bug is found.
+app.get('/debug/db', async (req, res) => {
+  try {
+    const row = await xp.ensureUser(0, 'debug-check');
+    res.status(200).json({ ok: true, row });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.post('/webhook', async (req, res) => {
   if (TELEGRAM_WEBHOOK_SECRET) {
     const header = req.get('x-telegram-bot-api-secret-token');
