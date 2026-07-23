@@ -3,6 +3,8 @@ import express from 'express';
 import * as telegram from './lib/telegram.js';
 import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
+import * as admin from './lib/admin.js';
+import * as menuContent from './lib/menuContent.js';
 import { handleBagworkCompletion } from './lib/bagwork.js';
 
 const app = express();
@@ -66,25 +68,40 @@ app.post('/bagwork', async (req, res) => {
 
 async function handleUpdate(update) {
   if (update.callback_query) return handleCallbackQuery(update.callback_query);
-  if (update.message?.text) return handleMessage(update.message);
+  if (update.message) return handleMessage(update.message);
 }
 
 async function handleMessage(message) {
   const threadId = message.message_thread_id;
+  const chatId = message.chat.id;
+
+  // Pending admin edits (bio text / media photo) take priority so an admin
+  // can finish an edit regardless of normal topic/command gating.
+  if (admin.hasPendingEdit(chatId, message.from.id)) {
+    return admin.handlePendingEditMessage(message);
+  }
+
+  if (!message.text) return; // non-text, non-pending-edit messages are ignored
+
   const guard = telegram.guardTopic(threadId);
-  // Drop anything outside the two allowlisted topics, and drop interactive
-  // commands posted in the post-only announcements topic.
   if (!guard.allowed || !guard.interactive) return;
 
-  const chatId = message.chat.id;
   const text = message.text.trim();
   // Group chats often send commands as /start@BotUsername — strip the suffix.
   const command = text.split(/\s+/)[0].split('@')[0];
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
+  if (command === '/adminf') {
+    return admin.handleAdminCommand(message);
+  }
+  if (command === '/admincancel') {
+    return admin.cancelPendingEdit(chatId, message.from.id);
+  }
+
   if (STUB_COMMANDS.has(command)) {
-    return telegram.sendMessage(chatId, '🚧 Coming soon.', { threadId });
+    const key = command.slice(1); // e.g. 'missions', 'meme'
+    return renderMenu(chatId, threadId, key, '🚧 Coming soon.');
   }
 
   switch (command) {
@@ -111,6 +128,10 @@ async function handleCallbackQuery(callbackQuery) {
 
   const chatId = callbackQuery.message.chat.id;
 
+  if (callbackQuery.data?.startsWith('admin:')) {
+    return admin.handleAdminCallback(callbackQuery);
+  }
+
   switch (callbackQuery.data) {
     case 'menu:market':
       return sendMarket(chatId, threadId);
@@ -127,9 +148,20 @@ async function handleCallbackQuery(callbackQuery) {
   }
 }
 
+// Checks Supabase for an admin-set override (bio text / image) for `key`
+// before falling back to the hardcoded default text.
+async function renderMenu(chatId, threadId, key, defaultText, { replyMarkup } = {}) {
+  const content = await menuContent.getMenuContent(key);
+  const text = content?.bio_text || defaultText;
+
+  if (content?.media_file_id) {
+    return telegram.sendPhoto(chatId, content.media_file_id, text, { threadId, replyMarkup });
+  }
+  return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
+}
+
 function sendHome(chatId, threadId) {
-  return telegram.sendMessage(chatId, '👁 *FawkQ Home* — pick a section:', {
-    threadId,
+  return renderMenu(chatId, threadId, 'home', '👁 *FawkQ Home* — pick a section:', {
     replyMarkup: telegram.buildHomeMenu(),
   });
 }
@@ -141,37 +173,37 @@ async function sendMarket(chatId, threadId) {
     solana.getHolderCount(mint),
   ]);
 
-  const text = [
+  const defaultText = [
     '📈 *FawkQ Market*',
     price != null ? `Price: $${price.toFixed(6)}` : 'Price: unavailable',
     `Holders: ${holderCount}`,
   ].join('\n');
 
-  return telegram.sendMessage(chatId, text, { threadId });
+  return renderMenu(chatId, threadId, 'market', defaultText);
 }
 
 async function sendLeaderboard(chatId, threadId) {
   const rows = await xp.getLeaderboard(10);
   const lines = rows.map((r, i) => `${i + 1}. ${r.username ?? r.id} — ${r.xp} XP`);
 
-  const text = ['🏆 *Leaderboard*', ...(lines.length ? lines : ['No entries yet.'])].join('\n');
-  return telegram.sendMessage(chatId, text, { threadId });
+  const defaultText = ['🏆 *Leaderboard*', ...(lines.length ? lines : ['No entries yet.'])].join('\n');
+  return renderMenu(chatId, threadId, 'leaderboard', defaultText);
 }
 
 function sendRewards(chatId, threadId) {
-  const text = [
+  const defaultText = [
     '💰 *Rewards Split*',
     '_Stage 1 (creator wallet):_ 75% community · 15% dev · 10% ocean conservation',
     '_Stage 2 (community wallet):_ 30% bag wallet · 15% buyback reserve · 55% holders (pro-rata, paid in SOL)',
     '',
     `Distributions run every 3 days. Complete tasks at ${FAWKQ_WEBSITE_URL} to earn XP toward the leaderboard.`,
   ].join('\n');
-  return telegram.sendMessage(chatId, text, { threadId });
+  return renderMenu(chatId, threadId, 'rewards', defaultText);
 }
 
 function sendBagworkInfo(chatId, threadId) {
-  const text = `💼 Complete tasks at ${FAWKQ_WEBSITE_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
-  return telegram.sendMessage(chatId, text, { threadId });
+  const defaultText = `💼 Complete tasks at ${FAWKQ_WEBSITE_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
+  return renderMenu(chatId, threadId, 'bagwork', defaultText);
 }
 
 function sendOfficialLinks(chatId, threadId) {

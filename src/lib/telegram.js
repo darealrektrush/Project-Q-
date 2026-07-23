@@ -23,6 +23,17 @@ export function sendMessage(chatId, text, { threadId, replyMarkup, parseMode = '
   });
 }
 
+export function sendPhoto(chatId, photo, caption, { threadId, replyMarkup, parseMode = 'Markdown' } = {}) {
+  return call('sendPhoto', {
+    chat_id: chatId,
+    photo,
+    caption,
+    message_thread_id: threadId,
+    reply_markup: replyMarkup,
+    parse_mode: parseMode,
+  });
+}
+
 export function editMessageText(chatId, messageId, text, { replyMarkup, parseMode = 'Markdown' } = {}) {
   return call('editMessageText', {
     chat_id: chatId,
@@ -35,6 +46,10 @@ export function editMessageText(chatId, messageId, text, { replyMarkup, parseMod
 
 export function answerCallbackQuery(callbackQueryId, text) {
   return call('answerCallbackQuery', { callback_query_id: callbackQueryId, text });
+}
+
+export function getChatMember(chatId, userId) {
+  return call('getChatMember', { chat_id: chatId, user_id: userId });
 }
 
 export function buildHomeMenu() {

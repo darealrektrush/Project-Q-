@@ -74,6 +74,15 @@ create table if not exists distribution_transactions (
   created_at timestamptz not null default now()
 );
 
+-- Admin-editable overrides for menu/command bio text + media, set via /adminf.
+create table if not exists menu_content (
+  key text primary key,
+  bio_text text,
+  media_file_id text,
+  updated_by bigint,
+  updated_at timestamptz not null default now()
+);
+
 create or replace view leaderboard as
 select
   id,
