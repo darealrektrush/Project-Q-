@@ -31,11 +31,21 @@ app.get('/version', (req, res) =>
   })
 );
 
-// Temporary diagnostic route — remove once the silent /start bug is found.
+// Temporary diagnostic routes — remove once the silent /start bug is found.
 app.get('/debug/db', async (req, res) => {
   try {
     const row = await xp.ensureUser(0, 'debug-check');
     res.status(200).json({ ok: true, row });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get('/debug/telegram', async (req, res) => {
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`);
+    const data = await r.json();
+    res.status(200).json(data);
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
