@@ -52,11 +52,10 @@ app.get('/debug/telegram', async (req, res) => {
 });
 
 app.get('/debug/chatid', (req, res) => {
-  const raw = process.env.TELEGRAM_CHAT_ID ?? '';
+  const describe = (raw) => ({ raw, length: raw.length, codePoints: [...raw].map((c) => c.codePointAt(0)) });
   res.status(200).json({
-    raw,
-    length: raw.length,
-    codePoints: [...raw].map((c) => c.codePointAt(0)),
+    TELEGRAM_CHAT_ID: describe(process.env.TELEGRAM_CHAT_ID ?? ''),
+    TELEGRAM_TOPIC_IDS: describe(process.env.TELEGRAM_TOPIC_IDS ?? ''),
   });
 });
 
