@@ -188,5 +188,7 @@ function sendAbout(chatId, threadId) {
   return telegram.sendMessage(chatId, text, { threadId });
 }
 
+telegram.validateTopicIds();
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`project-q listening on :${PORT}`));

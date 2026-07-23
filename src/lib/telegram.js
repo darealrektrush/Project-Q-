@@ -67,6 +67,24 @@ export function getTopicId(name) {
   return parseTopicIds()[name];
 }
 
+const REQUIRED_TOPICS = ['fawkq-chat', 'fawkq-announcements'];
+
+// Logs loudly at startup if TELEGRAM_TOPIC_IDS is missing/malformed, so a
+// misconfigured env var shows up in Render's logs immediately instead of
+// silently dropping every message.
+export function validateTopicIds() {
+  const topics = parseTopicIds();
+  const missing = REQUIRED_TOPICS.filter((name) => !Number.isFinite(topics[name]));
+  if (missing.length) {
+    console.error(
+      `[telegram] TELEGRAM_TOPIC_IDS is misconfigured — missing or invalid: ${missing.join(', ')}. ` +
+        `Expected "fawkq-chat:<id>,fawkq-announcements:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
+    );
+    return false;
+  }
+  return true;
+}
+
 // Only two forum topics are recognized: fawkq-chat (interactive) and
 // fawkq-announcements (post-only). Anything else — including threadless
 // updates and DMs — is dropped by the caller.
