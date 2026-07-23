@@ -24,6 +24,13 @@ const STUB_COMMANDS = new Set([
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
 
+app.get('/version', (req, res) =>
+  res.status(200).json({
+    commit: process.env.RENDER_GIT_COMMIT ?? 'unknown',
+    branch: process.env.RENDER_GIT_BRANCH ?? 'unknown',
+  })
+);
+
 app.post('/webhook', async (req, res) => {
   if (TELEGRAM_WEBHOOK_SECRET) {
     const header = req.get('x-telegram-bot-api-secret-token');
