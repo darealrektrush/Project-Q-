@@ -71,7 +71,8 @@ async function handleMessage(message) {
 
   const chatId = message.chat.id;
   const text = message.text.trim();
-  const [command] = text.split(/\s+/);
+  // Group chats often send commands as /start@BotUsername — strip the suffix.
+  const command = text.split(/\s+/)[0].split('@')[0];
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
