@@ -18,7 +18,10 @@ const EDITABLE_KEYS = [
 const LABELS = Object.fromEntries(EDITABLE_KEYS);
 
 const PENDING_TTL_MS = 5 * 60 * 1000;
-const pending = new Map(); // `${chatId}:${userId}` -> { key, field, expires }
+// `${chatId}:${userId}` -> { key, field, stage: 'input' | 'confirm', draft, expires }
+// stage 'input': waiting for the admin to send new text/photo.
+// stage 'confirm': draft received, waiting for Publish/Discard on the preview.
+const pending = new Map();
 
 function pendingKey(chatId, userId) {
   return `${chatId}:${userId}`;
@@ -68,6 +71,39 @@ function itemKeyboard(key) {
   };
 }
 
+function confirmKeyboard(field, key) {
+  return {
+    inline_keyboard: [
+      [
+        { text: '✅ Publish', callback_data: `admin:confirm:${field}:${key}` },
+        { text: '❌ Discard', callback_data: `admin:discard:${field}:${key}` },
+      ],
+    ],
+  };
+}
+
+// Renders exactly what the live command will look like with the draft
+// change applied (merged with whatever's already saved), so an admin can
+// see it before publishing. Attaches Publish/Discard buttons.
+async function sendPreview(chatId, threadId, key, field, draft) {
+  const content = await getMenuContent(key);
+  const label = LABELS[key] ?? key;
+
+  const text =
+    field === 'bio'
+      ? draft
+      : content?.bio_text || `_(live default text for ${label} will show here instead)_`;
+  const mediaFileId = field === 'media' ? draft : content?.media_file_id;
+
+  const preview = `👀 *Preview — ${label}*\n\n${text}`;
+  const replyMarkup = confirmKeyboard(field, key);
+
+  if (mediaFileId) {
+    return telegram.sendPhoto(chatId, mediaFileId, preview, { threadId, replyMarkup });
+  }
+  return telegram.sendMessage(chatId, preview, { threadId, replyMarkup });
+}
+
 export async function handleAdminCommand(message) {
   const chatId = message.chat.id;
   const threadId = message.message_thread_id;
@@ -93,7 +129,7 @@ export async function handleAdminCallback(callbackQuery) {
     return telegram.sendMessage(chatId, '🚫 Only group admins can use /adminf.', { threadId });
   }
 
-  const [, action, key] = callbackQuery.data.split(':');
+  const [, action, arg1, arg2] = callbackQuery.data.split(':');
 
   if (action === 'back') {
     pending.delete(pendingKey(chatId, userId));
@@ -103,6 +139,7 @@ export async function handleAdminCallback(callbackQuery) {
   }
 
   if (action === 'item') {
+    const key = arg1;
     const content = await getMenuContent(key);
     const label = LABELS[key] ?? key;
     const lines = [
@@ -116,7 +153,8 @@ export async function handleAdminCallback(callbackQuery) {
   }
 
   if (action === 'editbio') {
-    pending.set(pendingKey(chatId, userId), { key, field: 'bio', expires: Date.now() + PENDING_TTL_MS });
+    const key = arg1;
+    pending.set(pendingKey(chatId, userId), { key, field: 'bio', stage: 'input', expires: Date.now() + PENDING_TTL_MS });
     return telegram.sendMessage(
       chatId,
       `✏️ Send the new bio text for *${LABELS[key] ?? key}* (or /admincancel to abort). Expires in 5 minutes.`,
@@ -125,12 +163,40 @@ export async function handleAdminCallback(callbackQuery) {
   }
 
   if (action === 'editmedia') {
-    pending.set(pendingKey(chatId, userId), { key, field: 'media', expires: Date.now() + PENDING_TTL_MS });
+    const key = arg1;
+    pending.set(pendingKey(chatId, userId), { key, field: 'media', stage: 'input', expires: Date.now() + PENDING_TTL_MS });
     return telegram.sendMessage(
       chatId,
       `🖼 Send the new image for *${LABELS[key] ?? key}* (or /admincancel to abort). Expires in 5 minutes.`,
       { threadId }
     );
+  }
+
+  if (action === 'confirm' || action === 'discard') {
+    const field = arg1;
+    const key = arg2;
+    const entryKey = pendingKey(chatId, userId);
+    const entry = pending.get(entryKey);
+
+    if (!entry || entry.key !== key || entry.field !== field || entry.stage !== 'confirm' || Date.now() > entry.expires) {
+      pending.delete(entryKey);
+      return telegram.sendMessage(chatId, 'This preview expired or was already handled — start again with /adminf.', {
+        threadId,
+      });
+    }
+
+    pending.delete(entryKey);
+    const label = LABELS[key] ?? key;
+
+    if (action === 'discard') {
+      return telegram.sendMessage(chatId, `❌ Discarded — *${label}* was not changed.`, { threadId });
+    }
+
+    const patch = field === 'bio' ? { bio_text: entry.draft } : { media_file_id: entry.draft };
+    await upsertMenuContent(key, patch, userId);
+    return telegram.sendMessage(chatId, `✅ Published — *${label}* ${field === 'bio' ? 'bio' : 'media'} updated.`, {
+      threadId,
+    });
   }
 }
 
@@ -138,16 +204,27 @@ export async function handlePendingEditMessage(message) {
   const chatId = message.chat.id;
   const threadId = message.message_thread_id;
   const userId = message.from.id;
-  const entry = pending.get(pendingKey(chatId, userId));
+  const entryKey = pendingKey(chatId, userId);
+  const entry = pending.get(entryKey);
   if (!entry) return;
+
+  if (entry.stage !== 'input') {
+    return telegram.sendMessage(
+      chatId,
+      'Please tap ✅ Publish or ❌ Discard on the preview above, or /admincancel to abort.',
+      { threadId }
+    );
+  }
 
   if (entry.field === 'bio') {
     if (!message.text) {
       return telegram.sendMessage(chatId, 'Please send text for the bio, or /admincancel to abort.', { threadId });
     }
-    await upsertMenuContent(entry.key, { bio_text: message.text.trim() }, userId);
-    pending.delete(pendingKey(chatId, userId));
-    return telegram.sendMessage(chatId, `✅ Bio updated for *${LABELS[entry.key] ?? entry.key}*.`, { threadId });
+    const draft = message.text.trim();
+    entry.draft = draft;
+    entry.stage = 'confirm';
+    entry.expires = Date.now() + PENDING_TTL_MS; // give a fresh window to review
+    return sendPreview(chatId, threadId, entry.key, 'bio', draft);
   }
 
   if (entry.field === 'media') {
@@ -155,9 +232,10 @@ export async function handlePendingEditMessage(message) {
     if (!photos || !photos.length) {
       return telegram.sendMessage(chatId, 'Please send an image, or /admincancel to abort.', { threadId });
     }
-    const largest = photos[photos.length - 1];
-    await upsertMenuContent(entry.key, { media_file_id: largest.file_id }, userId);
-    pending.delete(pendingKey(chatId, userId));
-    return telegram.sendMessage(chatId, `✅ Media updated for *${LABELS[entry.key] ?? entry.key}*.`, { threadId });
+    const draft = photos[photos.length - 1].file_id;
+    entry.draft = draft;
+    entry.stage = 'confirm';
+    entry.expires = Date.now() + PENDING_TTL_MS;
+    return sendPreview(chatId, threadId, entry.key, 'media', draft);
   }
 }
