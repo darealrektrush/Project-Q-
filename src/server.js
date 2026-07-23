@@ -51,6 +51,15 @@ app.get('/debug/telegram', async (req, res) => {
   }
 });
 
+app.get('/debug/chatid', (req, res) => {
+  const raw = process.env.TELEGRAM_CHAT_ID ?? '';
+  res.status(200).json({
+    raw,
+    length: raw.length,
+    codePoints: [...raw].map((c) => c.codePointAt(0)),
+  });
+});
+
 app.get('/debug/send', async (req, res) => {
   try {
     const result = await telegram.sendMessage(
