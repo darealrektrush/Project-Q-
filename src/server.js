@@ -51,6 +51,19 @@ app.get('/debug/telegram', async (req, res) => {
   }
 });
 
+app.get('/debug/send', async (req, res) => {
+  try {
+    const result = await telegram.sendMessage(
+      process.env.TELEGRAM_CHAT_ID,
+      '🔧 /debug/send diagnostic message',
+      { threadId: telegram.getTopicId('fawkq-chat') }
+    );
+    res.status(200).json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.post('/webhook', async (req, res) => {
   if (TELEGRAM_WEBHOOK_SECRET) {
     const header = req.get('x-telegram-bot-api-secret-token');
