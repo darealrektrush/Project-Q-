@@ -33,7 +33,8 @@ create table if not exists user_missions (
   unique (user_id, mission_id)
 );
 
--- Completion callbacks from fawkq.com's bagwork tasks (POST /bagwork).
+-- Superseded by bagwork_payouts below (real fawkq.com webhook contract, see
+-- PROJECTQ-WEBHOOK.md). Left in place rather than dropped in case it holds data.
 create table if not exists bagwork_events (
   id bigserial primary key,
   user_id bigint not null references users(id),
@@ -42,6 +43,33 @@ create table if not exists bagwork_events (
   xp_awarded bigint not null default 0,
   created_at timestamptz not null default now(),
   unique (user_id, task_id)
+);
+
+-- Ledger of paid bagwork pieces from fawkq.com's bagwork_paid webhook event.
+-- submission_id is unique so resend deliveries are idempotent (never
+-- double-award XP or double-post the announcement).
+create table if not exists bagwork_payouts (
+  id bigserial primary key,
+  submission_id text unique not null,
+  handle text not null, -- X handle, lowercase no @
+  telegram text, -- lowercase no @; null if the creator skipped the field
+  user_id bigint references users(id), -- matched Telegram user, null if unmatched
+  tier text not null,
+  sol numeric(20, 9) not null,
+  tx_sig text not null,
+  post_url text,
+  xp_awarded bigint not null default 0,
+  paid_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+-- Replies to the first-payout feedback DM ask, for founders to read.
+create table if not exists bagwork_feedback (
+  id bigserial primary key,
+  user_id bigint references users(id),
+  telegram text,
+  reply_text text not null,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists feed_posts (
@@ -82,6 +110,19 @@ create table if not exists menu_content (
   updated_by bigint,
   updated_at timestamptz not null default now()
 );
+
+-- Bag Workers leaderboard by X handle (works even when telegram is null/
+-- unmatched, per PROJECTQ-WEBHOOK.md — not wired to a bot command yet).
+create or replace view bagwork_leaderboard as
+select
+  handle,
+  telegram,
+  count(*) as pieces,
+  sum(sol) as total_sol,
+  rank() over (order by sum(sol) desc) as rank
+from bagwork_payouts
+group by handle, telegram
+order by total_sol desc;
 
 create or replace view leaderboard as
 select

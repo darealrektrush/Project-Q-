@@ -6,7 +6,7 @@ import * as solana from './lib/solana.js';
 import * as admin from './lib/admin.js';
 import * as menuContent from './lib/menuContent.js';
 import { supabase } from './lib/supabase.js';
-import { handleBagworkCompletion } from './lib/bagwork.js';
+import * as bagwork from './lib/bagwork.js';
 
 const app = express();
 app.use(express.json());
@@ -23,7 +23,6 @@ const STUB_COMMANDS = new Set([
   '/feed',
   '/ask',
   '/spaces',
-  '/door',
 ]);
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
@@ -60,7 +59,7 @@ app.post('/bagwork', async (req, res) => {
   }
 
   try {
-    const result = await handleBagworkCompletion(req.body);
+    const result = await bagwork.handleBagworkEvent(req.body);
     res.status(200).json({ ok: true, ...result });
   } catch (err) {
     console.error('bagwork handling failed', err);
@@ -83,7 +82,13 @@ async function handleMessage(message) {
     return admin.handlePendingEditMessage(message);
   }
 
-  if (!message.text) return; // non-text, non-pending-edit messages are ignored
+  // First-payout feedback replies arrive as a DM (no thread id), so this
+  // must be checked before the topic guard below would otherwise drop it.
+  if (bagwork.hasPendingFeedback(message.from.id)) {
+    return bagwork.handleFeedbackReply(message);
+  }
+
+  if (!message.text) return; // non-text, non-pending messages are ignored
 
   const guard = telegram.guardTopic(threadId);
   if (!guard.allowed || !guard.interactive) return;
@@ -121,6 +126,8 @@ async function handleMessage(message) {
       return sendReceipts(chatId, threadId);
     case '/wallets':
       return sendWallets(chatId, threadId);
+    case '/door':
+      return sendDoorInfo(chatId, threadId);
     default:
       return;
   }
@@ -215,8 +222,22 @@ function sendRewards(chatId, threadId) {
   return renderMenu(chatId, threadId, 'rewards', defaultText);
 }
 
-function sendBagworkInfo(chatId, threadId) {
-  const defaultText = `💼 Complete tasks at ${FAWKQ_BAGWORK_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
+async function sendBagworkInfo(chatId, threadId) {
+  const tasks = await bagwork.getBagworkTasks();
+
+  let defaultText;
+  if (tasks?.tasks?.length) {
+    const lines = ['💼 *Bag Work*', ''];
+    for (const task of tasks.tasks) {
+      lines.push(`${task.label}: ${task.sol} SOL`);
+    }
+    if (tasks.note) lines.push('', tasks.note);
+    lines.push('', `Submit at: ${tasks.page ?? FAWKQ_BAGWORK_URL}`);
+    defaultText = lines.join('\n');
+  } else {
+    defaultText = `💼 Complete tasks at ${FAWKQ_BAGWORK_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
+  }
+
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
 }
 
@@ -317,6 +338,33 @@ function sendAbout(chatId, threadId) {
     '75% back to the community, 15% dev, 10% straight to ocean conservation — no spin, just receipts.',
   ].join('\n');
   return telegram.sendMessage(chatId, text, { threadId });
+}
+
+function sendDoorInfo(chatId, threadId) {
+  const defaultText = [
+    '🚪 Beyond the Door — CrabStar',
+    '',
+    'FawkQ is the front door. CrabStar is the house where that trust gets put to work — a Solana ecosystem project built around a real ocean conservation mission, not just a token chart.',
+    '',
+    "The Oracle is CrabStar's verification layer — the mechanism that keeps claims checkable instead of taking anyone's word for it, the same transparency principle FawkQ runs on for distributions.",
+    "Everyone in crypto is politely lying to you. We're honest to your face, and loud about it.",
+    '',
+    'No roadmap. No suit-and-tie promises. No "trust me, bro."',
+    '',
+    "Just a gold chain, an attitude, and a wallet you'll be able to check the day we launch.",
+    '',
+    '*The Mission*',
+    "The noise pays for something real. Here's the turn the timeline won't expect.",
+    '',
+    'All this, the gold chain, the trash talk, the beautiful mayhem, exists to fund a real, serious, mission-driven project called CrabStar ($CRAB).',
+    '',
+    'Its mission is ocean conservation…',
+    '',
+    'Real money, moving on-chain, toward cleaner water.',
+    '',
+    `Roadmap and the full CrabStar story: ${FAWKQ_WEBSITE_URL}`,
+  ].join('\n');
+  return renderMenu(chatId, threadId, 'door', defaultText);
 }
 
 telegram.validateTopicIds();
