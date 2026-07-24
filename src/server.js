@@ -5,6 +5,7 @@ import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
 import * as admin from './lib/admin.js';
 import * as menuContent from './lib/menuContent.js';
+import { supabase } from './lib/supabase.js';
 import { handleBagworkCompletion } from './lib/bagwork.js';
 
 const app = express();
@@ -115,6 +116,10 @@ async function handleMessage(message) {
       return sendRewards(chatId, threadId);
     case '/bagwork':
       return sendBagworkInfo(chatId, threadId);
+    case '/receipts':
+      return sendReceipts(chatId, threadId);
+    case '/wallets':
+      return sendWallets(chatId, threadId);
     default:
       return;
   }
@@ -204,6 +209,57 @@ function sendRewards(chatId, threadId) {
 function sendBagworkInfo(chatId, threadId) {
   const defaultText = `💼 Complete tasks at ${FAWKQ_WEBSITE_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
+}
+
+async function sendReceipts(chatId, threadId) {
+  const runs = await supabase.select(
+    'distribution_runs',
+    '?status=eq.completed&order=completed_at.desc&limit=3&select=*'
+  );
+
+  if (!runs?.length) {
+    return renderMenu(chatId, threadId, 'receipts', '🧾 No completed distribution runs yet.');
+  }
+
+  const lines = ['🧾 *Recent Distribution Receipts*'];
+  for (const run of runs) {
+    const txs = await supabase.select('distribution_transactions', `?run_id=eq.${run.id}&select=tx_signature`);
+    const signatures = [...new Set((txs ?? []).map((t) => t.tx_signature))];
+    const when = new Date(run.completed_at).toLocaleDateString();
+    lines.push(
+      '',
+      `*${when}* — ${solana.lamportsToSol(run.total_lamports).toFixed(4)} SOL`,
+      ...signatures.map((sig) => `https://solscan.io/tx/${sig}`)
+    );
+  }
+
+  return renderMenu(chatId, threadId, 'receipts', lines.join('\n'));
+}
+
+async function sendWallets(chatId, threadId) {
+  const connection = solana.getConnection();
+  const creatorPublic = solana
+    .keypairFromSecret(process.env.CREATOR_WALLET_SECRET)
+    .publicKey.toBase58();
+
+  const wallets = [
+    ['Creator', creatorPublic],
+    ['Community', process.env.COMMUNITY_WALLET_PUBLIC],
+    ['Dev', process.env.DEV_WALLET_PUBLIC],
+    ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
+    ['Bag wallet', process.env.BAG_WALLET_PUBLIC],
+    ['Buyback reserve', process.env.BUYBACK_RESERVE_WALLET_PUBLIC],
+  ].filter(([, address]) => address);
+
+  const balances = await Promise.all(
+    wallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))
+  );
+
+  const lines = [
+    '💳 *FawkQ Wallets*',
+    ...wallets.map(([label], i) => `${label}: ${solana.lamportsToSol(balances[i]).toFixed(4)} SOL`),
+  ];
+  return renderMenu(chatId, threadId, 'wallets', lines.join('\n'));
 }
 
 function sendOfficialLinks(chatId, threadId) {

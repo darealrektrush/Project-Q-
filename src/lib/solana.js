@@ -19,6 +19,10 @@ export async function getWalletBalanceLamports(connection, pubkey) {
   return connection.getBalance(new PublicKey(pubkey));
 }
 
+export function lamportsToSol(lamports) {
+  return lamports / LAMPORTS_PER_SOL;
+}
+
 async function heliusRpc(method, params) {
   const apiKey = process.env.HELIUS_API_KEY;
   if (!apiKey) throw new Error('HELIUS_API_KEY is not set');

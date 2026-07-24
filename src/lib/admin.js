@@ -7,6 +7,8 @@ const EDITABLE_KEYS = [
   ['leaderboard', 'Leaderboard'],
   ['rewards', 'Rewards'],
   ['bagwork', 'Bagwork'],
+  ['receipts', 'Receipts'],
+  ['wallets', 'Wallets'],
   ['missions', 'Missions'],
   ['meme', 'Meme'],
   ['signal', 'Signal'],

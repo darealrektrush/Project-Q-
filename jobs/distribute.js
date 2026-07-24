@@ -4,9 +4,7 @@ import { runStage1, runStage2 } from '../src/lib/splitRewards.js';
 import { supabase } from '../src/lib/supabase.js';
 import * as telegram from '../src/lib/telegram.js';
 
-function lamportsToSol(lamports) {
-  return lamports / solana.LAMPORTS_PER_SOL;
-}
+const lamportsToSol = solana.lamportsToSol;
 
 function solscanTxUrl(signature) {
   return `https://solscan.io/tx/${signature}`;
