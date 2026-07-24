@@ -173,15 +173,23 @@ function sendHome(chatId, threadId) {
 
 async function sendMarket(chatId, threadId) {
   const mint = process.env.TOKEN_MINT;
-  const [price, holderCount] = await Promise.all([
-    solana.getTokenPriceUsd(mint),
-    solana.getHolderCount(mint),
-  ]);
+  let price = null;
+  let holderCount = null;
+
+  // Degrade gracefully rather than letting a missing/invalid TOKEN_MINT
+  // (or a Helius error) silently kill the whole reply.
+  if (mint) {
+    try {
+      [price, holderCount] = await Promise.all([solana.getTokenPriceUsd(mint), solana.getHolderCount(mint)]);
+    } catch (err) {
+      console.error('sendMarket: failed to fetch token data', err);
+    }
+  }
 
   const defaultText = [
     '📈 *FawkQ Market*',
     price != null ? `Price: $${price.toFixed(6)}` : 'Price: unavailable',
-    `Holders: ${holderCount}`,
+    holderCount != null ? `Holders: ${holderCount}` : 'Holders: unavailable',
   ].join('\n');
 
   return renderMenu(chatId, threadId, 'market', defaultText);
@@ -254,18 +262,26 @@ async function sendWallets(chatId, threadId) {
     ['Thomas (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
-  const [solOnlyBalances, supplyBalances, decimals] = await Promise.all([
+  const [solOnlyBalances, supplySolBalances] = await Promise.all([
     Promise.all(solOnlyWallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))),
-    Promise.all(
-      supplyWallets.map(([, address]) =>
-        Promise.all([
-          solana.getWalletBalanceLamports(connection, address),
-          mint ? solana.getTokenBalanceForOwner(mint, address) : Promise.resolve(0),
-        ])
-      )
-    ),
-    mint ? solana.getMintDecimals(mint) : Promise.resolve(0),
+    Promise.all(supplyWallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))),
   ]);
+
+  // Token-supply-held numbers depend on TOKEN_MINT being a real mint;
+  // degrade gracefully instead of letting a missing/invalid mint (or a
+  // Helius error) silently kill the whole command.
+  let supplyTokens = supplyWallets.map(() => null);
+  if (mint && supplyWallets.length) {
+    try {
+      const decimals = await solana.getMintDecimals(mint);
+      const rawTokens = await Promise.all(
+        supplyWallets.map(([, address]) => solana.getTokenBalanceForOwner(mint, address))
+      );
+      supplyTokens = rawTokens.map((raw) => raw / 10 ** decimals);
+    } catch (err) {
+      console.error('sendWallets: failed to fetch token supply data', err);
+    }
+  }
 
   const lines = [
     '💳 *FawkQ Wallets*',
@@ -275,9 +291,8 @@ async function sendWallets(chatId, threadId) {
   if (supplyWallets.length) {
     lines.push('', '🤝 *Community & Bagwork Supply Wallets*');
     supplyWallets.forEach(([label], i) => {
-      const [lamports, rawTokens] = supplyBalances[i];
-      const sol = solana.lamportsToSol(lamports).toFixed(4);
-      const tokens = mint ? (rawTokens / 10 ** decimals).toLocaleString() : 'unavailable';
+      const sol = solana.lamportsToSol(supplySolBalances[i]).toFixed(4);
+      const tokens = supplyTokens[i] != null ? supplyTokens[i].toLocaleString() : 'unavailable';
       lines.push(`${label}: ${sol} SOL · ${tokens} supply held`);
     });
   }
