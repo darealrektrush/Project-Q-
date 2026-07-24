@@ -3,6 +3,7 @@ import { getMenuContent, upsertMenuContent } from './menuContent.js';
 
 const EDITABLE_KEYS = [
   ['home', 'Home menu'],
+  ['help', 'Help'],
   ['market', 'Market'],
   ['leaderboard', 'Leaderboard'],
   ['events', 'Events'],

@@ -114,6 +114,8 @@ async function handleMessage(message) {
   switch (command) {
     case '/start':
       return sendHome(chatId, threadId);
+    case '/help':
+      return sendHelp(chatId, threadId);
     case '/market':
       return sendMarket(chatId, threadId);
     case '/leaderboard':
@@ -197,6 +199,27 @@ function sendHome(chatId, threadId) {
   return renderMenu(chatId, threadId, 'home', '👁 *FawkQ Home* — pick a section:', {
     replyMarkup: telegram.buildHomeMenu(),
   });
+}
+
+function sendHelp(chatId, threadId) {
+  const defaultText = [
+    '📖 *FawkQ Commands*',
+    '',
+    '/start — Home menu',
+    '/market — Price and holder count',
+    '/leaderboard — XP leaderboard',
+    '/bagworkboard — Bag Workers leaderboard',
+    '/rewards — How the rewards split works',
+    '/bagwork — Current bag work tasks',
+    '/receipts — Recent distribution receipts',
+    '/wallets — Live wallet balances',
+    '/door — Beyond the Door',
+    '',
+    '_Coming soon:_ /missions /meme /signal /feed /ask /spaces',
+    '',
+    '/help — Show this list',
+  ].join('\n');
+  return renderMenu(chatId, threadId, 'help', defaultText);
 }
 
 async function sendMarket(chatId, threadId) {
