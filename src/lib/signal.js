@@ -69,9 +69,15 @@ export async function createAndPostSignal() {
 
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const threadId = telegram.getTopicId('fawkq-announcements');
-  const replyMarkup = buildReplyMarkup(kind, row.id);
 
-  const message = await telegram.sendMessage(chatId, content.teaser_text, { threadId, replyMarkup });
+  // fawkq-announcements is post-only — no buttons here, they'd never work
+  // (the topic guard blocks all interaction there). Reveal/hint/ignore only
+  // work on the /signal repost into fawkq-chat, see repostSignalToChat.
+  const announceText =
+    kind === 'mission_available'
+      ? content.teaser_text
+      : `${content.teaser_text}\n\n💬 Head to fawkq-chat and type /signal to act on it.`;
+  const message = await telegram.sendMessage(chatId, announceText, { threadId });
 
   await supabase.update('signals', `?id=eq.${row.id}`, {
     chat_id: chatId,
