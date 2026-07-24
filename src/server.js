@@ -423,7 +423,6 @@ function sendDoorInfo(chatId, threadId) {
     '',
     'FawkQ is the front door. CrabStar is the house where that trust gets put to work — a Solana ecosystem project built around a real ocean conservation mission, not just a token chart.',
     '',
-    "The Oracle is CrabStar's verification layer — the mechanism that keeps claims checkable instead of taking anyone's word for it, the same transparency principle FawkQ runs on for distributions.",
     "Everyone in crypto is politely lying to you. We're honest to your face, and loud about it.",
     '',
     'No roadmap. No suit-and-tie promises. No "trust me, bro."',
@@ -437,7 +436,7 @@ function sendDoorInfo(chatId, threadId) {
     '',
     'Its mission is ocean conservation…',
     '',
-    'Real money, moving on-chain, toward cleaner water.',
+    'Real money, moving on-chain, toward creating decentralized global impact with DeFi.',
     '',
     `Roadmap and the full CrabStar story: ${FAWKQ_WEBSITE_URL}`,
   ].join('\n');
