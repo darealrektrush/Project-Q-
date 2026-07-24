@@ -66,6 +66,19 @@ export async function getHolderCount(mint) {
   return holders.length;
 }
 
+// Gets the decimals for a mint, so raw token amounts can be converted to a human-readable count.
+export async function getMintDecimals(mint) {
+  const asset = await heliusRpc('getAsset', { id: mint, displayOptions: { showFungible: true } });
+  return asset?.token_info?.decimals ?? 0;
+}
+
+// Sums raw token balance across all of a single owner's accounts for a given mint.
+export async function getTokenBalanceForOwner(mint, owner) {
+  const result = await heliusRpc('getTokenAccounts', { mint, owner, limit: 1000 });
+  const accounts = result?.token_accounts ?? [];
+  return accounts.reduce((sum, a) => sum + Number(a.amount), 0);
+}
+
 // Builds, signs, and sends SOL transfers, batching into multiple transactions
 // when there are more transfers than fit in one (e.g. holder payouts).
 // Returns one entry per transaction sent, so callers can log which transfers

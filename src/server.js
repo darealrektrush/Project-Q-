@@ -238,8 +238,9 @@ async function sendReceipts(chatId, threadId) {
 
 async function sendWallets(chatId, threadId) {
   const connection = solana.getConnection();
+  const mint = process.env.TOKEN_MINT;
 
-  const wallets = [
+  const solOnlyWallets = [
     ['Creator', process.env.CREATOR_WALLET_PUBLIC],
     ['Community', process.env.COMMUNITY_WALLET_PUBLIC],
     ['Dev', process.env.DEV_WALLET_PUBLIC],
@@ -248,14 +249,39 @@ async function sendWallets(chatId, threadId) {
     ['Buyback reserve', process.env.BUYBACK_RESERVE_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
-  const balances = await Promise.all(
-    wallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))
-  );
+  const supplyWallets = [
+    ['Andrew (Co-Founder)', process.env.ANDREW_COFOUNDER_WALLET_PUBLIC],
+    ['Thomas (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
+  ].filter(([, address]) => address);
+
+  const [solOnlyBalances, supplyBalances, decimals] = await Promise.all([
+    Promise.all(solOnlyWallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))),
+    Promise.all(
+      supplyWallets.map(([, address]) =>
+        Promise.all([
+          solana.getWalletBalanceLamports(connection, address),
+          mint ? solana.getTokenBalanceForOwner(mint, address) : Promise.resolve(0),
+        ])
+      )
+    ),
+    mint ? solana.getMintDecimals(mint) : Promise.resolve(0),
+  ]);
 
   const lines = [
     '💳 *FawkQ Wallets*',
-    ...wallets.map(([label], i) => `${label}: ${solana.lamportsToSol(balances[i]).toFixed(4)} SOL`),
+    ...solOnlyWallets.map(([label], i) => `${label}: ${solana.lamportsToSol(solOnlyBalances[i]).toFixed(4)} SOL`),
   ];
+
+  if (supplyWallets.length) {
+    lines.push('', '🤝 *Community & Bagwork Supply Wallets*');
+    supplyWallets.forEach(([label], i) => {
+      const [lamports, rawTokens] = supplyBalances[i];
+      const sol = solana.lamportsToSol(lamports).toFixed(4);
+      const tokens = mint ? (rawTokens / 10 ** decimals).toLocaleString() : 'unavailable';
+      lines.push(`${label}: ${sol} SOL · ${tokens} supply held`);
+    });
+  }
+
   return renderMenu(chatId, threadId, 'wallets', lines.join('\n'));
 }
 
