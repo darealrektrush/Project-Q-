@@ -137,6 +137,26 @@ async function handleMessage(message) {
   }
 }
 
+async function getLeaderboardIntro() {
+  const content = await menuContent.getMenuContent('leaderboard');
+  return {
+    text: content?.bio_text || '🏆 *Leaderboards* — pick a board:',
+    mediaFileId: content?.media_file_id ?? null,
+  };
+}
+
+// Edits a menu message in place regardless of whether it's plain text or a
+// photo (Telegram requires editMessageCaption for the latter — you can't
+// turn a photo message into text via edit, or vice versa).
+function editMenuMessage(callbackQuery, text, replyMarkup) {
+  const chatId = callbackQuery.message.chat.id;
+  const messageId = callbackQuery.message.message_id;
+  if (callbackQuery.message.photo) {
+    return telegram.editMessageCaption(chatId, messageId, text, { replyMarkup });
+  }
+  return telegram.editMessageText(chatId, messageId, text, { replyMarkup });
+}
+
 async function handleCallbackQuery(callbackQuery) {
   const threadId = callbackQuery.message?.message_thread_id;
   const guard = telegram.guardTopic(threadId);
@@ -144,7 +164,6 @@ async function handleCallbackQuery(callbackQuery) {
   if (!guard.allowed || !guard.interactive) return;
 
   const chatId = callbackQuery.message.chat.id;
-  const messageId = callbackQuery.message.message_id;
 
   if (callbackQuery.data?.startsWith('admin:')) {
     return admin.handleAdminCallback(callbackQuery);
@@ -161,22 +180,25 @@ async function handleCallbackQuery(callbackQuery) {
       return sendOfficialLinks(chatId, threadId);
     case 'menu:about':
       return sendAbout(chatId, threadId);
-    case 'menu:leaderboard':
-      return telegram.sendMessage(chatId, '🏆 *Leaderboards* — pick a board:', {
-        threadId,
-        replyMarkup: telegram.buildLeaderboardMenu(),
-      });
-    case 'menu:leaderboard:root':
-      return telegram.editMessageText(chatId, messageId, '🏆 *Leaderboards* — pick a board:', {
-        replyMarkup: telegram.buildLeaderboardMenu(),
-      });
+    case 'menu:leaderboard': {
+      const { text, mediaFileId } = await getLeaderboardIntro();
+      const replyMarkup = telegram.buildLeaderboardMenu();
+      if (mediaFileId) {
+        return telegram.sendPhoto(chatId, mediaFileId, text, { threadId, replyMarkup });
+      }
+      return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
+    }
+    case 'menu:leaderboard:root': {
+      const { text } = await getLeaderboardIntro();
+      return editMenuMessage(callbackQuery, text, telegram.buildLeaderboardMenu());
+    }
     case 'menu:leaderboard:xp':
-      return telegram.editMessageText(chatId, messageId, await buildLeaderboardText(), {
-        replyMarkup: { inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]] },
+      return editMenuMessage(callbackQuery, await buildLeaderboardText(), {
+        inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]],
       });
     case 'menu:leaderboard:bagwork':
-      return telegram.editMessageText(chatId, messageId, await buildBagworkboardText(), {
-        replyMarkup: { inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]] },
+      return editMenuMessage(callbackQuery, await buildBagworkboardText(), {
+        inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]],
       });
     default:
       return;

@@ -44,6 +44,16 @@ export function editMessageText(chatId, messageId, text, { replyMarkup, parseMod
   });
 }
 
+export function editMessageCaption(chatId, messageId, caption, { replyMarkup, parseMode = 'Markdown' } = {}) {
+  return call('editMessageCaption', {
+    chat_id: chatId,
+    message_id: messageId,
+    caption,
+    reply_markup: replyMarkup,
+    parse_mode: parseMode,
+  });
+}
+
 export function answerCallbackQuery(callbackQueryId, text) {
   return call('answerCallbackQuery', { callback_query_id: callbackQueryId, text });
 }
