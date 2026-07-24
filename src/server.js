@@ -152,9 +152,9 @@ async function handleCallbackQuery(callbackQuery) {
     case 'menu:market':
       return sendMarket(chatId, threadId);
     case 'menu:events':
-      return telegram.sendMessage(chatId, '🗓 *Events* — coming soon.', { threadId });
+      return renderMenu(chatId, threadId, 'events', '🗓 *Events* — coming soon.');
     case 'menu:map':
-      return telegram.sendMessage(chatId, '🗺 *Community Map* — coming soon.', { threadId });
+      return renderMenu(chatId, threadId, 'map', '🗺 *Community Map* — coming soon.');
     case 'menu:links':
       return sendOfficialLinks(chatId, threadId);
     case 'menu:about':
@@ -355,21 +355,21 @@ async function sendWallets(chatId, threadId) {
 }
 
 function sendOfficialLinks(chatId, threadId) {
-  const text = [
+  const defaultText = [
     '🔗 *Official Links*',
     `Website: ${FAWKQ_WEBSITE_URL}`,
     `Bagwork: ${FAWKQ_BAGWORK_URL}`,
   ].join('\n');
-  return telegram.sendMessage(chatId, text, { threadId });
+  return renderMenu(chatId, threadId, 'links', defaultText);
 }
 
 function sendAbout(chatId, threadId) {
-  const text = [
+  const defaultText = [
     'ℹ️ *About FawkQ*',
     "FAWK Q is the community's eyes on the money. Real-time price, holder counts, wallet balances, and every reward distribution posted with tx links the second it happens.",
     '75% back to the community, 15% dev, 10% straight to ocean conservation — no spin, just receipts.',
   ].join('\n');
-  return telegram.sendMessage(chatId, text, { threadId });
+  return renderMenu(chatId, threadId, 'about', defaultText);
 }
 
 function sendDoorInfo(chatId, threadId) {
