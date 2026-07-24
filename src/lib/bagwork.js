@@ -186,6 +186,13 @@ export async function handleFeedbackReply(message) {
   return telegram.sendMessage(userId, 'Thanks for the feedback — logged for the team. 🙏', {});
 }
 
+// Top of the Bag Workers leaderboard (see bagwork_leaderboard view) — ranked
+// by total SOL earned across paid pieces, keyed by X handle so it stays
+// complete even for creators with no matched Telegram account.
+export function getBagworkLeaderboard(limit = 10) {
+  return supabase.select('bagwork_leaderboard', `?order=total_sol.desc&limit=${limit}`);
+}
+
 // Fetches the site's live task list for the /bagwork command, with a short
 // cache and a static fallback if the site is unreachable.
 export async function getBagworkTasks() {

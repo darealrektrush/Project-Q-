@@ -122,6 +122,8 @@ async function handleMessage(message) {
       return sendRewards(chatId, threadId);
     case '/bagwork':
       return sendBagworkInfo(chatId, threadId);
+    case '/bagworkboard':
+      return sendBagworkboard(chatId, threadId);
     case '/receipts':
       return sendReceipts(chatId, threadId);
     case '/wallets':
@@ -239,6 +241,14 @@ async function sendBagworkInfo(chatId, threadId) {
   }
 
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
+}
+
+async function sendBagworkboard(chatId, threadId) {
+  const rows = await bagwork.getBagworkLeaderboard(10);
+  const lines = (rows ?? []).map((r, i) => `${i + 1}. @${r.handle} — ${r.total_sol} SOL (${r.pieces} pieces)`);
+
+  const defaultText = ['🏗 *Bag Workers Leaderboard*', ...(lines.length ? lines : ['No paid pieces yet.'])].join('\n');
+  return renderMenu(chatId, threadId, 'bagworkboard', defaultText);
 }
 
 async function sendReceipts(chatId, threadId) {
