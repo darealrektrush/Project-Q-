@@ -238,12 +238,9 @@ async function sendReceipts(chatId, threadId) {
 
 async function sendWallets(chatId, threadId) {
   const connection = solana.getConnection();
-  const creatorPublic = solana
-    .keypairFromSecret(process.env.CREATOR_WALLET_SECRET)
-    .publicKey.toBase58();
 
   const wallets = [
-    ['Creator', creatorPublic],
+    ['Creator', process.env.CREATOR_WALLET_PUBLIC],
     ['Community', process.env.COMMUNITY_WALLET_PUBLIC],
     ['Dev', process.env.DEV_WALLET_PUBLIC],
     ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
