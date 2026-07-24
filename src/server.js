@@ -14,6 +14,7 @@ app.use(express.json());
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
+const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
 
 const STUB_COMMANDS = new Set([
   '/missions',
@@ -209,13 +210,13 @@ function sendRewards(chatId, threadId) {
     '_Stage 1 (creator wallet):_ 75% community · 15% dev · 10% ocean conservation',
     '_Stage 2 (community wallet):_ 30% bag wallet · 15% buyback reserve · 55% holders (pro-rata, paid in SOL)',
     '',
-    `Distributions run every 3 days. Complete tasks at ${FAWKQ_WEBSITE_URL} to earn XP toward the leaderboard.`,
+    `Distributions run every 3 days. Complete tasks at ${FAWKQ_BAGWORK_URL} to earn XP toward the leaderboard.`,
   ].join('\n');
   return renderMenu(chatId, threadId, 'rewards', defaultText);
 }
 
 function sendBagworkInfo(chatId, threadId) {
-  const defaultText = `💼 Complete tasks at ${FAWKQ_WEBSITE_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
+  const defaultText = `💼 Complete tasks at ${FAWKQ_BAGWORK_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
 }
 
@@ -301,7 +302,11 @@ async function sendWallets(chatId, threadId) {
 }
 
 function sendOfficialLinks(chatId, threadId) {
-  const text = ['🔗 *Official Links*', `Website: ${FAWKQ_WEBSITE_URL}`].join('\n');
+  const text = [
+    '🔗 *Official Links*',
+    `Website: ${FAWKQ_WEBSITE_URL}`,
+    `Bagwork: ${FAWKQ_BAGWORK_URL}`,
+  ].join('\n');
   return telegram.sendMessage(chatId, text, { threadId });
 }
 
