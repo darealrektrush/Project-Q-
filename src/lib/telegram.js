@@ -57,13 +57,27 @@ export function buildHomeMenu() {
     inline_keyboard: [
       [
         { text: '📈 Market', callback_data: 'menu:market' },
-        { text: '🗓 Events', callback_data: 'menu:events' },
+        { text: '🏆 Leaderboard', callback_data: 'menu:leaderboard' },
       ],
       [
+        { text: '🗓 Events', callback_data: 'menu:events' },
         { text: '🗺 Community Map', callback_data: 'menu:map' },
-        { text: '🔗 Official Links', callback_data: 'menu:links' },
       ],
-      [{ text: 'ℹ️ About FawkQ', callback_data: 'menu:about' }],
+      [
+        { text: '🔗 Official Links', callback_data: 'menu:links' },
+        { text: 'ℹ️ About FawkQ', callback_data: 'menu:about' },
+      ],
+    ],
+  };
+}
+
+export function buildLeaderboardMenu() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '🏆 Leaderboard', callback_data: 'menu:leaderboard:xp' },
+        { text: '🏗 Bag Workers', callback_data: 'menu:leaderboard:bagwork' },
+      ],
     ],
   };
 }

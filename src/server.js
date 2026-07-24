@@ -142,6 +142,7 @@ async function handleCallbackQuery(callbackQuery) {
   if (!guard.allowed || !guard.interactive) return;
 
   const chatId = callbackQuery.message.chat.id;
+  const messageId = callbackQuery.message.message_id;
 
   if (callbackQuery.data?.startsWith('admin:')) {
     return admin.handleAdminCallback(callbackQuery);
@@ -158,6 +159,23 @@ async function handleCallbackQuery(callbackQuery) {
       return sendOfficialLinks(chatId, threadId);
     case 'menu:about':
       return sendAbout(chatId, threadId);
+    case 'menu:leaderboard':
+      return telegram.sendMessage(chatId, '🏆 *Leaderboards* — pick a board:', {
+        threadId,
+        replyMarkup: telegram.buildLeaderboardMenu(),
+      });
+    case 'menu:leaderboard:root':
+      return telegram.editMessageText(chatId, messageId, '🏆 *Leaderboards* — pick a board:', {
+        replyMarkup: telegram.buildLeaderboardMenu(),
+      });
+    case 'menu:leaderboard:xp':
+      return telegram.editMessageText(chatId, messageId, await buildLeaderboardText(), {
+        replyMarkup: { inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]] },
+      });
+    case 'menu:leaderboard:bagwork':
+      return telegram.editMessageText(chatId, messageId, await buildBagworkboardText(), {
+        replyMarkup: { inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]] },
+      });
     default:
       return;
   }
@@ -205,12 +223,14 @@ async function sendMarket(chatId, threadId) {
   return renderMenu(chatId, threadId, 'market', defaultText);
 }
 
-async function sendLeaderboard(chatId, threadId) {
+async function buildLeaderboardText() {
   const rows = await xp.getLeaderboard(10);
   const lines = rows.map((r, i) => `${i + 1}. ${r.username ?? r.id} — ${r.xp} XP`);
+  return ['🏆 *Leaderboard*', ...(lines.length ? lines : ['No entries yet.'])].join('\n');
+}
 
-  const defaultText = ['🏆 *Leaderboard*', ...(lines.length ? lines : ['No entries yet.'])].join('\n');
-  return renderMenu(chatId, threadId, 'leaderboard', defaultText);
+async function sendLeaderboard(chatId, threadId) {
+  return renderMenu(chatId, threadId, 'leaderboard', await buildLeaderboardText());
 }
 
 function sendRewards(chatId, threadId) {
@@ -243,12 +263,14 @@ async function sendBagworkInfo(chatId, threadId) {
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
 }
 
-async function sendBagworkboard(chatId, threadId) {
+async function buildBagworkboardText() {
   const rows = await bagwork.getBagworkLeaderboard(10);
   const lines = (rows ?? []).map((r, i) => `${i + 1}. @${r.handle} — ${r.total_sol} SOL (${r.pieces} pieces)`);
+  return ['🏗 *Bag Workers Leaderboard*', ...(lines.length ? lines : ['No paid pieces yet.'])].join('\n');
+}
 
-  const defaultText = ['🏗 *Bag Workers Leaderboard*', ...(lines.length ? lines : ['No paid pieces yet.'])].join('\n');
-  return renderMenu(chatId, threadId, 'bagworkboard', defaultText);
+async function sendBagworkboard(chatId, threadId) {
+  return renderMenu(chatId, threadId, 'bagworkboard', await buildBagworkboardText());
 }
 
 async function sendReceipts(chatId, threadId) {
