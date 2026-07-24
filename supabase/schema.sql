@@ -111,6 +111,35 @@ create table if not exists menu_content (
   updated_at timestamptz not null default now()
 );
 
+-- Signal mini-game: a posted teaser (signal_detected / unknown_transmission /
+-- mission_available) that members can act on for XP via /signal's buttons.
+create table if not exists signals (
+  id bigserial primary key,
+  kind text not null, -- signal_detected | unknown_transmission | mission_available
+  teaser_text text not null,
+  reveal_text text,
+  hint_1 text,
+  hint_2 text,
+  hint_3 text,
+  status text not null default 'open', -- open | resolved
+  chat_id bigint,
+  message_id bigint,
+  thread_id bigint,
+  created_at timestamptz not null default now()
+);
+
+-- One row per (signal, user, action) — the unique constraint is what makes
+-- reveal/ignore/hint idempotent per user (can't double-charge or re-roll).
+create table if not exists signal_interactions (
+  id bigserial primary key,
+  signal_id bigint not null references signals(id),
+  user_id bigint not null references users(id),
+  action text not null, -- reveal | ignore | hint_1 | hint_2 | hint_3
+  xp_delta bigint not null default 0,
+  created_at timestamptz not null default now(),
+  unique (signal_id, user_id, action)
+);
+
 -- Bag Workers leaderboard by X handle (works even when telegram is null/
 -- unmatched, per PROJECTQ-WEBHOOK.md — not wired to a bot command yet).
 create or replace view bagwork_leaderboard as

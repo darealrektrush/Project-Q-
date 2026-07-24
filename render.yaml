@@ -75,3 +75,21 @@ services:
         sync: false
       - key: DISTRIBUTION_RESERVE_LAMPORTS
         sync: false
+
+  - type: cron
+    name: project-q-signal
+    runtime: node
+    schedule: "0 0,12 * * *"
+    buildCommand: npm install
+    startCommand: npm run post-signal
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_TOPIC_IDS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

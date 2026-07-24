@@ -17,7 +17,6 @@ const EDITABLE_KEYS = [
   ['wallets', 'Wallets'],
   ['missions', 'Missions'],
   ['meme', 'Meme'],
-  ['signal', 'Signal'],
   ['feed', 'Feed'],
   ['ask', 'Ask'],
   ['spaces', 'Spaces'],

@@ -7,6 +7,7 @@ import * as admin from './lib/admin.js';
 import * as menuContent from './lib/menuContent.js';
 import { supabase } from './lib/supabase.js';
 import * as bagwork from './lib/bagwork.js';
+import * as signal from './lib/signal.js';
 
 const app = express();
 app.use(express.json());
@@ -19,7 +20,6 @@ const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/ba
 const STUB_COMMANDS = new Set([
   '/missions',
   '/meme',
-  '/signal',
   '/feed',
   '/ask',
   '/spaces',
@@ -105,6 +105,9 @@ async function handleMessage(message) {
   if (command === '/admincancel') {
     return admin.cancelPendingEdit(chatId, message.from.id);
   }
+  if (command === '/postsignal') {
+    return handlePostSignalCommand(message);
+  }
 
   if (STUB_COMMANDS.has(command)) {
     const key = command.slice(1); // e.g. 'missions', 'meme'
@@ -132,6 +135,8 @@ async function handleMessage(message) {
       return sendWallets(chatId, threadId);
     case '/door':
       return sendDoorInfo(chatId, threadId);
+    case '/signal':
+      return sendSignalCommand(chatId, threadId);
     default:
       return;
   }
@@ -157,11 +162,41 @@ function editMenuMessage(callbackQuery, text, replyMarkup) {
   return telegram.editMessageText(chatId, messageId, text, { replyMarkup });
 }
 
+// Signal reveal/hint/ignore results are shown via the callback answer
+// itself (a toast popup only the clicking user sees), so — unlike every
+// other callback below — it must NOT be acked until the result text is
+// known. Telegram only allows answering a given callback query once.
+async function handleSignalCallback(callbackQuery) {
+  const [, action, signalId] = callbackQuery.data.split(':');
+  const userId = callbackQuery.from.id;
+
+  await xp.ensureUser(userId, callbackQuery.from.username ?? callbackQuery.from.first_name);
+
+  let resultText;
+  if (action === 'reveal') {
+    resultText = await signal.handleReveal(signalId, userId);
+  } else if (action === 'ignore') {
+    resultText = await signal.handleIgnore(signalId, userId);
+  } else if (action?.startsWith('hint_')) {
+    resultText = await signal.handleHint(signalId, userId, action);
+  }
+
+  return telegram.answerCallbackQuery(callbackQuery.id, resultText);
+}
+
 async function handleCallbackQuery(callbackQuery) {
   const threadId = callbackQuery.message?.message_thread_id;
   const guard = telegram.guardTopic(threadId);
+
+  if (!guard.allowed || !guard.interactive) {
+    return telegram.answerCallbackQuery(callbackQuery.id);
+  }
+
+  if (callbackQuery.data?.startsWith('signal:')) {
+    return handleSignalCallback(callbackQuery);
+  }
+
   await telegram.answerCallbackQuery(callbackQuery.id);
-  if (!guard.allowed || !guard.interactive) return;
 
   const chatId = callbackQuery.message.chat.id;
 
@@ -236,8 +271,9 @@ function sendHelp(chatId, threadId) {
     '/receipts — Recent distribution receipts',
     '/wallets — Live wallet balances',
     '/door — Beyond the Door',
+    '/signal — Current Signal (reveal, ignore, or grab hints for XP)',
     '',
-    '_Coming soon:_ /missions /meme /signal /feed /ask /spaces',
+    '_Coming soon:_ /missions /meme /feed /ask /spaces',
     '',
     '/help — Show this list',
   ].join('\n');
@@ -441,6 +477,26 @@ function sendDoorInfo(chatId, threadId) {
     `Roadmap and the full CrabStar story: ${FAWKQ_WEBSITE_URL}`,
   ].join('\n');
   return renderMenu(chatId, threadId, 'door', defaultText);
+}
+
+async function sendSignalCommand(chatId, threadId) {
+  const activeSignal = await signal.repostSignalToChat(chatId, threadId);
+  if (!activeSignal) {
+    return telegram.sendMessage(chatId, '📡 No active Signal right now — check back soon.', { threadId });
+  }
+}
+
+async function handlePostSignalCommand(message) {
+  const chatId = message.chat.id;
+  const threadId = message.message_thread_id;
+
+  if (!(await admin.isGroupAdmin(chatId, message.from.id))) {
+    return telegram.sendMessage(chatId, '🚫 Only group admins can use /postsignal.', { threadId });
+  }
+
+  const newSignal = await signal.createAndPostSignal();
+  const kindLabel = newSignal.kind.replace(/_/g, ' ');
+  return telegram.sendMessage(chatId, `📡 Posted a new ${kindLabel} Signal to fawkq-announcements.`, { threadId });
 }
 
 telegram.validateTopicIds();
