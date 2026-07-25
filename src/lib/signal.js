@@ -167,12 +167,18 @@ export async function handleReveal(signalId, userId) {
   }
   await awardXp(userId, -REVEAL_COST_XP);
 
+  const rows = await supabase.select('signals', `?id=eq.${signalId}&select=source,wallet,amount_tokens`);
+  const signal = rows?.[0];
+  const detail = signal?.source === 'onchain'
+    ? `Wallet ${truncateWallet(signal.wallet)} moved ${formatTokenAmount(signal.amount_tokens)} tokens. `
+    : '';
+
   const won = Math.random() < REVEAL_WIN_CHANCE;
   if (won) {
     await awardXp(userId, REVEAL_WIN_BONUS_XP);
-    return `📡 It sent! +${REVEAL_WIN_BONUS_XP - REVEAL_COST_XP} XP net.`;
+    return `📡 ${detail}It sent! +${REVEAL_WIN_BONUS_XP - REVEAL_COST_XP} XP net.`;
   }
-  return `📡 False alarm — nothing this time. -${REVEAL_COST_XP} XP.`;
+  return `📡 ${detail}False alarm — nothing this time. -${REVEAL_COST_XP} XP.`;
 }
 
 export async function handleIgnore(signalId, userId) {
