@@ -125,7 +125,7 @@ async function handleMessage(message) {
   switch (command) {
     case '/start':
       return sendHome(chatId, threadId);
-    case '/help':
+    case '/helpf':
       return sendHelp(chatId, threadId);
     case '/market':
       return sendMarket(chatId, threadId);
@@ -299,7 +299,7 @@ function sendHelp(chatId, threadId) {
     '',
     '_Coming soon:_ /missions /meme /feed /ask',
     '',
-    '/help — Show this list',
+    '/helpf — Show this list',
   ].join('\n');
   return renderMenu(chatId, threadId, 'help', defaultText);
 }
