@@ -8,7 +8,6 @@ const EDITABLE_KEYS = [
   ['leaderboard', 'Leaderboard'],
   ['money', 'Eyes On The Money'],
   ['events', 'Events'],
-  ['map', 'Community Map'],
   ['links', 'Official Links'],
   ['about', 'About FawkQ'],
   ['rewards', 'Rewards'],

@@ -74,12 +74,12 @@ export function buildHomeMenu() {
         { text: '🎙 Spaces', callback_data: 'menu:spaces' },
       ],
       [
-        { text: '🗺 Community Map', callback_data: 'menu:map' },
         { text: '🔗 Official Links', callback_data: 'menu:links' },
+        { text: '💼 Bag Work', callback_data: 'menu:bagwork' },
       ],
       [
-        { text: '💼 Bag Work', callback_data: 'menu:bagwork' },
         { text: '👁 Eyes On The Money', callback_data: 'menu:money' },
+        { text: '🚪 Beyond the Door', callback_data: 'menu:door' },
       ],
       [
         { text: 'ℹ️ About FawkQ', callback_data: 'menu:about' },

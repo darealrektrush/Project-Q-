@@ -232,8 +232,6 @@ async function handleCallbackQuery(callbackQuery) {
     }
     case 'menu:spaces':
       return sendSpaces(chatId, threadId);
-    case 'menu:map':
-      return renderMenu(chatId, threadId, 'map', '🗺 *Community Map* — coming soon.');
     case 'menu:links':
       return sendOfficialLinks(chatId, threadId);
     case 'menu:about':
@@ -256,6 +254,8 @@ async function handleCallbackQuery(callbackQuery) {
       return sendReceipts(chatId, threadId);
     case 'menu:money:wallets':
       return sendWallets(chatId, threadId);
+    case 'menu:door':
+      return sendDoorInfo(chatId, threadId);
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
