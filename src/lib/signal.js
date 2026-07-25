@@ -18,6 +18,39 @@ const SIGNAL_DETECTED_FALLBACKS = [
   '🟢 *SIGNAL DETECTED*\nActivity just spiked. Could be nothing. Could be something.',
 ];
 
+const UNKNOWN_TRANSMISSION_SETS = [
+  {
+    hint_1: "It's not one you've heard mentioned here before.",
+    hint_2: 'The community around it is small but loud.',
+    hint_3: "Whether it's signal or noise is still anyone's guess. (This is a game, not a call to buy anything.)",
+  },
+  {
+    hint_1: 'Chatter about it picked up in the last few hours.',
+    hint_2: 'A few wallets have been quietly accumulating.',
+    hint_3: 'Could fade by tomorrow, could still be early. (This is a game, not a call to buy anything.)',
+  },
+  {
+    hint_1: "It's been floating around smaller Telegram groups.",
+    hint_2: 'Nothing official yet — just chatter and screenshots.',
+    hint_3: "Half the fun is not knowing until it's obvious. (This is a game, not a call to buy anything.)",
+  },
+  {
+    hint_1: 'Someone in another server mentioned it in passing.',
+    hint_2: 'The name alone has a few people curious.',
+    hint_3: 'No promises here — just keeping you plugged in. (This is a game, not a call to buy anything.)',
+  },
+  {
+    hint_1: "It's got that right-place-right-time energy.",
+    hint_2: "Early enough that most people haven't noticed yet.",
+    hint_3: 'Could be nothing. (This is a game, not a call to buy anything.)',
+  },
+  {
+    hint_1: "Not a name you'd recognize from the usual lists.",
+    hint_2: 'Momentum is building slowly, not all at once.',
+    hint_3: "Could be nothing — that's kind of the point of this game.",
+  },
+];
+
 async function getRecentSignalSignatures() {
   const rows = await supabase.select(
     'signals',
@@ -64,11 +97,10 @@ function buildContent(kind) {
     };
   }
   if (kind === 'unknown_transmission') {
+    const set = UNKNOWN_TRANSMISSION_SETS[Math.floor(Math.random() * UNKNOWN_TRANSMISSION_SETS.length)];
     return {
       teaser_text: '🟡 *UNKNOWN TRANSMISSION*\nA Solana project is about to trend. Three hints available.',
-      hint_1: "It's not one you've heard mentioned here before.",
-      hint_2: 'The community around it is small but loud.',
-      hint_3: "Whether it's signal or noise is still anyone's guess. (This is a game, not a call to buy anything.)",
+      ...set,
     };
   }
   return {
