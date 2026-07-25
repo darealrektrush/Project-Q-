@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase.js';
 import * as bagwork from './lib/bagwork.js';
 import * as signal from './lib/signal.js';
 import * as events from './lib/events.js';
+import * as eventsAdmin from './lib/eventsAdmin.js';
 
 const app = express();
 app.use(express.json());
@@ -88,6 +89,10 @@ async function handleMessage(message) {
     return bagwork.handleFeedbackReply(message);
   }
 
+  if (eventsAdmin.hasPendingAddEvent(chatId, message.from.id)) {
+    return eventsAdmin.handleAddEventMessage(message);
+  }
+
   if (!message.text) return; // non-text, non-pending messages are ignored
 
   const guard = telegram.guardTopic(threadId);
@@ -107,6 +112,9 @@ async function handleMessage(message) {
   }
   if (command === '/postsignal') {
     return handlePostSignalCommand(message);
+  }
+  if (command === '/addevent') {
+    return eventsAdmin.handleAddEventCommand(message);
   }
 
   if (STUB_COMMANDS.has(command)) {
@@ -206,6 +214,10 @@ async function handleCallbackQuery(callbackQuery) {
 
   if (callbackQuery.data?.startsWith('admin:')) {
     return admin.handleAdminCallback(callbackQuery);
+  }
+
+  if (callbackQuery.data?.startsWith('addevent:')) {
+    return eventsAdmin.handleAddEventCallback(callbackQuery);
   }
 
   switch (callbackQuery.data) {
