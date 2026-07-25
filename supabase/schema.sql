@@ -125,6 +125,11 @@ create table if not exists signals (
   chat_id bigint,
   message_id bigint,
   thread_id bigint,
+  -- signal_detected only: real on-chain data behind the teaser, when found.
+  source text default 'synthetic', -- synthetic | onchain
+  tx_signature text,
+  wallet text,
+  amount_tokens numeric(20, 9),
   created_at timestamptz not null default now()
 );
 

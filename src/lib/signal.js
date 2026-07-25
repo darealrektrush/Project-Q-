@@ -1,6 +1,8 @@
 import { supabase } from './supabase.js';
 import { awardXp } from './xp.js';
 import * as telegram from './telegram.js';
+import { findNotableTransfer, truncateWallet, formatTokenAmount } from './onchainSignal.js';
+import { getTokenSymbol } from './solana.js';
 
 // Tunable XP economy — adjust freely, nothing else depends on these values.
 const REVEAL_COST_XP = 5;
@@ -9,6 +11,50 @@ const REVEAL_WIN_CHANCE = 0.5;
 const HINT_COSTS = { hint_1: 3, hint_2: 5, hint_3: 8 };
 
 const FLAVORS = ['signal_detected', 'unknown_transmission', 'mission_available'];
+
+const SIGNAL_DETECTED_FALLBACKS = [
+  '🟢 *SIGNAL DETECTED*\nA wallet just aped into something unusual... will it send?',
+  '🟢 *SIGNAL DETECTED*\nSomething just moved on-chain. Feels like more than noise...',
+  '🟢 *SIGNAL DETECTED*\nActivity just spiked. Could be nothing. Could be something.',
+];
+
+async function getRecentSignalSignatures() {
+  const rows = await supabase.select(
+    'signals',
+    '?tx_signature=not.is.null&order=created_at.desc&limit=25&select=tx_signature'
+  );
+  return (rows ?? []).map((r) => r.tx_signature);
+}
+
+async function buildSignalDetectedContent() {
+  const alreadyPostedSignatures = await getRecentSignalSignatures();
+  const transfer = await findNotableTransfer({ alreadyPostedSignatures });
+
+  if (!transfer) {
+    const teaser = SIGNAL_DETECTED_FALLBACKS[Math.floor(Math.random() * SIGNAL_DETECTED_FALLBACKS.length)];
+    return { teaser_text: teaser, reveal_text: null, source: 'synthetic' };
+  }
+
+  let symbol = null;
+  try {
+    symbol = await getTokenSymbol(process.env.TOKEN_MINT);
+  } catch {
+    // non-fatal — falls back to generic wording below
+  }
+
+  const wallet = truncateWallet(transfer.wallet);
+  const amount = formatTokenAmount(transfer.amount);
+  const label = symbol ? `$${symbol}` : 'tokens';
+
+  return {
+    teaser_text: `🟢 *SIGNAL DETECTED*\nWallet \`${wallet}\` just moved ${amount} ${label}. Unusual timing... will it send?`,
+    reveal_text: null,
+    source: 'onchain',
+    tx_signature: transfer.signature,
+    wallet: transfer.wallet,
+    amount_tokens: transfer.amount,
+  };
+}
 
 function buildContent(kind) {
   if (kind === 'signal_detected') {
@@ -55,7 +101,7 @@ function buildReplyMarkup(kind, signalId) {
 // resulting message_id so /signal can repost the same content into chat.
 export async function createAndPostSignal() {
   const kind = FLAVORS[Math.floor(Math.random() * FLAVORS.length)];
-  const content = buildContent(kind);
+  const content = kind === 'signal_detected' ? await buildSignalDetectedContent() : buildContent(kind);
 
   const [row] = await supabase.insert('signals', [{
     kind,
@@ -65,6 +111,10 @@ export async function createAndPostSignal() {
     hint_2: content.hint_2 ?? null,
     hint_3: content.hint_3 ?? null,
     status: kind === 'mission_available' ? 'resolved' : 'open',
+    source: content.source ?? 'synthetic',
+    tx_signature: content.tx_signature ?? null,
+    wallet: content.wallet ?? null,
+    amount_tokens: content.amount_tokens ?? null,
   }]);
 
   const chatId = process.env.TELEGRAM_CHAT_ID;

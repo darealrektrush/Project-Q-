@@ -42,6 +42,11 @@ export async function getTokenPriceUsd(mint) {
   return result?.token_info?.price_info?.price_per_token ?? null;
 }
 
+export async function getTokenSymbol(mint) {
+  const asset = await heliusRpc('getAsset', { id: mint, displayOptions: { showFungible: true } });
+  return asset?.token_info?.symbol ?? null;
+}
+
 // Aggregates raw token balances by owner across all of their token accounts.
 // Used both for holder counts and as pro-rata weights for Stage 2 payouts.
 export async function getHolderBalances(mint) {
