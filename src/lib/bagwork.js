@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { awardXp } from './xp.js';
 import * as telegram from './telegram.js';
+import * as signal from './signal.js';
 
 const XP_PER_SOL = Number(process.env.XP_PER_SOL ?? 1000);
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
@@ -117,6 +118,16 @@ async function handleBagworkPaid(payload) {
 
   if (matchedUser) {
     await awardXp(matchedUser.id, xpAwarded);
+  }
+
+  if (matchedUser) {
+    const verified = await signal.verifyMostRecentClaim(matchedUser.id);
+    if (verified) {
+      await safeDm(
+        matchedUser.id,
+        `🙋➡️✅ Your "I'm on it" flag just paid off — verified completion bonus: +${verified.bonusXp} XP.`
+      );
+    }
   }
 
   await postPaidAnnouncement({ handle, sol, txSig });

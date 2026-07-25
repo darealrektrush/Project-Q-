@@ -179,6 +179,8 @@ async function handleSignalCallback(callbackQuery) {
     resultText = await signal.handleIgnore(signalId, userId);
   } else if (action?.startsWith('hint_')) {
     resultText = await signal.handleHint(signalId, userId, action);
+  } else if (action === 'claim') {
+    resultText = await signal.handleClaim(signalId, userId);
   }
 
   return telegram.answerCallbackQuery(callbackQuery.id, resultText);

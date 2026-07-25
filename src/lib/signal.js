@@ -9,6 +9,8 @@ const REVEAL_COST_XP = 5;
 const REVEAL_WIN_BONUS_XP = 20; // net +15 on a win, net -5 on a miss
 const REVEAL_WIN_CHANCE = 0.5;
 const HINT_COSTS = { hint_1: 3, hint_2: 5, hint_3: 8 };
+const CLAIM_NUDGE_XP = 3;
+export const MISSION_VERIFIED_BONUS_XP = 25;
 
 const FLAVORS = ['signal_detected', 'unknown_transmission', 'mission_available'];
 
@@ -126,7 +128,14 @@ function buildReplyMarkup(kind, signalId) {
       ]],
     };
   }
-  return undefined; // mission_available is a plain announcement, no buttons
+  if (kind === 'mission_available') {
+    return {
+      inline_keyboard: [[
+        { text: "🙋 I'm on it", callback_data: `signal:claim:${signalId}` },
+      ]],
+    };
+  }
+  return undefined;
 }
 
 // Creates a new signal, posts it to fawkq-announcements, and stores the
@@ -142,7 +151,7 @@ export async function createAndPostSignal() {
     hint_1: content.hint_1 ?? null,
     hint_2: content.hint_2 ?? null,
     hint_3: content.hint_3 ?? null,
-    status: kind === 'mission_available' ? 'resolved' : 'open',
+    status: 'open',
     source: content.source ?? 'synthetic',
     tx_signature: content.tx_signature ?? null,
     wallet: content.wallet ?? null,
@@ -155,10 +164,7 @@ export async function createAndPostSignal() {
   // fawkq-announcements is post-only — no buttons here, they'd never work
   // (the topic guard blocks all interaction there). Reveal/hint/ignore only
   // work on the /signal repost into fawkq-chat, see repostSignalToChat.
-  const announceText =
-    kind === 'mission_available'
-      ? content.teaser_text
-      : `${content.teaser_text}\n\n💬 Head to fawkq-chat and type /signal to act on it.`;
+  const announceText = `${content.teaser_text}\n\n💬 Head to fawkq-chat and type /signal to act on it.`;
   const message = await telegram.sendMessage(chatId, announceText, { threadId });
 
   await supabase.update('signals', `?id=eq.${row.id}`, {
@@ -234,4 +240,41 @@ export async function handleHint(signalId, userId, hintKey) {
   const rows = await supabase.select('signals', `?id=eq.${signalId}&select=${hintKey}`);
   const hintText = rows?.[0]?.[hintKey] ?? 'No hint text available.';
   return `${hintText} (-${cost} XP)`;
+}
+
+export async function handleClaim(signalId, userId) {
+  try {
+    await recordInteraction(signalId, userId, 'claim', CLAIM_NUDGE_XP);
+  } catch {
+    return "You already flagged this one — good luck out there!";
+  }
+  await awardXp(userId, CLAIM_NUDGE_XP);
+  return `🙋 Noted — go handle it. +${CLAIM_NUDGE_XP} XP for showing up. Verified completion pays a bigger bonus once it's actually paid out.`;
+}
+
+// Called from bagwork.js when a real bagwork_paid webhook confirms a payout.
+// Verifies only the user's single most recent unverified "I'm on it" claim —
+// older pending claims are left alone rather than all being swept up at once.
+export async function verifyMostRecentClaim(userId) {
+  const claims = await supabase.select(
+    'signal_interactions',
+    `?user_id=eq.${userId}&action=eq.claim&order=created_at.desc&limit=25&select=signal_id`
+  );
+  if (!claims?.length) return null;
+
+  const verified = await supabase.select(
+    'signal_interactions',
+    `?user_id=eq.${userId}&action=eq.mission_verified&select=signal_id`
+  );
+  const verifiedIds = new Set((verified ?? []).map((v) => v.signal_id));
+  const target = claims.find((c) => !verifiedIds.has(c.signal_id));
+  if (!target) return null;
+
+  try {
+    await recordInteraction(target.signal_id, userId, 'mission_verified', MISSION_VERIFIED_BONUS_XP);
+  } catch {
+    return null; // already verified in a race — no double award
+  }
+  await awardXp(userId, MISSION_VERIFIED_BONUS_XP);
+  return { signalId: target.signal_id, bonusXp: MISSION_VERIFIED_BONUS_XP };
 }
