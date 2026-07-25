@@ -78,6 +78,7 @@ export function buildHomeMenu() {
         { text: '🔗 Official Links', callback_data: 'menu:links' },
       ],
       [
+        { text: '💼 Bag Work', callback_data: 'menu:bagwork' },
         { text: 'ℹ️ About FawkQ', callback_data: 'menu:about' },
       ],
     ],

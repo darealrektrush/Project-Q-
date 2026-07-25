@@ -238,6 +238,8 @@ async function handleCallbackQuery(callbackQuery) {
       return sendOfficialLinks(chatId, threadId);
     case 'menu:about':
       return sendAbout(chatId, threadId);
+    case 'menu:bagwork':
+      return sendBagworkInfo(chatId, threadId);
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
