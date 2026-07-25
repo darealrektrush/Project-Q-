@@ -111,6 +111,19 @@ create table if not exists menu_content (
   updated_at timestamptz not null default now()
 );
 
+-- Twitter Spaces and generic community events (/spaces, Events menu button).
+-- Admins add rows directly via Supabase for now.
+create table if not exists scheduled_events (
+  id bigserial primary key,
+  kind text not null, -- space | event
+  title text not null,
+  description text,
+  link text,
+  starts_at timestamptz not null,
+  cancelled boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 -- Signal mini-game: a posted teaser (signal_detected / unknown_transmission /
 -- mission_available) that members can act on for XP via /signal's buttons.
 create table if not exists signals (

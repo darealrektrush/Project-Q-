@@ -8,6 +8,7 @@ import * as menuContent from './lib/menuContent.js';
 import { supabase } from './lib/supabase.js';
 import * as bagwork from './lib/bagwork.js';
 import * as signal from './lib/signal.js';
+import * as events from './lib/events.js';
 
 const app = express();
 app.use(express.json());
@@ -22,7 +23,6 @@ const STUB_COMMANDS = new Set([
   '/meme',
   '/feed',
   '/ask',
-  '/spaces',
 ]);
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
@@ -137,6 +137,8 @@ async function handleMessage(message) {
       return sendDoorInfo(chatId, threadId);
     case '/signal':
       return sendSignalCommand(chatId, threadId);
+    case '/spaces':
+      return sendSpaces(chatId, threadId);
     default:
       return;
   }
@@ -209,8 +211,13 @@ async function handleCallbackQuery(callbackQuery) {
   switch (callbackQuery.data) {
     case 'menu:market':
       return sendMarket(chatId, threadId);
-    case 'menu:events':
-      return renderMenu(chatId, threadId, 'events', '🗓 *Events* — coming soon.');
+    case 'menu:events': {
+      const text = await events.buildUpcomingText('event', {
+        header: '🗓 *Upcoming Events*',
+        emptyText: '🗓 No events scheduled right now — check back soon.',
+      });
+      return renderMenu(chatId, threadId, 'events', text);
+    }
     case 'menu:map':
       return renderMenu(chatId, threadId, 'map', '🗺 *Community Map* — coming soon.');
     case 'menu:links':
@@ -274,8 +281,9 @@ function sendHelp(chatId, threadId) {
     '/wallets — Live wallet balances',
     '/door — Beyond the Door',
     '/signal — Current Signal (reveal, ignore, or grab hints for XP)',
+    '/spaces — Upcoming Spaces',
     '',
-    '_Coming soon:_ /missions /meme /feed /ask /spaces',
+    '_Coming soon:_ /missions /meme /feed /ask',
     '',
     '/help — Show this list',
   ].join('\n');
@@ -486,6 +494,14 @@ async function sendSignalCommand(chatId, threadId) {
   if (!activeSignal) {
     return telegram.sendMessage(chatId, '📡 No active Signal right now — check back soon.', { threadId });
   }
+}
+
+async function sendSpaces(chatId, threadId) {
+  const text = await events.buildUpcomingText('space', {
+    header: '🎙 *Upcoming Spaces*',
+    emptyText: '🎙 No Spaces scheduled right now — check back soon.',
+  });
+  return renderMenu(chatId, threadId, 'spaces', text);
 }
 
 async function handlePostSignalCommand(message) {
