@@ -71,10 +71,13 @@ export function buildHomeMenu() {
       ],
       [
         { text: '🗓 Events', callback_data: 'menu:events' },
-        { text: '🗺 Community Map', callback_data: 'menu:map' },
+        { text: '🎙 Spaces', callback_data: 'menu:spaces' },
       ],
       [
+        { text: '🗺 Community Map', callback_data: 'menu:map' },
         { text: '🔗 Official Links', callback_data: 'menu:links' },
+      ],
+      [
         { text: 'ℹ️ About FawkQ', callback_data: 'menu:about' },
       ],
     ],

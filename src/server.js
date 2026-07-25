@@ -230,6 +230,8 @@ async function handleCallbackQuery(callbackQuery) {
       });
       return renderMenu(chatId, threadId, 'events', text);
     }
+    case 'menu:spaces':
+      return sendSpaces(chatId, threadId);
     case 'menu:map':
       return renderMenu(chatId, threadId, 'map', '🗺 *Community Map* — coming soon.');
     case 'menu:links':
