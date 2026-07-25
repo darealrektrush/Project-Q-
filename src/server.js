@@ -240,6 +240,22 @@ async function handleCallbackQuery(callbackQuery) {
       return sendAbout(chatId, threadId);
     case 'menu:bagwork':
       return sendBagworkInfo(chatId, threadId);
+    case 'menu:money': {
+      const content = await menuContent.getMenuContent('money');
+      const text = content?.bio_text ||
+        '👁 *Eyes On The Money* — real-time wallet balances, reward splits, and distribution receipts. Pick a section:';
+      const replyMarkup = telegram.buildMoneyMenu();
+      if (content?.media_file_id) {
+        return telegram.sendPhoto(chatId, content.media_file_id, text, { threadId, replyMarkup });
+      }
+      return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
+    }
+    case 'menu:money:rewards':
+      return sendRewards(chatId, threadId);
+    case 'menu:money:receipts':
+      return sendReceipts(chatId, threadId);
+    case 'menu:money:wallets':
+      return sendWallets(chatId, threadId);
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();

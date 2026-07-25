@@ -79,6 +79,9 @@ export function buildHomeMenu() {
       ],
       [
         { text: '💼 Bag Work', callback_data: 'menu:bagwork' },
+        { text: '👁 Eyes On The Money', callback_data: 'menu:money' },
+      ],
+      [
         { text: 'ℹ️ About FawkQ', callback_data: 'menu:about' },
       ],
     ],
@@ -91,6 +94,20 @@ export function buildLeaderboardMenu() {
       [
         { text: '🏆 Leaderboard', callback_data: 'menu:leaderboard:xp' },
         { text: '🏗 Bag Workers', callback_data: 'menu:leaderboard:bagwork' },
+      ],
+    ],
+  };
+}
+
+export function buildMoneyMenu() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '💰 Rewards', callback_data: 'menu:money:rewards' },
+        { text: '🧾 Receipts', callback_data: 'menu:money:receipts' },
+      ],
+      [
+        { text: '💳 Wallets', callback_data: 'menu:money:wallets' },
       ],
     ],
   };

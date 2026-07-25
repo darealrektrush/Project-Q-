@@ -6,6 +6,7 @@ const EDITABLE_KEYS = [
   ['help', 'Help'],
   ['market', 'Market'],
   ['leaderboard', 'Leaderboard'],
+  ['money', 'Eyes On The Money'],
   ['events', 'Events'],
   ['map', 'Community Map'],
   ['links', 'Official Links'],
