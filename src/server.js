@@ -435,8 +435,8 @@ async function sendWallets(chatId, threadId) {
   ].filter(([, address]) => address);
 
   const supplyWallets = [
-    ['Andrew (Co-Founder)', process.env.ANDREW_COFOUNDER_WALLET_PUBLIC],
-    ['Thomas (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
+    ['asoberspartan (Co-Founder)', process.env.ANDREW_COFOUNDER_WALLET_PUBLIC],
+    ['darealrektrush (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
   const [solOnlyBalances, supplySolBalances] = await Promise.all([
