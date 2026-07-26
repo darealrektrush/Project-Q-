@@ -127,7 +127,8 @@ export function getTopicId(name) {
   return parseTopicIds()[name];
 }
 
-const REQUIRED_TOPICS = ['fawkq-chat', 'fawkq-announcements'];
+const REQUIRED_TOPICS = ['fawkq-chat', 'fawkq-announcements', 'fawkq-bagwork'];
+const INTERACTIVE_TOPICS = new Set(['fawkq-chat', 'fawkq-bagwork']);
 
 // Logs loudly at startup if TELEGRAM_TOPIC_IDS is missing/malformed, so a
 // misconfigured env var shows up in Render's logs immediately instead of
@@ -138,20 +139,34 @@ export function validateTopicIds() {
   if (missing.length) {
     console.error(
       `[telegram] TELEGRAM_TOPIC_IDS is misconfigured — missing or invalid: ${missing.join(', ')}. ` +
-        `Expected "fawkq-chat:<id>,fawkq-announcements:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
+        `Expected "fawkq-chat:<id>,fawkq-announcements:<id>,fawkq-bagwork:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
     );
     return false;
   }
   return true;
 }
 
-// Only two forum topics are recognized: fawkq-chat (interactive) and
-// fawkq-announcements (post-only). Anything else — including threadless
-// updates and DMs — is dropped by the caller.
+// Three forum topics are recognized: fawkq-chat and fawkq-bagwork are
+// interactive, fawkq-announcements is post-only. Anything else — including
+// threadless updates and DMs — is dropped by the caller.
 export function guardTopic(threadId) {
   const topics = parseTopicIds();
   const entry = Object.entries(topics).find(([, id]) => id === threadId);
   if (!entry) return { allowed: false, topic: null, interactive: false };
   const [topic] = entry;
-  return { allowed: true, topic, interactive: topic === 'fawkq-chat' };
+  return { allowed: true, topic, interactive: INTERACTIVE_TOPICS.has(topic) };
+}
+
+// Markdown-safe mention. Prefer tg://user?id= when the numeric id is known —
+// it pings reliably and survives username changes. Fall back to @handle with
+// Markdown escaped: underscores are legal in usernames and would otherwise
+// italicise the rest of the message.
+export function mention(handle, userId) {
+  const safe = String(handle).replace(/([_*`[\]])/g, '\\$1');
+  return userId ? `[@${safe}](tg://user?id=${userId})` : `@${safe}`;
+}
+
+export function botDeepLink(payload) {
+  const name = process.env.TELEGRAM_BOT_USERNAME;
+  return name ? `https://t.me/${name}?start=${payload}` : null;
 }

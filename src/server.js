@@ -83,10 +83,12 @@ async function handleMessage(message) {
     return admin.handlePendingEditMessage(message);
   }
 
-  // First-payout feedback replies arrive as a DM (no thread id), so this
-  // must be checked before the topic guard below would otherwise drop it.
-  if (bagwork.hasPendingFeedback(message.from.id)) {
-    return bagwork.handleFeedbackReply(message);
+  // First-payout feedback replies arrive as a DM or a reply in fawkq-bagwork,
+  // so this must be checked before the topic guard below would otherwise
+  // drop it.
+  const feedbackPrompt = await bagwork.getPendingFeedback(message.from.id);
+  if (bagwork.isFeedbackReply(message, feedbackPrompt)) {
+    return bagwork.handleFeedbackReply(message, feedbackPrompt);
   }
 
   if (eventsAdmin.hasPendingAddEvent(chatId, message.from.id)) {
@@ -94,6 +96,28 @@ async function handleMessage(message) {
   }
 
   if (!message.text) return; // non-text, non-pending messages are ignored
+
+  // The bot lives in topics, but the bagwork feedback deep link
+  // (t.me/<bot>?start=bwfeedback) deliberately opens a DM. Handle private
+  // chats here so a member who taps the button never hits silence — and so
+  // their numeric id gets recorded, which is what makes future DMs possible
+  // at all.
+  if (message.chat.type === 'private') {
+    await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
+    const privateText = message.text.trim();
+    const startPayload = privateText.startsWith('/start')
+      ? privateText.split(/\s+/)[1] ?? null
+      : null;
+
+    if (startPayload === 'bwfeedback') {
+      return bagwork.handleFeedbackDeepLink(message);
+    }
+    return telegram.sendMessage(
+      message.chat.id,
+      '👋 I live in the FawkQ group — find me in fawkq-chat.',
+      {}
+    );
+  }
 
   const guard = telegram.guardTopic(threadId);
   if (!guard.allowed || !guard.interactive) return;

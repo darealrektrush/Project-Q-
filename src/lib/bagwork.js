@@ -11,7 +11,14 @@ const TASKS_CACHE_TTL_MS = 5 * 60 * 1000;
 let tasksCache = null; // { data, expires }
 
 const FEEDBACK_TTL_MS = 24 * 60 * 60 * 1000;
-const pendingFeedback = new Map(); // userId -> { expires }
+
+const FEEDBACK_QUESTIONS = [
+  'Two quick questions on your first paid piece:',
+  '1. Was the rate fair for the work?',
+  '2. Was anything about the process confusing?',
+  '',
+  'One message is fine.',
+].join('\n');
 
 function normalizeHandle(raw) {
   if (!raw) return null;
@@ -61,21 +68,40 @@ async function postPaidAnnouncement({ handle, sol, txSig }) {
   }
 }
 
-async function sendFirstPayoutFeedbackAsk(userId) {
-  pendingFeedback.set(userId, { expires: Date.now() + FEEDBACK_TTL_MS });
-  const text = [
-    '🎉 Congrats on your first paid bag work piece!',
-    '',
-    'Two quick questions — reply here, one message is fine:',
-    '1. Was the rate fair for the work?',
-    '2. Was anything about the process confusing?',
-  ].join('\n');
-  try {
-    await telegram.sendMessage(userId, text, {});
-  } catch (err) {
-    console.error(`bagwork: failed to DM first-payout feedback ask to ${userId}`, err);
-    pendingFeedback.delete(userId);
+async function postToBagwork(text, replyMarkup) {
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const threadId = telegram.getTopicId('fawkq-bagwork');
+  if (!chatId || !Number.isFinite(threadId)) {
+    console.error('bagwork: fawkq-bagwork topic not configured; skipping post');
+    return null;
   }
+  try {
+    return await telegram.sendMessage(chatId, text, { threadId, replyMarkup });
+  } catch (err) {
+    console.error('bagwork: failed to post to fawkq-bagwork', err);
+    return null;
+  }
+}
+
+async function sendFirstPayoutFeedbackAsk({ telegramHandle, userId }) {
+  const link = telegram.botDeepLink('bwfeedback');
+  const sent = await postToBagwork(
+    [
+      `🎉 ${telegram.mention(telegramHandle, userId)} — first paid piece. Two questions:`,
+      '1. Was the rate fair for the work?',
+      '2. Was anything about the process confusing?',
+      '_Reply to this message, or answer privately with the button._',
+    ].join('\n'),
+    link ? { inline_keyboard: [[{ text: '✍️ Answer privately', url: link }]] } : undefined
+  );
+  if (!sent || !userId) return;
+  await supabase.upsert('bagwork_feedback_prompts', [{
+    user_id: userId,
+    chat_id: sent.chat.id,
+    prompt_message_id: sent.message_id,
+    expires_at: new Date(Date.now() + FEEDBACK_TTL_MS).toISOString(),
+    answered_at: null,
+  }], 'user_id');
 }
 
 // The site is the source of truth for tasks/judging/payouts — the bot never
@@ -132,8 +158,8 @@ async function handleBagworkPaid(payload) {
 
   await postPaidAnnouncement({ handle, sol, txSig });
 
-  if (matchedUser && isFirstPayout) {
-    await sendFirstPayoutFeedbackAsk(matchedUser.id);
+  if (isFirstPayout) {
+    await sendFirstPayoutFeedbackAsk({ telegramHandle, userId: matchedUser?.id ?? null });
   }
 
   return { duplicate: false, matchedUser: !!matchedUser, xpAwarded };
@@ -144,17 +170,22 @@ async function handleBagworkPaid(payload) {
 async function handleBagworkClearance(payload) {
   const telegramHandle = normalizeHandle(payload.telegram);
   if (!telegramHandle) return { skipped: true }; // self-reported field; skip when null/unknown
-
-  const matchedUser = await matchTelegramUser(telegramHandle);
-  if (!matchedUser) return { skipped: true };
+  const matchedUser = await matchTelegramUser(telegramHandle); // may be null — that's fine now
 
   if (payload.status === 'cleared') {
-    await safeDm(matchedUser.id, `✅ You're cleared, go make something! ${FAWKQ_BAGWORK_URL}`);
-  } else if (payload.status === 'denied') {
+    await postToBagwork(
+      [
+        `✅ ${telegram.mention(telegramHandle, matchedUser?.id)} — you're cleared.`,
+        'Go make something. Flat rate, no caps, quality is the only gate.',
+      ].join('\n'),
+      { inline_keyboard: [[{ text: '💼 Open Bag Work', url: FAWKQ_BAGWORK_URL }]] }
+    );
+  } else if (payload.status === 'denied' && matchedUser) {
+    // Never public. If the DM can't be delivered the site's status page
+    // carries the reason.
     const reason = payload.feedback ? `: ${payload.feedback}` : '.';
     await safeDm(matchedUser.id, `Your bagwork application wasn't cleared this time${reason}`);
   }
-
   return { skipped: false };
 }
 
@@ -171,30 +202,67 @@ export async function handleBagworkEvent(payload) {
   }
 }
 
-export function hasPendingFeedback(userId) {
-  const entry = pendingFeedback.get(userId);
-  if (!entry) return false;
-  if (Date.now() > entry.expires) {
-    pendingFeedback.delete(userId);
-    return false;
-  }
-  return true;
+export async function getPendingFeedback(userId) {
+  const rows = await supabase.select(
+    'bagwork_feedback_prompts',
+    `?user_id=eq.${userId}&answered_at=is.null&select=*`
+  );
+  const row = rows?.[0];
+  if (!row || Date.now() > new Date(row.expires_at).getTime()) return null;
+  return row;
 }
 
-export async function handleFeedbackReply(message) {
-  const userId = message.from.id;
-  if (!hasPendingFeedback(userId)) return;
-  if (!message.text) return;
+// Only consume a message as feedback when it's unambiguous — otherwise a
+// member with an open prompt has their normal chat swallowed.
+export function isFeedbackReply(message, prompt) {
+  if (!prompt || !message.text) return false;
+  if (message.chat.type === 'private') return true;
+  return message.reply_to_message?.message_id === prompt.prompt_message_id;
+}
 
-  pendingFeedback.delete(userId);
+export async function handleFeedbackReply(message, prompt) {
+  const userId = message.from.id;
+  const text = message.text.trim();
+  const isPrivate = message.chat.type === 'private';
+
+  // The deep-link button arrives as "/start bwfeedback" — that's the member
+  // showing up to answer, not the answer. Re-ask and leave the prompt open.
+  if (text.startsWith('/start')) {
+    if (isPrivate) await safeDm(userId, FEEDBACK_QUESTIONS);
+    return;
+  }
+
   await supabase.insert('bagwork_feedback', [
     {
       user_id: userId,
       telegram: message.from.username ?? null,
-      reply_text: message.text.trim(),
+      reply_text: text,
+      source: isPrivate ? 'dm' : 'fawkq-bagwork',
     },
   ]);
-  return telegram.sendMessage(userId, 'Thanks for the feedback — logged for the team. 🙏', {});
+
+  // Mark answered rather than deleting the row: a late second message must
+  // not reopen the prompt, and the founders can see when it closed.
+  await supabase.update(
+    'bagwork_feedback_prompts',
+    `?user_id=eq.${userId}`,
+    { answered_at: new Date().toISOString() }
+  );
+
+  const thanks = 'Thanks for the feedback — logged for the team. 🙏';
+  if (isPrivate) return safeDm(userId, thanks);
+  return telegram.sendMessage(message.chat.id, thanks, {
+    threadId: message.message_thread_id,
+  });
+}
+
+export async function handleFeedbackDeepLink(message) {
+  const userId = message.from.id;
+  const prompt = await getPendingFeedback(userId);
+  if (!prompt) {
+    return safeDm(userId, 'Nothing open on my end right now — thanks for stopping by. 🙏');
+  }
+  return safeDm(userId, FEEDBACK_QUESTIONS);
 }
 
 // Top of the Bag Workers leaderboard (see bagwork_leaderboard view) — ranked

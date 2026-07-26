@@ -63,13 +63,25 @@ create table if not exists bagwork_payouts (
   created_at timestamptz not null default now()
 );
 
--- Replies to the first-payout feedback DM ask, for founders to read.
+-- Replies to the first-payout feedback ask, for founders to read.
 create table if not exists bagwork_feedback (
   id bigserial primary key,
   user_id bigint references users(id),
   telegram text,
   reply_text text not null,
+  source text,
   created_at timestamptz not null default now()
+);
+
+-- Tracks the open first-payout feedback prompt per user, so a reply can be
+-- matched back to it (DM, or an explicit reply-to in fawkq-bagwork).
+create table if not exists bagwork_feedback_prompts (
+  user_id           bigint primary key,
+  chat_id           bigint not null,
+  prompt_message_id bigint not null,
+  created_at        timestamptz not null default now(),
+  expires_at        timestamptz not null,
+  answered_at       timestamptz
 );
 
 create table if not exists feed_posts (
