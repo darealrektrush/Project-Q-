@@ -63,6 +63,21 @@ create table if not exists bagwork_payouts (
   created_at timestamptz not null default now()
 );
 
+-- Clearance idempotency. Dedup key is handle + status, per the webhook
+-- contract. Only a delivered verdict sets notified_at, so a skipped
+-- delivery stays re-runnable if the creator later joins the group.
+create table if not exists bagwork_clearances (
+  id          bigserial primary key,
+  handle      text not null,              -- lowercase, no @
+  status      text not null,              -- cleared | denied
+  telegram    text,
+  user_id     bigint references users(id),
+  outcome     text not null,              -- posted | dm | skipped_no_telegram | skipped_unmatched | post_failed
+  notified_at timestamptz,
+  created_at  timestamptz not null default now(),
+  unique (handle, status)
+);
+
 -- Replies to the first-payout feedback ask, for founders to read.
 create table if not exists bagwork_feedback (
   id bigserial primary key,
@@ -73,16 +88,23 @@ create table if not exists bagwork_feedback (
   created_at timestamptz not null default now()
 );
 
--- Tracks the open first-payout feedback prompt per user, so a reply can be
--- matched back to it (DM, or an explicit reply-to in fawkq-bagwork).
+-- Tracks the open first-payout feedback prompt per creator, so a reply can be
+-- matched back to it (DM, or an explicit reply-to in fawkq-bagwork). Keyed by
+-- user_id when the creator has a linked Telegram account, otherwise by
+-- telegram_handle — exactly one of the two is required, never neither.
 create table if not exists bagwork_feedback_prompts (
-  user_id           bigint primary key,
+  id                bigserial primary key,
+  user_id           bigint unique,
+  telegram_handle   text unique,
   chat_id           bigint not null,
   prompt_message_id bigint not null,
   created_at        timestamptz not null default now(),
   expires_at        timestamptz not null,
-  answered_at       timestamptz
+  answered_at       timestamptz,
+  constraint bagwork_feedback_prompts_subject_ck
+    check (user_id is not null or telegram_handle is not null)
 );
+alter table bagwork_feedback_prompts enable row level security;
 
 create table if not exists feed_posts (
   id bigserial primary key,
@@ -205,3 +227,19 @@ returns setof users as $$
         updated_at = now()
   returning *;
 $$ language sql;
+
+-- Recorded, not acted on: tier already carries the payout decision (a
+-- TikTok submission still comes through tagged tier:"video").
+alter table bagwork_payouts add column if not exists platform text;
+
+-- RLS on with no policies: the bot connects with the service role key and
+-- bypasses RLS entirely; every other role gets nothing.
+alter table bagwork_events            enable row level security;
+alter table bagwork_payouts           enable row level security;
+alter table bagwork_feedback          enable row level security;
+alter table bagwork_feedback_prompts  enable row level security;
+alter table bagwork_clearances        enable row level security;
+
+-- The leaderboard view must not read through bagwork_payouts' RLS as the
+-- definer; force it to run as whoever's actually querying it.
+alter view bagwork_leaderboard set (security_invoker = on);

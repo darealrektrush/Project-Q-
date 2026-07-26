@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { awardXp } from './xp.js';
+import { awardXp, ensureUser } from './xp.js';
 import * as telegram from './telegram.js';
 import * as signal from './signal.js';
 
@@ -26,11 +26,15 @@ function normalizeHandle(raw) {
   return trimmed || null;
 }
 
+// Returns whether the DM actually landed, so callers that must not silently
+// "succeed" on a failed delivery (clearance) can react to it.
 async function safeDm(userId, text) {
   try {
     await telegram.sendMessage(userId, text, {});
+    return true;
   } catch (err) {
     console.error(`bagwork: failed to DM user ${userId}`, err);
+    return false;
   }
 }
 
@@ -57,10 +61,40 @@ async function hasPriorPayout(telegramHandle) {
   return (rows?.length ?? 0) > 0;
 }
 
-async function postPaidAnnouncement({ handle, sol, txSig }) {
+// Dedup on handle + status (see bagwork_clearances). Looks up whatever row
+// already exists for this exact verdict, delivered or not.
+async function findClearance(handle, status) {
+  const rows = await supabase.select(
+    'bagwork_clearances',
+    `?handle=eq.${encodeURIComponent(handle)}&status=eq.${encodeURIComponent(status)}&select=id,notified_at`
+  );
+  return rows?.[0] ?? null;
+}
+
+// Swallows its own error deliberately: if this bookkeeping write fails after
+// the member has already been told, returning non-200 would make the site
+// resend and tell them twice. Losing the dedup row is the cheaper failure.
+async function recordClearance(row) {
+  try {
+    await supabase.upsert('bagwork_clearances', [row], 'handle,status');
+  } catch (err) {
+    console.error('bagwork: failed to record clearance', err);
+  }
+}
+
+// An X handle is not a Telegram username — Telegram autolinks any @word
+// regardless of parse mode, so rendering one as text pings whoever owns
+// that name on Telegram. inertHandle keeps every payout announcement safe
+// even when the piece can't be matched to a real member.
+async function postPaidAnnouncement({ handle, sol, txSig, platform }) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const threadId = telegram.getTopicId('fawkq-announcements');
-  const text = ['🧾 *Bag Work Paid*', `@${handle} — ${sol} SOL`, `https://solscan.io/tx/${txSig}`].join('\n');
+  const suffix = platform && platform !== 'x' ? ` (${telegram.escapeMarkdown(platform)})` : '';
+  const text = [
+    '🧾 *Bag Work Paid*',
+    `${telegram.inertHandle(handle)} — ${sol} SOL${suffix}`,
+    `https://solscan.io/tx/${txSig}`,
+  ].join('\n');
   try {
     await telegram.sendMessage(chatId, text, { threadId });
   } catch (err) {
@@ -113,6 +147,9 @@ async function handleBagworkPaid(payload) {
   const tier = payload.tier;
   const sol = Number(payload.sol);
   const txSig = payload.tx_sig;
+  // Recorded, not acted on: tier already carries the payout decision (a
+  // TikTok submission still comes through tagged tier:"video").
+  const platform = payload.platform ? String(payload.platform).trim().toLowerCase() : null;
 
   if (!submissionId || !handle || !tier || !Number.isFinite(sol) || sol < 0 || !txSig) {
     throw new Error('invalid bagwork_paid payload');
@@ -124,6 +161,9 @@ async function handleBagworkPaid(payload) {
   }
 
   const matchedUser = telegramHandle ? await matchTelegramUser(telegramHandle) : null;
+  // Deliberately gated on matchedUser: telegram is self-reported, so without
+  // a numeric id there is nobody safe to ask. fawkq.com owns unmatched
+  // creators — the bot can only ever ask members it can actually address.
   const isFirstPayout = telegramHandle && matchedUser ? !(await hasPriorPayout(telegramHandle)) : false;
   const xpAwarded = matchedUser ? Math.round(sol * XP_PER_SOL) : 0;
 
@@ -137,6 +177,7 @@ async function handleBagworkPaid(payload) {
       sol,
       tx_sig: txSig,
       post_url: payload.post_url ?? null,
+      platform,
       xp_awarded: xpAwarded,
       paid_at: payload.paid_at ?? new Date().toISOString(),
     },
@@ -156,7 +197,7 @@ async function handleBagworkPaid(payload) {
     }
   }
 
-  await postPaidAnnouncement({ handle, sol, txSig });
+  await postPaidAnnouncement({ handle, sol, txSig, platform });
 
   if (isFirstPayout) {
     await sendFirstPayoutFeedbackAsk({ telegramHandle, userId: matchedUser?.id ?? null });
@@ -167,26 +208,63 @@ async function handleBagworkPaid(payload) {
 
 // Creators apply for bagwork eligibility BEFORE making content; this is the
 // approve/deny decision on that application, separate from a paid piece.
+// Dedup key is handle + status: only a *delivered* verdict burns the key, so
+// a silent skip (no_telegram / unmatched) stays re-runnable if the site
+// resends after the creator finally joins the group.
 async function handleBagworkClearance(payload) {
-  const telegramHandle = normalizeHandle(payload.telegram);
-  if (!telegramHandle) return { skipped: true }; // self-reported field; skip when null/unknown
-  const matchedUser = await matchTelegramUser(telegramHandle); // may be null — that's fine now
+  const handle = normalizeHandle(payload.handle);
+  const status = payload.status;
+  if (!handle || (status !== 'cleared' && status !== 'denied')) {
+    throw new Error('invalid bagwork_clearance payload');
+  }
 
-  if (payload.status === 'cleared') {
-    await postToBagwork(
+  const prior = await findClearance(handle, status);
+  if (prior?.notified_at) return { duplicate: true };
+
+  const telegramHandle = normalizeHandle(payload.telegram);
+  const matchedUser = telegramHandle ? await matchTelegramUser(telegramHandle) : null;
+  const base = { handle, status, telegram: telegramHandle, user_id: matchedUser?.id ?? null };
+
+  if (!telegramHandle) {
+    await recordClearance({ ...base, outcome: 'skipped_no_telegram', notified_at: null });
+    return { skipped: true, reason: 'no_telegram' };
+  }
+  if (!matchedUser) {
+    // Self-reported handle we've never seen in the group. Tagging it would
+    // ping a stranger, so fawkq.com owns telling this creator instead.
+    await recordClearance({ ...base, outcome: 'skipped_unmatched', notified_at: null });
+    return { skipped: true, reason: 'unmatched' };
+  }
+
+  if (status === 'cleared') {
+    const sent = await postToBagwork(
       [
-        `✅ ${telegram.mention(telegramHandle, matchedUser?.id)} — you're cleared.`,
+        `✅ ${telegram.mention(telegramHandle, matchedUser.id)} — you're cleared.`,
         'Go make something. Flat rate, no caps, quality is the only gate.',
       ].join('\n'),
       { inline_keyboard: [[{ text: '💼 Open Bag Work', url: FAWKQ_BAGWORK_URL }]] }
     );
-  } else if (payload.status === 'denied' && matchedUser) {
+    if (!sent) {
+      await recordClearance({ ...base, outcome: 'post_failed', notified_at: null });
+      return { skipped: true, reason: 'post_failed' };
+    }
+  } else {
     // Never public. If the DM can't be delivered the site's status page
     // carries the reason.
     const reason = payload.feedback ? `: ${payload.feedback}` : '.';
-    await safeDm(matchedUser.id, `Your bagwork application wasn't cleared this time${reason}`);
+    const delivered = await safeDm(matchedUser.id, `Your bagwork application wasn't cleared this time${reason}`);
+    if (!delivered) {
+      await recordClearance({ ...base, outcome: 'post_failed', notified_at: null });
+      return { skipped: true, reason: 'dm_failed' };
+    }
   }
-  return { skipped: false };
+
+  await recordClearance({
+    ...base,
+    outcome: status === 'cleared' ? 'posted' : 'dm',
+    notified_at: new Date().toISOString(),
+  });
+  return { skipped: false, duplicate: false };
 }
 
 // Routes on the event field; unknown event types are ignored so the site can
@@ -225,12 +303,14 @@ export async function handleFeedbackReply(message, prompt) {
   const text = message.text.trim();
   const isPrivate = message.chat.type === 'private';
 
-  // The deep-link button arrives as "/start bwfeedback" — that's the member
-  // showing up to answer, not the answer. Re-ask and leave the prompt open.
   if (text.startsWith('/start')) {
     if (isPrivate) await safeDm(userId, FEEDBACK_QUESTIONS);
     return;
   }
+
+  // bagwork_feedback.user_id has a FK to users(id); the DM path is the only
+  // one that can reach here without users already having a row for them.
+  await ensureUser(userId, message.from.username ?? null);
 
   await supabase.insert('bagwork_feedback', [
     {
@@ -241,8 +321,6 @@ export async function handleFeedbackReply(message, prompt) {
     },
   ]);
 
-  // Mark answered rather than deleting the row: a late second message must
-  // not reopen the prompt, and the founders can see when it closed.
   await supabase.update(
     'bagwork_feedback_prompts',
     `?user_id=eq.${userId}`,
@@ -265,15 +343,10 @@ export async function handleFeedbackDeepLink(message) {
   return safeDm(userId, FEEDBACK_QUESTIONS);
 }
 
-// Top of the Bag Workers leaderboard (see bagwork_leaderboard view) — ranked
-// by total SOL earned across paid pieces, keyed by X handle so it stays
-// complete even for creators with no matched Telegram account.
 export function getBagworkLeaderboard(limit = 10) {
   return supabase.select('bagwork_leaderboard', `?order=total_sol.desc&limit=${limit}`);
 }
 
-// Fetches the site's live task list for the /bagwork command, with a short
-// cache and a static fallback if the site is unreachable.
 export async function getBagworkTasks() {
   if (tasksCache && Date.now() < tasksCache.expires) {
     return tasksCache.data;

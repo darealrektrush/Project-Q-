@@ -157,13 +157,23 @@ export function guardTopic(threadId) {
   return { allowed: true, topic, interactive: INTERACTIVE_TOPICS.has(topic) };
 }
 
-// Markdown-safe mention. Prefer tg://user?id= when the numeric id is known —
-// it pings reliably and survives username changes. Fall back to @handle with
-// Markdown escaped: underscores are legal in usernames and would otherwise
-// italicise the rest of the message.
+// Escapes Telegram "Markdown" (v1) control characters. Underscores are legal
+// in both X and Telegram handles and would otherwise italicise the rest of the
+// message — or make Telegram reject the entire send with a parse error.
+export function escapeMarkdown(text) {
+  return String(text ?? '').replace(/([_*`\[\]])/g, '\\$1');
+}
+
 export function mention(handle, userId) {
-  const safe = String(handle).replace(/([_*`[\]])/g, '\\$1');
-  return userId ? `[@${safe}](tg://user?id=${userId})` : `@${safe}`;
+  const label = escapeMarkdown(handle);
+  return userId ? `[@${label}](tg://user?id=${userId})` : `@${label}`;
+}
+
+// An X handle is not a Telegram username. Telegram autolinks any @name
+// regardless of parse mode, so rendering one as text pings whoever owns that
+// name in here. A code span keeps it readable and inert.
+export function inertHandle(handle) {
+  return `\`@${String(handle ?? '').replace(/`/g, '')}\``;
 }
 
 export function botDeepLink(payload) {

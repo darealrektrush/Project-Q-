@@ -86,9 +86,14 @@ async function handleMessage(message) {
   // First-payout feedback replies arrive as a DM or a reply in fawkq-bagwork,
   // so this must be checked before the topic guard below would otherwise
   // drop it.
-  const feedbackPrompt = await bagwork.getPendingFeedback(message.from.id);
-  if (bagwork.isFeedbackReply(message, feedbackPrompt)) {
-    return bagwork.handleFeedbackReply(message, feedbackPrompt);
+  // Only a private message or an explicit reply can be feedback. Without this
+  // guard every sticker, join and message in every topic costs a DB round trip.
+  const maybeFeedback =
+    Boolean(message.text) &&
+    (message.chat.type === 'private' || Boolean(message.reply_to_message));
+  const prompt = maybeFeedback ? await bagwork.getPendingFeedback(message.from.id) : null;
+  if (bagwork.isFeedbackReply(message, prompt)) {
+    return bagwork.handleFeedbackReply(message, prompt);
   }
 
   if (eventsAdmin.hasPendingAddEvent(chatId, message.from.id)) {
@@ -372,7 +377,9 @@ async function sendMarket(chatId, threadId) {
 
 async function buildLeaderboardText() {
   const rows = await xp.getLeaderboard(10);
-  const lines = rows.map((r, i) => `${i + 1}. ${r.username ?? r.id} — ${r.xp} XP`);
+  const lines = rows.map(
+    (r, i) => `${i + 1}. ${telegram.escapeMarkdown(r.username ?? r.id)} — ${r.xp} XP`
+  );
   return ['🏆 *Leaderboard*', ...(lines.length ? lines : ['No entries yet.'])].join('\n');
 }
 
@@ -412,7 +419,9 @@ async function sendBagworkInfo(chatId, threadId) {
 
 async function buildBagworkboardText() {
   const rows = await bagwork.getBagworkLeaderboard(10);
-  const lines = (rows ?? []).map((r, i) => `${i + 1}. @${r.handle} — ${r.total_sol} SOL (${r.pieces} pieces)`);
+  const lines = (rows ?? []).map(
+    (r, i) => `${i + 1}. ${telegram.inertHandle(r.handle)} — ${r.total_sol} SOL (${r.pieces} pieces)`
+  );
   return ['🏗 *Bag Workers Leaderboard*', ...(lines.length ? lines : ['No paid pieces yet.'])].join('\n');
 }
 
