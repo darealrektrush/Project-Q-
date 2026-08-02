@@ -32,12 +32,32 @@ function formatRecap({ totalLamports, stage1, stage2 }) {
   ].join('\n');
 }
 
+async function alertFailure({ runId, stage, err }) {
+  try {
+    const message = [
+      `🚨 *Distribution run #${runId} failed*${stage ? ` in Stage ${stage}` : ''}`,
+      telegram.escapeMarkdown(String(err?.message ?? err)),
+      '',
+      `Check \`distribution_transactions\` for \`run_id=${runId}\` to see what already landed on-chain before retrying.`,
+    ].join('\n');
+    await telegram.sendMessage(process.env.TELEGRAM_CHAT_ID, message, {
+      threadId: telegram.getTopicId('fawkq-announcements'),
+    });
+  } catch (alertErr) {
+    console.error('failed to send distribution failure alert', alertErr);
+  }
+}
+
 async function main() {
   const connection = solana.getConnection();
   const creatorKeypair = solana.keypairFromSecret(process.env.CREATOR_WALLET_SECRET);
   const communityKeypair = solana.keypairFromSecret(process.env.COMMUNITY_WALLET_SECRET);
 
   const reserveLamports = Number(process.env.DISTRIBUTION_RESERVE_LAMPORTS ?? 5_000_000);
+  // Mirrors the creator-wallet reserve above: Stage 2 pays its own network
+  // fees out of what it just received from Stage 1, so it can't redistribute
+  // 100% of that amount without eventually running dry on fees.
+  const stage2ReserveLamports = Number(process.env.STAGE2_RESERVE_LAMPORTS ?? 5_000_000);
   const balance = await connection.getBalance(creatorKeypair.publicKey);
   const totalLamports = Math.max(0, balance - reserveLamports);
 
@@ -48,8 +68,10 @@ async function main() {
 
   const [run] = await supabase.insert('distribution_runs', [{ total_lamports: totalLamports, status: 'started' }]);
   const runId = run.id;
+  let currentStage = null;
 
   try {
+    currentStage = 1;
     const stage1 = await runStage1({
       connection,
       creatorKeypair,
@@ -62,15 +84,18 @@ async function main() {
 
     const holderBalances = await solana.getHolderBalances(process.env.TOKEN_MINT);
 
+    currentStage = 2;
+    const communityLamports = Math.max(0, stage1.split.community - stage2ReserveLamports);
     const stage2 = await runStage2({
       connection,
       communityKeypair,
-      communityLamports: stage1.split.community,
+      communityLamports,
       bagWallet: process.env.BAG_WALLET_PUBLIC,
       buybackWallet: process.env.BUYBACK_RESERVE_WALLET_PUBLIC,
       holderBalances,
       runId,
     });
+    currentStage = null;
 
     await supabase.update('distribution_runs', `?id=eq.${runId}`, {
       status: 'completed',
@@ -85,7 +110,10 @@ async function main() {
     await supabase.update('distribution_runs', `?id=eq.${runId}`, {
       status: 'failed',
       completed_at: new Date().toISOString(),
+      error_message: String(err?.message ?? err).slice(0, 2000),
+      failed_stage: currentStage,
     });
+    await alertFailure({ runId, stage: currentStage, err });
     throw err;
   }
 }

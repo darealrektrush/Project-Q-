@@ -36,11 +36,9 @@ app.get('/version', (req, res) =>
 );
 
 app.post('/webhook', async (req, res) => {
-  if (TELEGRAM_WEBHOOK_SECRET) {
-    const header = req.get('x-telegram-bot-api-secret-token');
-    if (header !== TELEGRAM_WEBHOOK_SECRET) {
-      return res.sendStatus(401);
-    }
+  const header = req.get('x-telegram-bot-api-secret-token');
+  if (!TELEGRAM_WEBHOOK_SECRET || header !== TELEGRAM_WEBHOOK_SECRET) {
+    return res.sendStatus(401);
   }
 
   // Ack immediately — Telegram expects a fast response and will retry otherwise.

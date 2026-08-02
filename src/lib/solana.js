@@ -88,7 +88,7 @@ export async function getTokenBalanceForOwner(mint, owner) {
 // when there are more transfers than fit in one (e.g. holder payouts).
 // Returns one entry per transaction sent, so callers can log which transfers
 // landed in which signature.
-export async function sendLamportTransfers({ connection, fromKeypair, transfers, chunkSize = MAX_TRANSFERS_PER_TX }) {
+export async function sendLamportTransfers({ connection, fromKeypair, transfers, chunkSize = MAX_TRANSFERS_PER_TX, onBatch }) {
   const batches = [];
   const validTransfers = transfers.filter((t) => t.lamports > 0);
 
@@ -113,7 +113,11 @@ export async function sendLamportTransfers({ connection, fromKeypair, transfers,
     const signature = await connection.sendRawTransaction(tx.serialize());
     await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
 
-    batches.push({ signature, transfers: chunk });
+    const batch = { signature, transfers: chunk };
+    batches.push(batch);
+    // Persist each batch as it lands, so a later batch throwing doesn't lose
+    // the record of transfers that already confirmed on-chain.
+    if (onBatch) await onBatch(batch);
   }
 
   return batches;

@@ -121,7 +121,10 @@ create table if not exists distribution_runs (
   total_lamports bigint not null,
   status text not null default 'started', -- started | completed | failed
   started_at timestamptz not null default now(),
-  completed_at timestamptz
+  completed_at timestamptz,
+  network text not null default 'mainnet', -- mainnet | devnet — tags test runs so they're distinguishable from real ones
+  error_message text, -- caught error's message, set only when status = 'failed'
+  failed_stage smallint -- 1 or 2: which stage was in flight when it failed; null if it failed before/after both
 );
 
 create table if not exists distribution_transactions (
@@ -231,6 +234,12 @@ $$ language sql;
 -- Recorded, not acted on: tier already carries the payout decision (a
 -- TikTok submission still comes through tagged tier:"video").
 alter table bagwork_payouts add column if not exists platform text;
+
+-- Failure diagnostics for distribution_runs, added after the table was
+-- already live — see jobs/distribute.js and src/lib/splitRewards.js.
+alter table distribution_runs add column if not exists network text not null default 'mainnet';
+alter table distribution_runs add column if not exists error_message text;
+alter table distribution_runs add column if not exists failed_stage smallint;
 
 -- RLS on with no policies: the bot connects with the service role key and
 -- bypasses RLS entirely; every other role gets nothing.

@@ -93,12 +93,15 @@ export async function runStage1({
     { to: oceanWallet, lamports: split.ocean, role: 'ocean' },
   ];
 
-  const batches = await sendLamportTransfers({ connection, fromKeypair: creatorKeypair, transfers });
-  const transactions = await logTransactions({
-    runId,
-    stage: 1,
-    fromWallet: creatorKeypair.publicKey.toBase58(),
-    batches,
+  const fromWallet = creatorKeypair.publicKey.toBase58();
+  const transactions = [];
+  const batches = await sendLamportTransfers({
+    connection,
+    fromKeypair: creatorKeypair,
+    transfers,
+    onBatch: async (batch) => {
+      transactions.push(...(await logTransactions({ runId, stage: 1, fromWallet, batches: [batch] })));
+    },
   });
 
   return { split, batches, transactions };
@@ -122,12 +125,15 @@ export async function runStage2({
     ...holderPayouts.map((h) => ({ to: h.wallet, lamports: h.amount, role: 'holder' })),
   ];
 
-  const batches = await sendLamportTransfers({ connection, fromKeypair: communityKeypair, transfers });
-  const transactions = await logTransactions({
-    runId,
-    stage: 2,
-    fromWallet: communityKeypair.publicKey.toBase58(),
-    batches,
+  const fromWallet = communityKeypair.publicKey.toBase58();
+  const transactions = [];
+  const batches = await sendLamportTransfers({
+    connection,
+    fromKeypair: communityKeypair,
+    transfers,
+    onBatch: async (batch) => {
+      transactions.push(...(await logTransactions({ runId, stage: 2, fromWallet, batches: [batch] })));
+    },
   });
 
   return { split, holderPayouts, batches, transactions };

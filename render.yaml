@@ -75,6 +75,8 @@ services:
         sync: false
       - key: DISTRIBUTION_RESERVE_LAMPORTS
         sync: false
+      - key: STAGE2_RESERVE_LAMPORTS
+        sync: false
 
   - type: cron
     name: project-q-signal

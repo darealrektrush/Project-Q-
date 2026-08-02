@@ -198,14 +198,17 @@ async function recordInteraction(signalId, userId, action, xpDelta) {
 }
 
 export async function handleReveal(signalId, userId) {
+  const id = Number(signalId);
+  if (!Number.isInteger(id) || id <= 0) return 'Invalid signal.';
+
   try {
-    await recordInteraction(signalId, userId, 'reveal', -REVEAL_COST_XP);
+    await recordInteraction(id, userId, 'reveal', -REVEAL_COST_XP);
   } catch {
     return 'You already revealed this Signal.';
   }
   await awardXp(userId, -REVEAL_COST_XP);
 
-  const rows = await supabase.select('signals', `?id=eq.${signalId}&select=source,wallet,amount_tokens`);
+  const rows = await supabase.select('signals', `?id=eq.${id}&select=source,wallet,amount_tokens`);
   const signal = rows?.[0];
   const detail = signal?.source === 'onchain'
     ? `Wallet ${truncateWallet(signal.wallet)} moved ${formatTokenAmount(signal.amount_tokens)} tokens. `
@@ -229,15 +232,18 @@ export async function handleIgnore(signalId, userId) {
 }
 
 export async function handleHint(signalId, userId, hintKey) {
+  const id = Number(signalId);
+  if (!Number.isInteger(id) || id <= 0) return 'Invalid signal.';
+
   const cost = HINT_COSTS[hintKey];
   try {
-    await recordInteraction(signalId, userId, hintKey, -cost);
+    await recordInteraction(id, userId, hintKey, -cost);
   } catch {
     return 'You already bought this hint.';
   }
   await awardXp(userId, -cost);
 
-  const rows = await supabase.select('signals', `?id=eq.${signalId}&select=${hintKey}`);
+  const rows = await supabase.select('signals', `?id=eq.${id}&select=${hintKey}`);
   const hintText = rows?.[0]?.[hintKey] ?? 'No hint text available.';
   return `${hintText} (-${cost} XP)`;
 }
