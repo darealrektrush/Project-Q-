@@ -80,7 +80,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 
 | # | Site | Submit page | Notes | Done | Vote / listing URL |
 |---|------|-------------|-------|------|--------------------|
-| 1 | top100token.com | /add-coin | Voting board; verify via their TG bot | ☐ | `TODO` |
+| 1 | top100token.com | /add-coin | Voting board; verify via their TG bot | ☑ | https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 2 | coinvote.cc | /submit | Vote-driven trending | ☐ | `TODO` |
 | 3 | coinmooner.com | /submit | Vote daily to trend | ☐ | `TODO` |
 | 4 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☐ | `TODO` |
@@ -120,7 +120,7 @@ takes holders 60 seconds, and it's what pushes FAWK Q up the trending boards.
 
 Tap each, hit VOTE (some ask a quick captcha):
 
-1  top100token   → TODO
+1  top100token   → https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump
 2  coinvote      → TODO
 3  coinmooner    → TODO
 4  cntoken       → TODO
