@@ -4,8 +4,35 @@ import { runStage1, runStage2 } from '../src/lib/splitRewards.js';
 import { supabase } from '../src/lib/supabase.js';
 import * as telegram from '../src/lib/telegram.js';
 import { formatDistributionTweet, tryPostTweet } from '../src/lib/twitter.js';
-
 const lamportsToSol = solana.lamportsToSol;
+const MIN_DISTRIBUTION_INTERVAL_MS = 72 * 60 * 60 * 1000;
+const FIRST_DISTRIBUTION_TIME = new Date('2026-08-04T14:00:00-07:00'); // Aug 4, 2026 2:00 PM Pacific Time (PDT/UTC-7); every 72h after that
+// Cron schedules are calendar-based and can't express a true rolling "every
+// 72 hours" (render.yaml runs this check every 3h). This guard makes the
+// actual 72h interval real: it skips the run unless that much time has
+// genuinely elapsed since the last completed distribution.
+async function hasMinIntervalElapsed() {
+  if (Date.now() < FIRST_DISTRIBUTION_TIME.getTime()) {
+    console.log(`Skipping distribution: first scheduled run is ${FIRST_DISTRIBUTION_TIME.toISOString()}, not yet reached.`);
+    return false;
+  }
+
+  const [lastRun] = await supabase.select(
+    'distribution_runs',
+    '?status=eq.completed&order=completed_at.desc&limit=1'
+  );
+  if (!lastRun?.completed_at) return true;
+
+  const elapsedMs = Date.now() - new Date(lastRun.completed_at).getTime();
+  if (elapsedMs >= MIN_DISTRIBUTION_INTERVAL_MS) return true;
+
+  const hoursElapsed = (elapsedMs / 3_600_000).toFixed(1);
+  const hoursLeft = ((MIN_DISTRIBUTION_INTERVAL_MS - elapsedMs) / 3_600_000).toFixed(1);
+  console.log(
+    `Skipping distribution — last completed run was ${hoursElapsed}h ago; ${hoursLeft}h remaining until the next 72h window.`
+  );
+  return false;
+}
 
 function solscanTxUrl(signature) {
   return `https://solscan.io/tx/${signature}`;
@@ -74,6 +101,7 @@ async function alertFailure({ runId, stage, err }) {
 }
 
 async function main() {
+  if (!(await hasMinIntervalElapsed())) return;
   const connection = solana.getConnection();
   const creatorKeypair = solana.keypairFromSecret(process.env.CREATOR_WALLET_SECRET);
   const communityKeypair = solana.keypairFromSecret(process.env.COMMUNITY_WALLET_SECRET);
