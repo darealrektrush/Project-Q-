@@ -51,7 +51,7 @@ same things — this pack has them all in the shapes forms want.
 
 **Tagline (~60 chars):**
 
-> The CrabStar community. No spin, just receipts.
+> Every wallet public, every reward on-chain. No spin, just receipts.
 
 **Medium (~280 chars):**
 

@@ -7,7 +7,7 @@ the receipts and the ocean angle everywhere.
 
 Tagline (~60):
 
-> The CrabStar community. No spin, just receipts.
+> Every wallet public, every reward on-chain. No spin, just receipts.
 
 Ready-to-paste description (short):
 
