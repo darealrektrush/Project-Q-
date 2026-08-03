@@ -53,25 +53,29 @@ same things — this pack has them all in the shapes forms want.
 
 > The CrabStar community. No spin, just receipts.
 
-**Short (~200 chars):**
+**Medium (~280 chars):**
 
-> FAWK Q ($FAWKQ) — real-time transparency on Solana. Pro-rata SOL
-> distributions to holders, every reward posted on-chain with tx links (75%
-> community / 15% dev / 10% ocean). Earn SOL through the Bagwork program.
+> FAWK Q ($FAWKQ) — full transparency on Solana. Pro-rata SOL distributions to
+> holders, every reward on-chain with tx links (75% community / 15% dev / 10%
+> ocean). All wallets and both founders' supplies are public. Earn SOL via the
+> Bagwork program. Receipts for everything.
 
 **Short (tight, ~150 chars — for forms with strict limits):**
 
-> FAWK Q ($FAWKQ): pro-rata SOL distributions to holders, on-chain receipts
-> (75/15/10 community/dev/ocean) + the Bagwork program to earn SOL. On Solana.
+> FAWK Q ($FAWKQ): pro-rata SOL distributions to holders, public wallets +
+> founder supplies, 75/15/10 split, Bagwork to earn SOL. On Solana.
 
 **Long (paragraph):**
 
 > FAWK Q is the community's eyes on the money. Real-time price, holder counts,
 > wallet balances, and every reward distribution posted on-chain with tx links
-> the second it happens. The split is fixed and public: 75% back to the
-> community, 15% dev, and 10% straight to ocean conservation. A live Telegram
-> bot surfaces the receipts so nobody has to take anyone's word for it. No spin,
-> just receipts — signal activated, the noise ends here.
+> the second it happens. Rewards go out pro-rata in SOL to holders, and the
+> split is fixed and public: 75% back to the community, 15% dev, and 10%
+> straight to ocean conservation. Every wallet — including both founders' token
+> supplies — is public, and the Bagwork program lets the community earn SOL for
+> contributing. A live Telegram bot surfaces the receipts so nobody has to take
+> anyone's word for it. No spin, just receipts — signal activated, the noise
+> ends here.
 
 ---
 

@@ -15,7 +15,8 @@ Ready-to-paste description (short):
 > holder counts, wallet balances, and every reward distribution posted on-chain
 > with tx links the second it happens. Pro-rata SOL distributions to holders,
 > 75% back to the community, 15% dev, 10% to ocean conservation — plus the
-> Bagwork program to earn SOL. No spin, just receipts.
+> Bagwork program to earn SOL. All wallets and both founders' supplies are
+> public. No spin, just receipts for everything.
 
 Fill these in once and reuse everywhere:
 
