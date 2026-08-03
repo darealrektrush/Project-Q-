@@ -13,8 +13,9 @@ Ready-to-paste description (short):
 
 > **FAWK Q ($FAWKQ)** — The CrabStar community. Real-time price,
 > holder counts, wallet balances, and every reward distribution posted on-chain
-> with tx links the second it happens. 75% back to the community, 15% dev, 10%
-> to ocean conservation. No spin, just receipts.
+> with tx links the second it happens. Pro-rata SOL distributions to holders,
+> 75% back to the community, 15% dev, 10% to ocean conservation — plus the
+> Bagwork program to earn SOL. No spin, just receipts.
 
 Fill these in once and reuse everywhere:
 

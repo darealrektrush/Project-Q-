@@ -53,10 +53,16 @@ same things — this pack has them all in the shapes forms want.
 
 > The CrabStar community. No spin, just receipts.
 
-**Short (~160 chars):**
+**Short (~200 chars):**
 
-> FAWK Q ($FAWKQ) posts every reward on-chain with tx links — 75% community,
-> 15% dev, 10% ocean conservation. Real-time transparency on Solana.
+> FAWK Q ($FAWKQ) — real-time transparency on Solana. Pro-rata SOL
+> distributions to holders, every reward posted on-chain with tx links (75%
+> community / 15% dev / 10% ocean). Earn SOL through the Bagwork program.
+
+**Short (tight, ~150 chars — for forms with strict limits):**
+
+> FAWK Q ($FAWKQ): pro-rata SOL distributions to holders, on-chain receipts
+> (75/15/10 community/dev/ocean) + the Bagwork program to earn SOL. On Solana.
 
 **Long (paragraph):**
 
