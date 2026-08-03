@@ -20,19 +20,27 @@ same things — this pack has them all in the shapes forms want.
 | Project name | FAWK Q |
 | Ticker / symbol | FAWKQ |
 | Chain / network | Solana |
-| Contract (mint) address | `TODO: paste mint address` |
-| Website | https://fawkq.com |
-| X / Twitter | `TODO: https://x.com/____` |
-| Telegram | `TODO: https://t.me/____` |
+| Contract (mint) address | `GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump` |
+| Website | https://fawkq.com/ |
+| X / Twitter | https://x.com/FawkQCoin |
+| Telegram | https://t.me/fawkQc |
 | Discord | — (none) |
 | Logo | `TODO: square PNG, transparent bg, ≥256×256` |
-| Total supply | `TODO: number` |
+| Total supply | `1,000,000,000` (pump.fun standard — confirm on Solscan) |
 | Launch date | `TODO: YYYY-MM-DD` |
-| DEX Screener / pair URL | `TODO: https://dexscreener.com/solana/____` |
-| DEX to buy on | Raydium |
+| DEX Screener / pair URL | https://dexscreener.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
+| DEX to buy on | pump.fun |
 | Category / tags | Meme, Community, Solana, Transparency |
 | Contact email | darealrektrush@gmail.com |
 | KYC / Audit | — (optional; leave blank) |
+
+> **pump.fun note.** FAWK Q trades on pump.fun (the `...pump` mint suffix). If
+> it hasn't **migrated/graduated to Raydium** yet, a few sites and especially
+> **CoinGecko/CoinMarketCap** may hold off until there's a Raydium (or other
+> AMM) pool with steady liquidity/volume. The 23 sites below still accept
+> pump.fun tokens — just be ready to re-run the CG/CMC applications after
+> migration. DEX Screener already tracks the pump.fun pair, so that listing
+> works today.
 
 ### Description variants (forms ask for different lengths)
 
