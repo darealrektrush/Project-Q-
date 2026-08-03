@@ -36,7 +36,7 @@ same things — this pack has them all in the shapes forms want.
 
 > **pump.fun status: still on the bonding curve (not yet graduated).** FAWK Q
 > hasn't migrated to Raydium yet, so:
-> - **Do the 23 vote-board sites now** — they accept bonding-curve pump.fun tokens.
+> - **Do the 22 vote-board sites now** — they accept bonding-curve pump.fun tokens.
 > - **Wait on CoinGecko + CoinMarketCap** until graduation. Both effectively
 >   require a graduated AMM pool (Raydium/etc.) with real, sustained liquidity
 >   and volume; applying pre-graduation just gets rejected. Re-run those the day
@@ -69,7 +69,9 @@ same things — this pack has them all in the shapes forms want.
 
 ---
 
-## Site Checklist (23)
+## Site Checklist (22)
+
+> _coinvote.cc was removed from this list at the owner's request._
 
 For each: open the "Submit / Add Coin" page, paste from Master Data, upload the
 logo, complete CAPTCHA/verification, then submit. Where a site has **voting**,
@@ -81,28 +83,27 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | # | Site | Submit page | Notes | Done | Vote / listing URL |
 |---|------|-------------|-------|------|--------------------|
 | 1 | top100token.com | /add-coin | Voting board; verify via their TG bot | ☑ | https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
-| 2 | coinvote.cc | /submit | Vote-driven trending | ☐ | `TODO` |
-| 3 | coinmooner.com | /submit | Vote daily to trend | ☐ | `TODO` |
-| 4 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☐ | `TODO` |
-| 5 | gemfinder.cc | /submit-coin | Vote board | ☐ | `TODO` |
-| 6 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
-| 7 | moontok.io | /submit | Vote board | ☐ | `TODO` |
-| 8 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `TODO` |
-| 9 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☐ | `TODO` |
-| 10 | coinhunt.cc | /submit | Vote board | ☐ | `TODO` |
-| 11 | coinsgem.com | /submit | Vote board | ☐ | `TODO` |
-| 12 | coinmoonhunt.com | /submit | Vote board | ☐ | `TODO` |
-| 13 | coinxhigh.com | /submit | Vote board | ☐ | `TODO` |
-| 14 | coinalpha.app | /submit | Discovery feed | ☐ | `TODO` |
-| 15 | cointoplist.net | /add-coin | Directory listing | ☐ | `TODO` |
-| 16 | rugfreecoins.com | /submit | "Rug-free" angle — lean on your transparency story | ☐ | `TODO` |
-| 17 | coincatapult.com | /submit-coin | Directory + promo upsell | ☐ | `TODO` |
-| 18 | coinbusters.cc | /submit | Vote board | ☐ | `TODO` |
-| 19 | coinbazooka.com | /submit | Vote board | ☐ | `TODO` |
-| 20 | cryptach.org | /en/add | Directory listing | ☐ | `TODO` |
-| 21 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
-| 22 | moontok.com | /submit | (Check vs #7 moontok.io — may be a mirror) | ☐ | `TODO` |
-| 23 | gempump.io | /submit | Vote board | ☐ | `TODO` |
+| 2 | coinmooner.com | /submit | Vote daily to trend | ☐ | `TODO` |
+| 3 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☐ | `TODO` |
+| 4 | gemfinder.cc | /submit-coin | Vote board | ☐ | `TODO` |
+| 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
+| 6 | moontok.io | /submit | Vote board | ☐ | `TODO` |
+| 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `TODO` |
+| 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☐ | `TODO` |
+| 9 | coinhunt.cc | /submit | Vote board | ☐ | `TODO` |
+| 10 | coinsgem.com | /submit | Vote board | ☐ | `TODO` |
+| 11 | coinmoonhunt.com | /submit | Vote board | ☐ | `TODO` |
+| 12 | coinxhigh.com | /submit | Vote board | ☐ | `TODO` |
+| 13 | coinalpha.app | /submit | Discovery feed | ☐ | `TODO` |
+| 14 | cointoplist.net | /add-coin | Directory listing | ☐ | `TODO` |
+| 15 | rugfreecoins.com | /submit | "Rug-free" angle — lean on your transparency story | ☐ | `TODO` |
+| 16 | coincatapult.com | /submit-coin | Directory + promo upsell | ☐ | `TODO` |
+| 17 | coinbusters.cc | /submit | Vote board | ☐ | `TODO` |
+| 18 | coinbazooka.com | /submit | Vote board | ☐ | `TODO` |
+| 19 | cryptach.org | /en/add | Directory listing | ☐ | `TODO` |
+| 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
+| 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
+| 22 | gempump.io | /submit | Vote board | ☐ | `TODO` |
 
 > Submit-page paths above are the common patterns; if one 404s, use the site's
 > "Submit / Add Coin / List Your Token" button on the homepage.
@@ -121,28 +122,27 @@ takes holders 60 seconds, and it's what pushes FAWK Q up the trending boards.
 Tap each, hit VOTE (some ask a quick captcha):
 
 1  top100token   → https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump
-2  coinvote      → TODO
-3  coinmooner    → TODO
-4  cntoken       → TODO
-5  gemfinder     → TODO
-6  coinscope     → TODO
-7  moontok       → TODO
-8  coindiscovery → TODO
-9  freshcoins    → TODO
-10 coinhunt      → TODO
-11 coinsgem      → TODO
-12 coinmoonhunt  → TODO
-13 coinxhigh     → TODO
-14 coinalpha     → TODO
-15 cointoplist   → TODO
-16 rugfreecoins  → TODO
-17 coincatapult  → TODO
-18 coinbusters   → TODO
-19 coinbazooka   → TODO
-20 cryptach      → TODO
-21 coinsgods     → TODO
-22 moontok.com   → TODO
-23 gempump       → TODO
+2  coinmooner    → TODO
+3  cntoken       → TODO
+4  gemfinder     → TODO
+5  coinscope     → TODO
+6  moontok       → TODO
+7  coindiscovery → TODO
+8  freshcoins    → TODO
+9  coinhunt      → TODO
+10 coinsgem      → TODO
+11 coinmoonhunt  → TODO
+12 coinxhigh     → TODO
+13 coinalpha     → TODO
+14 cointoplist   → TODO
+15 rugfreecoins  → TODO
+16 coincatapult  → TODO
+17 coinbusters   → TODO
+18 coinbazooka   → TODO
+19 cryptach      → TODO
+20 coinsgods     → TODO
+21 moontok.com   → TODO
+22 gempump       → TODO
 
 Votes reset daily — do it every morning ☕
 No spin, just receipts. 👁️ $FAWKQ
@@ -156,7 +156,7 @@ hour), and call out a "vote streak" to keep people doing it.
 
 ## Trending tips (free)
 
-- **Batch it.** Do all 23 in one session with the Master Data block open — most
+- **Batch it.** Do all 22 in one session with the Master Data block open — most
   reuse the exact same fields.
 - **Rally votes.** For vote boards, drop the vote link in your Telegram/X and
   ask holders to vote daily. Coordinated daily votes are what put you on the
@@ -168,7 +168,7 @@ hour), and call out a "vote streak" to keep people doing it.
 
 ## The listings that matter most (do these too — see MARKETING.md)
 
-These 23 are good volume/backlinks, but your highest-value free listings are
+These 22 are good volume/backlinks, but your highest-value free listings are
 still: **DEX Screener** (free info via wallet signature), **Jupiter verified
 list**, **Birdeye**, and applications to **CoinGecko** + **CoinMarketCap**. See
 `MARKETING.md` for those.
