@@ -5,9 +5,13 @@ live, on-chain receipts (75% community / 15% dev / 10% ocean conservation) and a
 transparency bot. "Free advertising" is really *earned attention* — so lead with
 the receipts and the ocean angle everywhere.
 
+Tagline (~60):
+
+> The CrabStar community. No spin, just receipts.
+
 Ready-to-paste description (short):
 
-> **FAWK Q ($FAWKQ)** — The community's eyes on the money. Real-time price,
+> **FAWK Q ($FAWKQ)** — The CrabStar community. Real-time price,
 > holder counts, wallet balances, and every reward distribution posted on-chain
 > with tx links the second it happens. 75% back to the community, 15% dev, 10%
 > to ocean conservation. No spin, just receipts.

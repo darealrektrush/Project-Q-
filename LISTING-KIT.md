@@ -51,7 +51,7 @@ same things — this pack has them all in the shapes forms want.
 
 **Tagline (~60 chars):**
 
-> The community's eyes on the money. No spin, just receipts.
+> The CrabStar community. No spin, just receipts.
 
 **Short (~160 chars):**
 
