@@ -478,26 +478,33 @@ async function sendWallets(chatId, threadId) {
     ['Buyback reserve', process.env.BUYBACK_RESERVE_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
-  // Co-founders' personal wallets are deliberately not shown here — their
-  // supply is tracked via the Streamflow lock section below instead, so
-  // they don't need a second, redundant row.
   const supplyWallets = [
     ['Creator', process.env.CREATOR_WALLET_PUBLIC],
     ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
-  const [solOnlyBalances, supplySolBalances] = await Promise.all([
+  // Co-founders' personal wallets — their own separate section, distinct
+  // from both Token Holdings above (project wallets) and the Streamflow
+  // lock section below (their locked, not personally-held, supply).
+  const founderPersonalWallets = [
+    ['darealrektrush (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
+    ['asoberspartan (Co-Founder)', process.env.ANDREW_COFOUNDER_WALLET_PUBLIC],
+  ].filter(([, address]) => address);
+
+  const [solOnlyBalances, supplySolBalances, founderSolBalances] = await Promise.all([
     Promise.all(solOnlyWallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))),
     Promise.all(supplyWallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))),
+    Promise.all(founderPersonalWallets.map(([, address]) => solana.getWalletBalanceLamports(connection, address))),
   ]);
 
   // Token-supply-held numbers depend on TOKEN_MINT being a real mint;
   // degrade gracefully instead of letting a missing/invalid mint (or a
   // Helius error) silently kill the whole command.
   let supplyTokens = supplyWallets.map(() => null);
+  let founderTokens = founderPersonalWallets.map(() => null);
   let totalSupplyTokens = null;
   let streamflowLockedTokens = streamflowLocks.map(() => null);
-  if (mint && (supplyWallets.length || streamflowLocks.length)) {
+  if (mint && (supplyWallets.length || founderPersonalWallets.length || streamflowLocks.length)) {
     try {
       const { supply, decimals } = await solana.getMintSupplyInfo(mint);
       totalSupplyTokens = supply / 10 ** decimals;
@@ -507,6 +514,13 @@ async function sendWallets(chatId, threadId) {
           supplyWallets.map(([, address]) => solana.getTokenBalanceForOwner(mint, address))
         );
         supplyTokens = rawTokens.map((raw) => raw / 10 ** decimals);
+      }
+
+      if (founderPersonalWallets.length) {
+        const rawFounderTokens = await Promise.all(
+          founderPersonalWallets.map(([, address]) => solana.getTokenBalanceForOwner(mint, address))
+        );
+        founderTokens = rawFounderTokens.map((raw) => raw / 10 ** decimals);
       }
 
       if (streamflowLocks.length) {
@@ -534,6 +548,15 @@ async function sendWallets(chatId, threadId) {
     supplyWallets.forEach(([label], i) => {
       const sol = solana.lamportsToSol(supplySolBalances[i]).toFixed(4);
       const tokens = supplyTokens[i];
+      lines.push(`${label}: ${sol} SOL · ${formatTokens(tokens)} FAWKQ${pctOfSupply(tokens)}`);
+    });
+  }
+
+  if (founderPersonalWallets.length) {
+    lines.push('', '👥 *Founders Personal Supply*');
+    founderPersonalWallets.forEach(([label], i) => {
+      const sol = solana.lamportsToSol(founderSolBalances[i]).toFixed(4);
+      const tokens = founderTokens[i];
       lines.push(`${label}: ${sol} SOL · ${formatTokens(tokens)} FAWKQ${pctOfSupply(tokens)}`);
     });
   }
