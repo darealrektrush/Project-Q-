@@ -63,3 +63,30 @@ test('getHolderBalances drops off-curve owners and keeps real wallets, aggregate
     process.env.HELIUS_API_KEY = originalApiKey;
   }
 });
+
+test('getHolderBalances also drops explicitly excluded wallets, e.g. the project\'s own operational wallets', async () => {
+  const realHolder = Keypair.generate().publicKey.toBase58();
+  const projectWallet = Keypair.generate().publicKey.toBase58();
+  const originalFetch = global.fetch;
+  const originalApiKey = process.env.HELIUS_API_KEY;
+  process.env.HELIUS_API_KEY = 'test-key';
+  global.fetch = async () => ({
+    json: async () => ({
+      result: {
+        token_accounts: [
+          { owner: realHolder, amount: '1000' },
+          { owner: projectWallet, amount: '999999' },
+        ],
+        cursor: undefined,
+      },
+    }),
+  });
+
+  try {
+    const balances = await getHolderBalances('SomeMintAddress', { excludeWallets: [projectWallet] });
+    assert.deepEqual(balances, [{ wallet: realHolder, balance: 1000 }]);
+  } finally {
+    global.fetch = originalFetch;
+    process.env.HELIUS_API_KEY = originalApiKey;
+  }
+});

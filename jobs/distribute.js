@@ -135,7 +135,19 @@ async function main() {
       runId,
     });
 
-    const holderBalances = await solana.getHolderBalances(process.env.TOKEN_MINT);
+    const holderBalances = await solana.getHolderBalances(process.env.TOKEN_MINT, {
+      // These already get their designated cut through the Stage 1/2 split
+      // above — excluded here so they can't also collect a pro-rata share
+      // of the holders' pool that's meant for the actual community.
+      excludeWallets: [
+        process.env.CREATOR_WALLET_PUBLIC,
+        process.env.COMMUNITY_WALLET_PUBLIC,
+        process.env.DEV_WALLET_PUBLIC,
+        process.env.OCEAN_WALLET_PUBLIC,
+        process.env.BAG_WALLET_PUBLIC,
+        process.env.BUYBACK_RESERVE_WALLET_PUBLIC,
+      ],
+    });
 
     currentStage = 2;
     const communityLamports = Math.max(0, stage1.split.community - stage2ReserveLamports);

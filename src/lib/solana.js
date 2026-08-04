@@ -65,9 +65,18 @@ export function isDistributableHolder(address) {
 }
 
 // Aggregates raw token balances by owner across all of their token accounts,
-// excluding non-wallet (program-derived) owners — see isDistributableHolder.
-// Used both for holder counts and as pro-rata weights for Stage 2 payouts.
-export async function getHolderBalances(mint) {
+// excluding non-wallet (program-derived) owners — see isDistributableHolder
+// — and any address in excludeWallets. Used both for holder counts and as
+// pro-rata weights for Stage 2 payouts; callers doing the latter should
+// pass the project's own operational wallets (creator, community, dev,
+// ocean, bag, buyback) here. Those already get their designated cut
+// through the Stage 1/2 percentage split — if one of them also happens to
+// hold tokens, paying it again out of the holders' pool means real
+// community holders split a smaller pool so the project can pay itself
+// twice. Confirmed live: CREATOR_WALLET_PUBLIC held ~8% of FAWKQ's
+// (post-bonding-curve-filter) distributable supply.
+export async function getHolderBalances(mint, { excludeWallets = [] } = {}) {
+  const excluded = new Set(excludeWallets.filter(Boolean));
   const balances = new Map();
   let cursor;
 
@@ -76,6 +85,7 @@ export async function getHolderBalances(mint) {
     for (const account of result?.token_accounts ?? []) {
       const amount = Number(account.amount);
       if (amount <= 0) continue;
+      if (excluded.has(account.owner)) continue;
       if (!isDistributableHolder(account.owner)) continue;
       balances.set(account.owner, (balances.get(account.owner) ?? 0) + amount);
     }
