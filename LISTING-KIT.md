@@ -94,18 +94,18 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 |---|------|-------------|-------|------|--------------------|
 | 1 | top100token.com | /add-coin | Voting board; verify via their TG bot | ☑ | https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 2 | coinmooner.com | /submit | Vote daily to trend | ☐ | `TODO` |
-| 3 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☐ | `TODO` |
-| 4 | gemfinder.cc | /submit-coin | Vote board | ☐ | `TODO` |
+| 3 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☑ | Submitted — pending review |
+| 4 | gemfinder.cc | /submit-coin | Vote board | ☑ | https://gemfinder.cc/gem/29742 |
 | 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
 | 6 | moontok.io | /submit | Vote board | ☐ | `TODO` |
 | 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `TODO` |
 | 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☐ | `TODO` |
-| 9 | coinhunt.cc | /submit | Vote board | ☐ | `TODO` |
+| 9 | coinhunt.cc | /submit | Vote board | ☐ | Deferred — after graduation (needs DEX + launch date) |
 | 10 | coinsgem.com | /submit | Vote board | ☐ | `TODO` |
 | 11 | coinmoonhunt.com | /submit | Vote board | ☐ | `TODO` |
 | 12 | coinxhigh.com | /submit | Vote board | ☐ | `TODO` |
 | 13 | coinalpha.app | /submit | Discovery feed | ☐ | `TODO` |
-| 14 | cointoplist.net | /add-coin | Directory listing | ☐ | `TODO` |
+| 14 | cointoplist.net | /add-coin | Directory listing | ☑ | Submitted — pending approval |
 | 15 | rugfreecoins.com | /submit | "Rug-free" angle — lean on your transparency story | ☐ | `TODO` |
 | 16 | coincatapult.com | /submit-coin | Directory + promo upsell | ☐ | `TODO` |
 | 17 | coinbusters.cc | /submit | Vote board | ☐ | `TODO` |
@@ -113,7 +113,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 19 | cryptach.org | /en/add | Directory listing | ☐ | `TODO` |
 | 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
 | 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
-| 22 | gempump.io | /submit | Vote board | ☐ | `TODO` |
+| 22 | gempump.io | /submit | Vote board | ☐ | Deferred — after graduation (needs start time) |
 | 23 | coinsniper.net | /submit | Popular vote board | ☑ | https://coinsniper.net/coin/92949 |
 | 24 | fomospider.com | /submit | Vote board | ☐ | `TODO` |
 | 25 | coinscout.io | /submit | Directory (confirm exact domain) | ☐ | `TODO` |
