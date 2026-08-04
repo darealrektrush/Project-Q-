@@ -93,7 +93,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | # | Site | Submit page | Notes | Done | Vote / listing URL |
 |---|------|-------------|-------|------|--------------------|
 | 1 | top100token.com | /add-coin | Voting board; verify via their TG bot | ☑ | https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
-| 2 | coinmooner.com | /submit | Vote daily to trend | ☐ | `TODO` |
+| 2 | coinmooner.com | /submit | Vote daily to trend | ☑ | https://coinmooner.com/coins/fawk-q-fawkq |
 | 3 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☑ | Submitted — pending review |
 | 4 | gemfinder.cc | /submit-coin | Vote board | ☑ | https://gemfinder.cc/gem/29742 |
 | 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
