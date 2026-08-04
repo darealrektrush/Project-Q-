@@ -114,24 +114,24 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
 | 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
 | 22 | gempump.io | /submit | Vote board | ☐ | `TODO` |
-| 23 | coinsniper.net | /submit | Popular vote board | ☐ | `TODO` |
+| 23 | coinsniper.net | /submit | Popular vote board | ☑ | https://coinsniper.net/coin/92949 |
 | 24 | fomospider.com | /submit | Vote board | ☐ | `TODO` |
 | 25 | coinscout.io | /submit | Directory (confirm exact domain) | ☐ | `TODO` |
 | 26 | mycoinvote.com | /submit | Vote board | ☐ | `TODO` |
 | 27 | 100xcoinhunt.com | /submit | Vote board | ☐ | `TODO` |
 | 28 | coinmun.com | /submit | Vote board | ☐ | `TODO` |
 | 29 | coinraider.io | /submit | Vote board (confirm exact domain) | ☐ | `TODO` |
-| 30 | coinboom.net | /submit | Vote board | ☐ | `TODO` |
-| 31 | cryptotips4all.com | /submit | Directory | ☐ | `TODO` |
-| 32 | cryptogugu.com | /submit | Vote board | ☐ | `TODO` |
-| 33 | launchbar.pro | /submit | Directory | ☐ | `TODO` |
-| 34 | coinradar.fun | /submit | Directory | ☐ | `TODO` |
+| 30 | coinboom.net | /submit | Vote board | ☑ | https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
+| 31 | cryptotips4all.com | /submit | Directory | ☑ | https://www.cryptotips4all.com/coin/detail/7566 |
+| 32 | cryptogugu.com | /submit | Vote board | ☐ | Submitted — pending site review |
+| 33 | launchbar.pro | /submit | Directory | ☐ | Blocked — requires wallet-connect |
+| 34 | coinradar.fun | /submit | Directory | ☑ | https://coinradar.fun/TokenPage?slug=fawk-q-mse5btl8 |
 | 35 | ntm.ai | /addcoin | ⚠️ Looks PAID (addcoin-payment) — skip unless paying | ☐ | `TODO` |
-| 36 | coingatepad.com | /submit | Directory | ☐ | `TODO` |
-| 37 | cryptocoinlister.com | /submit | Directory | ☐ | `TODO` |
-| 38 | coingem.com | /submit | Directory (≠ coinsgem #10) | ☐ | `TODO` |
-| 39 | coinbuzzer.me | /submit | Vote board | ☐ | `TODO` |
-| 40 | coindizzy.com | /submit | Directory | ☐ | `TODO` |
+| 36 | coingatepad.com | /submit | Directory | ☐ | Blocked — server error, retrying |
+| 37 | cryptocoinlister.com | /submit | Directory | ☑ | https://cryptocoinlister.com/token/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
+| 38 | coingem.com | /submit | Directory (≠ coinsgem #10) | ☐ | Skipped per owner request |
+| 39 | coinbuzzer.me | /submit | Vote board | ☑ | Submitted — vote URL pending re-verification |
+| 40 | coindizzy.com | /submit | Directory | ☑ | https://coindizzy.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 
 > Submit-page paths above are the common patterns; if one 404s, use the site's
 > "Submit / Add Coin / List Your Token" button on the homepage.
@@ -171,23 +171,23 @@ Tap each, hit VOTE (some ask a quick captcha):
 20 coinsgods     → TODO
 21 moontok.com   → TODO
 22 gempump       → TODO
-23 coinsniper    → TODO
+23 coinsniper    → https://coinsniper.net/coin/92949
 24 fomospider    → TODO
 25 coinscout     → TODO
 26 mycoinvote    → TODO
 27 100xcoinhunt  → TODO
 28 coinmun       → TODO
 29 coinraider    → TODO
-30 coinboom      → TODO
-31 cryptotips4all→ TODO
+30 coinboom      → https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump
+31 cryptotips4all→ https://www.cryptotips4all.com/coin/detail/7566
 32 cryptogugu    → TODO
 33 launchbar     → TODO
-34 coinradar     → TODO
+34 coinradar     → https://coinradar.fun/TokenPage?slug=fawk-q-mse5btl8
 35 coingatepad   → TODO
-36 cryptocoinlist→ TODO
+36 cryptocoinlist→ https://cryptocoinlister.com/token/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump
 37 coingem       → TODO
 38 coinbuzzer    → TODO
-39 coindizzy     → TODO
+39 coindizzy     → https://coindizzy.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump
 
 Votes reset daily — do it every morning ☕
 No spin, just receipts. 👁️ $FAWKQ
