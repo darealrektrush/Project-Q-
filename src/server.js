@@ -474,6 +474,7 @@ async function sendWallets(chatId, threadId) {
   const solOnlyWallets = [
     ['Community', process.env.COMMUNITY_WALLET_PUBLIC],
     ['Dev', process.env.DEV_WALLET_PUBLIC],
+    ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
     ['Bag wallet', process.env.BAG_WALLET_PUBLIC],
     ['Buyback reserve', process.env.BUYBACK_RESERVE_WALLET_PUBLIC],
   ].filter(([, address]) => address);
