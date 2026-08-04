@@ -127,7 +127,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 33 | launchbar.pro | /submit | Directory | ☐ | Blocked — requires wallet-connect |
 | 34 | coinradar.fun | /submit | Directory | ☑ | https://coinradar.fun/TokenPage?slug=fawk-q-mse5btl8 |
 | 35 | ntm.ai | /addcoin | ⚠️ Looks PAID (addcoin-payment) — skip unless paying | ☐ | `TODO` |
-| 36 | coingatepad.com | /submit | Directory | ☐ | Blocked — server error, retrying |
+| 36 | coingatepad.com | /submit | Directory | ☑ | https://coingatepad.com/submitted/5019 |
 | 37 | cryptocoinlister.com | /submit | Directory | ☑ | https://cryptocoinlister.com/token/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 38 | coingem.com | /submit | Directory (≠ coinsgem #10) | ☐ | Skipped per owner request |
 | 39 | coinbuzzer.me | /submit | Vote board | ☑ | Submitted — vote URL pending re-verification |
@@ -183,7 +183,7 @@ Tap each, hit VOTE (some ask a quick captcha):
 32 cryptogugu    → TODO
 33 launchbar     → TODO
 34 coinradar     → https://coinradar.fun/TokenPage?slug=fawk-q-mse5btl8
-35 coingatepad   → TODO
+35 coingatepad   → https://coingatepad.com/submitted/5019
 36 cryptocoinlist→ https://cryptocoinlister.com/token/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump
 37 coingem       → TODO
 38 coinbuzzer    → TODO
