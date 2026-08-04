@@ -99,7 +99,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
 | 6 | moontok.io | /submit | Vote board | ☐ | `TODO` |
 | 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `TODO` |
-| 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☐ | `TODO` |
+| 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☑ | https://www.freshcoins.io/coins/fawk-q (pending review) |
 | 9 | coinhunt.cc | /submit | Vote board | ☐ | Deferred — after graduation (needs DEX + launch date) |
 | 10 | coinsgem.com | /submit | Vote board | ☐ | `TODO` |
 | 11 | coinmoonhunt.com | /submit | Vote board | ☐ | `TODO` |
