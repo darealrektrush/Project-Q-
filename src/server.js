@@ -456,16 +456,28 @@ async function sendWallets(chatId, threadId) {
   const connection = solana.getConnection();
   const mint = process.env.TOKEN_MINT;
 
+  // Streamflow Lock contract IDs (metadata accounts, shown in the
+  // Streamflow UI) each have their tokens in a separate underlying token
+  // account rather than the contract ID itself — these env vars point at
+  // those accounts so the balances below are live on-chain reads, not
+  // hardcoded snapshots. darealrektrush's lock contract is
+  // HEnSgGeNoHkiSpwoZaZrRh7jH5hBFhHFv1yCzz9eoQZG (30M FAWKQ, unlocks Sep 3
+  // 2026); asoberspartan's isn't set up yet.
+  const streamflowLocks = [
+    ['darealrektrush (Co-Founder)', process.env.THOMAS_COFOUNDER_STREAMFLOW_LOCK_ACCOUNT],
+    ['asoberspartan (Co-Founder)', process.env.ANDREW_COFOUNDER_STREAMFLOW_LOCK_ACCOUNT],
+  ].filter(([, address]) => address);
+
   const solOnlyWallets = [
-    ['Creator', process.env.CREATOR_WALLET_PUBLIC],
     ['Community', process.env.COMMUNITY_WALLET_PUBLIC],
     ['Dev', process.env.DEV_WALLET_PUBLIC],
-    ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
     ['Bag wallet', process.env.BAG_WALLET_PUBLIC],
     ['Buyback reserve', process.env.BUYBACK_RESERVE_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
   const supplyWallets = [
+    ['Creator', process.env.CREATOR_WALLET_PUBLIC],
+    ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
     ['asoberspartan (Co-Founder)', process.env.ANDREW_COFOUNDER_WALLET_PUBLIC],
     ['darealrektrush (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
   ].filter(([, address]) => address);
@@ -479,17 +491,34 @@ async function sendWallets(chatId, threadId) {
   // degrade gracefully instead of letting a missing/invalid mint (or a
   // Helius error) silently kill the whole command.
   let supplyTokens = supplyWallets.map(() => null);
-  if (mint && supplyWallets.length) {
+  let totalSupplyTokens = null;
+  let streamflowLockedTokens = streamflowLocks.map(() => null);
+  if (mint && (supplyWallets.length || streamflowLocks.length)) {
     try {
-      const decimals = await solana.getMintDecimals(mint);
-      const rawTokens = await Promise.all(
-        supplyWallets.map(([, address]) => solana.getTokenBalanceForOwner(mint, address))
-      );
-      supplyTokens = rawTokens.map((raw) => raw / 10 ** decimals);
+      const { supply, decimals } = await solana.getMintSupplyInfo(mint);
+      totalSupplyTokens = supply / 10 ** decimals;
+
+      if (supplyWallets.length) {
+        const rawTokens = await Promise.all(
+          supplyWallets.map(([, address]) => solana.getTokenBalanceForOwner(mint, address))
+        );
+        supplyTokens = rawTokens.map((raw) => raw / 10 ** decimals);
+      }
+
+      if (streamflowLocks.length) {
+        const rawLocked = await Promise.all(
+          streamflowLocks.map(([, address]) => solana.getTokenAccountRawBalance(connection, address))
+        );
+        streamflowLockedTokens = rawLocked.map((raw) => raw / 10 ** decimals);
+      }
     } catch (err) {
       console.error('sendWallets: failed to fetch token supply data', err);
     }
   }
+
+  const pctOfSupply = (tokens) =>
+    tokens != null && totalSupplyTokens ? ` (${((tokens / totalSupplyTokens) * 100).toFixed(2)}% of supply)` : '';
+  const formatTokens = (tokens) => (tokens != null ? Math.round(tokens).toLocaleString() : 'unavailable');
 
   const lines = [
     '💳 *FawkQ Wallets*',
@@ -497,11 +526,19 @@ async function sendWallets(chatId, threadId) {
   ];
 
   if (supplyWallets.length) {
-    lines.push('', '🤝 *Community & Bagwork Supply Wallets*');
+    lines.push('', '📊 *Token Holdings*');
     supplyWallets.forEach(([label], i) => {
       const sol = solana.lamportsToSol(supplySolBalances[i]).toFixed(4);
-      const tokens = supplyTokens[i] != null ? supplyTokens[i].toLocaleString() : 'unavailable';
-      lines.push(`${label}: ${sol} SOL · ${tokens} supply held`);
+      const tokens = supplyTokens[i];
+      lines.push(`${label}: ${sol} SOL · ${formatTokens(tokens)} FAWKQ${pctOfSupply(tokens)}`);
+    });
+  }
+
+  if (streamflowLocks.length) {
+    lines.push('', '🔒 *Founders Supply Locked (Streamflow)*');
+    streamflowLocks.forEach(([label], i) => {
+      const tokens = streamflowLockedTokens[i];
+      lines.push(`${label}: ${formatTokens(tokens)} FAWKQ${pctOfSupply(tokens)}`);
     });
   }
 

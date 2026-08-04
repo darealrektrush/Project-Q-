@@ -106,11 +106,29 @@ export async function getMintDecimals(mint) {
   return asset?.token_info?.decimals ?? 0;
 }
 
+// Total supply and decimals for a mint in one call — for "X% of supply" math.
+export async function getMintSupplyInfo(mint) {
+  const asset = await heliusRpc('getAsset', { id: mint, displayOptions: { showFungible: true } });
+  return {
+    supply: Number(asset?.token_info?.supply ?? 0),
+    decimals: asset?.token_info?.decimals ?? 0,
+  };
+}
+
 // Sums raw token balance across all of a single owner's accounts for a given mint.
 export async function getTokenBalanceForOwner(mint, owner) {
   const result = await heliusRpc('getTokenAccounts', { mint, owner, limit: 1000 });
   const accounts = result?.token_accounts ?? [];
   return accounts.reduce((sum, a) => sum + Number(a.amount), 0);
+}
+
+// Raw balance of one specific SPL token account address, rather than
+// aggregating by owner — for holdings tracked by a fixed account (e.g. a
+// token-lock/vesting escrow's underlying token account) rather than a
+// wallet with a private key.
+export async function getTokenAccountRawBalance(connection, tokenAccountAddress) {
+  const { value } = await connection.getTokenAccountBalance(new PublicKey(tokenAccountAddress));
+  return Number(value.amount);
 }
 
 // Builds, signs, and sends SOL transfers, batching into multiple transactions

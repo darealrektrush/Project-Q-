@@ -35,6 +35,10 @@ services:
         sync: false
       - key: TOKEN_MINT
         sync: false
+      - key: ANDREW_COFOUNDER_STREAMFLOW_LOCK_ACCOUNT
+        sync: false
+      - key: THOMAS_COFOUNDER_STREAMFLOW_LOCK_ACCOUNT
+        sync: false
 
   - type: cron
     name: project-q-distribute
