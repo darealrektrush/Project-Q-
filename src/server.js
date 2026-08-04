@@ -458,11 +458,14 @@ async function sendWallets(chatId, threadId) {
 
   // Streamflow Lock contract IDs (metadata accounts, shown in the
   // Streamflow UI) each have their tokens in a separate underlying token
-  // account rather than the contract ID itself — these env vars point at
-  // those accounts so the balances below are live on-chain reads, not
-  // hardcoded snapshots. darealrektrush's lock contract is
-  // HEnSgGeNoHkiSpwoZaZrRh7jH5hBFhHFv1yCzz9eoQZG (30M FAWKQ, unlocks Sep 3
-  // 2026); asoberspartan's isn't set up yet.
+  // account (the contract's escrow_tokens field) rather than the contract
+  // ID itself — these env vars point at those accounts, confirmed by
+  // reading escrow_tokens directly out of each contract's own on-chain
+  // data, so the balances below are live on-chain reads, not hardcoded
+  // snapshots. darealrektrush's lock contract is
+  // HEnSgGeNoHkiSpwoZaZrRh7jH5hBFhHFv1yCzz9eoQZG, asoberspartan's is
+  // 5QpTJzXbSxBT2DohA1EdW8UcRog1UtVf6WDcX99JVL87 — both 30,150,000 FAWKQ,
+  // unlocking Sep 3 2026.
   const streamflowLocks = [
     ['darealrektrush (Co-Founder)', process.env.THOMAS_COFOUNDER_STREAMFLOW_LOCK_ACCOUNT],
     ['asoberspartan (Co-Founder)', process.env.ANDREW_COFOUNDER_STREAMFLOW_LOCK_ACCOUNT],

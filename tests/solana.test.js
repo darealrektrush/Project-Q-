@@ -8,15 +8,20 @@ import { isDistributableHolder, getHolderBalances } from '../src/lib/solana.js';
 // regression check: if isDistributableHolder ever stops excluding them, the
 // distribution job goes back to paying the bonding curve instead of holders.
 const PUMP_FUN_BONDING_CURVE = '5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM';
-const TOKEN2022_OWNED_VAULT = '3zs3eEyuP5mfp46wdU9xu7Gz84KWY8drsiRvAkYSTVUH';
+// This is asoberspartan's Streamflow founder-lock escrow_tokens account
+// (confirmed by reading it directly out of the lock contract's on-chain
+// data) — off-curve/Token-2022-owned like the bonding curve, so it must
+// stay excluded from holder payouts for the same reason: paying a locked-
+// supply escrow pro-rata helps no one.
+const FOUNDER_STREAMFLOW_ESCROW = '3zs3eEyuP5mfp46wdU9xu7Gz84KWY8drsiRvAkYSTVUH';
 const KNOWN_REAL_WALLET = '9Dd6tTzkTyHgwprr3fhDzuo7HvZ5aWoRTeGXZLmXEGM9';
 
 test('isDistributableHolder excludes the confirmed pump.fun bonding curve', () => {
   assert.equal(isDistributableHolder(PUMP_FUN_BONDING_CURVE), false);
 });
 
-test('isDistributableHolder excludes a confirmed Token-2022-owned vault account', () => {
-  assert.equal(isDistributableHolder(TOKEN2022_OWNED_VAULT), false);
+test('isDistributableHolder excludes a confirmed founder Streamflow-lock escrow account', () => {
+  assert.equal(isDistributableHolder(FOUNDER_STREAMFLOW_ESCROW), false);
 });
 
 test('isDistributableHolder accepts a confirmed real on-curve wallet', () => {
@@ -44,7 +49,7 @@ test('getHolderBalances drops off-curve owners and keeps real wallets, aggregate
       result: {
         token_accounts: [
           { owner: PUMP_FUN_BONDING_CURVE, amount: '700000000000000' },
-          { owner: TOKEN2022_OWNED_VAULT, amount: '30150000000000' },
+          { owner: FOUNDER_STREAMFLOW_ESCROW, amount: '30150000000000' },
           { owner: realWallet, amount: '1000' },
           // Same real wallet holding across two separate token accounts —
           // should aggregate into one entry.
