@@ -47,7 +47,25 @@ export async function getTokenSymbol(mint) {
   return asset?.token_info?.symbol ?? null;
 }
 
-// Aggregates raw token balances by owner across all of their token accounts.
+// True for addresses a private key could actually control (on the ed25519
+// curve) — false for program-derived addresses, which by construction have
+// no corresponding keypair. Helius's getTokenAccounts reports the bonding
+// curve reserve, AMM/vault accounts, etc. as "holders" exactly like real
+// wallets; a SOL reward sent to one of those helps no one and generally
+// can't be recovered. Confirmed live on FAWKQ's mint: 5 of 33 reported
+// holders were off-curve, together ~79% of tracked supply — almost all of
+// it the pump.fun bonding curve (5DmR2TCR...) plus a couple of matched-
+// balance vault-looking accounts owned by the Token-2022 program.
+export function isDistributableHolder(address) {
+  try {
+    return PublicKey.isOnCurve(new PublicKey(address).toBytes());
+  } catch {
+    return false;
+  }
+}
+
+// Aggregates raw token balances by owner across all of their token accounts,
+// excluding non-wallet (program-derived) owners — see isDistributableHolder.
 // Used both for holder counts and as pro-rata weights for Stage 2 payouts.
 export async function getHolderBalances(mint) {
   const balances = new Map();
@@ -58,6 +76,7 @@ export async function getHolderBalances(mint) {
     for (const account of result?.token_accounts ?? []) {
       const amount = Number(account.amount);
       if (amount <= 0) continue;
+      if (!isDistributableHolder(account.owner)) continue;
       balances.set(account.owner, (balances.get(account.owner) ?? 0) + amount);
     }
     cursor = result?.cursor;
