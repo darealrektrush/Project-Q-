@@ -39,7 +39,10 @@ services:
   - type: cron
     name: project-q-distribute
     runtime: node
-    schedule: "0 17 */3 * *"
+    # Cron can't express a true rolling "every 72h" (day-of-month */3 resets each
+    # month). This runs every 3h; jobs/distribute.js skips the run unless 72
+    # real hours have elapsed since the last completed distribution.
+    schedule: "0 */3 * * *"
     buildCommand: npm install
     startCommand: npm run distribute
     envVars:
