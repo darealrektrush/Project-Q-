@@ -478,11 +478,12 @@ async function sendWallets(chatId, threadId) {
     ['Buyback reserve', process.env.BUYBACK_RESERVE_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
+  // Co-founders' personal wallets are deliberately not shown here — their
+  // supply is tracked via the Streamflow lock section below instead, so
+  // they don't need a second, redundant row.
   const supplyWallets = [
     ['Creator', process.env.CREATOR_WALLET_PUBLIC],
     ['Ocean conservation', process.env.OCEAN_WALLET_PUBLIC],
-    ['asoberspartan (Co-Founder)', process.env.ANDREW_COFOUNDER_WALLET_PUBLIC],
-    ['darealrektrush (Co-Founder)', process.env.THOMAS_COFOUNDER_WALLET_PUBLIC],
   ].filter(([, address]) => address);
 
   const [solOnlyBalances, supplySolBalances] = await Promise.all([
