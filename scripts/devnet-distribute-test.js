@@ -1,9 +1,17 @@
 // Devnet dry run of the REAL Stage 1 / Stage 2 distribution logic
-// (src/lib/splitRewards.js, unmodified). Generates fresh throwaway wallets
-// and a disposable SPL token each run — nothing here touches real wallets,
-// the real TOKEN_MINT, or mainnet. Not wired into package.json on purpose;
-// this is a manual dev tool, re-run it whenever you want to re-verify the
-// distribution path.
+// (src/lib/splitRewards.js, unmodified). Generates a disposable SPL token
+// each run, but the creator/mint-authority funding wallets persist across
+// runs in .devnet-test-wallet.json (gitignored) — nothing here touches real
+// wallets, the real TOKEN_MINT, or mainnet. Not wired into package.json on
+// purpose; this is a manual dev tool, re-run it whenever you want to
+// re-verify the distribution path.
+//
+// The public devnet airdrop faucet is small and shared across everyone
+// hitting api.devnet.solana.com, so it 429s easily. Persisting the funding
+// wallets means you only have to solve that once (top up manually via
+// https://faucet.solana.com if requestAirdrop keeps failing) instead of on
+// every run — the script skips airdropping a wallet that already has
+// enough balance.
 //
 // Holder balances are read directly off the 3 test wallets' token accounts
 // via plain RPC instead of Helius DAS, since src/lib/solana.js's
@@ -15,6 +23,9 @@
 //   node --env-file=.env.local scripts/devnet-distribute-test.js
 //   node --env-file=.env.local scripts/devnet-distribute-test.js --fail-stage2
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Connection, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
 import { runStage1, runStage2 } from '../src/lib/splitRewards.js';
@@ -25,8 +36,53 @@ const FORCE_STAGE2_FAILURE = process.argv.includes('--fail-stage2');
 const STAGE2_RESERVE_LAMPORTS = Number(process.env.STAGE2_RESERVE_LAMPORTS ?? 5_000_000);
 const HOLDER_RATIOS = [500, 300, 200];
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WALLET_FILE = path.join(__dirname, '..', '.devnet-test-wallet.json');
+
+function loadOrCreateFundingWallets() {
+  if (fs.existsSync(WALLET_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(WALLET_FILE, 'utf8'));
+    return {
+      creator: Keypair.fromSecretKey(Uint8Array.from(saved.creator)),
+      mintAuthority: Keypair.fromSecretKey(Uint8Array.from(saved.mintAuthority)),
+      isNew: false,
+    };
+  }
+  const creator = Keypair.generate();
+  const mintAuthority = Keypair.generate();
+  fs.writeFileSync(
+    WALLET_FILE,
+    JSON.stringify(
+      { creator: Array.from(creator.secretKey), mintAuthority: Array.from(mintAuthority.secretKey) },
+      null,
+      2
+    )
+  );
+  return { creator, mintAuthority, isNew: true };
+}
+
 function sol(lamports) {
   return `${(lamports / LAMPORTS_PER_SOL).toFixed(6)} SOL`;
+}
+
+async function ensureFunded(connection, keypair, label, minSols) {
+  const balance = await connection.getBalance(keypair.publicKey);
+  const minLamports = minSols * LAMPORTS_PER_SOL;
+  if (balance >= minLamports) {
+    console.log(`  ${label} already funded: ${sol(balance)} (skipping airdrop)`);
+    return;
+  }
+  console.log(`  ${label} balance ${sol(balance)} < ${minSols} SOL — requesting airdrop...`);
+  try {
+    await airdrop(connection, keypair.publicKey, minSols);
+  } catch (err) {
+    console.error(`  airdrop to ${label} (${keypair.publicKey.toBase58()}) failed: ${err.message}`);
+    console.error(
+      `  Fund it manually at https://faucet.solana.com then re-run — the wallet ` +
+        `persists in ${path.basename(WALLET_FILE)}, so it'll be reused, not regenerated.`
+    );
+    throw err;
+  }
 }
 
 async function airdrop(connection, pubkey, sols) {
@@ -48,17 +104,18 @@ async function main() {
 
   const connection = new Connection(DEVNET_RPC, 'confirmed');
 
-  const creator = Keypair.generate();
+  const { creator, mintAuthority, isNew } = loadOrCreateFundingWallets();
   const community = Keypair.generate();
   const dev = Keypair.generate();
   const ocean = Keypair.generate();
   const bag = Keypair.generate();
   const buyback = Keypair.generate();
   const holders = [Keypair.generate(), Keypair.generate(), Keypair.generate()];
-  const mintAuthority = Keypair.generate();
 
-  console.log('Wallets (devnet, throwaway):');
-  console.log('  creator  ', creator.publicKey.toBase58());
+  console.log(`Funding wallets (${isNew ? 'new, saved to' : 'reused from'} ${path.basename(WALLET_FILE)}):`);
+  console.log('  creator      ', creator.publicKey.toBase58());
+  console.log('  mintAuthority', mintAuthority.publicKey.toBase58());
+  console.log('Throwaway wallets (fresh this run):');
   console.log('  community', community.publicKey.toBase58());
   console.log('  dev      ', dev.publicKey.toBase58());
   console.log('  ocean    ', ocean.publicKey.toBase58());
@@ -66,9 +123,9 @@ async function main() {
   console.log('  buyback  ', buyback.publicKey.toBase58());
   holders.forEach((h, i) => console.log(`  holder${i + 1}  `, h.publicKey.toBase58()));
 
-  console.log('\nAirdropping devnet SOL (creator funds Stage 1 + community; mint authority funds token setup)...');
-  await airdrop(connection, creator.publicKey, 2);
-  await airdrop(connection, mintAuthority.publicKey, 1);
+  console.log('\nChecking devnet SOL funding (creator funds Stage 1 + community; mint authority funds token setup)...');
+  await ensureFunded(connection, creator, 'creator', 2);
+  await ensureFunded(connection, mintAuthority, 'mintAuthority', 1);
 
   console.log('Creating disposable devnet SPL mint and funding holder wallets (ratio 500/300/200)...');
   const mint = await createMint(connection, mintAuthority, mintAuthority.publicKey, null, 0);

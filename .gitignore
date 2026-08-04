@@ -4,3 +4,4 @@ node_modules/
 *.log
 *.swp
 .DS_Store
+.devnet-test-wallet.json
