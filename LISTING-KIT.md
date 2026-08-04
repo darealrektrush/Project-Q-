@@ -107,7 +107,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 13 | coinalpha.app | /submit | Discovery feed | ☐ | `TODO` |
 | 14 | cointoplist.net | /add-coin | Directory listing | ☑ | Submitted — pending approval |
 | 15 | rugfreecoins.com | /submit | "Rug-free" angle — lean on your transparency story | ☐ | Skipped — site not loading/broken |
-| 16 | coincatapult.com | /submit-coin | Directory + promo upsell | ☐ | `TODO` |
+| 16 | coincatapult.com | /submit-coin | Directory + promo upsell | ☑ | https://www.coincatapult.com/coin/fawk-q-fawkq-gknhgb |
 | 17 | coinbusters.cc | /submit | Vote board | ☐ | `TODO` |
 | 18 | coinbazooka.com | /submit | Vote board | ☐ | `TODO` |
 | 19 | cryptach.org | /en/add | Directory listing | ☐ | `TODO` |
