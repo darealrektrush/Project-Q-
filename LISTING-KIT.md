@@ -110,7 +110,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 16 | coincatapult.com | /submit-coin | Directory + promo upsell | ☑ | https://www.coincatapult.com/coin/fawk-q-fawkq-gknhgb |
 | 17 | coinbusters.cc | /submit | Vote board | ☐ | Skipped — site is a dead/parked server (index listing only) |
 | 18 | coinbazooka.com | /submit | Vote board | ☐ | `Skipped — Requires payment ($3 min, no free tier)` |
-| 19 | cryptach.org | /en/add | Directory listing | ☐ | `TODO` |
+| 19 | cryptach.org | /en/add | Directory listing | ☐ | `Deferred — come back later (requires login/registration)` |
 | 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
 | 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
 | 22 | gempump.io | /submit | Vote board | ☐ | Deferred — after graduation (needs start time) |
