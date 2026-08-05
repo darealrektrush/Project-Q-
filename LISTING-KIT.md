@@ -96,8 +96,8 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 2 | coinmooner.com | /submit | Vote daily to trend | ☑ | https://coinmooner.com/coins/fawk-q-fawkq |
 | 3 | cntoken.io | /submit | Wallet-connect may be asked for votes | ☑ | Submitted — pending review |
 | 4 | gemfinder.cc | /submit-coin | Vote board | ☑ | https://gemfinder.cc/gem/29742 |
-| 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `Deferred — logo upload widget not accepting file (technical issue)` |
-| 6 | moontok.io | /submit | Vote board | ☐ | `TODO` |
+| 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
+| 6 | moontok.io | /submit | Vote board | ☐ | `Skipped — no submission form, site auto-indexes DEX pairs (not on pump.fun bonding curve)` |
 | 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `TODO` |
 | 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☑ | https://www.freshcoins.io/coins/fawk-q (pending review) |
 | 9 | coinhunt.cc | /submit | Vote board | ☐ | Deferred — after graduation (needs DEX + launch date) |
