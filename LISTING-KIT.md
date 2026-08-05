@@ -101,7 +101,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `Skipped — site broken (Cloudflare Worker error 1101 on all pages)` |
 | 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☑ | https://www.freshcoins.io/coins/fawk-q (pending review) |
 | 9 | coinhunt.cc | /submit | Vote board | ☐ | Deferred — after graduation (needs DEX + launch date) |
-| 10 | coinsgem.com | /submit | Vote board | ☐ | `TODO` |
+| 10 | coinsgem.com | /submit | Vote board | ☐ | `Skipped — redirects to coingem.com (same owner-request skip as #38)` |
 | 11 | coinmoonhunt.com | /submit | Vote board | ☐ | `TODO` |
 | 12 | coinxhigh.com | /submit | Vote board | ☐ | `TODO` |
 | 13 | coinalpha.app | /submit | Discovery feed | ☐ | `TODO` |
