@@ -1,3 +1,4 @@
+import { PublicKey } from '@solana/web3.js';
 import { sendLamportTransfers } from './solana.js';
 import { supabase } from './supabase.js';
 
@@ -61,6 +62,51 @@ export function computeHolderPayouts(holdersLamports, holders) {
   return holders.map((h, i) => ({ wallet: h.wallet, amount: amounts[i] }));
 }
 
+// Solana rejects any transaction that leaves a touched account with a
+// lamport balance strictly between 0 and the rent-exempt minimum (~0.00089
+// SOL) — a "dust" balance the runtime won't allow to exist. A brand-new/
+// never-funded holder wallet (0 SOL already) whose pro-rata share lands in
+// that gap fails simulation, and since transfers are batched into one
+// transaction, that single bad transfer takes every other holder's payout
+// in the same batch down with it. This is exactly what happened on FawkQ's
+// first real mainnet distribution attempt (run #4, Stage 2: "insufficient
+// funds for rent").
+//
+// Wraps computeHolderPayouts with a live check: excludes only holders
+// whose *existing* balance plus their payout would still land in that gap
+// — an already-funded wallet (balance already >= the minimum) can safely
+// receive any positive top-up, however small, so it's never excluded just
+// because its own share alone happens to be tiny. Excluded holders'
+// share redistributes to the remaining eligible holders (re-running the
+// pro-rata split over a shrunken set only ever increases everyone else's
+// amount, so this can't manufacture a new dust case — one pass suffices).
+export async function computeSafeHolderPayouts(connection, holdersLamports, holders) {
+  let eligible = holders.filter((h) => h.balance > 0);
+  if (!eligible.length) return [];
+
+  const rentExemptMinimum = await connection.getMinimumBalanceForRentExemption(0);
+  const existingBalances = new Map(
+    await Promise.all(
+      eligible.map(async (h) => [h.wallet, await connection.getBalance(new PublicKey(h.wallet))])
+    )
+  );
+
+  while (eligible.length) {
+    const amounts = computeHolderPayouts(holdersLamports, eligible).map((p) => p.amount);
+    const dustRisk = eligible.filter((h, i) => {
+      const amount = amounts[i];
+      return amount > 0 && existingBalances.get(h.wallet) + amount < rentExemptMinimum;
+    });
+
+    if (!dustRisk.length) {
+      return eligible.map((h, i) => ({ wallet: h.wallet, amount: amounts[i] }));
+    }
+    eligible = eligible.filter((h) => !dustRisk.includes(h));
+  }
+
+  return [];
+}
+
 async function logTransactions({ runId, stage, fromWallet, batches }) {
   const rows = batches.flatMap((batch) =>
     batch.transfers.map((t) => ({
@@ -117,7 +163,7 @@ export async function runStage2({
   runId,
 }) {
   const split = computeStage2Split(communityLamports);
-  const holderPayouts = computeHolderPayouts(split.holders, holderBalances);
+  const holderPayouts = await computeSafeHolderPayouts(connection, split.holders, holderBalances);
 
   const transfers = [
     { to: bagWallet, lamports: split.bagWallet, role: 'bag_wallet' },

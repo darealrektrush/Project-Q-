@@ -100,41 +100,52 @@ async function alertFailure({ runId, stage, err }) {
   }
 }
 
-async function main() {
-  if (!(await hasMinIntervalElapsed())) return;
-  const connection = solana.getConnection();
-  const creatorKeypair = solana.keypairFromSecret(process.env.CREATOR_WALLET_SECRET);
-  const communityKeypair = solana.keypairFromSecret(process.env.COMMUNITY_WALLET_SECRET);
+// If the most recent run got as far as landing Stage 1 on-chain (creator ->
+// community/dev/ocean) but failed in Stage 2, that money is sitting in the
+// community wallet doing nothing — re-running from scratch would check the
+// creator wallet's balance (now just the reserve), find nothing to
+// distribute, and silently no-op forever, stranding it. Reconstructs the
+// original Stage 1 result from distribution_transactions (rather than
+// re-reading the community wallet's live balance, which could have drifted
+// for unrelated reasons) so Stage 2 can be retried against exactly what
+// Stage 1 actually sent.
+async function findResumableRun() {
+  const [lastRun] = await supabase.select('distribution_runs', '?select=*&order=id.desc&limit=1');
+  if (!lastRun || lastRun.status !== 'failed' || lastRun.failed_stage !== 2) return null;
 
-  const reserveLamports = Number(process.env.DISTRIBUTION_RESERVE_LAMPORTS ?? 5_000_000);
-  // Mirrors the creator-wallet reserve above: Stage 2 pays its own network
-  // fees out of what it just received from Stage 1, so it can't redistribute
-  // 100% of that amount without eventually running dry on fees.
-  const stage2ReserveLamports = Number(process.env.STAGE2_RESERVE_LAMPORTS ?? 5_000_000);
-  const balance = await connection.getBalance(creatorKeypair.publicKey);
-  const totalLamports = Math.max(0, balance - reserveLamports);
-
-  if (totalLamports <= 0) {
-    console.log('Nothing to distribute this cycle.');
-    return;
+  const stage1Rows = await supabase.select(
+    'distribution_transactions',
+    `?run_id=eq.${lastRun.id}&stage=eq.1&select=role,amount_lamports,tx_signature`
+  );
+  const community = stage1Rows.find((r) => r.role === 'community');
+  const dev = stage1Rows.find((r) => r.role === 'dev');
+  const ocean = stage1Rows.find((r) => r.role === 'ocean');
+  if (!community || !dev || !ocean) {
+    // Incomplete Stage 1 records for some reason — don't guess, fall through
+    // to the normal fresh-run flow instead of resuming blind.
+    return null;
   }
 
-  const [run] = await supabase.insert('distribution_runs', [{ total_lamports: totalLamports, status: 'started' }]);
-  const runId = run.id;
-  let currentStage = null;
+  return {
+    runId: lastRun.id,
+    totalLamports: lastRun.total_lamports,
+    stage1: {
+      split: { community: community.amount_lamports, dev: dev.amount_lamports, ocean: ocean.amount_lamports },
+      batches: [...new Set(stage1Rows.map((r) => r.tx_signature))].map((signature) => ({ signature })),
+      transactions: stage1Rows,
+    },
+  };
+}
+
+// Shared by both a fresh run (right after Stage 1 lands) and a resumed one
+// (Stage 1 already landed in an earlier, failed attempt): runs Stage 2,
+// marks the run completed or failed accordingly, and handles the recap/
+// alert/marketing-post side effects either way.
+async function runStage2AndFinish({ connection, communityKeypair, runId, totalLamports, stage1 }) {
+  const stage2ReserveLamports = Number(process.env.STAGE2_RESERVE_LAMPORTS ?? 5_000_000);
+  const communityLamports = Math.max(0, stage1.split.community - stage2ReserveLamports);
 
   try {
-    currentStage = 1;
-    const stage1 = await runStage1({
-      connection,
-      creatorKeypair,
-      totalLamports,
-      communityWallet: process.env.COMMUNITY_WALLET_PUBLIC,
-      devWallet: process.env.DEV_WALLET_PUBLIC,
-      oceanWallet: process.env.OCEAN_WALLET_PUBLIC,
-      runId,
-    });
-
     const holderBalances = await solana.getHolderBalances(process.env.TOKEN_MINT, {
       // These already get their designated cut through the Stage 1/2 split
       // above — excluded here so they can't also collect a pro-rata share
@@ -149,8 +160,6 @@ async function main() {
       ],
     });
 
-    currentStage = 2;
-    const communityLamports = Math.max(0, stage1.split.community - stage2ReserveLamports);
     const stage2 = await runStage2({
       connection,
       communityKeypair,
@@ -160,11 +169,12 @@ async function main() {
       holderBalances,
       runId,
     });
-    currentStage = null;
 
     await supabase.update('distribution_runs', `?id=eq.${runId}`, {
       status: 'completed',
       completed_at: new Date().toISOString(),
+      error_message: null,
+      failed_stage: null,
     });
 
     const recap = formatRecap({ totalLamports, stage1, stage2 });
@@ -180,11 +190,62 @@ async function main() {
       status: 'failed',
       completed_at: new Date().toISOString(),
       error_message: String(err?.message ?? err).slice(0, 2000),
-      failed_stage: currentStage,
+      failed_stage: 2,
     });
-    await alertFailure({ runId, stage: currentStage, err });
+    await alertFailure({ runId, stage: 2, err });
     throw err;
   }
+}
+
+async function main() {
+  const connection = solana.getConnection();
+  const communityKeypair = solana.keypairFromSecret(process.env.COMMUNITY_WALLET_SECRET);
+
+  const resumable = await findResumableRun();
+  if (resumable) {
+    console.log(`Resuming distribution run #${resumable.runId} — Stage 1 already landed, retrying Stage 2 only.`);
+    await runStage2AndFinish({ connection, communityKeypair, ...resumable });
+    return;
+  }
+
+  if (!(await hasMinIntervalElapsed())) return;
+
+  const creatorKeypair = solana.keypairFromSecret(process.env.CREATOR_WALLET_SECRET);
+  const reserveLamports = Number(process.env.DISTRIBUTION_RESERVE_LAMPORTS ?? 5_000_000);
+  const balance = await connection.getBalance(creatorKeypair.publicKey);
+  const totalLamports = Math.max(0, balance - reserveLamports);
+
+  if (totalLamports <= 0) {
+    console.log('Nothing to distribute this cycle.');
+    return;
+  }
+
+  const [run] = await supabase.insert('distribution_runs', [{ total_lamports: totalLamports, status: 'started' }]);
+  const runId = run.id;
+
+  let stage1;
+  try {
+    stage1 = await runStage1({
+      connection,
+      creatorKeypair,
+      totalLamports,
+      communityWallet: process.env.COMMUNITY_WALLET_PUBLIC,
+      devWallet: process.env.DEV_WALLET_PUBLIC,
+      oceanWallet: process.env.OCEAN_WALLET_PUBLIC,
+      runId,
+    });
+  } catch (err) {
+    await supabase.update('distribution_runs', `?id=eq.${runId}`, {
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_message: String(err?.message ?? err).slice(0, 2000),
+      failed_stage: 1,
+    });
+    await alertFailure({ runId, stage: 1, err });
+    throw err;
+  }
+
+  await runStage2AndFinish({ connection, communityKeypair, runId, totalLamports, stage1 });
 }
 
 main().catch((err) => {
