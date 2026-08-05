@@ -112,7 +112,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 18 | coinbazooka.com | /submit | Vote board | ☐ | `Skipped — Requires payment ($3 min, no free tier)` |
 | 19 | cryptach.org | /en/add | Directory listing | ☐ | `Deferred — come back later (requires login/registration)` |
 | 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
-| 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
+| 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `Skipped — domain parked/for sale (GoDaddy)` |
 | 22 | gempump.io | /submit | Vote board | ☐ | Deferred — after graduation (needs start time) |
 | 23 | coinsniper.net | /submit | Popular vote board | ☑ | https://coinsniper.net/coin/92949 |
 | 24 | fomospider.com | /submit | Vote board | ☐ | `TODO` |
