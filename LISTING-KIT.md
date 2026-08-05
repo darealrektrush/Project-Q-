@@ -98,7 +98,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 4 | gemfinder.cc | /submit-coin | Vote board | ☑ | https://gemfinder.cc/gem/29742 |
 | 5 | coinscope.co | /submit | Popular; audit/KYC optional upsell | ☐ | `TODO` |
 | 6 | moontok.io | /submit | Vote board | ☐ | `Skipped — no submission form, site auto-indexes DEX pairs (not on pump.fun bonding curve)` |
-| 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `TODO` |
+| 7 | coindiscovery.app | /submit | New-coin discovery feed | ☐ | `Skipped — site broken (Cloudflare Worker error 1101 on all pages)` |
 | 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☑ | https://www.freshcoins.io/coins/fawk-q (pending review) |
 | 9 | coinhunt.cc | /submit | Vote board | ☐ | Deferred — after graduation (needs DEX + launch date) |
 | 10 | coinsgem.com | /submit | Vote board | ☐ | `TODO` |
@@ -112,7 +112,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 18 | coinbazooka.com | /submit | Vote board | ☐ | `Skipped — Requires payment ($3 min, no free tier)` |
 | 19 | cryptach.org | /en/add | Directory listing | ☐ | `Deferred — come back later (requires login/registration)` |
 | 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
-| 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `Skipped — domain parked/for sale (GoDaddy)` |
+| 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
 | 22 | gempump.io | /submit | Vote board | ☐ | Deferred — after graduation (needs start time) |
 | 23 | coinsniper.net | /submit | Popular vote board | ☑ | https://coinsniper.net/coin/92949 |
 | 24 | fomospider.com | /submit | Vote board | ☐ | `TODO` |
