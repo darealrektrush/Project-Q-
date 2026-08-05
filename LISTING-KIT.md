@@ -102,31 +102,31 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 8 | freshcoins.io | /submit-coin | Free listing + paid promo upsell | ☑ | https://www.freshcoins.io/coins/fawk-q (pending review) |
 | 9 | coinhunt.cc | /submit | Vote board | ☐ | Deferred — after graduation (needs DEX + launch date) |
 | 10 | coinsgem.com | /submit | Vote board | ☐ | `Skipped — redirects to coingem.com (same owner-request skip as #38)` |
-| 11 | coinmoonhunt.com | /submit | Vote board | ☐ | `TODO` |
-| 12 | coinxhigh.com | /submit | Vote board | ☐ | `TODO` |
-| 13 | coinalpha.app | /submit | Discovery feed | ☐ | `TODO` |
+| 11 | coinmoonhunt.com | /submit | Vote board | ☐ | `Skipped — domain parked/for sale (GoDaddy)` |
+| 12 | coinxhigh.com | /submit | Vote board | ☐ | `Skipped — domain parked (GoDaddy)` |
+| 13 | coinalpha.app | /submit | Discovery feed | ☐ | `Skipped — site broken (privacy/SSL error)` |
 | 14 | cointoplist.net | /add-coin | Directory listing | ☑ | Submitted — pending approval |
 | 15 | rugfreecoins.com | /submit | "Rug-free" angle — lean on your transparency story | ☐ | Skipped — site not loading/broken |
 | 16 | coincatapult.com | /submit-coin | Directory + promo upsell | ☑ | https://www.coincatapult.com/coin/fawk-q-fawkq-gknhgb |
 | 17 | coinbusters.cc | /submit | Vote board | ☐ | Skipped — site is a dead/parked server (index listing only) |
 | 18 | coinbazooka.com | /submit | Vote board | ☐ | `Skipped — Requires payment ($3 min, no free tier)` |
 | 19 | cryptach.org | /en/add | Directory listing | ☐ | `Deferred — come back later (requires login/registration)` |
-| 20 | coinsgods.com | /submit | Vote board | ☐ | `TODO` |
+| 20 | coinsgods.com | /submit | Vote board | ☐ | `Skipped — unreachable (522 connection timeout)` |
 | 21 | moontok.com | /submit | (Check vs #6 moontok.io — may be a mirror) | ☐ | `TODO` |
 | 22 | gempump.io | /submit | Vote board | ☐ | Deferred — after graduation (needs start time) |
 | 23 | coinsniper.net | /submit | Popular vote board | ☑ | https://coinsniper.net/coin/92949 |
-| 24 | fomospider.com | /submit | Vote board | ☐ | `TODO` |
-| 25 | coinscout.io | /submit | Directory (confirm exact domain) | ☐ | `TODO` |
-| 26 | mycoinvote.com | /submit | Vote board | ☐ | `TODO` |
-| 27 | 100xcoinhunt.com | /submit | Vote board | ☐ | `TODO` |
+| 24 | fomospider.com | /submit | Vote board | ☐ | `Skipped — unreachable (invalid SSL certificate, error 526)` |
+| 25 | coinscout.io | /submit | Directory (confirm exact domain) | ☐ | `Skipped — no submission form, site auto-indexes tokens` |
+| 26 | mycoinvote.com | /submit | Vote board | ☐ | `Skipped — domain parked/redirects to ad page` |
+| 27 | 100xcoinhunt.com | /submit | Vote board | ☐ | `Skipped — domain parked (PS.kz)` |
 | 28 | coinmun.com | /submit | Vote board | ☑ | https://coinmun.com/coins/fawk-q |
-| 29 | coinraider.io | /submit | Vote board (confirm exact domain) | ☐ | `TODO` |
+| 29 | coinraider.io | /submit | Vote board (confirm exact domain) | ☐ | `Skipped — unreachable (DNS failure)` |
 | 30 | coinboom.net | /submit | Vote board | ☑ | https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 31 | cryptotips4all.com | /submit | Directory | ☑ | https://www.cryptotips4all.com/coin/detail/7566 |
 | 32 | cryptogugu.com | /submit | Vote board | ☐ | Submitted — pending site review |
 | 33 | launchbar.pro | /submit | Directory | ☐ | Blocked — requires wallet-connect |
 | 34 | coinradar.fun | /submit | Directory | ☑ | https://coinradar.fun/TokenPage?slug=fawk-q-mse5btl8 |
-| 35 | ntm.ai | /addcoin | ⚠️ Looks PAID (addcoin-payment) — skip unless paying | ☐ | `TODO` |
+| 35 | ntm.ai | /addcoin | ⚠️ Looks PAID (addcoin-payment) — skip unless paying | ☐ | `Skipped — confirmed paid listing required` |
 | 36 | coingatepad.com | /submit | Directory | ☑ | https://coingatepad.com/submitted/5019 |
 | 37 | cryptocoinlister.com | /submit | Directory | ☑ | https://cryptocoinlister.com/token/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 38 | coingem.com | /submit | Directory (≠ coinsgem #10) | ☐ | Skipped per owner request |
