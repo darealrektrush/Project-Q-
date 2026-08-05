@@ -53,12 +53,21 @@ export function computeStage2Split(communityLamports) {
 }
 
 // Pays the holders pool out pro-rata by token balance, in SOL (lamports).
-export function computeHolderPayouts(holdersLamports, holders) {
+//
+// A SOL transfer that would leave a recipient below the rent-exempt minimum
+// fails the WHOLE transaction with "insufficient funds for rent", so one dust
+// holder blows up the entire Stage 2 batch. minPayoutLamports drops payouts
+// below that floor; the skipped dust simply stays in the community wallet and
+// rolls into the next cycle rather than failing the run. Defaults to 0 (no
+// filtering) to preserve pure-accounting callers/tests.
+export function computeHolderPayouts(holdersLamports, holders, minPayoutLamports = 0) {
   const amounts = splitProRata(
     holdersLamports,
     holders.map((h) => h.balance)
   );
-  return holders.map((h, i) => ({ wallet: h.wallet, amount: amounts[i] }));
+  return holders
+    .map((h, i) => ({ wallet: h.wallet, amount: amounts[i] }))
+    .filter((p) => p.amount >= minPayoutLamports);
 }
 
 async function logTransactions({ runId, stage, fromWallet, batches }) {
@@ -117,7 +126,13 @@ export async function runStage2({
   runId,
 }) {
   const split = computeStage2Split(communityLamports);
-  const holderPayouts = computeHolderPayouts(split.holders, holderBalances);
+
+  // Skip holder payouts below the rent-exempt minimum. Sending a recipient less
+  // than this (e.g. a dust pro-rata share) leaves their account non-rent-exempt
+  // and fails the entire transaction, so one tiny holder would otherwise take
+  // down the whole Stage 2 batch. Skipped dust stays in the community wallet.
+  const rentExemptMinLamports = await connection.getMinimumBalanceForRentExemption(0);
+  const holderPayouts = computeHolderPayouts(split.holders, holderBalances, rentExemptMinLamports);
 
   const transfers = [
     { to: bagWallet, lamports: split.bagWallet, role: 'bag_wallet' },

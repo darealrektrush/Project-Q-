@@ -5,12 +5,18 @@ live, on-chain receipts (75% community / 15% dev / 10% ocean conservation) and a
 transparency bot. "Free advertising" is really *earned attention* — so lead with
 the receipts and the ocean angle everywhere.
 
+Tagline (~60):
+
+> Every wallet public, every reward on-chain. No spin, just receipts.
+
 Ready-to-paste description (short):
 
-> **FAWK Q ($FAWKQ)** — The community's eyes on the money. Real-time price,
+> **FAWK Q ($FAWKQ)** — The CrabStar community. Real-time price,
 > holder counts, wallet balances, and every reward distribution posted on-chain
-> with tx links the second it happens. 75% back to the community, 15% dev, 10%
-> to ocean conservation. No spin, just receipts.
+> with tx links the second it happens. Pro-rata SOL distributions to holders,
+> 75% back to the community, 15% dev, 10% to ocean conservation — plus the
+> Bagwork program to earn SOL. All wallets and both founders' supplies are
+> public. No spin, just receipts for everything.
 
 Fill these in once and reuse everywhere:
 
