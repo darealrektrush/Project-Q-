@@ -80,3 +80,36 @@ test('computeHolderPayouts gives everything to a single holder', () => {
 test('computeHolderPayouts handles an empty holder set', () => {
   assert.deepEqual(computeHolderPayouts(1000, []), []);
 });
+
+test('computeHolderPayouts drops payouts below the rent-exempt minimum', () => {
+  // One whale and many tiny holders: the tiny shares fall under the floor and
+  // must be skipped so they can't fail the transaction with a rent error.
+  const holders = [
+    { wallet: 'whale', balance: 1_000_000 },
+    { wallet: 'dust1', balance: 1 },
+    { wallet: 'dust2', balance: 1 },
+  ];
+  const minPayout = 890_880; // rent-exempt minimum for a 0-data account
+  const payouts = computeHolderPayouts(2_000_000, holders, minPayout);
+  assert.deepEqual(payouts.map((p) => p.wallet), ['whale']);
+  assert.ok(payouts.every((p) => p.amount >= minPayout));
+});
+
+test('computeHolderPayouts keeps every payout when all clear the floor', () => {
+  const holders = [
+    { wallet: 'A', balance: 1 },
+    { wallet: 'B', balance: 1 },
+  ];
+  const payouts = computeHolderPayouts(2_000_000, holders, 890_880);
+  assert.equal(payouts.length, 2);
+  assert.equal(payouts.reduce((s, p) => s + p.amount, 0), 2_000_000);
+});
+
+test('computeHolderPayouts default (no minimum) keeps dust — backwards compatible', () => {
+  const holders = [
+    { wallet: 'A', balance: 1_000_000 },
+    { wallet: 'dust', balance: 1 },
+  ];
+  const payouts = computeHolderPayouts(1_000_000, holders);
+  assert.equal(payouts.length, 2);
+});
