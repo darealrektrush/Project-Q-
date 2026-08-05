@@ -119,7 +119,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 25 | coinscout.io | /submit | Directory (confirm exact domain) | ☐ | `TODO` |
 | 26 | mycoinvote.com | /submit | Vote board | ☐ | `TODO` |
 | 27 | 100xcoinhunt.com | /submit | Vote board | ☐ | `TODO` |
-| 28 | coinmun.com | /submit | Vote board | ☐ | `TODO` |
+| 28 | coinmun.com | /submit | Vote board | ☑ | https://coinmun.com/coins/fawk-q |
 | 29 | coinraider.io | /submit | Vote board (confirm exact domain) | ☐ | `TODO` |
 | 30 | coinboom.net | /submit | Vote board | ☑ | https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 31 | cryptotips4all.com | /submit | Directory | ☑ | https://www.cryptotips4all.com/coin/detail/7566 |
