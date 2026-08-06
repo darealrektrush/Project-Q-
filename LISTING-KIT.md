@@ -130,7 +130,7 @@ Then copy the "Daily Vote Rally" block below into your Telegram each day.
 | 36 | coingatepad.com | /submit | Directory | ☑ | https://coingatepad.com/submitted/5019 |
 | 37 | cryptocoinlister.com | /submit | Directory | ☑ | https://cryptocoinlister.com/token/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 | 38 | coingem.com | /submit | Directory (≠ coinsgem #10) | ☐ | Skipped per owner request |
-| 39 | coinbuzzer.me | /submit | Vote board | ☑ | Submitted — vote URL pending re-verification |
+| 39 | coinbuzzer.me | /submit | Vote board | ☑ | https://coinbuzzer.me/coin/860 |
 | 40 | coindizzy.com | /submit | Directory | ☑ | https://coindizzy.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump |
 
 > Submit-page paths above are the common patterns; if one 404s, use the site's
