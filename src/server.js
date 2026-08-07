@@ -398,20 +398,29 @@ function sendRewards(chatId, threadId) {
 
 async function sendBagworkInfo(chatId, threadId) {
   const tasks = await bagwork.getBagworkTasks();
-
   let defaultText;
-  if (tasks?.tasks?.length) {
-    const lines = ['💼 *Bag Work*', ''];
-    for (const task of tasks.tasks) {
-      lines.push(`${task.label}: ${task.sol} SOL`);
+  // New per-view pricing shape. Anything else (old shape, null on fetch
+  // failure, or a rollback) falls through to the static message below.
+  if (tasks && tasks.pricing === 'per_view' && tasks.rate_per_1k) {
+    const xRate = tasks.rate_per_1k.x;
+    const tiktokRate = tasks.rate_per_1k.tiktok;
+    const lines = ['💼 *Bag Work*'];
+    lines.push(`${xRate} SOL per 1,000 views on X, ${tiktokRate} on TikTok.`);
+    lines.push(`Every approved piece pays at least ${tasks.min_sol} SOL, up to ${tasks.max_sol} SOL.`);
+    lines.push('A piece is priced off the views it has 48 hours after posting.');
+    if (Array.isArray(tasks.formats) && tasks.formats.length) {
+      lines.push('');
+      lines.push('*Formats:*');
+      for (const format of tasks.formats) {
+        lines.push(`• ${format.label}`);
+      }
     }
-    if (tasks.note) lines.push('', tasks.note);
-    lines.push('', `Submit at: ${tasks.page ?? FAWKQ_BAGWORK_URL}`);
+    if (tasks.note) lines.push(tasks.note);
+    lines.push(`Submit at: ${tasks.page ?? FAWKQ_BAGWORK_URL}`);
     defaultText = lines.join('\n');
   } else {
     defaultText = `💼 Complete tasks at ${FAWKQ_BAGWORK_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
   }
-
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
 }
 
