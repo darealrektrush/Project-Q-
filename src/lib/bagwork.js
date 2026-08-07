@@ -90,9 +90,10 @@ async function postPaidAnnouncement({ handle, sol, txSig, platform }) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const threadId = telegram.getTopicId('fawkq-announcements');
   const suffix = platform && platform !== 'x' ? ` (${telegram.escapeMarkdown(platform)})` : '';
+    const solText = Number(sol.toFixed(3)).toString();
   const text = [
     '🧾 *Bag Work Paid*',
-    `${telegram.inertHandle(handle)} — ${sol} SOL${suffix}`,
+    `${telegram.inertHandle(handle)} — ${solText} SOL${suffix}`,
     `https://solscan.io/tx/${txSig}`,
   ].join('\n');
   try {
