@@ -82,6 +82,9 @@ export function buildHomeMenu() {
         { text: '🚪 The Door', callback_data: 'menu:door' },
       ],
       [
+        { text: '🦆 Campaigns', callback_data: 'menu:campaigns' },
+      ],
+      [
         { text: 'ℹ️ About', callback_data: 'menu:about' },
       ],
     ],
