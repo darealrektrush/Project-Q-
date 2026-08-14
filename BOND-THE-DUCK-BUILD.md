@@ -400,6 +400,7 @@ create table if not exists manifests (
   csv_hash text not null,
   json_hash text not null,
   manifest_hash text not null,             -- the value both founders check before approving
+  network text not null default 'mainnet', -- mainnet | devnet — a manifest is single-network; the finalizer refuses to mix
   supersedes int,
   created_at timestamptz not null default now(),
   unique (campaign_id, category, version)
@@ -412,6 +413,7 @@ create table if not exists treasury_transactions (
   squads_proposal_ref text,
   tx_signature text,
   status text not null,                    -- proposed | approved | executed | failed
+  network text not null default 'mainnet', -- mainnet | devnet — tags rehearsal runs so they can't be mistaken for real ones
   confirmed_block_time timestamptz,
   reconciliation_status text,
   created_at timestamptz not null default now()
@@ -699,6 +701,8 @@ Prefix each with *"Read BOND-THE-DUCK-BUILD.md and Appendix A/B."*
 CAMPAIGN_ID=bond-the-duck-2026
 ORACLE_CAMPAIGN_SECRET=            # shared with Oracle; guards POST /campaign/raid-xp
 FAWKQ_DECIMALS=                    # from mint; base-unit math depends on it
+NETWORK=devnet                    # devnet for rehearsal · mainnet only at the readiness gate; stamped on every run/manifest/tx
+SOLANA_RPC_URL=                   # devnet Helius URL during rehearsals; swap to mainnet for the gate (mirrors jobs/distribute.js)
 PYTH_SOLUSD_FEED=
 SWITCHBOARD_SOLUSD_FEED=
 SQUADS_MULTISIG_ADDRESS=          # public
@@ -724,7 +728,57 @@ founder‑owned production value, hashed, never overwritten.
 
 ---
 
-## 16. Readiness gate — do not go ACTIVE until all pass (Spec §16)
+## 16. Testing & readiness gate (Spec §16)
+
+### Devnet rehearsal first, a small mainnet gate last
+
+Rehearse the **whole lifecycle on devnet**, exactly the way `jobs/distribute.js` de‑risks the
+creator‑reward split before mainnet: point `SOLANA_RPC_URL`/`HELIUS_RPC_URL` at devnet, use
+`scripts/seed-holders.js` (plus a campaign `seed-participants.js`) to populate the run, trigger
+it manually, and watch a full cycle complete cleanly on‑chain. Every run is stamped
+`network=devnet` (the column added to `cycles`‑derived runs, `manifests` and
+`treasury_transactions`, mirroring `distribution_runs.network`) so a rehearsal can never be
+mistaken for — or reconciled against — a real distribution. The finalizer refuses to mix
+networks inside one manifest.
+
+**What devnet covers (the bulk of the 25‑profile simulation).** Chain‑agnostic and
+standard‑SPL pieces all run identically on devnet:
+
+- All the money math — allocation, per‑wallet cap + redistribution, commit‑and‑reveal draw,
+  top‑2 selection, leaderboard, XP caps, reconciliation.
+- The distribution engine end‑to‑end against a **test FAWKQ mint with the same decimals**:
+  manifest → hashed proposal → approve → execute → confirm → reconcile, including the 3‑retry
+  path and the 30‑day‑unresolved state (time‑simulated).
+- The **Squads 2‑of‑3 flow**. Squads' program is deployed on devnet, so stand up a real devnet
+  multisig and rehearse the *actual human two‑founder approval*. Note the custody difference
+  from Project Q: `distribute.js` signs a plain hot wallet itself, whereas Bond the Duck's
+  mainnet step is founders clicking approve in Squads — so the thing you practice on devnet is
+  that human 2‑of‑3 ceremony, not a script key.
+- Wallet‑control challenge (ed25519), enrollment, and the entire Oracle raid webhook loop
+  (no chain at all — mock it).
+- Pyth/Switchboard have devnet feeds, so the 30‑minute TWAP, the $2 gate, and the
+  source‑disagreement/fallback logic are all functionally exercisable — just at devnet price
+  values, not mainnet ones.
+
+**What devnet cannot stand in for (why the mainnet gate remains its own item).**
+
+- **The buy‑to‑earn market layer.** Pump.fun's bonding curve and the PumpSwap FAWKQ/SOL pool
+  are **mainnet‑only products** — there is no real curve/pool and no real Pump.fun→PumpSwap
+  migration on devnet. On devnet you drive the net‑buy indexer from **seeded synthetic
+  `swap_events`/`positions`**, which proves the exclusion/tier/weight logic but not the real
+  approved‑market reads or migration detection. Those are validated only against mainnet.
+- **Real value can't be rehearsed with fake value.** A batch that overpays or double‑pays on
+  mainnet is unrecoverable and reputation‑ending for a transparency project — which is exactly
+  why the gate keeps a distinct, non‑substitutable **small‑value mainnet transfer test**.
+
+**So, two phases.** (1) *Devnet rehearsal (primary):* the full 25‑profile simulation across all
+five cycles, both draw paths reproduced from published inputs, retries and the 30‑day state,
+all tagged `network=devnet`. (2) *Mainnet gate (once, at the end):* a dust‑sized real batch
+through the real Squads 2‑of‑3 between approved test wallets, **plus** a real read of the live
+Pump.fun/PumpSwap market for the buy‑to‑earn indexer — the two things devnet can't reproduce.
+Never the 15M; just a real‑path proof.
+
+### Readiness gate — do not go ACTIVE until all pass
 
 15M funding (two 7.5M sigs + exact vault balance) · treasury security (labels, 2‑of‑3, dual
 approval, offline recovery tested) · ops funding (0.125 SOL each, 0.25 opening) · mint &
