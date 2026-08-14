@@ -367,7 +367,8 @@ begin
       ('READINESS_BLOCKED','FUNDED','SCHEDULED','ACTIVE','VERIFYING','ALLOCATIONS_FROZEN','DISTRIBUTING'))
   ) then raise exception 'invalid campaign state transition: % -> %', p_expected_state, p_next_state;
   end if;
-  if p_next_state in ('PAUSED','TERMINATED') and not p_automatic_security_pause
+  if p_next_state in ('PAUSED','TERMINATED')
+     and not (p_next_state = 'PAUSED' and p_automatic_security_pause)
      and p_authorized_signers <> 2 then
     raise exception '% requires two authorized signers', p_next_state;
   end if;
