@@ -23,6 +23,10 @@ test('pause and termination require two signers, except an automatic security pa
   assert.throws(() => assertTransition('ACTIVE', 'PAUSED', { evidence: { incident: 'x' }, authorizedSigners: 1 }), /two authorized/);
   assert.equal(assertTransition('ACTIVE', 'PAUSED', { evidence: { incident: 'x' }, authorizedSigners: 2 }), true);
   assert.equal(assertTransition('ACTIVE', 'PAUSED', { evidence: { incident: 'x' }, automaticSecurityPause: true }), true);
+  assert.throws(
+    () => assertTransition('ACTIVE', 'TERMINATED', { evidence: { incident: 'x' }, automaticSecurityPause: true }),
+    /two authorized/
+  );
 });
 
 test('paused campaign resumes only to recorded prior state with two founders', () => {
