@@ -110,7 +110,8 @@ export function assertTransition(from, to, options = {}) {
   if (from === 'PAUSED' && options.founderApprovals !== 2) {
     throw new Error('Resuming a paused campaign requires two founder approvals');
   }
-  if ((to === 'PAUSED' || to === 'TERMINATED') && options.authorizedSigners !== 2 && !options.automaticSecurityPause) {
+  const automaticPause = to === 'PAUSED' && options.automaticSecurityPause;
+  if ((to === 'PAUSED' || to === 'TERMINATED') && options.authorizedSigners !== 2 && !automaticPause) {
     throw new Error(`${to} requires two authorized signers`);
   }
   return true;
