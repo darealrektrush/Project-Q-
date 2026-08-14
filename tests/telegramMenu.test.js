@@ -18,6 +18,7 @@ test('home menu uses compact labels without changing its actions', () => {
       'menu:bagwork',
       'menu:money',
       'menu:door',
+      'menu:campaigns',
       'menu:about',
     ]
   );
