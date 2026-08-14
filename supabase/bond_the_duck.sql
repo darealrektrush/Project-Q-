@@ -41,8 +41,14 @@ create table if not exists deployment_registry (
 create table if not exists campaign_state_transitions (
   id bigserial primary key,
   campaign_id text not null references campaigns(id),
-  from_state text not null,
-  to_state text not null,
+  from_state text not null check (from_state in (
+    'DRAFT','READINESS_BLOCKED','FUNDED','SCHEDULED','ACTIVE','VERIFYING',
+    'ALLOCATIONS_FROZEN','DISTRIBUTING','COMPLETED','ARCHIVED','PAUSED','TERMINATED'
+  )),
+  to_state text not null check (to_state in (
+    'DRAFT','READINESS_BLOCKED','FUNDED','SCHEDULED','ACTIVE','VERIFYING',
+    'ALLOCATIONS_FROZEN','DISTRIBUTING','COMPLETED','ARCHIVED','PAUSED','TERMINATED'
+  )),
   evidence jsonb not null check (jsonb_typeof(evidence) = 'object' and evidence <> '{}'::jsonb),
   authorized_signers integer not null default 0 check (authorized_signers between 0 and 2),
   automatic_security_pause boolean not null default false,
@@ -73,7 +79,7 @@ create table if not exists wallet_challenges (
   expires_at timestamptz not null,
   consumed_at timestamptz,
   created_at timestamptz not null default now(),
-  check (expires_at <= created_at + interval '10 minutes')
+  check (expires_at > created_at and expires_at <= created_at + interval '10 minutes')
 );
 
 create table if not exists cycles (
@@ -218,6 +224,16 @@ create table if not exists treasury_transactions (
 create unique index if not exists one_executed_treasury_payment
   on treasury_transactions(payment_key) where status = 'executed';
 
+-- PostgreSQL does not create indexes for referencing foreign-key columns.
+create index if not exists campaign_state_transitions_campaign_idx on campaign_state_transitions(campaign_id, created_at);
+create index if not exists wallet_challenges_participant_idx on wallet_challenges(campaign_id, telegram_user_id, expires_at);
+create index if not exists xp_ledger_participant_day_idx on xp_ledger(campaign_id, telegram_user_id, awarded_at);
+create index if not exists xp_ledger_cycle_idx on xp_ledger(campaign_id, cycle_id, telegram_user_id);
+create index if not exists campaign_raid_events_identity_idx on campaign_raid_events(campaign_id, x_user_id, received_at);
+create index if not exists allocations_campaign_category_idx on allocations(campaign_id, category, cycle_id);
+create index if not exists releases_allocation_idx on releases(allocation_id);
+create index if not exists treasury_transactions_campaign_idx on treasury_transactions(campaign_id, created_at);
+
 create table if not exists reserve_ledger (
   id bigserial primary key,
   campaign_id text not null references campaigns(id),
@@ -235,6 +251,9 @@ create table if not exists audit_log (
   detail jsonb,
   created_at timestamptz not null default now()
 );
+
+create index if not exists reserve_ledger_campaign_idx on reserve_ledger(campaign_id, created_at);
+create index if not exists audit_log_campaign_idx on audit_log(campaign_id, created_at);
 
 -- Immutable policy and financial ledgers: corrections are additive/versioned.
 create or replace function reject_campaign_ledger_mutation()
@@ -281,6 +300,54 @@ create or replace function transition_campaign_state(
 declare result campaigns;
 begin
   if p_evidence is null or p_evidence = '{}'::jsonb then raise exception 'exit evidence required'; end if;
+  if p_expected_state = 'DRAFT' and p_next_state = 'READINESS_BLOCKED'
+     and not (p_evidence ?& array['rulesHash','rulesetVersion']) then
+    raise exception 'rules hash and ruleset version evidence required';
+  end if;
+  if p_expected_state = 'READINESS_BLOCKED' and p_next_state = 'FUNDED' then
+    if not (p_evidence ?& array['fundedBaseUnits','expectedFundedBaseUnits','activationVaultBaseUnits',
+      'scheduledVaultBaseUnits','solOperationsLamports','vaultsVerifiedAt']) then
+      raise exception 'complete funding evidence required';
+    end if;
+    if (p_evidence->>'fundedBaseUnits')::numeric <> (p_evidence->>'expectedFundedBaseUnits')::numeric
+       or (p_evidence->>'fundedBaseUnits')::numeric <>
+          (p_evidence->>'activationVaultBaseUnits')::numeric + (p_evidence->>'scheduledVaultBaseUnits')::numeric
+       or (p_evidence->>'scheduledVaultBaseUnits')::numeric <> 7 * (p_evidence->>'activationVaultBaseUnits')::numeric
+       or (p_evidence->>'solOperationsLamports')::bigint <> 250000000 then
+      raise exception 'funding evidence does not reconcile';
+    end if;
+  end if;
+  if p_expected_state = 'FUNDED' and p_next_state = 'SCHEDULED'
+     and not (p_evidence ?& array['registryHash','sourcesCertifiedAt','publicTimesPublishedAt']) then
+    raise exception 'registry, source certification and public schedule evidence required';
+  end if;
+  if p_expected_state = 'SCHEDULED' and p_next_state = 'ACTIVE'
+     and (not (p_evidence ?& array['readinessReportHash','founderApprovals'])
+       or (p_evidence->>'founderApprovals')::integer <> 2) then
+    raise exception 'readiness report and two founder approvals required';
+  end if;
+  if p_expected_state = 'ACTIVE' and p_next_state = 'VERIFYING'
+     and not (p_evidence ?& array['campaignClosedAt','cutoffSlot']) then
+    raise exception 'campaign close and cutoff evidence required';
+  end if;
+  if p_expected_state = 'VERIFYING' and p_next_state = 'ALLOCATIONS_FROZEN'
+     and not (p_evidence ?& array['manifestHash','appealsClosedAt','verificationCompleteAt']) then
+    raise exception 'manifest, appeals and verification evidence required';
+  end if;
+  if p_expected_state = 'ALLOCATIONS_FROZEN' and p_next_state = 'DISTRIBUTING'
+     and (not (p_evidence ?& array['proposalRef','founderApprovals'])
+       or (p_evidence->>'founderApprovals')::integer <> 2) then
+    raise exception 'proposal and two founder approvals required';
+  end if;
+  if p_expected_state = 'DISTRIBUTING' and p_next_state = 'COMPLETED'
+     and not (p_evidence ? 'reconciliationHash') then
+    raise exception 'reconciliation evidence required';
+  end if;
+  if p_next_state = 'ARCHIVED'
+     and (not (p_evidence ?& array['closeoutHash','founderApprovals'])
+       or (p_evidence->>'founderApprovals')::integer <> 2) then
+    raise exception 'closeout and two founder approvals required';
+  end if;
   if not (
     (p_expected_state = 'DRAFT' and p_next_state = 'READINESS_BLOCKED') or
     (p_expected_state = 'READINESS_BLOCKED' and p_next_state = 'FUNDED') or
@@ -329,6 +396,12 @@ begin
 end;
 $$;
 
+-- Functions in public receive EXECUTE for PUBLIC by default. Keep campaign
+-- mutation RPCs server-side only; anon/authenticated receive no direct access.
+revoke all on function reject_campaign_ledger_mutation() from public, anon, authenticated;
+revoke all on function transition_campaign_state(text,text,text,jsonb,integer,boolean) from public, anon, authenticated;
+grant execute on function transition_campaign_state(text,text,text,jsonb,integer,boolean) to service_role;
+
 -- RLS-on/no policies: only the server-side service role may access these rows.
 alter table campaigns enable row level security;
 alter table ruleset_versions enable row level security;
@@ -348,3 +421,10 @@ alter table manifests enable row level security;
 alter table treasury_transactions enable row level security;
 alter table reserve_ledger enable row level security;
 alter table audit_log enable row level security;
+
+revoke all on campaigns, ruleset_versions, deployment_registry,
+  campaign_state_transitions, identity_links, wallet_challenges, cycles,
+  xp_ledger, campaign_raid_events, verification_sources, cycle_winners,
+  positions, allocations, releases, manifests, treasury_transactions,
+  reserve_ledger, audit_log from anon, authenticated;
+revoke all on campaign_xp_totals, campaign_registry_status from anon, authenticated;
