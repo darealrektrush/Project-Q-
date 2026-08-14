@@ -249,6 +249,25 @@ alter table bagwork_feedback          enable row level security;
 alter table bagwork_feedback_prompts  enable row level security;
 alter table bagwork_clearances        enable row level security;
 
--- The leaderboard view must not read through bagwork_payouts' RLS as the
--- definer; force it to run as whoever's actually querying it.
+-- Project Q is a server-side service. Render uses the Supabase service-role
+-- key, which bypasses RLS; anon/authenticated clients intentionally receive
+-- no table policies and therefore no direct access.
+alter table users                     enable row level security;
+alter table missions                  enable row level security;
+alter table user_missions             enable row level security;
+alter table feed_posts                enable row level security;
+alter table distribution_runs         enable row level security;
+alter table distribution_transactions enable row level security;
+alter table menu_content              enable row level security;
+alter table signals                   enable row level security;
+alter table signal_interactions       enable row level security;
+alter table mission_completions       enable row level security;
+alter table scheduled_events          enable row level security;
+
+-- Views must enforce permissions/RLS as the caller, not as their creator.
 alter view bagwork_leaderboard set (security_invoker = on);
+alter view leaderboard set (security_invoker = on);
+
+-- Prevent object-shadowing attacks through a caller-controlled search_path.
+alter function increment_user_xp(bigint, bigint, bigint)
+  set search_path = public, pg_temp;
