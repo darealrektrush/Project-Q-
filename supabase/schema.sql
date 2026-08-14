@@ -252,3 +252,7 @@ alter table bagwork_clearances        enable row level security;
 -- The leaderboard view must not read through bagwork_payouts' RLS as the
 -- definer; force it to run as whoever's actually querying it.
 alter view bagwork_leaderboard set (security_invoker = on);
+
+
+-- Bond the Duck campaign schema is intentionally isolated in
+-- supabase/bond_the_duck.sql so it can be reviewed and migrated atomically.
