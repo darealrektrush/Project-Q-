@@ -36,6 +36,19 @@ const PAUSABLE_STATES = new Set([
 ]);
 const TERMINABLE_STATES = new Set([...PAUSABLE_STATES, 'PAUSED']);
 
+const REQUIRED_EXIT_EVIDENCE = Object.freeze({
+  'DRAFT->READINESS_BLOCKED': ['rulesHash', 'rulesetVersion'],
+  'READINESS_BLOCKED->FUNDED': ['fundedBaseUnits', 'expectedFundedBaseUnits', 'activationVaultBaseUnits', 'scheduledVaultBaseUnits', 'solOperationsLamports', 'vaultsVerifiedAt'],
+  'FUNDED->SCHEDULED': ['registryHash', 'sourcesCertifiedAt', 'publicTimesPublishedAt'],
+  'SCHEDULED->ACTIVE': ['readinessReportHash', 'founderApprovals'],
+  'ACTIVE->VERIFYING': ['campaignClosedAt', 'cutoffSlot'],
+  'VERIFYING->ALLOCATIONS_FROZEN': ['manifestHash', 'appealsClosedAt', 'verificationCompleteAt'],
+  'ALLOCATIONS_FROZEN->DISTRIBUTING': ['proposalRef', 'founderApprovals'],
+  'DISTRIBUTING->COMPLETED': ['reconciliationHash'],
+  'COMPLETED->ARCHIVED': ['closeoutHash', 'founderApprovals'],
+  'TERMINATED->ARCHIVED': ['closeoutHash', 'founderApprovals'],
+});
+
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === 'object') {
@@ -76,6 +89,24 @@ export function assertTransition(from, to, options = {}) {
   if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence) || Object.keys(evidence).length === 0) {
     throw new Error(`Transition ${from} -> ${to} requires exit evidence`);
   }
+  const required = REQUIRED_EXIT_EVIDENCE[`${from}->${to}`] ?? [];
+  const missing = required.filter((field) => evidence[field] === undefined || evidence[field] === null || evidence[field] === '');
+  if (missing.length) throw new Error(`Transition ${from} -> ${to} missing evidence: ${missing.join(', ')}`);
+  if (to === 'FUNDED') {
+    const funded = BigInt(evidence.fundedBaseUnits);
+    const expected = BigInt(evidence.expectedFundedBaseUnits);
+    const activation = BigInt(evidence.activationVaultBaseUnits);
+    const scheduled = BigInt(evidence.scheduledVaultBaseUnits);
+    if (funded !== expected || funded !== activation + scheduled || scheduled !== activation * 7n) {
+      throw new Error('FUNDED evidence does not reconcile to the locked 1:7 vault allocation');
+    }
+    if (BigInt(evidence.solOperationsLamports) !== 250_000_000n) {
+      throw new Error('FUNDED requires exactly 0.25 SOL in the operations wallet');
+    }
+  }
+  if (from !== 'PAUSED' && ['ACTIVE', 'DISTRIBUTING', 'ARCHIVED'].includes(to) && evidence.founderApprovals !== 2) {
+    throw new Error(`${to} requires two founder approvals in exit evidence`);
+  }
   if (from === 'PAUSED' && options.founderApprovals !== 2) {
     throw new Error('Resuming a paused campaign requires two founder approvals');
   }
@@ -84,4 +115,3 @@ export function assertTransition(from, to, options = {}) {
   }
   return true;
 }
-
