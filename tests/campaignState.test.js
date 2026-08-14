@@ -10,7 +10,13 @@ test('campaign follows the gated forward path and rejects skips', () => {
   assert.equal(canTransition('DRAFT', 'READINESS_BLOCKED'), true);
   assert.equal(canTransition('DRAFT', 'ACTIVE'), false);
   assert.throws(() => assertTransition('DRAFT', 'READINESS_BLOCKED'), /exit evidence/);
-  assert.equal(assertTransition('DRAFT', 'READINESS_BLOCKED', { evidence: { rulesHash: 'abc' } }), true);
+  assert.throws(
+    () => assertTransition('DRAFT', 'READINESS_BLOCKED', { evidence: { rulesHash: 'abc' } }),
+    /rulesetVersion/
+  );
+  assert.equal(assertTransition('DRAFT', 'READINESS_BLOCKED', {
+    evidence: { rulesHash: 'abc', rulesetVersion: 1 },
+  }), true);
 });
 
 test('pause and termination require two signers, except an automatic security pause', () => {
@@ -25,3 +31,20 @@ test('paused campaign resumes only to recorded prior state with two founders', (
   assert.equal(assertTransition('PAUSED', 'ACTIVE', { resumeState: 'ACTIVE', evidence: { resolved: true }, founderApprovals: 2 }), true);
 });
 
+test('funding gate reconciles the locked vault split and SOL operations balance', () => {
+  const evidence = {
+    expectedFundedBaseUnits: '15000000000000',
+    fundedBaseUnits: '15000000000000',
+    activationVaultBaseUnits: '1875000000000',
+    scheduledVaultBaseUnits: '13125000000000',
+    solOperationsLamports: '250000000',
+    vaultsVerifiedAt: '2026-08-14T00:00:00Z',
+  };
+  assert.equal(assertTransition('READINESS_BLOCKED', 'FUNDED', { evidence }), true);
+  assert.throws(
+    () => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+      evidence: { ...evidence, scheduledVaultBaseUnits: '13124999999999' },
+    }),
+    /does not reconcile/
+  );
+});
