@@ -10,6 +10,7 @@ import * as bagwork from './lib/bagwork.js';
 import * as signal from './lib/signal.js';
 import * as events from './lib/events.js';
 import * as eventsAdmin from './lib/eventsAdmin.js';
+import * as campaignUi from './campaign/ui.js';
 
 const app = express();
 app.use(express.json());
@@ -174,6 +175,11 @@ async function handleMessage(message) {
       return sendSignalCommand(chatId, threadId);
     case '/spaces':
       return sendSpaces(chatId, threadId);
+    case '/campaign':
+      return telegram.sendMessage(chatId, campaignUi.CAMPAIGN_HOME_TEXT, {
+        threadId,
+        replyMarkup: campaignUi.buildBondTheDuckMenu(),
+      });
     default:
       return;
   }
@@ -283,6 +289,12 @@ async function handleCallbackQuery(callbackQuery) {
       return sendWallets(chatId, threadId);
     case 'menu:door':
       return sendDoorInfo(chatId, threadId);
+    case 'menu:campaigns':
+      return editMenuMessage(callbackQuery, '🦆 *Campaigns* — choose a campaign:', campaignUi.buildCampaignsMenu());
+    case 'menu:campaigns:back':
+      return sendHome(chatId, threadId);
+    case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
+      return editMenuMessage(callbackQuery, campaignUi.CAMPAIGN_HOME_TEXT, campaignUi.buildBondTheDuckMenu());
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
@@ -303,8 +315,14 @@ async function handleCallbackQuery(callbackQuery) {
       return editMenuMessage(callbackQuery, await buildBagworkboardText(), {
         inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]],
       });
-    default:
+    default: {
+      if (callbackQuery.data?.startsWith(`${campaignUi.CAMPAIGN_CALLBACK_PREFIX}:`)) {
+        const screen = callbackQuery.data.slice(campaignUi.CAMPAIGN_CALLBACK_PREFIX.length + 1);
+        const text = campaignUi.getCampaignScreen(screen);
+        if (text) return editMenuMessage(callbackQuery, text, campaignUi.buildCampaignScreenMenu());
+      }
       return;
+    }
   }
 }
 
@@ -341,6 +359,7 @@ function sendHelp(chatId, threadId) {
     '/door — Beyond the Door',
     '/signal — Current Signal (reveal, ignore, or grab hints for XP)',
     '/spaces — Upcoming Spaces',
+    '/campaign — Bond the Duck campaign hub',
     '',
     '_Coming soon:_ /missions /meme /feed /ask',
     '',
