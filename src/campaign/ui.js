@@ -38,6 +38,40 @@ export function buildBondTheDuckMenu() {
   };
 }
 
+export const MISSIONS_CALLBACK_PREFIX = `${CAMPAIGN_CALLBACK_PREFIX}:missions`;
+
+export function buildMissionsMenu() {
+  return {
+    inline_keyboard: [
+      [{ text: '⚔️ Oracle Raids', callback_data: `${MISSIONS_CALLBACK_PREFIX}:raids` }],
+      [
+        { text: '🗳 Website Voting', callback_data: `${MISSIONS_CALLBACK_PREFIX}:votes` },
+        { text: '🤖 Trending Bots', callback_data: `${MISSIONS_CALLBACK_PREFIX}:bots` },
+      ],
+      [{ text: '📋 Other Missions', callback_data: `${MISSIONS_CALLBACK_PREFIX}:other` }],
+      [{ text: '📈 My Mission Progress', callback_data: `${MISSIONS_CALLBACK_PREFIX}:progress` }],
+      [{ text: '⬅️ Back to Bond the Duck', callback_data: CAMPAIGN_CALLBACK_PREFIX }],
+    ],
+  };
+}
+
+export function buildOracleRaidsMenu(oracleBotUsername = process.env.ORACLE_BOT_USERNAME ?? 'crabstar_oracle_bot') {
+  const username = oracleBotUsername.replace(/^@/, '');
+  return {
+    inline_keyboard: [
+      [{ text: '⚔️ Open Oracle Raids', url: `https://t.me/${username}` }],
+      [{ text: '⬅️ Back to Missions & Voting', callback_data: MISSIONS_CALLBACK_PREFIX }],
+    ],
+  };
+}
+
+export const MISSIONS_HOME_TEXT = [
+  '🎯 *Missions & Voting*', '',
+  'Complete verified campaign actions through Project Q and the Oracle.',
+  'Oracle powers X raids and sends verified engagement back to the Bond the Duck campaign.',
+  '', '*Current state:* Sources remain closed until the campaign readiness gate passes.',
+].join('\n');
+
 export function buildCampaignHomeText(campaign = { state: 'DRAFT' }) {
   const state = campaign.state ?? 'DRAFT';
   const closed = !['ACTIVE', 'VERIFYING', 'ALLOCATIONS_FROZEN', 'DISTRIBUTING', 'COMPLETED'].includes(state);
@@ -156,6 +190,64 @@ export function buildParticipantXpText(status) {
     '',
     'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
   ].join('\n');
+}
+
+export function buildOracleRaidsText(status) {
+  if (status.unavailable) {
+    return [
+      '⚔️ *Oracle Raids*', '',
+      'Raids are launched and verified by the CrabStar Oracle bot.',
+      'Project Q receives verified X actions and applies the campaign XP and leaderboard rules.',
+      '', '*Current state:* Raid data is not connected yet.',
+    ].join('\n');
+  }
+  const history = status.events.length
+    ? status.events.slice(0, 5).map((event) => {
+        const result = event.credited ? '✅ XP credited' : event.reason ? '❌ Not credited' : '⏳ Pending XP';
+        return `• Raid ${event.raid_id} · ${event.action} · ${result}`;
+      })
+    : ['No Oracle raid actions recorded yet.'];
+  return [
+    '⚔️ *Oracle Raids*', '',
+    'Open the Oracle, join the active X raid, and complete the required actions.',
+    'The Oracle verifies engagement. Project Q records campaign XP and leaderboard credit.',
+    '',
+    `✅ Credited actions: ${status.verifiedActions}`,
+    `⏳ Pending actions: ${status.pendingActions}`,
+    `❌ Not credited: ${status.rejectedActions}`,
+    '', '*Recent raid activity:*', ...history,
+  ].join('\n');
+}
+
+export function getMissionScreen(screen) {
+  const screens = {
+    votes: [
+      '🗳 *Website Voting*', '',
+      'Nine certified campaign voting sources will appear here with cooldown and verification status.',
+      '', '*Current state:* Sources not enabled',
+    ].join('\n'),
+    bots: [
+      '🤖 *Telegram Trending Bots*', '',
+      'Four certified Telegram bots award 2 XP each after origin, timing, FAWKQ-context and uniqueness checks.',
+      '', '*Current state:* Bots not enabled',
+    ].join('\n'),
+    other: [
+      '📋 *Other Campaign Missions*', '',
+      'Approved participation, content, education, event and onboarding missions will appear here.',
+      '', '*Current state:* Missions not enabled',
+    ].join('\n'),
+    progress: [
+      '📈 *My Mission Progress*', '',
+      'Verified Oracle raids, website votes, Telegram bots and other campaign missions combine here.',
+      'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
+      '', '*Current state:* Campaign not launched',
+    ].join('\n'),
+  };
+  return screens[screen] ?? null;
+}
+
+export function buildMissionScreenMenu() {
+  return { inline_keyboard: [[{ text: '⬅️ Back to Missions & Voting', callback_data: MISSIONS_CALLBACK_PREFIX }]] };
 }
 
 export function buildCampaignScreenMenu() {

@@ -296,6 +296,14 @@ async function handleCallbackQuery(callbackQuery) {
       return sendHome(chatId, threadId);
     case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
       return editMenuMessage(callbackQuery, await buildCampaignHomeText(), campaignUi.buildBondTheDuckMenu());
+    case campaignUi.MISSIONS_CALLBACK_PREFIX:
+      return editMenuMessage(callbackQuery, campaignUi.MISSIONS_HOME_TEXT, campaignUi.buildMissionsMenu());
+    case `${campaignUi.MISSIONS_CALLBACK_PREFIX}:raids`:
+      return editMenuMessage(
+        callbackQuery,
+        await buildOracleRaidsText(callbackQuery.from.id),
+        campaignUi.buildOracleRaidsMenu()
+      );
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
@@ -317,6 +325,11 @@ async function handleCallbackQuery(callbackQuery) {
         inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]],
       });
     default: {
+      if (callbackQuery.data?.startsWith(`${campaignUi.MISSIONS_CALLBACK_PREFIX}:`)) {
+        const missionScreen = callbackQuery.data.slice(campaignUi.MISSIONS_CALLBACK_PREFIX.length + 1);
+        const missionText = campaignUi.getMissionScreen(missionScreen);
+        if (missionText) return editMenuMessage(callbackQuery, missionText, campaignUi.buildMissionScreenMenu());
+      }
       if (callbackQuery.data?.startsWith(`${campaignUi.CAMPAIGN_CALLBACK_PREFIX}:`)) {
         const screen = callbackQuery.data.slice(campaignUi.CAMPAIGN_CALLBACK_PREFIX.length + 1);
         const text = await buildCampaignScreenText(screen, callbackQuery.from.id);
@@ -324,6 +337,16 @@ async function handleCallbackQuery(callbackQuery) {
       }
       return;
     }
+  }
+}
+
+async function buildOracleRaidsText(telegramUserId) {
+  try {
+    const status = await campaignService.getParticipantRaidStatus(supabase, telegramUserId);
+    return campaignUi.buildOracleRaidsText(status);
+  } catch (err) {
+    console.error('Oracle campaign raid status unavailable', err.message);
+    return campaignUi.buildOracleRaidsText(campaignService.closedRaidStatus());
   }
 }
 

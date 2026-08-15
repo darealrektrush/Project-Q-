@@ -45,6 +45,21 @@ export async function getParticipantStatus(client, telegramUserId) {
   };
 }
 
+export async function getParticipantRaidStatus(client, telegramUserId) {
+  const id = campaignId();
+  const rows = await client.select(
+    'campaign_raid_events',
+    `?campaign_id=eq.${encodeURIComponent(id)}&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +
+      '&select=raid_id,action,tweet_id,verified_at,credited,reason&order=verified_at.desc&limit=10'
+  );
+  return {
+    events: rows,
+    verifiedActions: rows.filter((row) => row.credited).length,
+    pendingActions: rows.filter((row) => !row.credited && !row.reason).length,
+    rejectedActions: rows.filter((row) => Boolean(row.reason)).length,
+  };
+}
+
 export function closedCampaignStatus() {
   return {
     id: campaignId(), state: 'DRAFT', ruleset_version: null,
@@ -56,6 +71,13 @@ export function closedParticipantStatus() {
   return {
     enrolled: false, xLinked: false, xVerified: false, walletLinked: false,
     walletVerified: false, tokenAccountReady: false, xpByCycle: [], totalXp: 0,
+    unavailable: true,
+  };
+}
+
+export function closedRaidStatus() {
+  return {
+    events: [], verifiedActions: 0, pendingActions: 0, rejectedActions: 0,
     unavailable: true,
   };
 }

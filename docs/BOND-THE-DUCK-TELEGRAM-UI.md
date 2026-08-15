@@ -17,6 +17,7 @@ permissions; it does not activate the campaign or authorize treasury actions.
 | My XP | `menu:campaign:bond:xp` | Verified/pending/rejected XP and cap usage | No XP awarded |
 | Leaderboard | `menu:campaign:bond:leaderboard` | Current cycle and campaign standings | No active cycle |
 | Missions & Voting | `menu:campaign:bond:missions` | Missions, nine sites and four Telegram bots | Sources disabled |
+| Oracle Raids | `menu:campaign:bond:missions:raids` | Oracle-launched X raids, verification and campaign credit | Read-only history; sources disabled |
 | Buy-to-Earn | `menu:campaign:bond:buy` | Net-buy tier and eligibility status | Tracking inactive |
 | Cycle Results | `menu:campaign:bond:cycles` | Snapshots, public draw and winners | No results |
 | Rewards | `menu:campaign:bond:rewards` | Allocations and release schedule | No allocation |
@@ -43,6 +44,12 @@ create or subsidize an associated token account.
 Each card shows XP, requirements, deadline, verification class, state and one
 action. States: `AVAILABLE`, `ACTIVE`, `SUBMITTED`, `PENDING_EVIDENCE`,
 `VERIFIED`, `REJECTED`, `EXPIRED`, `SOURCE_UNAVAILABLE`.
+
+The mission centre is divided into Oracle Raids, Website Voting, Telegram
+Trending Bots, Other Missions and My Mission Progress. Oracle remains the raid
+launcher and X-engagement verifier. Project Q reads verified Oracle events into
+`campaign_raid_events`, applies campaign XP rules through `xp_ledger`, and shows
+the participant's credited, pending and rejected raid actions.
 
 ### Vote & Trend
 
@@ -97,4 +104,3 @@ No callback may sign, approve on-chain, or execute a Squads transaction.
 4. Leaderboard/results remain disabled until snapshot and draw reproduction tests pass.
 5. Rewards remain read-only until manifests reconcile with zero unexplained difference.
 6. `ACTIVE` requires the complete public readiness report and both founders.
-
