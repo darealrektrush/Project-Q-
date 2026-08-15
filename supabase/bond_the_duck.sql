@@ -465,7 +465,18 @@ declare
 begin
   select * into result from campaign_raid_events
     where campaign_id = p_campaign_id and idempotency_key = p_idempotency_key;
-  if found then return result; end if;
+  if found then
+    if result.raid_id is distinct from p_raid_id
+      or result.telegram_user_id is distinct from p_telegram_user_id
+      or result.x_user_id is distinct from p_x_user_id
+      or result.action is distinct from p_action
+      or result.tweet_id is distinct from p_tweet_id
+      or result.verified_at is distinct from p_verified_at
+    then
+      raise exception 'idempotency key was reused with a different Oracle event';
+    end if;
+    return result;
+  end if;
 
   if not exists (select 1 from campaigns where id = p_campaign_id and state = 'ACTIVE') then
     raise exception 'campaign is not active';
