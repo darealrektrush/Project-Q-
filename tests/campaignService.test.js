@@ -4,11 +4,24 @@ import {
   getCampaignStatus,
   getParticipantStatus,
   closedCampaignStatus,
+  getParticipantRaidStatus,
 } from '../src/campaign/service.js';
 
 test('missing campaign row remains safely in DRAFT', async () => {
   const client = { select: async () => [] };
   assert.equal((await getCampaignStatus(client)).state, 'DRAFT');
+});
+
+test('Oracle raid events are summarized for Project Q campaign progress', async () => {
+  const client = { select: async () => [
+    { raid_id: 'r1', action: 'like', credited: true, reason: null },
+    { raid_id: 'r1', action: 'reply', credited: false, reason: null },
+    { raid_id: 'r2', action: 'retweet', credited: false, reason: 'duplicate' },
+  ] };
+  const status = await getParticipantRaidStatus(client, 123);
+  assert.equal(status.verifiedActions, 1);
+  assert.equal(status.pendingActions, 1);
+  assert.equal(status.rejectedActions, 1);
 });
 
 test('participant status derives verification readiness and sums XP', async () => {
