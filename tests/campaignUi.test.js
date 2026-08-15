@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import {
   CAMPAIGN_CALLBACK_PREFIX,
   CAMPAIGN_HOME_TEXT,
+  buildCampaignHomeText,
   buildCampaignsMenu,
   buildBondTheDuckMenu,
+  buildParticipantStatusText,
+  buildParticipantXpText,
   getCampaignScreen,
 } from '../src/campaign/ui.js';
 
@@ -27,3 +30,13 @@ test('pre-launch campaign UI never represents the campaign as active', () => {
   assert.match(CAMPAIGN_HOME_TEXT, /not accepting enrollment, XP, buys or reward claims/);
 });
 
+test('live campaign and participant data render without opening unavailable actions', () => {
+  assert.match(buildCampaignHomeText({ state: 'ACTIVE' }), /Status:\* ACTIVE/);
+  assert.match(buildParticipantStatusText({
+    enrolled: true, xLinked: true, xVerified: true, walletLinked: true,
+    walletVerified: false, tokenAccountReady: false,
+  }), /✅ Enrolled/);
+  assert.match(buildParticipantXpText({
+    totalXp: 9, xpByCycle: [{ cycleId: 1, xp: 9 }],
+  }), /Cycle 1: 9 XP/);
+});
