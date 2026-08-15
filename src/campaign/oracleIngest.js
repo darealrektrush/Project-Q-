@@ -27,7 +27,7 @@ export function validateOracleRaidEvent(body) {
     throw new Error('invalid telegram_user_id');
   }
   if (!ACTIONS.has(action)) throw new Error('invalid action');
-  if (Number.isNaN(verifiedAt.getTime())) throw new Error('invalid verified_at');
+  if (Number.isNaN(verifiedAt.getTime())) throw new Error('invalid verified_at');\n  if (verifiedAt.getTime() > Date.now() + 5 * 60 * 1000) {\n    throw new Error('invalid verified_at');\n  }
   const idempotencyKey = createHash('sha256')
     .update(`oracle:${raidId}:${xUserId}:${action}`)
     .digest('hex');
