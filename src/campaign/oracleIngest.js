@@ -22,12 +22,16 @@ export function validateOracleRaidEvent(body) {
   const action = requiredString(body?.action, 'action', 20).toLowerCase();
   const tweetId = requiredString(body?.tweet_id, 'tweet_id');
   const telegramUserId = Number(body?.telegram_user_id);
-  const verifiedAtRaw = requiredString(body?.verified_at, 'verified_at', 40);\n  const verifiedAt = new Date(verifiedAtRaw);
+  const verifiedAtRaw = requiredString(body?.verified_at, 'verified_at', 40);
+  const verifiedAt = new Date(verifiedAtRaw);
   if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0) {
     throw new Error('invalid telegram_user_id');
   }
   if (!ACTIONS.has(action)) throw new Error('invalid action');
-  if (Number.isNaN(verifiedAt.getTime())) throw new Error('invalid verified_at');\n  if (verifiedAt.getTime() > Date.now() + 5 * 60 * 1000) {\n    throw new Error('invalid verified_at');\n  }
+  if (Number.isNaN(verifiedAt.getTime())) throw new Error('invalid verified_at');
+  if (verifiedAt.getTime() > Date.now() + 5 * 60 * 1000) {
+    throw new Error('invalid verified_at');
+  }
   const idempotencyKey = createHash('sha256')
     .update(`oracle:${raidId}:${xUserId}:${action}`)
     .digest('hex');
