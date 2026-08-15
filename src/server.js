@@ -12,12 +12,14 @@ import * as events from './lib/events.js';
 import * as eventsAdmin from './lib/eventsAdmin.js';
 import * as campaignUi from './campaign/ui.js';
 import * as campaignService from './campaign/service.js';
+import * as oracleIngest from './campaign/oracleIngest.js';
 
 const app = express();
 app.use(express.json());
 
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
+const ORACLE_CAMPAIGN_SECRET = process.env.ORACLE_CAMPAIGN_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
 
@@ -65,6 +67,24 @@ app.post('/bagwork', async (req, res) => {
   } catch (err) {
     console.error('bagwork handling failed', err);
     res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/oracle/campaign-raid-event', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  try {
+    const event = oracleIngest.validateOracleRaidEvent(req.body);
+    const result = await oracleIngest.ingestOracleRaidEvent(supabase, event);
+    return res.status(200).json({ ok: true, event: result });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('Oracle campaign raid ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'campaign event rejected',
+    });
   }
 });
 
