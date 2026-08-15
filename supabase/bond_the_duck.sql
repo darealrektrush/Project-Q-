@@ -429,3 +429,18 @@ revoke all on campaigns, ruleset_versions, deployment_registry,
   positions, allocations, releases, manifests, treasury_transactions,
   reserve_ledger, audit_log from anon, authenticated;
 revoke all on campaign_xp_totals, campaign_registry_status from anon, authenticated;
+
+-- Supabase's 2026 Data API defaults require deliberate grants. These objects
+-- are bot-server-only: grant the service role exactly what the REST client
+-- needs while leaving anon/authenticated denied and RLS enabled.
+grant select, insert, update, delete on campaigns, ruleset_versions, deployment_registry,
+  campaign_state_transitions, identity_links, wallet_challenges, cycles,
+  xp_ledger, campaign_raid_events, verification_sources, cycle_winners,
+  positions, allocations, releases, manifests, treasury_transactions,
+  reserve_ledger, audit_log to service_role;
+grant select on campaign_xp_totals, campaign_registry_status to service_role;
+grant usage, select on sequence wallet_challenges_id_seq,
+  campaign_state_transitions_id_seq, xp_ledger_id_seq,
+  campaign_raid_events_id_seq, allocations_id_seq, releases_id_seq,
+  manifests_id_seq, treasury_transactions_id_seq, reserve_ledger_id_seq,
+  audit_log_id_seq to service_role;

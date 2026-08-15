@@ -10,6 +10,8 @@ import * as bagwork from './lib/bagwork.js';
 import * as signal from './lib/signal.js';
 import * as events from './lib/events.js';
 import * as eventsAdmin from './lib/eventsAdmin.js';
+import * as campaignUi from './campaign/ui.js';
+import * as campaignService from './campaign/service.js';
 
 const app = express();
 app.use(express.json());
@@ -174,6 +176,11 @@ async function handleMessage(message) {
       return sendSignalCommand(chatId, threadId);
     case '/spaces':
       return sendSpaces(chatId, threadId);
+    case '/campaign':
+      return telegram.sendMessage(chatId, await buildCampaignHomeText(), {
+        threadId,
+        replyMarkup: campaignUi.buildBondTheDuckMenu(),
+      });
     default:
       return;
   }
@@ -283,6 +290,12 @@ async function handleCallbackQuery(callbackQuery) {
       return sendWallets(chatId, threadId);
     case 'menu:door':
       return sendDoorInfo(chatId, threadId);
+    case 'menu:campaigns':
+      return editMenuMessage(callbackQuery, '🦆 *Campaigns* — choose a campaign:', campaignUi.buildCampaignsMenu());
+    case 'menu:campaigns:back':
+      return sendHome(chatId, threadId);
+    case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
+      return editMenuMessage(callbackQuery, await buildCampaignHomeText(), campaignUi.buildBondTheDuckMenu());
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
@@ -303,9 +316,38 @@ async function handleCallbackQuery(callbackQuery) {
       return editMenuMessage(callbackQuery, await buildBagworkboardText(), {
         inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]],
       });
-    default:
+    default: {
+      if (callbackQuery.data?.startsWith(`${campaignUi.CAMPAIGN_CALLBACK_PREFIX}:`)) {
+        const screen = callbackQuery.data.slice(campaignUi.CAMPAIGN_CALLBACK_PREFIX.length + 1);
+        const text = await buildCampaignScreenText(screen, callbackQuery.from.id);
+        if (text) return editMenuMessage(callbackQuery, text, campaignUi.buildCampaignScreenMenu());
+      }
       return;
+    }
   }
+}
+
+async function buildCampaignHomeText() {
+  try {
+    return campaignUi.buildCampaignHomeText(await campaignService.getCampaignStatus(supabase));
+  } catch (err) {
+    console.error('campaign status unavailable', err.message);
+    return campaignUi.buildCampaignHomeText(campaignService.closedCampaignStatus());
+  }
+}
+
+async function buildCampaignScreenText(screen, telegramUserId) {
+  if (!['status', 'xp'].includes(screen)) return campaignUi.getCampaignScreen(screen);
+  let status;
+  try {
+    status = await campaignService.getParticipantStatus(supabase, telegramUserId);
+  } catch (err) {
+    console.error('campaign participant status unavailable', err.message);
+    status = campaignService.closedParticipantStatus();
+  }
+  return screen === 'status'
+    ? campaignUi.buildParticipantStatusText(status)
+    : campaignUi.buildParticipantXpText(status);
 }
 
 // Checks Supabase for an admin-set override (bio text / image) for `key`
@@ -341,6 +383,7 @@ function sendHelp(chatId, threadId) {
     '/door — Beyond the Door',
     '/signal — Current Signal (reveal, ignore, or grab hints for XP)',
     '/spaces — Upcoming Spaces',
+    '/campaign — Bond the Duck campaign hub',
     '',
     '_Coming soon:_ /missions /meme /feed /ask',
     '',
