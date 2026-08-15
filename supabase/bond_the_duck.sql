@@ -444,3 +444,77 @@ grant usage, select on sequence wallet_challenges_id_seq,
   campaign_raid_events_id_seq, allocations_id_seq, releases_id_seq,
   manifests_id_seq, treasury_transactions_id_seq, reserve_ledger_id_seq,
   audit_log_id_seq to service_role;
+
+-- Accept one positively verified Oracle action into the campaign ledger.
+-- The bridge records proof as pending; a separate capped XP settlement step
+-- decides whether and how much campaign XP to award.
+create or replace function ingest_oracle_raid_event(
+  p_campaign_id text,
+  p_raid_id text,
+  p_telegram_user_id bigint,
+  p_x_user_id text,
+  p_action text,
+  p_tweet_id text,
+  p_verified_at timestamptz,
+  p_idempotency_key text
+) returns campaign_raid_events
+language plpgsql security invoker set search_path = public as $$
+declare
+  result campaign_raid_events;
+  active_cycle integer;
+begin
+  select * into result from campaign_raid_events
+    where campaign_id = p_campaign_id and idempotency_key = p_idempotency_key;
+  if found then
+    if result.raid_id is distinct from p_raid_id
+      or result.telegram_user_id is distinct from p_telegram_user_id
+      or result.x_user_id is distinct from p_x_user_id
+      or result.action is distinct from p_action
+      or result.tweet_id is distinct from p_tweet_id
+      or result.verified_at is distinct from p_verified_at
+    then
+      raise exception 'idempotency key was reused with a different Oracle event';
+    end if;
+    return result;
+  end if;
+
+  if not exists (select 1 from campaigns where id = p_campaign_id and state = 'ACTIVE') then
+    raise exception 'campaign is not active';
+  end if;
+  if p_verified_at > now() + interval '5 minutes' then
+    raise exception 'verified action timestamp is in the future';
+  end if;
+  if not exists (
+    select 1 from identity_links
+    where campaign_id = p_campaign_id
+      and telegram_user_id = p_telegram_user_id
+      and x_user_id = p_x_user_id
+      and x_verified_at is not null
+  ) then raise exception 'campaign identity does not match verified Oracle identity'; end if;
+
+  select cycle_id into active_cycle from cycles
+    where campaign_id = p_campaign_id
+      and p_verified_at >= opens_at and p_verified_at < closes_at
+    order by cycle_id limit 1;
+  if active_cycle is null then raise exception 'verified action is outside an active cycle'; end if;
+
+  insert into campaign_raid_events
+    (campaign_id, cycle_id, raid_id, action, x_user_id, telegram_user_id,
+     tweet_id, verified_at, idempotency_key, credited)
+  values
+    (p_campaign_id, active_cycle, p_raid_id, p_action, p_x_user_id,
+     p_telegram_user_id, p_tweet_id, p_verified_at, p_idempotency_key, false)
+  on conflict (campaign_id, idempotency_key) do nothing
+  returning * into result;
+  if result.id is null then
+    select * into result from campaign_raid_events
+      where campaign_id = p_campaign_id and idempotency_key = p_idempotency_key;
+  end if;
+  return result;
+end;
+$$;
+
+revoke all on function ingest_oracle_raid_event(text,text,bigint,text,text,text,timestamptz,text)
+  from public, anon, authenticated;
+grant execute on function ingest_oracle_raid_event(text,text,bigint,text,text,text,timestamptz,text)
+  to service_role;

@@ -51,6 +51,26 @@ launcher and X-engagement verifier. Project Q reads verified Oracle events into
 `campaign_raid_events`, applies campaign XP rules through `xp_ledger`, and shows
 the participant's credited, pending and rejected raid actions.
 
+
+### Oracle raid event bridge
+
+Oracle sends each positively verified X action to
+`POST /oracle/campaign-raid-event` with the shared
+`x-oracle-campaign-secret` header. The Project Q endpoint accepts only canonical
+raid actions and calls one database function that checks the active campaign,
+the participant's verified Telegram/X identity, the matching cycle and replay
+idempotency.
+
+An accepted event is stored with `credited=false`; receipt is not an XP award.
+The separate campaign settlement pipeline applies the campaign's daily caps and
+writes any award to `xp_ledger`. Oracle failures never grant campaign XP, and a
+Project Q outage never rolls back Oracle's own proof or XP.
+
+Keep the bridge disabled until the migration and endpoint are deployed, both
+services have the same dedicated bridge secret, and the campaign activation
+gate has passed. Neither service may receive the other service's Supabase
+service-role key.
+
 ### Vote & Trend
 
 Website flow: open registered site → submit vote number or signed mission token
