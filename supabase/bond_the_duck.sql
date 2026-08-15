@@ -479,7 +479,10 @@ begin
   end if;
 
   if not exists (select 1 from campaigns where id = p_campaign_id and state = 'ACTIVE') then
-    raise exception 'campaign is not active';\n  end if;\n  if p_verified_at > now() + interval '5 minutes' then\n    raise exception 'verified action timestamp is in the future';
+    raise exception 'campaign is not active';
+  end if;
+  if p_verified_at > now() + interval '5 minutes' then
+    raise exception 'verified action timestamp is in the future';
   end if;
   if not exists (
     select 1 from identity_links
