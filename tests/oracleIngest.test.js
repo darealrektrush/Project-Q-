@@ -29,7 +29,9 @@ test('Oracle event validation rejects unknown actions and identities', () => {
     tweet_id: 't', verified_at: '2026-08-15T00:00:00Z',
   };
   assert.throws(() => validateOracleRaidEvent({ ...valid, action: 'follow' }), /invalid action/);
-  assert.throws(() => validateOracleRaidEvent({ ...valid, telegram_user_id: 'bad' }), /telegram_user_id/);\n  assert.throws(() => validateOracleRaidEvent({ ...valid, verified_at: ['2026-08-15'] }), /verified_at/);\n  assert.throws(() => validateOracleRaidEvent({ ...valid, verified_at: '2999-01-01T00:00:00Z' }), /verified_at/);
+  assert.throws(() => validateOracleRaidEvent({ ...valid, telegram_user_id: 'bad' }), /telegram_user_id/);
+  assert.throws(() => validateOracleRaidEvent({ ...valid, verified_at: ['2026-08-15'] }), /verified_at/);
+  assert.throws(() => validateOracleRaidEvent({ ...valid, verified_at: '2999-01-01T00:00:00Z' }), /verified_at/);
 });
 
 test('validated event is sent only through the atomic ingest RPC', async () => {
