@@ -38,16 +38,23 @@ export function buildBondTheDuckMenu() {
   };
 }
 
-export const CAMPAIGN_HOME_TEXT = [
-  '🦆 *Bond the Duck*',
-  '',
-  'A 10-day verified-participation and holder-acquisition campaign powered by Project Q.',
-  '',
-  '*Status:* DRAFT / pre-launch',
-  'The campaign is not accepting enrollment, XP, buys or reward claims yet.',
-  '',
-  '_Project Q calculates and verifies. Squads 2-of-3 controls every treasury transfer._',
-].join('\n');
+export function buildCampaignHomeText(campaign = { state: 'DRAFT' }) {
+  const state = campaign.state ?? 'DRAFT';
+  const closed = !['ACTIVE', 'VERIFYING', 'ALLOCATIONS_FROZEN', 'DISTRIBUTING', 'COMPLETED'].includes(state);
+  return [
+    '🦆 *Bond the Duck*',
+    '',
+    'A 10-day verified-participation and holder-acquisition campaign powered by Project Q.',
+    '',
+    `*Status:* ${state}${state === 'DRAFT' ? ' / pre-launch' : ''}`,
+    ...(campaign.unavailable ? ['Campaign data is not connected yet; this screen is safely closed.'] : []),
+    ...(closed ? ['The campaign is not accepting enrollment, XP, buys or reward claims.'] : []),
+    '',
+    '_Project Q calculates and verifies. Squads 2-of-3 controls every treasury transfer._',
+  ].join('\n');
+}
+
+export const CAMPAIGN_HOME_TEXT = buildCampaignHomeText();
 
 const SCREEN_TEXT = Object.freeze({
   overview: [
@@ -120,7 +127,37 @@ export function getCampaignScreen(screen) {
   return SCREEN_TEXT[screen] ?? null;
 }
 
+function yesNo(value) {
+  return value ? '✅' : '—';
+}
+
+export function buildParticipantStatusText(status) {
+  if (status.unavailable) return SCREEN_TEXT.status;
+  return [
+    '📈 *My Campaign Status*', '',
+    `${yesNo(status.enrolled)} Enrolled`,
+    `${yesNo(status.xLinked)} X account linked`,
+    `${yesNo(status.xVerified)} X identity verified`,
+    `${yesNo(status.walletLinked)} Reward wallet linked`,
+    `${yesNo(status.walletVerified)} Reward wallet verified`,
+    `${yesNo(status.tokenAccountReady)} FAWKQ token account ready`,
+  ].join('\n');
+}
+
+export function buildParticipantXpText(status) {
+  if (status.unavailable) return SCREEN_TEXT.xp;
+  const cycles = status.xpByCycle.length
+    ? status.xpByCycle.map(({ cycleId, xp }) => `Cycle ${cycleId}: ${xp} XP`)
+    : ['No verified campaign XP yet.'];
+  return [
+    '⚡ *My Campaign XP*', '',
+    `*Verified total:* ${status.totalXp} XP`,
+    ...cycles,
+    '',
+    'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
+  ].join('\n');
+}
+
 export function buildCampaignScreenMenu() {
   return { inline_keyboard: [[{ text: '⬅️ Back to Bond the Duck', callback_data: CAMPAIGN_CALLBACK_PREFIX }]] };
 }
-
