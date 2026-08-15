@@ -22,7 +22,7 @@ export function validateOracleRaidEvent(body) {
   const action = requiredString(body?.action, 'action', 20).toLowerCase();
   const tweetId = requiredString(body?.tweet_id, 'tweet_id');
   const telegramUserId = Number(body?.telegram_user_id);
-  const verifiedAt = new Date(body?.verified_at);
+  const verifiedAtRaw = requiredString(body?.verified_at, 'verified_at', 40);\n  const verifiedAt = new Date(verifiedAtRaw);
   if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0) {
     throw new Error('invalid telegram_user_id');
   }
