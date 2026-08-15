@@ -21,6 +21,8 @@ services:
         sync: false
       - key: BAGWORK_SECRET
         sync: false
+      - key: ORACLE_CAMPAIGN_SECRET
+        sync: false
       - key: FAWKQ_WEBSITE_URL
         sync: false
       - key: XP_PER_SOL
