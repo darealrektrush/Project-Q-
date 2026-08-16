@@ -6,6 +6,15 @@
   "banner": "/campaign-app/assets/bond-the-duck-campaign-banner.webp",
   "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
   "leaderboardIcon": "/campaign-app/assets/missions/leaderboards.webp",
+  "identityBadges": {
+    "x": "/campaign-app/assets/identity/x-verified.webp",
+    "telegram": "/campaign-app/assets/identity/telegram-verified.webp",
+    "wallet": "/campaign-app/assets/identity/wallet-connected.webp",
+    "collective": "/campaign-app/assets/identity/collective-verified.webp",
+    "rewards": "/campaign-app/assets/identity/rewards-eligible.webp",
+    "full": "/campaign-app/assets/identity/fully-verified.webp",
+    "fullHero": "/campaign-app/assets/identity/fully-verified-hero.webp"
+  },
   "status": "DRAFT",
   "statusLabel": "PRE-LAUNCH / READINESS MODE",
   "tagline": "Build reputation. Earn XP. Compete transparently.",

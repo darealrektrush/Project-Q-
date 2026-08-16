@@ -86,12 +86,18 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .score-orb { width: 128px; height: 128px; border-radius: 50%; display: grid; place-items: center; text-align: center; background: radial-gradient(circle,rgba(255,177,27,.2),rgba(255,177,27,.035) 68%); border: 1px solid rgba(255,177,27,.2); }
 .page-emblem { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 12px 28px rgba(255,177,27,.14)); }
 .score-orb strong { display: block; font-size: 35px; }
+.identity-status-art { width: 190px; max-height: 210px; object-fit: contain; filter: drop-shadow(0 14px 30px rgba(255,177,27,.12)); }
+.eligibility-art { width: 150px; max-height: 170px; object-fit: contain; }
 .list { display: grid; gap: 10px; }
 .list-row { display: grid; grid-template-columns: 46px 1fr auto; gap: 14px; align-items: center; padding: 15px; border-radius: 16px; background: rgba(255,255,255,.025); border: 1px solid var(--line); }
 .list-row .rank { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(255,177,27,.1); color: var(--gold); font-weight: 900; }
 .list-row p, .list-row h3 { margin: 0; }
 .list-row p { margin-top: 4px; color: var(--muted); font-size: 12px; }
 .list-row > b { color: var(--gold); }
+.credential-row { grid-template-columns: 72px 1fr auto; }
+.credential-badge { display: block; width: 66px; height: 66px; object-fit: contain; transition: .2s ease; }
+.credential-badge.locked { filter: grayscale(1); opacity: .34; }
+.credential-badge.verified { filter: drop-shadow(0 7px 14px rgba(255,177,27,.18)); }
 .reward { padding: 22px; }
 .reward strong { display: block; margin: 12px 0 3px; font-size: 28px; }
 .identity-lock { margin-top: 20px; padding: 22px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; border: 1px solid rgba(255,177,27,.22); background: linear-gradient(120deg,rgba(255,177,27,.08),rgba(255,255,255,.02)); border-radius: 20px; }
@@ -114,6 +120,7 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
   .stats { grid-template-columns: repeat(2,1fr); }
   .mission-grid, .reward-grid { grid-template-columns: 1fr; }
   .page-intro { grid-template-columns: 1fr; }
+  .identity-status-art, .eligibility-art { width: 132px; }
   .score-orb { width: 110px; height: 110px; }
   .identity-lock { grid-template-columns: 1fr; }
   .mobile-nav { position: fixed; z-index: 8; display: grid; grid-template-columns: repeat(6,1fr); inset: auto 0 0; padding: 8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); background: rgba(10,12,15,.94); backdrop-filter: blur(20px); border-top: 1px solid var(--line); }
@@ -129,4 +136,7 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
   .hero h2 { font-size: 50px; }
   .stats { gap: 9px; }
   .stat { padding: 16px; }
+  .credential-row { grid-template-columns: 56px 1fr; }
+  .credential-row > button, .credential-row > b { grid-column: 2; width: max-content; }
+  .credential-badge { width: 52px; height: 52px; }
 }

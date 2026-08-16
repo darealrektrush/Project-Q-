@@ -83,17 +83,27 @@ function leaderboardScreen() {
 }
 
 function rewardsScreen() {
-  const releases=(state.campaign||fallbackCampaign).releases;
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Reward centre</span><h2>Your campaign allocation.</h2><p>Track preliminary eligibility, founder review, scheduled releases and public transaction receipts. Squads 2-of-3 controls every treasury transfer.</p></div></div><div class="reward-grid">${releases.map(release=>`<div class="card reward"><span class="label">${release.label}</span><strong>${release.percent}%</strong><p>${release.detail}</p></div>`).join('')}</div><div class="identity-lock"><div><b>No allocation exists yet</b><p>Enrollment, XP earning and reward calculations remain disabled until the public readiness gate passes.</p></div><button class="secondary" data-screen="profile">Check eligibility</button></div></article>`;
+  const c=state.campaign||fallbackCampaign;
+  const releases=c.releases;
+  const rewardReady=state.profile.telegramVerified&&state.profile.xVerified&&state.profile.walletVerified;
+  const badge=rewardReady&&c.identityBadges?.rewards?`<img class="eligibility-art" src="${c.identityBadges.rewards}" alt="Eligible for campaign rewards" />`:'';
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Reward centre</span><h2>Your campaign allocation.</h2><p>Track preliminary eligibility, founder review, scheduled releases and public transaction receipts. Squads 2-of-3 controls every treasury transfer.</p></div>${badge}</div><div class="reward-grid">${releases.map(release=>`<div class="card reward"><span class="label">${release.label}</span><strong>${release.percent}%</strong><p>${release.detail}</p></div>`).join('')}</div><div class="identity-lock"><div><b>No allocation exists yet</b><p>Enrollment, XP earning and reward calculations remain disabled until the public readiness gate passes.</p></div><button class="secondary" data-screen="profile">Check eligibility</button></div></article>`;
 }
 
 function profileScreen() {
   const p=state.profile;
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${p.name}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div><div class="score-orb"><div><strong>${[p.telegramVerified,p.xVerified,p.walletVerified].filter(Boolean).length}/3</strong><small>verified</small></div></div></div><div class="list">
-    <div class="list-row"><span class="rank">TG</span><div><h3>Telegram identity</h3><p>${p.telegramVerified?'Signed Mini App session verified':'Open through Project Q to verify'}</p></div><b>${p.telegramVerified?'Verified':'Required'}</b></div>
-    <div class="list-row"><span class="rank">X</span><div><h3>Oracle X identity</h3><p>${p.xVerified?'Permanent X user ID linked':'Authorize through the CrabStar Oracle'}</p></div><button class="secondary" id="oracle-link">${p.xVerified?'Verified':'Open Oracle'}</button></div>
-    <div class="list-row"><span class="rank">◎</span><div><h3>Solana reward wallet</h3><p>${state.wallet?short(state.wallet):'Connect Phantom, Solflare or Backpack'}</p></div><button class="secondary" id="profile-wallet">${state.wallet?'Connected':'Connect'}</button></div>
-  </div><div class="identity-lock"><div><b>Campaign access: ${p.telegramVerified&&p.xVerified?'Eligible to enroll':'Locked'}</b><p>Telegram and X verification unlock participation. Wallet verification is required before rewards can be finalized.</p></div></div></article>`;
+  const c=state.campaign||fallbackCampaign;
+  const badges=c.identityBadges||{};
+  const verifiedCount=[p.telegramVerified,p.xVerified,p.walletVerified].filter(Boolean).length;
+  const participationReady=p.telegramVerified&&p.xVerified;
+  const fullyVerified=participationReady&&p.walletVerified;
+  const credential=(src,alt,ok)=>src?`<img class="credential-badge ${ok?'verified':'locked'}" src="${src}" alt="${alt}" />`:'<span class="rank">—</span>';
+  const statusBadge=fullyVerified?badges.fullHero:(participationReady?badges.collective:null);
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${p.name}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div>${statusBadge?`<img class="identity-status-art" src="${statusBadge}" alt="${fullyVerified?'Fully verified identity':'Collective verified community member'}" />`:`<div class="score-orb"><div><strong>${verifiedCount}/3</strong><small>verified</small></div></div>`}</div><div class="list">
+    <div class="list-row credential-row">${credential(badges.telegram,'Telegram verified',p.telegramVerified)}<div><h3>Telegram identity</h3><p>${p.telegramVerified?'Signed Mini App session verified':'Open through Project Q to verify'}</p></div><b>${p.telegramVerified?'Verified':'Required'}</b></div>
+    <div class="list-row credential-row">${credential(badges.x,'X verified',p.xVerified)}<div><h3>Oracle X identity</h3><p>${p.xVerified?'Permanent X user ID linked':'Authorize through the CrabStar Oracle'}</p></div><button class="secondary" id="oracle-link">${p.xVerified?'Verified':'Open Oracle'}</button></div>
+    <div class="list-row credential-row">${credential(badges.wallet,'Wallet connected and verified',p.walletVerified)}<div><h3>Solana reward wallet</h3><p>${state.wallet?short(state.wallet):'Connect Phantom, Solflare or Backpack'}</p></div><button class="secondary" id="profile-wallet">${state.wallet?'Connected':'Connect'}</button></div>
+  </div><div class="identity-lock"><div><b>Campaign access: ${participationReady?'Eligible to enroll':'Locked'}</b><p>Telegram and X verification unlock participation. Wallet verification is required before rewards can be finalized.</p></div></div></article>`;
 }
 
 const screens={home,missions:missionsScreen,xp:xpScreen,leaderboard:leaderboardScreen,rewards:rewardsScreen,profile:profileScreen};
