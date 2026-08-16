@@ -6,6 +6,7 @@
   "banner": "/campaign-app/assets/bond-the-duck-campaign-banner.webp",
   "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
   "leaderboardIcon": "/campaign-app/assets/missions/leaderboards.webp",
+  "creatorAwardsArtwork": "/campaign-app/assets/creator-awards-distribution.webp",
   "identityBadges": {
     "x": "/campaign-app/assets/identity/x-verified.webp",
     "telegram": "/campaign-app/assets/identity/telegram-verified.webp",

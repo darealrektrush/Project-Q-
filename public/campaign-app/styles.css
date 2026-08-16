@@ -108,6 +108,11 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .credential-badge.verified { filter: drop-shadow(0 7px 14px rgba(255,177,27,.18)); }
 .reward { padding: 22px; }
 .reward strong { display: block; margin: 12px 0 3px; font-size: 28px; }
+.distribution-heading { align-items: start; margin-top: 34px; }
+.distribution-heading div { display: grid; gap: 5px; }
+.distribution-card { margin: 0; overflow: hidden; border: 1px solid rgba(255,196,76,.2); border-radius: 20px; background: #050505; }
+.distribution-card img { display: block; width: 100%; height: auto; }
+.distribution-card figcaption { padding: 12px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.5; }
 .identity-lock { margin-top: 20px; padding: 22px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; border: 1px solid rgba(255,177,27,.22); background: linear-gradient(120deg,rgba(255,177,27,.08),rgba(255,255,255,.02)); border-radius: 20px; }
 .identity-lock p { margin: 6px 0 0; color: var(--muted); }
 .secondary { padding: 11px 15px; color: var(--text); background: rgba(255,255,255,.06); border: 1px solid var(--line); }
