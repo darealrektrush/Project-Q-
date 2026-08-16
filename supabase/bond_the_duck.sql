@@ -518,3 +518,54 @@ revoke all on function ingest_oracle_raid_event(text,text,bigint,text,text,text,
   from public, anon, authenticated;
 grant execute on function ingest_oracle_raid_event(text,text,bigint,text,text,text,timestamptz,text)
   to service_role;
+
+-- Oracle is authoritative for the permanent X account linked to a Telegram
+-- identity. Conflicting links fail closed instead of silently moving either
+-- identity between participants.
+create or replace function link_oracle_identity(
+  p_campaign_id text,
+  p_telegram_user_id bigint,
+  p_x_user_id text,
+  p_verified_at timestamptz
+) returns identity_links
+language plpgsql security invoker set search_path = public as $$
+declare
+  result identity_links;
+begin
+  if p_telegram_user_id <= 0 or nullif(btrim(p_x_user_id), '') is null then
+    raise exception 'invalid Oracle identity';
+  end if;
+  if p_verified_at > now() + interval '5 minutes' then
+    raise exception 'Oracle verification timestamp is in the future';
+  end if;
+  if not exists (select 1 from campaigns where id = p_campaign_id) then
+    raise exception 'unknown campaign';
+  end if;
+  if exists (
+    select 1 from identity_links
+    where campaign_id = p_campaign_id
+      and telegram_user_id = p_telegram_user_id
+      and x_user_id is not null
+      and x_user_id <> btrim(p_x_user_id)
+  ) then raise exception 'Telegram identity is already linked to another X account'; end if;
+  if exists (
+    select 1 from identity_links
+    where campaign_id = p_campaign_id
+      and x_user_id = btrim(p_x_user_id)
+      and telegram_user_id <> p_telegram_user_id
+  ) then raise exception 'X identity is already linked to another Telegram account'; end if;
+
+  insert into identity_links (campaign_id, telegram_user_id, x_user_id, x_verified_at)
+  values (p_campaign_id, p_telegram_user_id, btrim(p_x_user_id), p_verified_at)
+  on conflict (campaign_id, telegram_user_id) do update
+    set x_user_id = excluded.x_user_id,
+        x_verified_at = greatest(identity_links.x_verified_at, excluded.x_verified_at)
+  returning * into result;
+  return result;
+end;
+$$;
+
+revoke all on function link_oracle_identity(text,bigint,text,timestamptz)
+  from public, anon, authenticated;
+grant execute on function link_oracle_identity(text,bigint,text,timestamptz)
+  to service_role;
