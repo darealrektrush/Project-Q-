@@ -7,6 +7,12 @@
   "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
   "leaderboardIcon": "/campaign-app/assets/missions/leaderboards.webp",
   "creatorAwardsArtwork": "/campaign-app/assets/creator-awards-distribution.webp",
+  "stateArtwork": {
+    "DISABLED": "/campaign-app/assets/states/empty.webp",
+    "LOCKED": "/campaign-app/assets/states/locked.webp",
+    "COMPLETED": "/campaign-app/assets/states/completed.webp",
+    "ARCHIVED": "/campaign-app/assets/states/archived.webp"
+  },
   "identityBadges": {
     "x": "/campaign-app/assets/identity/x-verified.webp",
     "telegram": "/campaign-app/assets/identity/telegram-verified.webp",

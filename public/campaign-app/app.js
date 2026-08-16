@@ -27,6 +27,7 @@ const fallbackCampaign = {
   description: 'Project Q campaign records remain safely closed.', readinessPercent: 0,
   xpCaps: { overallDaily: 0, participationDaily: 0, projectQDaily: 0 },
   releases: [], missions: [],
+  stateArtwork: { DISABLED: '/campaign-app/assets/states/empty.webp' },
 };
 
 function navMarkup() {
@@ -41,7 +42,9 @@ function home() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
   const banner=c.banner?`<figure class="campaign-banner"><img src="${c.banner}" alt="${c.bannerAlt||`${c.name} campaign banner`}" /></figure>`:'';
-  return `${banner}<div class="hero-grid">
+  const stateArt=c.stateArtwork?.[c.status];
+  const lifecycle=stateArt?`<figure class="campaign-state"><img src="${stateArt}" alt="${c.name} ${c.status.toLowerCase()} campaign state" /><figcaption>Project Q campaign state: ${c.status}</figcaption></figure>`:'';
+  return `${lifecycle}${banner}<div class="hero-grid">
     <article class="card hero">
       <div><span class="campaign-chip">${c.statusLabel}</span><h2>${c.name.replace(' ','<br>')}.</h2><p>${c.description} ${c.tagline}</p></div>
       <div><div class="gate-row"><span>Campaign readiness</span><b class="wait">${c.status}</b></div><div class="progress"><span style="width:${c.readinessPercent}%"></span></div></div>
