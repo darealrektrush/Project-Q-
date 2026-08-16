@@ -125,6 +125,7 @@ function profileScreen() {
 
 const screens={home,missions:missionsScreen,xp:xpScreen,leaderboard:leaderboardScreen,rewards:rewardsScreen,profile:profileScreen};
 function short(v){return `${v.slice(0,5)}…${v.slice(-5)}`}
+function bytesToBase64(bytes){let binary='';bytes.forEach(byte=>{binary+=String.fromCharCode(byte)});return btoa(binary)}
 function toast(msg){const el=document.querySelector('#toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800)}
 function render(){const c=state.campaign||fallbackCampaign;document.querySelector('#desktop-nav').innerHTML=navMarkup();document.querySelector('#mobile-nav').innerHTML=navMarkup();document.querySelector('#screen').innerHTML=screens[state.screen]();document.querySelector('#screen-title').textContent=state.screen==='home'?c.name:(NAV.find(n=>n[0]===state.screen)?.[2]||c.name);document.querySelector('#campaign-sequence').textContent=`PROJECT Q / ${c.sequence}`;document.title=`Project Q — ${c.name}`;bind();}
 function go(screen){if(!screens[screen])return;state.screen=screen;history.replaceState(null,'',`#${screen}`);render();state.telegram?.HapticFeedback?.impactOccurred('light');}
@@ -132,7 +133,25 @@ function go(screen){if(!screens[screen])return;state.screen=screen;history.repla
 async function connectWallet(){
   const provider=window.phantom?.solana||window.solflare||window.backpack;
   if(!provider){toast('Open in Phantom, Solflare or Backpack to connect securely.');window.open('https://phantom.app/','_blank');return;}
-  try{const result=await provider.connect();state.wallet=(result?.publicKey||provider.publicKey)?.toString();state.profile.walletVerified=false;document.querySelector('#wallet-button').textContent=short(state.wallet);document.querySelector('#wallet-button').classList.add('connected');toast('Wallet connected. Ownership signature is the next security step.');render();}catch{toast('Wallet connection was cancelled.');}
+  try{
+    const result=await provider.connect();
+    state.wallet=(result?.publicKey||provider.publicKey)?.toString();
+    state.profile.walletVerified=false;
+    render();
+    const initData=state.telegram?.initData;
+    if(!initData){toast('Open through Project Q in Telegram to verify this wallet.');return;}
+    const challengeResponse=await fetch('/campaign-app/api/wallet/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData})});
+    if(!challengeResponse.ok)throw new Error('challenge');
+    const challenge=await challengeResponse.json();
+    if(typeof provider.signMessage!=='function'){toast('This wallet does not support message signing here.');return;}
+    const signed=await provider.signMessage(new TextEncoder().encode(challenge.message),'utf8');
+    const signature=bytesToBase64(signed.signature||signed);
+    const verifyResponse=await fetch('/campaign-app/api/wallet/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData,nonce:challenge.nonce,wallet:state.wallet,signature})});
+    if(!verifyResponse.ok)throw new Error('verify');
+    state.profile.walletVerified=true;
+    toast('Wallet ownership verified. No transaction was authorized.');
+    render();
+  }catch{toast('Wallet connection or ownership verification was cancelled.');}
 }
 
 function bind(){
@@ -167,6 +186,7 @@ async function authenticateTelegram(){
     state.profile.telegramVerified=true;
     state.profile.xVerified=Boolean(session.participant?.xVerified);
     state.profile.walletVerified=Boolean(session.participant?.walletVerified);
+    state.wallet=session.participant?.rewardWallet||null;
     state.profile.xp=Number(session.participant?.totalXp||0);
   }catch{ /* Fail closed and retain the unverified UI. */ }
 }

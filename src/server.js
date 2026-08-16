@@ -16,6 +16,7 @@ import * as campaignUi from './campaign/ui.js';
 import * as campaignService from './campaign/service.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
+import * as walletVerification from './campaign/walletVerification.js';
 
 const app = express();
 app.use(express.json());
@@ -51,6 +52,36 @@ app.post('/campaign-app/api/session', async (req, res) => {
       ok: false,
       error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
     });
+  }
+});
+
+app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const challenge = await walletVerification.createWalletChallenge(supabase, campaignId, session.user.id);
+    return res.status(200).json({ ok: true, ...challenge });
+  } catch (err) {
+    console.error('wallet challenge failed', err.message);
+    return res.status(400).json({ ok: false, error: 'wallet challenge unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/wallet/verify', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const result = await walletVerification.consumeWalletChallenge(supabase, {
+      campaignId,
+      telegramUserId: session.user.id,
+      nonce: req.body?.nonce,
+      wallet: req.body?.wallet,
+      signature: req.body?.signature,
+    });
+    return res.status(200).json({ ok: true, ...result });
+  } catch (err) {
+    console.error('wallet verification failed', err.message);
+    return res.status(400).json({ ok: false, error: 'wallet verification failed' });
   }
 });
 

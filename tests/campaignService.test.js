@@ -36,6 +36,7 @@ test('participant status derives verification readiness and sums XP', async () =
   const status = await getParticipantStatus(client, 123);
   assert.equal(status.enrolled, true);
   assert.equal(status.walletVerified, true);
+  assert.equal(status.rewardWallet, 'wallet-1');
   assert.equal(status.tokenAccountReady, true);
   assert.equal(status.totalXp, 19);
 });
