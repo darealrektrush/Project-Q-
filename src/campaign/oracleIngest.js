@@ -49,6 +49,7 @@ export function validateOracleIdentityEvent(body) {
   if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0) {
     throw new Error('invalid telegram_user_id');
   }
+  if (!/^\d{1,30}$/.test(xUserId)) throw new Error('invalid x_user_id');
   if (Number.isNaN(verifiedAt.getTime()) || verifiedAt.getTime() > Date.now() + 5 * 60 * 1000) {
     throw new Error('invalid verified_at');
   }
