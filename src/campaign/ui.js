@@ -9,9 +9,13 @@ export function buildCampaignsMenu() {
   };
 }
 
-export function buildBondTheDuckMenu() {
+export function buildBondTheDuckMenu(appUrl = process.env.PROJECT_Q_CAMPAIGN_APP_URL) {
+  const appButton = appUrl
+    ? [[{ text: '📱 Open Campaign App', url: appUrl }]]
+    : [];
   return {
     inline_keyboard: [
+      ...appButton,
       [
         { text: '🦆 Overview', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:overview` },
         { text: '✅ Enroll', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:enroll` },

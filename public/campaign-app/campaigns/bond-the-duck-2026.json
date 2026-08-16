@@ -1,0 +1,37 @@
+{
+  "id": "bond-the-duck-2026",
+  "name": "Bond the Duck",
+  "shortName": "Bond",
+  "sequence": "CAMPAIGN 01",
+  "status": "DRAFT",
+  "statusLabel": "PRE-LAUNCH / READINESS MODE",
+  "tagline": "Build reputation. Earn XP. Compete transparently.",
+  "description": "A 10-day verified participation and holder-acquisition campaign powered by Project Q and the CrabStar Oracle.",
+  "activeDays": 10,
+  "cycleHours": 48,
+  "readinessPercent": 42,
+  "xpCaps": {
+    "overallDaily": 75,
+    "participationDaily": 15,
+    "projectQDaily": 20
+  },
+  "eligibility": {
+    "telegramRequired": true,
+    "oracleXRequired": true,
+    "walletRequiredForRewards": true,
+    "minimumFawkqUsd": 2
+  },
+  "releases": [
+    { "label": "Immediate", "percent": 25, "detail": "After cycle verification" },
+    { "label": "Day 13", "percent": 50, "detail": "After final campaign review" },
+    { "label": "Phased", "percent": 25, "detail": "Five releases over 30 days" }
+  ],
+  "missions": [
+    { "id": "oracle-raids", "icon": "⚔️", "title": "Oracle X Raids", "description": "Verified likes, reposts, replies and quote posts.", "status": "0 / 5", "reward": "Up to 20 XP", "enabled": false },
+    { "id": "website-voting", "icon": "🗳", "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 18 XP", "enabled": false },
+    { "id": "trending-bots", "icon": "🤖", "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "enabled": false },
+    { "id": "content", "icon": "✍️", "title": "Content Missions", "description": "Approved educational content and community media.", "status": "0 active", "reward": "Variable XP", "enabled": false },
+    { "id": "bagwork", "icon": "💼", "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + XP", "enabled": true },
+    { "id": "buy-to-earn", "icon": "📊", "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "enabled": false }
+  ]
+}

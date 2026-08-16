@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as telegram from './lib/telegram.js';
 import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
@@ -16,6 +18,9 @@ import * as oracleIngest from './campaign/oracleIngest.js';
 
 const app = express();
 app.use(express.json());
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use('/campaign-app', express.static(path.join(__dirname, '..', 'public', 'campaign-app')));
 
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const BAGWORK_SECRET = process.env.BAGWORK_SECRET;

@@ -51,6 +51,14 @@ test('Bond the Duck hub includes every required participant screen', () => {
   assert.ok(callbacks.includes('menu:campaigns'));
 });
 
+test('Bond the Duck hub can expose the reusable Mini App without changing callbacks', () => {
+  const menu = buildBondTheDuckMenu('https://example.com/campaign-app/');
+  assert.deepEqual(menu.inline_keyboard[0][0], {
+    text: '📱 Open Campaign App',
+    url: 'https://example.com/campaign-app/',
+  });
+});
+
 test('pre-launch campaign UI never represents the campaign as active', () => {
   assert.match(CAMPAIGN_HOME_TEXT, /DRAFT \/ pre-launch/);
   assert.match(CAMPAIGN_HOME_TEXT, /not accepting enrollment, XP, buys or reward claims/);

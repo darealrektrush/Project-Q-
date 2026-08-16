@@ -1,0 +1,129 @@
+const NAV = [
+  ['home', '⌂', 'Home'], ['missions', '✓', 'Missions'], ['xp', '⚡', 'XP'],
+  ['leaderboard', '♛', 'Leaderboard'], ['rewards', '🎁', 'Rewards'], ['profile', '◉', 'Profile'],
+];
+
+const state = {
+  screen: 'home',
+  telegram: window.Telegram?.WebApp,
+  wallet: null,
+  campaign: null,
+  campaignRecord: null,
+  profile: {
+    name: window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Duck Recruit',
+    telegramVerified: Boolean(window.Telegram?.WebApp?.initData),
+    xVerified: false,
+    walletVerified: false,
+    xp: 0,
+    rank: '—',
+    percentile: 0,
+  },
+};
+
+const fallbackCampaign = {
+  id: 'unavailable', name: 'Campaign Hub', shortName: 'Campaign', sequence: 'CAMPAIGN HUB',
+  status: 'DISABLED', statusLabel: 'NO ACTIVE CAMPAIGN', tagline: 'Campaign data unavailable.',
+  description: 'Project Q campaign records remain safely closed.', readinessPercent: 0,
+  xpCaps: { overallDaily: 0, participationDaily: 0, projectQDaily: 0 },
+  releases: [], missions: [],
+};
+
+function navMarkup() {
+  return NAV.map(([id,icon,label]) => `<button class="nav-button ${state.screen===id?'active':''}" data-screen="${id}" aria-label="${label}" title="${label}"><span>${icon}</span><span class="nav-label">${label}</span></button>`).join('');
+}
+
+function gateRow(label, ok, waiting='Required') {
+  return `<div class="gate-row"><span>${label}</span><b class="${ok?'ok':'wait'}">${ok?'Verified':waiting}</b></div>`;
+}
+
+function home() {
+  const p = state.profile;
+  const c = state.campaign || fallbackCampaign;
+  return `<div class="hero-grid">
+    <article class="card hero">
+      <div><span class="campaign-chip">${c.statusLabel}</span><h2>${c.name.replace(' ','<br>')}.</h2><p>${c.description} ${c.tagline}</p></div>
+      <div><div class="gate-row"><span>Campaign readiness</span><b class="wait">${c.status}</b></div><div class="progress"><span style="width:${c.readinessPercent}%"></span></div></div>
+    </article>
+    <article class="card cycle-card">
+      <div><span class="label">Identity gate</span><div class="big">${[p.telegramVerified,p.xVerified,p.walletVerified].filter(Boolean).length}/3</div><small>verified credentials</small></div>
+      <div class="gate">${gateRow('Telegram',p.telegramVerified)}${gateRow('Oracle X',p.xVerified,'Connect')}${gateRow('Solana wallet',p.walletVerified,'Connect')}</div>
+    </article>
+  </div>
+  <div class="stats">
+    <article class="card stat"><span class="label">Campaign XP</span><strong>${p.xp}</strong><p>Verified total</p></article>
+    <article class="card stat"><span class="label">Current rank</span><strong>${p.rank}</strong><p>Combined leaderboard</p></article>
+    <article class="card stat"><span class="label">Missions</span><strong>0</strong><p>Completed</p></article>
+    <article class="card stat"><span class="label">Allocation</span><strong>—</strong><p>Not calculated</p></article>
+  </div>
+  <div class="section-head"><h2>Mission lanes</h2><span>Open after identity verification</span></div>
+  <div class="mission-grid">${c.missions.slice(0,3).map(missionCard).join('')}</div>`;
+}
+
+function missionCard(mission) {
+  return `<article class="card mission" data-open="missions"><div class="mission-icon">${mission.icon}</div><h3>${mission.title}</h3><p>${mission.description}</p><div class="mission-footer"><span>${mission.status}</span><b>${mission.reward}</b></div></article>`;
+}
+
+function missionsScreen() {
+  const c=state.campaign||fallbackCampaign;
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Mission centre</span><h2>Every action. One verified record.</h2><p>Oracle raids, certified votes, Telegram bots, Bagwork and approved campaign missions feed one combined Project Q XP ledger.</p></div></div><div class="mission-grid">${c.missions.map(missionCard).join('')}</div><div class="identity-lock"><div><b>Complete the identity gate to participate</b><p>Verified Telegram + Oracle-linked X unlocks missions. A verified wallet unlocks holder and reward eligibility.</p></div><button class="primary" data-screen="profile">Verify identity</button></div></article>`;
+}
+
+function xpScreen() {
+  const caps=(state.campaign||fallbackCampaign).xpCaps;
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">My XP</span><h2>Auditable participation.</h2><p>Every verified action will appear here with its source, timestamp, status and daily-cap impact.</p></div><div class="score-orb"><div><strong>0</strong><small>XP</small></div></div></div><div class="stats"><div class="card stat"><span class="label">Daily total</span><strong>0 / ${caps.overallDaily}</strong><p>Overall cap</p></div><div class="card stat"><span class="label">Participation</span><strong>0 / ${caps.participationDaily}</strong><p>Daily lane cap</p></div><div class="card stat"><span class="label">Project Q</span><strong>0 / ${caps.projectQDaily}</strong><p>Daily mission cap</p></div><div class="card stat"><span class="label">Pending</span><strong>0</strong><p>Under verification</p></div></div><div class="empty">No verified campaign XP yet. The ledger activates when the campaign readiness gate passes.</div></article>`;
+}
+
+function leaderboardScreen() {
+  const rows = [['1','Duck Alpha','—'],['2','Tide Builder','—'],['3','Shell Runner','—'],['4','Signal Hunter','—'],['5','Ocean Guard','—']];
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Combined leaderboard</span><h2>Consistency beats noise.</h2><p>Verified raids, voting, approved participation and Project Q campaign XP combine into one transparent ranking.</p></div></div><div class="list">${rows.map(([rank,name,xp])=>`<div class="list-row"><span class="rank">${rank}</span><div><h3>${name}</h3><p>Identity hidden until launch</p></div><b>${xp} XP</b></div>`).join('')}</div></article>`;
+}
+
+function rewardsScreen() {
+  const releases=(state.campaign||fallbackCampaign).releases;
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Reward centre</span><h2>Your campaign allocation.</h2><p>Track preliminary eligibility, founder review, scheduled releases and public transaction receipts. Squads 2-of-3 controls every treasury transfer.</p></div></div><div class="reward-grid">${releases.map(release=>`<div class="card reward"><span class="label">${release.label}</span><strong>${release.percent}%</strong><p>${release.detail}</p></div>`).join('')}</div><div class="identity-lock"><div><b>No allocation exists yet</b><p>Enrollment, XP earning and reward calculations remain disabled until the public readiness gate passes.</p></div><button class="secondary" data-screen="profile">Check eligibility</button></div></article>`;
+}
+
+function profileScreen() {
+  const p=state.profile;
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${p.name}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div><div class="score-orb"><div><strong>${[p.telegramVerified,p.xVerified,p.walletVerified].filter(Boolean).length}/3</strong><small>verified</small></div></div></div><div class="list">
+    <div class="list-row"><span class="rank">TG</span><div><h3>Telegram identity</h3><p>${p.telegramVerified?'Signed Mini App session verified':'Open through Project Q to verify'}</p></div><b>${p.telegramVerified?'Verified':'Required'}</b></div>
+    <div class="list-row"><span class="rank">X</span><div><h3>Oracle X identity</h3><p>${p.xVerified?'Permanent X user ID linked':'Authorize through the CrabStar Oracle'}</p></div><button class="secondary" id="oracle-link">${p.xVerified?'Verified':'Open Oracle'}</button></div>
+    <div class="list-row"><span class="rank">◎</span><div><h3>Solana reward wallet</h3><p>${state.wallet?short(state.wallet):'Connect Phantom, Solflare or Backpack'}</p></div><button class="secondary" id="profile-wallet">${state.wallet?'Connected':'Connect'}</button></div>
+  </div><div class="identity-lock"><div><b>Campaign access: ${p.telegramVerified&&p.xVerified?'Eligible to enroll':'Locked'}</b><p>Telegram and X verification unlock participation. Wallet verification is required before rewards can be finalized.</p></div></div></article>`;
+}
+
+const screens={home,missions:missionsScreen,xp:xpScreen,leaderboard:leaderboardScreen,rewards:rewardsScreen,profile:profileScreen};
+function short(v){return `${v.slice(0,5)}…${v.slice(-5)}`}
+function toast(msg){const el=document.querySelector('#toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800)}
+function render(){const c=state.campaign||fallbackCampaign;document.querySelector('#desktop-nav').innerHTML=navMarkup();document.querySelector('#mobile-nav').innerHTML=navMarkup();document.querySelector('#screen').innerHTML=screens[state.screen]();document.querySelector('#screen-title').textContent=state.screen==='home'?c.name:(NAV.find(n=>n[0]===state.screen)?.[2]||c.name);document.querySelector('#campaign-sequence').textContent=`PROJECT Q / ${c.sequence}`;document.title=`Project Q — ${c.name}`;bind();}
+function go(screen){if(!screens[screen])return;state.screen=screen;history.replaceState(null,'',`#${screen}`);render();state.telegram?.HapticFeedback?.impactOccurred('light');}
+
+async function connectWallet(){
+  const provider=window.phantom?.solana||window.solflare||window.backpack;
+  if(!provider){toast('Open in Phantom, Solflare or Backpack to connect securely.');window.open('https://phantom.app/','_blank');return;}
+  try{const result=await provider.connect();state.wallet=(result?.publicKey||provider.publicKey)?.toString();state.profile.walletVerified=false;document.querySelector('#wallet-button').textContent=short(state.wallet);document.querySelector('#wallet-button').classList.add('connected');toast('Wallet connected. Ownership signature is the next security step.');render();}catch{toast('Wallet connection was cancelled.');}
+}
+
+function bind(){
+  document.querySelectorAll('[data-screen]').forEach(el=>el.onclick=()=>go(el.dataset.screen));
+  document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>go(el.dataset.open));
+  const wb=document.querySelector('#wallet-button');wb.onclick=connectWallet;if(state.wallet){wb.textContent=short(state.wallet);wb.classList.add('connected');}
+  document.querySelector('#profile-wallet')?.addEventListener('click',connectWallet);
+  document.querySelector('#oracle-link')?.addEventListener('click',()=>window.Telegram?.WebApp?.openTelegramLink?.('https://t.me/crabstar_oracle_bot')||window.open('https://t.me/crabstar_oracle_bot','_blank'));
+}
+
+async function loadCampaign(){
+  try{
+    const registry=await fetch('/campaign-app/campaigns/index.json').then(r=>r.json());
+    const requested=new URLSearchParams(location.search).get('campaign')||registry.defaultCampaign;
+    const record=registry.campaigns.find(c=>c.id===requested&&c.visible);
+    if(!record){state.campaign=fallbackCampaign;return;}
+    state.campaignRecord=record;
+    state.campaign=await fetch(`/campaign-app/campaigns/${record.file}`).then(r=>r.json());
+    if(record.archived){state.campaign.status='ARCHIVED';state.campaign.statusLabel='CAMPAIGN ARCHIVE';}
+    if(!record.enabled&&!record.archived){state.campaign.status='DRAFT';}
+  }catch{state.campaign=fallbackCampaign;}
+}
+
+async function boot(){state.telegram?.ready();state.telegram?.expand();state.screen=location.hash.slice(1) in screens?location.hash.slice(1):'home';await loadCampaign();render();}
+boot();
