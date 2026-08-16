@@ -63,6 +63,9 @@ test('Oracle identity validation normalizes permanent identities', () => {
   assert.throws(() => validateOracleIdentityEvent({
     telegram_user_id: 123, x_user_id: '', verified_at: '2026-08-15T00:00:00Z',
   }), /x_user_id/);
+  assert.throws(() => validateOracleIdentityEvent({
+    telegram_user_id: 123, x_user_id: '@changeable_handle', verified_at: '2026-08-15T00:00:00Z',
+  }), /x_user_id/);
 });
 
 test('validated Oracle identity is sent only through the atomic link RPC', async () => {
