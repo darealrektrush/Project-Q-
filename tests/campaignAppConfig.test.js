@@ -37,5 +37,7 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.ok(Object.values(campaign.xpCaps).every((cap) => Number.isFinite(cap) && cap >= 0));
   const missionIds = campaign.missions.map(({ id }) => id);
   assert.equal(new Set(missionIds).size, missionIds.length);
-  assert.equal(campaign.missions.filter(({ image }) => image).length, 5);
+  assert.equal(campaign.missions.length, 5);
+  assert.ok(campaign.missions.every(({ image }) => image));
+  assert.equal(campaign.missions.some(({ id }) => id === 'content'), false);
 });

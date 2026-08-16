@@ -26,6 +26,7 @@ test('missions centre exposes Oracle raids and the other campaign lanes', () => 
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:votes`));
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:bots`));
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:progress`));
+  assert.ok(callbacks.includes('menu:bagwork'));
   assert.equal(buildOracleRaidsMenu('@crabstar_oracle_bot').inline_keyboard[0][0].url,
     'https://t.me/crabstar_oracle_bot');
 });
