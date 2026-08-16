@@ -96,6 +96,7 @@ async function handleUpdate(update) {
 async function handleMessage(message) {
   const threadId = message.message_thread_id;
   const chatId = message.chat.id;
+  const isPrivate = message.chat.type === 'private';
 
   // Pending admin edits (bio text / media photo) take priority so an admin
   // can finish an edit regardless of normal topic/command gating.
@@ -122,12 +123,9 @@ async function handleMessage(message) {
 
   if (!message.text) return; // non-text, non-pending messages are ignored
 
-  // The bot lives in topics, but the bagwork feedback deep link
-  // (t.me/<bot>?start=bwfeedback) deliberately opens a DM. Handle private
-  // chats here so a member who taps the button never hits silence — and so
-  // their numeric id gets recorded, which is what makes future DMs possible
-  // at all.
-  if (message.chat.type === 'private') {
+  // Preserve the dedicated bagwork feedback deep link, then let every other
+  // private command continue through the normal Project Q command router.
+  if (isPrivate) {
     await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
     const privateText = message.text.trim();
     const startPayload = privateText.startsWith('/start')
@@ -137,14 +135,9 @@ async function handleMessage(message) {
     if (startPayload === 'bwfeedback') {
       return bagwork.handleFeedbackDeepLink(message);
     }
-    return telegram.sendMessage(
-      message.chat.id,
-      '👋 I live in the FawkQ group — find me in fawkq-chat.',
-      {}
-    );
   }
 
-  const guard = telegram.guardTopic(threadId);
+  const guard = telegram.guardInteraction(message.chat.type, threadId);
   if (!guard.allowed || !guard.interactive) return;
 
   const text = message.text.trim();
@@ -153,16 +146,16 @@ async function handleMessage(message) {
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
-  if (command === '/adminf') {
+  if (!isPrivate && command === '/adminf') {
     return admin.handleAdminCommand(message);
   }
-  if (command === '/admincancel') {
+  if (!isPrivate && command === '/admincancel') {
     return admin.cancelPendingEdit(chatId, message.from.id);
   }
-  if (command === '/postsignal') {
+  if (!isPrivate && command === '/postsignal') {
     return handlePostSignalCommand(message);
   }
-  if (command === '/addevent') {
+  if (!isPrivate && command === '/addevent') {
     return eventsAdmin.handleAddEventCommand(message);
   }
 
@@ -173,7 +166,7 @@ async function handleMessage(message) {
 
   switch (command) {
     case '/start':
-      return sendHome(chatId, threadId);
+      return sendHome(chatId, threadId, { isPrivate });
     case '/helpf':
       return sendHelp(chatId, threadId);
     case '/market':
@@ -252,7 +245,8 @@ async function handleSignalCallback(callbackQuery) {
 
 async function handleCallbackQuery(callbackQuery) {
   const threadId = callbackQuery.message?.message_thread_id;
-  const guard = telegram.guardTopic(threadId);
+  const chatType = callbackQuery.message?.chat?.type;
+  const guard = telegram.guardInteraction(chatType, threadId);
 
   if (!guard.allowed || !guard.interactive) {
     return telegram.answerCallbackQuery(callbackQuery.id);
@@ -313,7 +307,7 @@ async function handleCallbackQuery(callbackQuery) {
     case 'menu:campaigns':
       return editMenuMessage(callbackQuery, '🦆 *Campaigns* — choose a campaign:', campaignUi.buildCampaignsMenu());
     case 'menu:campaigns:back':
-      return sendHome(chatId, threadId);
+      return sendHome(chatId, threadId, { isPrivate: chatType === 'private' });
     case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
       return editMenuMessage(callbackQuery, await buildCampaignHomeText(), campaignUi.buildBondTheDuckMenu());
     case campaignUi.MISSIONS_CALLBACK_PREFIX:
@@ -405,9 +399,13 @@ async function renderMenu(chatId, threadId, key, defaultText, { replyMarkup } = 
   return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
 }
 
-function sendHome(chatId, threadId) {
-  return renderMenu(chatId, threadId, 'home', '👁 *FawkQ Home* — pick a section:', {
-    replyMarkup: telegram.buildHomeMenu(),
+function sendHome(chatId, threadId, { isPrivate = false } = {}) {
+  const privateUrl = isPrivate ? null : telegram.botDeepLink('home');
+  const defaultText = isPrivate
+    ? '🔒 *Project Q Private Command Centre*\nUse every menu, campaign screen and community tool directly here.'
+    : '👁 *FawkQ Home* — pick a section:\n\n_Recommended: open Project Q privately to keep campaign menus out of the community chat._';
+  return renderMenu(chatId, threadId, 'home', defaultText, {
+    replyMarkup: telegram.buildHomeMenu({ privateUrl }),
   });
 }
 
