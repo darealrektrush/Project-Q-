@@ -39,7 +39,8 @@ function gateRow(label, ok, waiting='Required') {
 function home() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
-  return `<div class="hero-grid">
+  const banner=c.banner?`<figure class="campaign-banner"><img src="${c.banner}" alt="${c.bannerAlt||`${c.name} campaign banner`}" /></figure>`:'';
+  return `${banner}<div class="hero-grid">
     <article class="card hero">
       <div><span class="campaign-chip">${c.statusLabel}</span><h2>${c.name.replace(' ','<br>')}.</h2><p>${c.description} ${c.tagline}</p></div>
       <div><div class="gate-row"><span>Campaign readiness</span><b class="wait">${c.status}</b></div><div class="progress"><span style="width:${c.readinessPercent}%"></span></div></div>

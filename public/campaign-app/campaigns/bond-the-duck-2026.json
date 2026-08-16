@@ -3,6 +3,8 @@
   "name": "Bond the Duck",
   "shortName": "Bond",
   "sequence": "CAMPAIGN 01",
+  "banner": "/campaign-app/assets/bond-the-duck-campaign-banner.webp",
+  "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
   "status": "DRAFT",
   "statusLabel": "PRE-LAUNCH / READINESS MODE",
   "tagline": "Build reputation. Earn XP. Compete transparently.",

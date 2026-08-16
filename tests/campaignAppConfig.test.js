@@ -19,6 +19,7 @@ test('campaign registry points to a valid reusable default campaign', async () =
   const campaign = await readJson(record.file);
   assert.equal(campaign.id, record.id);
   assert.ok(campaign.name);
+  assert.match(campaign.banner, /^\/campaign-app\/assets\//);
   assert.ok(Array.isArray(campaign.missions));
 });
 
