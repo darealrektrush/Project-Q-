@@ -15,6 +15,13 @@ export async function getCampaignStatus(client) {
   };
 }
 
+export async function assertCampaignParticipationEnabled(client, enabledFlag) {
+  if (enabledFlag !== 'true') throw new Error('campaign participation disabled');
+  const status = await getCampaignStatus(client);
+  if (status.state !== 'ACTIVE') throw new Error('campaign participation disabled');
+  return status;
+}
+
 export async function getParticipantStatus(client, telegramUserId) {
   const id = campaignId();
   const userId = String(telegramUserId);

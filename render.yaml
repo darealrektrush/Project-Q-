@@ -23,6 +23,10 @@ services:
         sync: false
       - key: ORACLE_CAMPAIGN_SECRET
         sync: false
+      - key: PROJECT_Q_CAMPAIGN_APP_URL
+        sync: false
+      - key: PROJECT_Q_CAMPAIGN_APP_ENABLED
+        value: "false"
       - key: FAWKQ_WEBSITE_URL
         sync: false
       - key: XP_PER_SOL

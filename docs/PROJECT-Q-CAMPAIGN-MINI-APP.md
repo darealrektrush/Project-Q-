@@ -29,13 +29,14 @@ Set `PROJECT_Q_CAMPAIGN_APP_URL` on the Project Q service to the public HTTPS UR
 
 When configured, the Bond the Duck bot menu adds an **Open Campaign App** button. The existing bot menus remain available as the fallback and notification layer.
 
+Keep `PROJECT_Q_CAMPAIGN_APP_ENABLED=false` during development and pre-launch. Wallet challenge and verification routes open only when this deployment gate is exactly `true` **and** the database campaign state is `ACTIVE`.
+
 ## Security boundary
 
-The current browser milestone is a read-only/pre-launch shell. Client-provided Telegram data, X status, and wallet addresses must never be trusted directly. Telegram Mini App `initData` is now verified by Project Q using Telegram's HMAC process with a 10-minute freshness window; the verified Telegram ID is then used for server-side participant lookup. Before enabling participation, the remaining backend work must:
+The current browser milestone is a read-only/pre-launch shell. Client-provided Telegram data, X status, and wallet addresses are never trusted directly. Telegram Mini App `initData` is verified by Project Q using Telegram's HMAC process with a 10-minute freshness window; the verified Telegram ID is then used for server-side participant lookup. Wallet ownership is verified with a short-lived, single-use signed challenge. Before enabling participation, the remaining backend work must:
 
 1. resolve the verified Telegram account to one Oracle-verified permanent X user ID;
-2. verify wallet ownership with a short-lived nonce and signed message;
-3. enforce one Telegram account, one X identity, and one wallet using database constraints and RLS;
-4. calculate XP, eligibility, ranks, and allocations server-side.
+2. validate the deployed identity constraints and RLS against the production schema;
+3. calculate XP, eligibility, ranks, and allocations server-side.
 
 No token transfer or claim authority belongs in the Mini App.

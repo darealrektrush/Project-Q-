@@ -5,11 +5,21 @@ import {
   getParticipantStatus,
   closedCampaignStatus,
   getParticipantRaidStatus,
+  assertCampaignParticipationEnabled,
 } from '../src/campaign/service.js';
 
 test('missing campaign row remains safely in DRAFT', async () => {
   const client = { select: async () => [] };
   assert.equal((await getCampaignStatus(client)).state, 'DRAFT');
+});
+
+test('campaign participation requires both the deployment gate and ACTIVE database state', async () => {
+  const active = { select: async () => [{ id: 'bond-the-duck-2026', state: 'ACTIVE' }] };
+  const draft = { select: async () => [{ id: 'bond-the-duck-2026', state: 'DRAFT' }] };
+  await assert.rejects(() => assertCampaignParticipationEnabled(active, undefined), /disabled/);
+  await assert.rejects(() => assertCampaignParticipationEnabled(active, 'false'), /disabled/);
+  await assert.rejects(() => assertCampaignParticipationEnabled(draft, 'true'), /disabled/);
+  assert.equal((await assertCampaignParticipationEnabled(active, 'true')).state, 'ACTIVE');
 });
 
 test('Oracle raid events are summarized for Project Q campaign progress', async () => {

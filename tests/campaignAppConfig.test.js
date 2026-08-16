@@ -41,3 +41,9 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.ok(campaign.missions.every(({ image }) => image));
   assert.equal(campaign.missions.some(({ id }) => id === 'content'), false);
 });
+
+test('Mini App escapes Telegram display names and keeps wallet controls locked while disabled', async () => {
+  const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
+  assert.match(app, /escapeHtml\(p\.name\)/);
+  assert.match(app, /campaignRecord\?\.enabled/);
+});

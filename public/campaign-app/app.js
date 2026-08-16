@@ -116,14 +116,16 @@ function profileScreen() {
   const fullyVerified=participationReady&&p.walletVerified;
   const credential=(src,alt,ok)=>src?`<img class="credential-badge ${ok?'verified':'locked'}" src="${src}" alt="${alt}" />`:'<span class="rank">—</span>';
   const statusBadge=fullyVerified?badges.fullHero:(participationReady?badges.collective:null);
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${p.name}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div>${statusBadge?`<img class="identity-status-art" src="${statusBadge}" alt="${fullyVerified?'Fully verified identity':'Collective verified community member'}" />`:`<div class="score-orb"><div><strong>${verifiedCount}/3</strong><small>verified</small></div></div>`}</div><div class="list">
+  const walletEnabled=Boolean(state.campaignRecord?.enabled);
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${escapeHtml(p.name)}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div>${statusBadge?`<img class="identity-status-art" src="${statusBadge}" alt="${fullyVerified?'Fully verified identity':'Collective verified community member'}" />`:`<div class="score-orb"><div><strong>${verifiedCount}/3</strong><small>verified</small></div></div>`}</div><div class="list">
     <div class="list-row credential-row">${credential(badges.telegram,'Telegram verified',p.telegramVerified)}<div><h3>Telegram identity</h3><p>${p.telegramVerified?'Signed Mini App session verified':'Open through Project Q to verify'}</p></div><b>${p.telegramVerified?'Verified':'Required'}</b></div>
     <div class="list-row credential-row">${credential(badges.x,'X verified',p.xVerified)}<div><h3>Oracle X identity</h3><p>${p.xVerified?'Permanent X user ID linked':'Authorize through the CrabStar Oracle'}</p></div><button class="secondary" id="oracle-link">${p.xVerified?'Verified':'Open Oracle'}</button></div>
-    <div class="list-row credential-row">${credential(badges.wallet,'Wallet connected and verified',p.walletVerified)}<div><h3>Solana reward wallet</h3><p>${state.wallet?short(state.wallet):'Connect Phantom, Solflare or Backpack'}</p></div><button class="secondary" id="profile-wallet">${state.wallet?'Connected':'Connect'}</button></div>
+    <div class="list-row credential-row">${credential(badges.wallet,'Wallet connected and verified',p.walletVerified)}<div><h3>Solana reward wallet</h3><p>${state.wallet?short(state.wallet):(walletEnabled?'Connect Phantom, Solflare or Backpack':'Available when campaign opens')}</p></div><button class="secondary" id="profile-wallet" ${walletEnabled?'':'disabled'}>${state.wallet?'Connected':(walletEnabled?'Connect':'Locked')}</button></div>
   </div><div class="identity-lock"><div><b>Campaign access: ${participationReady?'Eligible to enroll':'Locked'}</b><p>Telegram and X verification unlock participation. Wallet verification is required before rewards can be finalized.</p></div></div></article>`;
 }
 
 const screens={home,missions:missionsScreen,xp:xpScreen,leaderboard:leaderboardScreen,rewards:rewardsScreen,profile:profileScreen};
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]))}
 function short(v){return `${v.slice(0,5)}…${v.slice(-5)}`}
 function bytesToBase64(bytes){let binary='';bytes.forEach(byte=>{binary+=String.fromCharCode(byte)});return btoa(binary)}
 function toast(msg){const el=document.querySelector('#toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800)}
@@ -131,6 +133,7 @@ function render(){const c=state.campaign||fallbackCampaign;document.querySelecto
 function go(screen){if(!screens[screen])return;state.screen=screen;history.replaceState(null,'',`#${screen}`);render();state.telegram?.HapticFeedback?.impactOccurred('light');}
 
 async function connectWallet(){
+  if(!state.campaignRecord?.enabled){toast('Wallet verification opens when the campaign is enabled.');return;}
   const provider=window.phantom?.solana||window.solflare||window.backpack;
   if(!provider){toast('Open in Phantom, Solflare or Backpack to connect securely.');window.open('https://phantom.app/','_blank');return;}
   try{

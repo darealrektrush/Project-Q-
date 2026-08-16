@@ -58,6 +58,10 @@ app.post('/campaign-app/api/session', async (req, res) => {
 app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertCampaignParticipationEnabled(
+      supabase,
+      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
+    );
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
     const challenge = await walletVerification.createWalletChallenge(supabase, campaignId, session.user.id);
     return res.status(200).json({ ok: true, ...challenge });
@@ -70,6 +74,10 @@ app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
 app.post('/campaign-app/api/wallet/verify', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertCampaignParticipationEnabled(
+      supabase,
+      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
+    );
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
     const result = await walletVerification.consumeWalletChallenge(supabase, {
       campaignId,
