@@ -532,7 +532,10 @@ language plpgsql security invoker set search_path = public as $$
 declare
   result identity_links;
 begin
-  if p_telegram_user_id <= 0 or nullif(btrim(p_x_user_id), '') is null then
+  if p_telegram_user_id is null or p_telegram_user_id <= 0
+    or p_x_user_id is null or btrim(p_x_user_id) !~ '^[0-9]{1,30}$'
+    or p_verified_at is null
+  then
     raise exception 'invalid Oracle identity';
   end if;
   if p_verified_at > now() + interval '5 minutes' then
