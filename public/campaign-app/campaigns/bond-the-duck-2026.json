@@ -5,6 +5,7 @@
   "sequence": "CAMPAIGN 01",
   "banner": "/campaign-app/assets/bond-the-duck-campaign-banner.webp",
   "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
+  "leaderboardIcon": "/campaign-app/assets/missions/leaderboards.webp",
   "status": "DRAFT",
   "statusLabel": "PRE-LAUNCH / READINESS MODE",
   "tagline": "Build reputation. Earn XP. Compete transparently.",
@@ -29,11 +30,11 @@
     { "label": "Phased", "percent": 25, "detail": "Five releases over 30 days" }
   ],
   "missions": [
-    { "id": "oracle-raids", "icon": "⚔️", "title": "Oracle X Raids", "description": "Verified likes, reposts, replies and quote posts.", "status": "0 / 5", "reward": "Up to 20 XP", "enabled": false },
-    { "id": "website-voting", "icon": "🗳", "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 18 XP", "enabled": false },
-    { "id": "trending-bots", "icon": "🤖", "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "enabled": false },
+    { "id": "oracle-raids", "icon": "⚔️", "image": "/campaign-app/assets/missions/verified-raids.webp", "title": "Oracle X Raids", "description": "Verified likes, reposts, replies and quote posts.", "status": "0 / 5", "reward": "Up to 20 XP", "enabled": false },
+    { "id": "website-voting", "icon": "🗳", "image": "/campaign-app/assets/missions/listing-votes.webp", "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 18 XP", "enabled": false },
+    { "id": "trending-bots", "icon": "🤖", "image": "/campaign-app/assets/missions/bot-trending.webp", "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "enabled": false },
     { "id": "content", "icon": "✍️", "title": "Content Missions", "description": "Approved educational content and community media.", "status": "0 active", "reward": "Variable XP", "enabled": false },
-    { "id": "bagwork", "icon": "💼", "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + XP", "enabled": true },
-    { "id": "buy-to-earn", "icon": "📊", "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "enabled": false }
+    { "id": "bagwork", "icon": "💼", "image": "/campaign-app/assets/missions/bagwork.webp", "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + XP", "enabled": true },
+    { "id": "buy-to-earn", "icon": "📊", "image": "/campaign-app/assets/missions/buy-to-earn.webp", "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "enabled": false }
   ]
 }

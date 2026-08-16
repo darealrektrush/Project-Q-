@@ -20,6 +20,7 @@ test('campaign registry points to a valid reusable default campaign', async () =
   assert.equal(campaign.id, record.id);
   assert.ok(campaign.name);
   assert.match(campaign.banner, /^\/campaign-app\/assets\//);
+  assert.match(campaign.leaderboardIcon, /^\/campaign-app\/assets\/missions\//);
   assert.ok(Array.isArray(campaign.missions));
 });
 
@@ -29,4 +30,5 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.ok(Object.values(campaign.xpCaps).every((cap) => Number.isFinite(cap) && cap >= 0));
   const missionIds = campaign.missions.map(({ id }) => id);
   assert.equal(new Set(missionIds).size, missionIds.length);
+  assert.equal(campaign.missions.filter(({ image }) => image).length, 5);
 });

@@ -75,6 +75,7 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .mission { padding: 20px; min-height: 182px; cursor: pointer; transition: .2s ease; }
 .mission:hover { transform: translateY(-3px); border-color: rgba(255,177,27,.25); }
 .mission-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; background: rgba(255,177,27,.1); font-size: 21px; }
+.mission-art { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 18px; border: 1px solid rgba(255,196,76,.18); background: #050505; }
 .mission h3 { margin: 20px 0 6px; }
 .mission p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
 .mission-footer { display: flex; justify-content: space-between; margin-top: 18px; color: var(--muted); font-size: 11px; }
@@ -83,6 +84,7 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .page-intro { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px; margin-bottom: 22px; }
 .page-intro p { max-width: 670px; color: var(--muted); line-height: 1.6; }
 .score-orb { width: 128px; height: 128px; border-radius: 50%; display: grid; place-items: center; text-align: center; background: radial-gradient(circle,rgba(255,177,27,.2),rgba(255,177,27,.035) 68%); border: 1px solid rgba(255,177,27,.2); }
+.page-emblem { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 12px 28px rgba(255,177,27,.14)); }
 .score-orb strong { display: block; font-size: 35px; }
 .list { display: grid; gap: 10px; }
 .list-row { display: grid; grid-template-columns: 46px 1fr auto; gap: 14px; align-items: center; padding: 15px; border-radius: 16px; background: rgba(255,255,255,.025); border: 1px solid var(--line); }

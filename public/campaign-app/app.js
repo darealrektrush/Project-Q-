@@ -61,7 +61,8 @@ function home() {
 }
 
 function missionCard(mission) {
-  return `<article class="card mission" data-open="missions"><div class="mission-icon">${mission.icon}</div><h3>${mission.title}</h3><p>${mission.description}</p><div class="mission-footer"><span>${mission.status}</span><b>${mission.reward}</b></div></article>`;
+  const visual=mission.image?`<img class="mission-art" src="${mission.image}" alt="" />`:`<div class="mission-icon">${mission.icon}</div>`;
+  return `<article class="card mission" data-open="missions">${visual}<h3>${mission.title}</h3><p>${mission.description}</p><div class="mission-footer"><span>${mission.status}</span><b>${mission.reward}</b></div></article>`;
 }
 
 function missionsScreen() {
@@ -75,8 +76,10 @@ function xpScreen() {
 }
 
 function leaderboardScreen() {
+  const c=state.campaign||fallbackCampaign;
   const rows = [['1','Duck Alpha','—'],['2','Tide Builder','—'],['3','Shell Runner','—'],['4','Signal Hunter','—'],['5','Ocean Guard','—']];
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Combined leaderboard</span><h2>Consistency beats noise.</h2><p>Verified raids, voting, approved participation and Project Q campaign XP combine into one transparent ranking.</p></div></div><div class="list">${rows.map(([rank,name,xp])=>`<div class="list-row"><span class="rank">${rank}</span><div><h3>${name}</h3><p>Identity hidden until launch</p></div><b>${xp} XP</b></div>`).join('')}</div></article>`;
+  const art=c.leaderboardIcon?`<img class="page-emblem" src="${c.leaderboardIcon}" alt="Bond the Duck leaderboards" />`:'';
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Combined leaderboard</span><h2>Consistency beats noise.</h2><p>Verified raids, voting, approved participation and Project Q campaign XP combine into one transparent ranking.</p></div>${art}</div><div class="list">${rows.map(([rank,name,xp])=>`<div class="list-row"><span class="rank">${rank}</span><div><h3>${name}</h3><p>Identity hidden until launch</p></div><b>${xp} XP</b></div>`).join('')}</div></article>`;
 }
 
 function rewardsScreen() {
