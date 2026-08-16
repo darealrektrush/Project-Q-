@@ -29,6 +29,8 @@ body { overflow-x: hidden; }
 .status-dot { position: absolute; right: 1px; bottom: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--aqua); border: 2px solid var(--bg); }
 main { grid-column: 2; width: min(1180px, calc(100vw - 94px)); margin: 0 auto; padding: 28px 34px 70px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 8px 0 24px; }
+.topbar-identity { min-width: 0; }
+.horizontal-logo { display: block; width: clamp(230px,30vw,360px); height: auto; margin: -9px 0 6px; }
 .eyebrow { margin: 0 0 7px; color: var(--gold); font-size: 11px; font-weight: 800; letter-spacing: .2em; }
 h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .top-actions { display: flex; align-items: center; gap: 12px; }
@@ -96,6 +98,7 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
   .rail { display: none; }
   main { width: 100%; padding: 19px 16px 96px; }
   .topbar { align-items: flex-start; }
+  .horizontal-logo { width: clamp(190px,55vw,270px); margin-top: -4px; }
   .network { display: none; }
   .wallet-button { padding: 10px 12px; font-size: 12px; }
   .hero-grid { grid-template-columns: 1fr; }
@@ -111,6 +114,7 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
   .toast { right: 14px; left: 14px; bottom: 82px; }
 }
 @media (max-width: 420px) {
+  .horizontal-logo { width: 190px; }
   .topbar h1 { font-size: 27px; }
   .eyebrow { font-size: 9px; }
   .hero h2 { font-size: 50px; }
