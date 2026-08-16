@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as telegram from './lib/telegram.js';
 import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
@@ -10,12 +12,21 @@ import * as bagwork from './lib/bagwork.js';
 import * as signal from './lib/signal.js';
 import * as events from './lib/events.js';
 import * as eventsAdmin from './lib/eventsAdmin.js';
+import * as campaignUi from './campaign/ui.js';
+import * as campaignService from './campaign/service.js';
+import * as oracleIngest from './campaign/oracleIngest.js';
+import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
+import * as walletVerification from './campaign/walletVerification.js';
 
 const app = express();
 app.use(express.json());
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use('/campaign-app', express.static(path.join(__dirname, '..', 'public', 'campaign-app')));
+
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
+const ORACLE_CAMPAIGN_SECRET = process.env.ORACLE_CAMPAIGN_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
 
@@ -27,6 +38,60 @@ const STUB_COMMANDS = new Set([
 ]);
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
+
+app.post('/campaign-app/api/session', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
+    return res.status(200).json({ ok: true, user: session.user, participant });
+  } catch (err) {
+    const unavailable = err.message === 'telegram mini app authentication unavailable';
+    const databaseFailure = String(err.message).startsWith('Supabase ');
+    if (unavailable || databaseFailure) console.error('campaign Mini App session failed', err.message);
+    return res.status(unavailable || databaseFailure ? 503 : 401).json({
+      ok: false,
+      error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
+    });
+  }
+});
+
+app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertCampaignParticipationEnabled(
+      supabase,
+      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
+    );
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const challenge = await walletVerification.createWalletChallenge(supabase, campaignId, session.user.id);
+    return res.status(200).json({ ok: true, ...challenge });
+  } catch (err) {
+    console.error('wallet challenge failed', err.message);
+    return res.status(400).json({ ok: false, error: 'wallet challenge unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/wallet/verify', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertCampaignParticipationEnabled(
+      supabase,
+      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
+    );
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const result = await walletVerification.consumeWalletChallenge(supabase, {
+      campaignId,
+      telegramUserId: session.user.id,
+      nonce: req.body?.nonce,
+      wallet: req.body?.wallet,
+      signature: req.body?.signature,
+    });
+    return res.status(200).json({ ok: true, ...result });
+  } catch (err) {
+    console.error('wallet verification failed', err.message);
+    return res.status(400).json({ ok: false, error: 'wallet verification failed' });
+  }
+});
 
 app.get('/version', (req, res) =>
   res.status(200).json({
@@ -66,6 +131,24 @@ app.post('/bagwork', async (req, res) => {
   }
 });
 
+app.post('/oracle/campaign-raid-event', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  try {
+    const event = oracleIngest.validateOracleRaidEvent(req.body);
+    const result = await oracleIngest.ingestOracleRaidEvent(supabase, event);
+    return res.status(200).json({ ok: true, event: result });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('Oracle campaign raid ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'campaign event rejected',
+    });
+  }
+});
+
 async function handleUpdate(update) {
   if (update.callback_query) return handleCallbackQuery(update.callback_query);
   if (update.message) return handleMessage(update.message);
@@ -74,6 +157,7 @@ async function handleUpdate(update) {
 async function handleMessage(message) {
   const threadId = message.message_thread_id;
   const chatId = message.chat.id;
+  const isPrivate = message.chat.type === 'private';
 
   // Pending admin edits (bio text / media photo) take priority so an admin
   // can finish an edit regardless of normal topic/command gating.
@@ -100,12 +184,9 @@ async function handleMessage(message) {
 
   if (!message.text) return; // non-text, non-pending messages are ignored
 
-  // The bot lives in topics, but the bagwork feedback deep link
-  // (t.me/<bot>?start=bwfeedback) deliberately opens a DM. Handle private
-  // chats here so a member who taps the button never hits silence — and so
-  // their numeric id gets recorded, which is what makes future DMs possible
-  // at all.
-  if (message.chat.type === 'private') {
+  // Preserve the dedicated bagwork feedback deep link, then let every other
+  // private command continue through the normal Project Q command router.
+  if (isPrivate) {
     await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
     const privateText = message.text.trim();
     const startPayload = privateText.startsWith('/start')
@@ -115,14 +196,9 @@ async function handleMessage(message) {
     if (startPayload === 'bwfeedback') {
       return bagwork.handleFeedbackDeepLink(message);
     }
-    return telegram.sendMessage(
-      message.chat.id,
-      '👋 I live in the FawkQ group — find me in fawkq-chat.',
-      {}
-    );
   }
 
-  const guard = telegram.guardTopic(threadId);
+  const guard = telegram.guardInteraction(message.chat.type, threadId);
   if (!guard.allowed || !guard.interactive) return;
 
   const text = message.text.trim();
@@ -131,16 +207,16 @@ async function handleMessage(message) {
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
-  if (command === '/adminf') {
+  if (!isPrivate && command === '/adminf') {
     return admin.handleAdminCommand(message);
   }
-  if (command === '/admincancel') {
+  if (!isPrivate && command === '/admincancel') {
     return admin.cancelPendingEdit(chatId, message.from.id);
   }
-  if (command === '/postsignal') {
+  if (!isPrivate && command === '/postsignal') {
     return handlePostSignalCommand(message);
   }
-  if (command === '/addevent') {
+  if (!isPrivate && command === '/addevent') {
     return eventsAdmin.handleAddEventCommand(message);
   }
 
@@ -151,7 +227,7 @@ async function handleMessage(message) {
 
   switch (command) {
     case '/start':
-      return sendHome(chatId, threadId);
+      return sendHome(chatId, threadId, { isPrivate });
     case '/helpf':
       return sendHelp(chatId, threadId);
     case '/market':
@@ -174,6 +250,11 @@ async function handleMessage(message) {
       return sendSignalCommand(chatId, threadId);
     case '/spaces':
       return sendSpaces(chatId, threadId);
+    case '/campaign':
+      return telegram.sendMessage(chatId, await buildCampaignHomeText(), {
+        threadId,
+        replyMarkup: campaignUi.buildBondTheDuckMenu(),
+      });
     default:
       return;
   }
@@ -225,7 +306,8 @@ async function handleSignalCallback(callbackQuery) {
 
 async function handleCallbackQuery(callbackQuery) {
   const threadId = callbackQuery.message?.message_thread_id;
-  const guard = telegram.guardTopic(threadId);
+  const chatType = callbackQuery.message?.chat?.type;
+  const guard = telegram.guardInteraction(chatType, threadId);
 
   if (!guard.allowed || !guard.interactive) {
     return telegram.answerCallbackQuery(callbackQuery.id);
@@ -283,6 +365,20 @@ async function handleCallbackQuery(callbackQuery) {
       return sendWallets(chatId, threadId);
     case 'menu:door':
       return sendDoorInfo(chatId, threadId);
+    case 'menu:campaigns':
+      return editMenuMessage(callbackQuery, '🦆 *Campaigns* — choose a campaign:', campaignUi.buildCampaignsMenu());
+    case 'menu:campaigns:back':
+      return sendHome(chatId, threadId, { isPrivate: chatType === 'private' });
+    case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
+      return editMenuMessage(callbackQuery, await buildCampaignHomeText(), campaignUi.buildBondTheDuckMenu());
+    case campaignUi.MISSIONS_CALLBACK_PREFIX:
+      return editMenuMessage(callbackQuery, campaignUi.MISSIONS_HOME_TEXT, campaignUi.buildMissionsMenu());
+    case `${campaignUi.MISSIONS_CALLBACK_PREFIX}:raids`:
+      return editMenuMessage(
+        callbackQuery,
+        await buildOracleRaidsText(callbackQuery.from.id),
+        campaignUi.buildOracleRaidsMenu()
+      );
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
@@ -303,9 +399,53 @@ async function handleCallbackQuery(callbackQuery) {
       return editMenuMessage(callbackQuery, await buildBagworkboardText(), {
         inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'menu:leaderboard:root' }]],
       });
-    default:
+    default: {
+      if (callbackQuery.data?.startsWith(`${campaignUi.MISSIONS_CALLBACK_PREFIX}:`)) {
+        const missionScreen = callbackQuery.data.slice(campaignUi.MISSIONS_CALLBACK_PREFIX.length + 1);
+        const missionText = campaignUi.getMissionScreen(missionScreen);
+        if (missionText) return editMenuMessage(callbackQuery, missionText, campaignUi.buildMissionScreenMenu());
+      }
+      if (callbackQuery.data?.startsWith(`${campaignUi.CAMPAIGN_CALLBACK_PREFIX}:`)) {
+        const screen = callbackQuery.data.slice(campaignUi.CAMPAIGN_CALLBACK_PREFIX.length + 1);
+        const text = await buildCampaignScreenText(screen, callbackQuery.from.id);
+        if (text) return editMenuMessage(callbackQuery, text, campaignUi.buildCampaignScreenMenu());
+      }
       return;
+    }
   }
+}
+
+async function buildOracleRaidsText(telegramUserId) {
+  try {
+    const status = await campaignService.getParticipantRaidStatus(supabase, telegramUserId);
+    return campaignUi.buildOracleRaidsText(status);
+  } catch (err) {
+    console.error('Oracle campaign raid status unavailable', err.message);
+    return campaignUi.buildOracleRaidsText(campaignService.closedRaidStatus());
+  }
+}
+
+async function buildCampaignHomeText() {
+  try {
+    return campaignUi.buildCampaignHomeText(await campaignService.getCampaignStatus(supabase));
+  } catch (err) {
+    console.error('campaign status unavailable', err.message);
+    return campaignUi.buildCampaignHomeText(campaignService.closedCampaignStatus());
+  }
+}
+
+async function buildCampaignScreenText(screen, telegramUserId) {
+  if (!['status', 'xp'].includes(screen)) return campaignUi.getCampaignScreen(screen);
+  let status;
+  try {
+    status = await campaignService.getParticipantStatus(supabase, telegramUserId);
+  } catch (err) {
+    console.error('campaign participant status unavailable', err.message);
+    status = campaignService.closedParticipantStatus();
+  }
+  return screen === 'status'
+    ? campaignUi.buildParticipantStatusText(status)
+    : campaignUi.buildParticipantXpText(status);
 }
 
 // Checks Supabase for an admin-set override (bio text / image) for `key`
@@ -320,9 +460,13 @@ async function renderMenu(chatId, threadId, key, defaultText, { replyMarkup } = 
   return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
 }
 
-function sendHome(chatId, threadId) {
-  return renderMenu(chatId, threadId, 'home', '👁 *FawkQ Home* — pick a section:', {
-    replyMarkup: telegram.buildHomeMenu(),
+function sendHome(chatId, threadId, { isPrivate = false } = {}) {
+  const privateUrl = isPrivate ? null : telegram.botDeepLink('home');
+  const defaultText = isPrivate
+    ? '🔒 *Project Q Private Command Centre*\nUse every menu, campaign screen and community tool directly here.'
+    : '👁 *FawkQ Home* — pick a section:\n\n_Recommended: open Project Q privately to keep campaign menus out of the community chat._';
+  return renderMenu(chatId, threadId, 'home', defaultText, {
+    replyMarkup: telegram.buildHomeMenu({ privateUrl }),
   });
 }
 
@@ -341,6 +485,7 @@ function sendHelp(chatId, threadId) {
     '/door — Beyond the Door',
     '/signal — Current Signal (reveal, ignore, or grab hints for XP)',
     '/spaces — Upcoming Spaces',
+    '/campaign — Bond the Duck campaign hub',
     '',
     '_Coming soon:_ /missions /meme /feed /ask',
     '',
@@ -398,20 +543,29 @@ function sendRewards(chatId, threadId) {
 
 async function sendBagworkInfo(chatId, threadId) {
   const tasks = await bagwork.getBagworkTasks();
-
   let defaultText;
-  if (tasks?.tasks?.length) {
-    const lines = ['💼 *Bag Work*', ''];
-    for (const task of tasks.tasks) {
-      lines.push(`${task.label}: ${task.sol} SOL`);
+  // New per-view pricing shape. Anything else (old shape, null on fetch
+  // failure, or a rollback) falls through to the static message below.
+  if (tasks && tasks.pricing === 'per_view' && tasks.rate_per_1k) {
+    const xRate = tasks.rate_per_1k.x;
+    const tiktokRate = tasks.rate_per_1k.tiktok;
+    const lines = ['💼 *Bag Work*'];
+    lines.push(`${xRate} SOL per 1,000 views on X, ${tiktokRate} on TikTok.`);
+    lines.push(`Every approved piece pays at least ${tasks.min_sol} SOL, up to ${tasks.max_sol} SOL.`);
+    lines.push('A piece is priced off the views it has 48 hours after posting.');
+    if (Array.isArray(tasks.formats) && tasks.formats.length) {
+      lines.push('');
+      lines.push('*Formats:*');
+      for (const format of tasks.formats) {
+        lines.push(`• ${format.label}`);
+      }
     }
-    if (tasks.note) lines.push('', tasks.note);
-    lines.push('', `Submit at: ${tasks.page ?? FAWKQ_BAGWORK_URL}`);
+    if (tasks.note) lines.push(tasks.note);
+    lines.push(`Submit at: ${tasks.page ?? FAWKQ_BAGWORK_URL}`);
     defaultText = lines.join('\n');
   } else {
     defaultText = `💼 Complete tasks at ${FAWKQ_BAGWORK_URL} to earn XP and SOL. Your rewards land automatically once a task is confirmed.`;
   }
-
   return renderMenu(chatId, threadId, 'bagwork', defaultText);
 }
 

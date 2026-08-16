@@ -62,9 +62,8 @@ export function getChatMember(chatId, userId) {
   return call('getChatMember', { chat_id: chatId, user_id: userId });
 }
 
-export function buildHomeMenu() {
-  return {
-    inline_keyboard: [
+export function buildHomeMenu({ privateUrl } = {}) {
+  const inlineKeyboard = [
       [
         { text: '📈 Market', callback_data: 'menu:market' },
         { text: '🏆 Leaderboard', callback_data: 'menu:leaderboard' },
@@ -74,18 +73,24 @@ export function buildHomeMenu() {
         { text: '🎙 Spaces', callback_data: 'menu:spaces' },
       ],
       [
-        { text: '🔗 Official Links', callback_data: 'menu:links' },
-        { text: '💼 Bag Work', callback_data: 'menu:bagwork' },
+        { text: '🔗 Links', callback_data: 'menu:links' },
+        { text: '💼 Bagwork', callback_data: 'menu:bagwork' },
       ],
       [
-        { text: '👁 Eyes On The Money', callback_data: 'menu:money' },
-        { text: '🚪 Beyond the Door', callback_data: 'menu:door' },
+        { text: '👁 Money', callback_data: 'menu:money' },
+        { text: '🚪 The Door', callback_data: 'menu:door' },
       ],
       [
-        { text: 'ℹ️ About FawkQ', callback_data: 'menu:about' },
+        { text: '🦆 Campaigns', callback_data: 'menu:campaigns' },
       ],
-    ],
-  };
+      [
+        { text: 'ℹ️ About', callback_data: 'menu:about' },
+      ],
+  ];
+  if (privateUrl) {
+    inlineKeyboard.push([{ text: '🔒 Open Project Q privately', url: privateUrl }]);
+  }
+  return { inline_keyboard: inlineKeyboard };
 }
 
 export function buildLeaderboardMenu() {
@@ -155,6 +160,16 @@ export function guardTopic(threadId) {
   if (!entry) return { allowed: false, topic: null, interactive: false };
   const [topic] = entry;
   return { allowed: true, topic, interactive: INTERACTIVE_TOPICS.has(topic) };
+}
+
+// Members can use the complete interactive bot in a private chat. Group use
+// remains restricted to the configured interactive FAWKQ topics so Project Q
+// never starts responding across unrelated community conversations.
+export function guardInteraction(chatType, threadId) {
+  if (chatType === 'private') {
+    return { allowed: true, topic: 'private', interactive: true };
+  }
+  return guardTopic(threadId);
 }
 
 // Escapes Telegram "Markdown" (v1) control characters. Underscores are legal

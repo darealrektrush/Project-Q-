@@ -90,9 +90,10 @@ async function postPaidAnnouncement({ handle, sol, txSig, platform }) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const threadId = telegram.getTopicId('fawkq-announcements');
   const suffix = platform && platform !== 'x' ? ` (${telegram.escapeMarkdown(platform)})` : '';
+    const solText = Number(sol.toFixed(3)).toString();
   const text = [
     '🧾 *Bag Work Paid*',
-    `${telegram.inertHandle(handle)} — ${sol} SOL${suffix}`,
+    `${telegram.inertHandle(handle)} — ${solText} SOL${suffix}`,
     `https://solscan.io/tx/${txSig}`,
   ].join('\n');
   try {
@@ -294,7 +295,9 @@ export async function getPendingFeedback(userId) {
 // member with an open prompt has their normal chat swallowed.
 export function isFeedbackReply(message, prompt) {
   if (!prompt || !message.text) return false;
-  if (message.chat.type === 'private') return true;
+  // Private bot commands must continue to Project Q's command router even
+  // while a member has an unanswered feedback prompt.
+  if (message.chat.type === 'private') return !message.text.trim().startsWith('/');
   return message.reply_to_message?.message_id === prompt.prompt_message_id;
 }
 

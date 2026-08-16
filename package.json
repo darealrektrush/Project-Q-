@@ -12,7 +12,7 @@
     "dev": "node --watch --env-file=.env.local src/server.js",
     "distribute": "node jobs/distribute.js",
     "post-signal": "node jobs/postSignal.js",
-    "test": "node --test tests/"
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.3",
@@ -22,5 +22,10 @@
   },
   "devDependencies": {
     "@solana/spl-token": "^0.4.15"
+  },
+  "overrides": {
+    "jayson": {
+      "uuid": "11.1.1"
+    }
   }
 }
