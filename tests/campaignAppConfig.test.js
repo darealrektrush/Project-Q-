@@ -47,3 +47,15 @@ test('Mini App escapes Telegram display names and keeps wallet controls locked w
   assert.match(app, /escapeHtml\(p\.name\)/);
   assert.match(app, /campaignRecord\?\.enabled/);
 });
+
+test('Mini App exposes a guided verified onboarding path without activating participation', async () => {
+  const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
+  assert.match(app, /Complete your Project Q ID/);
+  assert.match(app, /Refresh verification status/);
+  assert.match(app, /Telegram identity/);
+  assert.match(app, /Oracle X identity/);
+  assert.match(app, /Solana reward wallet/);
+  assert.match(app, /Campaign identity complete/);
+  assert.match(app, /campaignRecord\?\.enabled&&participationReady/);
+  assert.match(app, /onEvent\?\.\('activated'/);
+});
