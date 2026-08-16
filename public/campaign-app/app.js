@@ -125,5 +125,14 @@ async function loadCampaign(){
   }catch{state.campaign=fallbackCampaign;}
 }
 
-async function boot(){state.telegram?.ready();state.telegram?.expand();state.screen=location.hash.slice(1) in screens?location.hash.slice(1):'home';await loadCampaign();render();}
+async function boot(){
+  const splashStarted=performance.now();
+  state.telegram?.ready();
+  state.telegram?.expand();
+  state.screen=location.hash.slice(1) in screens?location.hash.slice(1):'home';
+  await loadCampaign();
+  render();
+  const remaining=Math.max(0,650-(performance.now()-splashStarted));
+  setTimeout(()=>document.body.classList.remove('loading'),remaining);
+}
 boot();
