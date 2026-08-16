@@ -17,6 +17,7 @@ const state = {
     xp: 0,
     rank: '—',
     percentile: 0,
+    achievements: [],
   },
 };
 
@@ -65,21 +66,29 @@ function missionCard(mission) {
   return `<article class="card mission" data-open="missions">${visual}<h3>${mission.title}</h3><p>${mission.description}</p><div class="mission-footer"><span>${mission.status}</span><b>${mission.reward}</b></div></article>`;
 }
 
+function badgeGallery(badges=[]) {
+  return `<div class="badge-gallery">${badges.map(badge=>{
+    const unlocked=state.profile.achievements.includes(badge.id);
+    return `<div class="achievement ${unlocked?'unlocked':'locked'}"><img src="${badge.image}" alt="${badge.label}" /><span>${unlocked?'Unlocked':'Locked'}</span></div>`;
+  }).join('')}</div>`;
+}
+
 function missionsScreen() {
   const c=state.campaign||fallbackCampaign;
   return `<article class="card page-card"><div class="page-intro"><div><span class="label">Mission centre</span><h2>Every action. One verified record.</h2><p>Oracle raids, certified votes, Telegram bots, Bagwork and approved campaign missions feed one combined Project Q XP ledger.</p></div></div><div class="mission-grid">${c.missions.map(missionCard).join('')}</div><div class="identity-lock"><div><b>Complete the identity gate to participate</b><p>Verified Telegram + Oracle-linked X unlocks missions. A verified wallet unlocks holder and reward eligibility.</p></div><button class="primary" data-screen="profile">Verify identity</button></div></article>`;
 }
 
 function xpScreen() {
-  const caps=(state.campaign||fallbackCampaign).xpCaps;
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">My XP</span><h2>Auditable participation.</h2><p>Every verified action will appear here with its source, timestamp, status and daily-cap impact.</p></div><div class="score-orb"><div><strong>0</strong><small>XP</small></div></div></div><div class="stats"><div class="card stat"><span class="label">Daily total</span><strong>0 / ${caps.overallDaily}</strong><p>Overall cap</p></div><div class="card stat"><span class="label">Participation</span><strong>0 / ${caps.participationDaily}</strong><p>Daily lane cap</p></div><div class="card stat"><span class="label">Project Q</span><strong>0 / ${caps.projectQDaily}</strong><p>Daily mission cap</p></div><div class="card stat"><span class="label">Pending</span><strong>0</strong><p>Under verification</p></div></div><div class="empty">No verified campaign XP yet. The ledger activates when the campaign readiness gate passes.</div></article>`;
+  const c=state.campaign||fallbackCampaign;
+  const caps=c.xpCaps;
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">My XP</span><h2>Auditable participation.</h2><p>Every verified action will appear here with its source, timestamp, status and daily-cap impact.</p></div><div class="score-orb"><div><strong>0</strong><small>XP</small></div></div></div><div class="stats"><div class="card stat"><span class="label">Daily total</span><strong>0 / ${caps.overallDaily}</strong><p>Overall cap</p></div><div class="card stat"><span class="label">Participation</span><strong>0 / ${caps.participationDaily}</strong><p>Daily lane cap</p></div><div class="card stat"><span class="label">Project Q</span><strong>0 / ${caps.projectQDaily}</strong><p>Daily mission cap</p></div><div class="card stat"><span class="label">Pending</span><strong>0</strong><p>Under verification</p></div></div><div class="section-head"><h2>XP achievements</h2><span>Unlocked by verified campaign records</span></div>${badgeGallery(c.xpBadges)}<div class="empty">No verified campaign XP yet. The ledger activates when the campaign readiness gate passes.</div></article>`;
 }
 
 function leaderboardScreen() {
   const c=state.campaign||fallbackCampaign;
   const rows = [['1','Duck Alpha','—'],['2','Tide Builder','—'],['3','Shell Runner','—'],['4','Signal Hunter','—'],['5','Ocean Guard','—']];
   const art=c.leaderboardIcon?`<img class="page-emblem" src="${c.leaderboardIcon}" alt="Bond the Duck leaderboards" />`:'';
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Combined leaderboard</span><h2>Consistency beats noise.</h2><p>Verified raids, voting, approved participation and Project Q campaign XP combine into one transparent ranking.</p></div>${art}</div><div class="list">${rows.map(([rank,name,xp])=>`<div class="list-row"><span class="rank">${rank}</span><div><h3>${name}</h3><p>Identity hidden until launch</p></div><b>${xp} XP</b></div>`).join('')}</div></article>`;
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Combined leaderboard</span><h2>Consistency beats noise.</h2><p>Verified raids, voting, approved participation and Project Q campaign XP combine into one transparent ranking.</p></div>${art}</div><div class="list">${rows.map(([rank,name,xp])=>`<div class="list-row"><span class="rank">${rank}</span><div><h3>${name}</h3><p>Identity hidden until launch</p></div><b>${xp} XP</b></div>`).join('')}</div><div class="section-head"><h2>Leaderboard badges</h2><span>Calculated from finalized rankings</span></div>${badgeGallery(c.leaderboardBadges)}</article>`;
 }
 
 function rewardsScreen() {

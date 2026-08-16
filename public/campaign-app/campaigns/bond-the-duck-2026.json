@@ -15,6 +15,20 @@
     "full": "/campaign-app/assets/identity/fully-verified.webp",
     "fullHero": "/campaign-app/assets/identity/fully-verified-hero.webp"
   },
+  "xpBadges": [
+    { "id": "xp-earned", "label": "XP Earned", "image": "/campaign-app/assets/progression/xp-earned.webp" },
+    { "id": "xp-master", "label": "XP Master", "image": "/campaign-app/assets/progression/xp-master.webp" },
+    { "id": "level-up", "label": "Level Up", "image": "/campaign-app/assets/progression/level-up.webp" },
+    { "id": "rank-up", "label": "Rank Up", "image": "/campaign-app/assets/progression/rank-up.webp" }
+  ],
+  "leaderboardBadges": [
+    { "id": "top-10-percent", "label": "Top 10%", "image": "/campaign-app/assets/progression/top-10-percent.webp" },
+    { "id": "top-5-percent", "label": "Top 5%", "image": "/campaign-app/assets/progression/top-5-percent.webp" },
+    { "id": "top-1-percent", "label": "Top 1%", "image": "/campaign-app/assets/progression/top-1-percent.webp" },
+    { "id": "top-100", "label": "Elite 100", "image": "/campaign-app/assets/progression/top-100.webp" },
+    { "id": "top-10", "label": "Top 10", "image": "/campaign-app/assets/progression/top-10.webp" },
+    { "id": "champion", "label": "Champion", "image": "/campaign-app/assets/progression/champion.webp" }
+  ],
   "status": "DRAFT",
   "statusLabel": "PRE-LAUNCH / READINESS MODE",
   "tagline": "Build reputation. Earn XP. Compete transparently.",

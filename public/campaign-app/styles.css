@@ -85,6 +85,14 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .page-intro p { max-width: 670px; color: var(--muted); line-height: 1.6; }
 .score-orb { width: 128px; height: 128px; border-radius: 50%; display: grid; place-items: center; text-align: center; background: radial-gradient(circle,rgba(255,177,27,.2),rgba(255,177,27,.035) 68%); border: 1px solid rgba(255,177,27,.2); }
 .page-emblem { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 12px 28px rgba(255,177,27,.14)); }
+.badge-gallery { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 12px; }
+.achievement { position: relative; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.025); text-align: center; }
+.achievement img { display: block; width: 100%; aspect-ratio: .8; object-fit: contain; transition: .2s ease; }
+.achievement span { display: inline-block; margin-top: 6px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.achievement.locked img { filter: grayscale(1); opacity: .28; }
+.achievement.unlocked { border-color: rgba(255,177,27,.3); }
+.achievement.unlocked img { filter: drop-shadow(0 10px 20px rgba(255,177,27,.18)); }
+.achievement.unlocked span { color: var(--gold); }
 .score-orb strong { display: block; font-size: 35px; }
 .identity-status-art { width: 190px; max-height: 210px; object-fit: contain; filter: drop-shadow(0 14px 30px rgba(255,177,27,.12)); }
 .eligibility-art { width: 150px; max-height: 170px; object-fit: contain; }

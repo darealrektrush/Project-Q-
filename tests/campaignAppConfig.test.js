@@ -23,6 +23,8 @@ test('campaign registry points to a valid reusable default campaign', async () =
   assert.match(campaign.leaderboardIcon, /^\/campaign-app\/assets\/missions\//);
   assert.deepEqual(Object.keys(campaign.identityBadges).sort(),
     ['collective','full','fullHero','rewards','telegram','wallet','x']);
+  assert.equal(campaign.xpBadges.length, 4);
+  assert.equal(campaign.leaderboardBadges.length, 6);
   assert.ok(Array.isArray(campaign.missions));
 });
 
