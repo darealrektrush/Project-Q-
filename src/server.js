@@ -15,6 +15,7 @@ import * as eventsAdmin from './lib/eventsAdmin.js';
 import * as campaignUi from './campaign/ui.js';
 import * as campaignService from './campaign/service.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
+import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 
 const app = express();
 app.use(express.json());
@@ -36,6 +37,22 @@ const STUB_COMMANDS = new Set([
 ]);
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
+
+app.post('/campaign-app/api/session', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
+    return res.status(200).json({ ok: true, user: session.user, participant });
+  } catch (err) {
+    const unavailable = err.message === 'telegram mini app authentication unavailable';
+    const databaseFailure = String(err.message).startsWith('Supabase ');
+    if (unavailable || databaseFailure) console.error('campaign Mini App session failed', err.message);
+    return res.status(unavailable || databaseFailure ? 503 : 401).json({
+      ok: false,
+      error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
+    });
+  }
+});
 
 app.get('/version', (req, res) =>
   res.status(200).json({

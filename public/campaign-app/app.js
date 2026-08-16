@@ -15,7 +15,7 @@ const state = {
   campaignRecord: null,
   profile: {
     name: window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Duck Recruit',
-    telegramVerified: Boolean(window.Telegram?.WebApp?.initData),
+    telegramVerified: false,
     xVerified: false,
     walletVerified: false,
     xp: 0,
@@ -156,12 +156,27 @@ async function loadCampaign(){
   }catch{state.campaign=fallbackCampaign;}
 }
 
+async function authenticateTelegram(){
+  const initData=state.telegram?.initData;
+  if(!initData)return;
+  try{
+    const response=await fetch('/campaign-app/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData})});
+    if(!response.ok)return;
+    const session=await response.json();
+    state.profile.name=session.user.firstName||session.user.username||'Duck Recruit';
+    state.profile.telegramVerified=true;
+    state.profile.xVerified=Boolean(session.participant?.xVerified);
+    state.profile.walletVerified=Boolean(session.participant?.walletVerified);
+    state.profile.xp=Number(session.participant?.totalXp||0);
+  }catch{ /* Fail closed and retain the unverified UI. */ }
+}
+
 async function boot(){
   const splashStarted=performance.now();
   state.telegram?.ready();
   state.telegram?.expand();
   state.screen=location.hash.slice(1) in screens?location.hash.slice(1):'home';
-  await loadCampaign();
+  await Promise.all([loadCampaign(),authenticateTelegram()]);
   render();
   const remaining=Math.max(0,650-(performance.now()-splashStarted));
   setTimeout(()=>document.body.classList.remove('loading'),remaining);

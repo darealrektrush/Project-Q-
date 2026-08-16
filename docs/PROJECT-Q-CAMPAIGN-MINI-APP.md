@@ -31,12 +31,11 @@ When configured, the Bond the Duck bot menu adds an **Open Campaign App** button
 
 ## Security boundary
 
-The current browser milestone is a read-only/pre-launch shell. Client-provided Telegram data, X status, and wallet addresses must never be trusted directly. Before enabling participation, the backend must:
+The current browser milestone is a read-only/pre-launch shell. Client-provided Telegram data, X status, and wallet addresses must never be trusted directly. Telegram Mini App `initData` is now verified by Project Q using Telegram's HMAC process with a 10-minute freshness window; the verified Telegram ID is then used for server-side participant lookup. Before enabling participation, the remaining backend work must:
 
-1. verify Telegram Mini App `initData` on the server;
-2. resolve the Telegram account to one Oracle-verified permanent X user ID;
-3. verify wallet ownership with a short-lived nonce and signed message;
-4. enforce one Telegram account, one X identity, and one wallet using database constraints and RLS;
-5. calculate XP, eligibility, ranks, and allocations server-side.
+1. resolve the verified Telegram account to one Oracle-verified permanent X user ID;
+2. verify wallet ownership with a short-lived nonce and signed message;
+3. enforce one Telegram account, one X identity, and one wallet using database constraints and RLS;
+4. calculate XP, eligibility, ranks, and allocations server-side.
 
 No token transfer or claim authority belongs in the Mini App.
