@@ -1,6 +1,10 @@
 const NAV = [
-  ['home', '⌂', 'Home'], ['missions', '✓', 'Missions'], ['xp', '⚡', 'XP'],
-  ['leaderboard', '♛', 'Leaderboard'], ['rewards', '🎁', 'Rewards'], ['profile', '◉', 'Profile'],
+  ['home', '/campaign-app/assets/project-q-app-icon.webp', 'Home'],
+  ['missions', '/campaign-app/assets/system/q-campaigns.webp', 'Missions'],
+  ['xp', '/campaign-app/assets/system/q-xp.webp', 'XP'],
+  ['leaderboard', '/campaign-app/assets/system/q-signal.webp', 'Leaderboard'],
+  ['rewards', '/campaign-app/assets/system/q-distribution.webp', 'Rewards'],
+  ['profile', '/campaign-app/assets/system/q-id.webp', 'Profile'],
 ];
 
 const state = {
@@ -31,7 +35,7 @@ const fallbackCampaign = {
 };
 
 function navMarkup() {
-  return NAV.map(([id,icon,label]) => `<button class="nav-button ${state.screen===id?'active':''}" data-screen="${id}" aria-label="${label}" title="${label}"><span>${icon}</span><span class="nav-label">${label}</span></button>`).join('');
+  return NAV.map(([id,icon,label]) => `<button class="nav-button ${state.screen===id?'active':''}" data-screen="${id}" aria-label="${label}" title="${label}"><img class="nav-icon" src="${icon}" alt="" /><span class="nav-label">${label}</span></button>`).join('');
 }
 
 function gateRow(label, ok, waiting='Required') {
