@@ -41,6 +41,30 @@ export function validateOracleRaidEvent(body) {
   };
 }
 
+export function validateOracleIdentityEvent(body) {
+  const telegramUserId = Number(body?.telegram_user_id);
+  const xUserId = requiredString(body?.x_user_id, 'x_user_id');
+  const verifiedAtRaw = requiredString(body?.verified_at, 'verified_at', 40);
+  const verifiedAt = new Date(verifiedAtRaw);
+  if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0) {
+    throw new Error('invalid telegram_user_id');
+  }
+  if (Number.isNaN(verifiedAt.getTime()) || verifiedAt.getTime() > Date.now() + 5 * 60 * 1000) {
+    throw new Error('invalid verified_at');
+  }
+  return { telegramUserId, xUserId, verifiedAt: verifiedAt.toISOString() };
+}
+
+export async function linkOracleIdentity(client, identity) {
+  const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
+  return client.rpc('link_oracle_identity', {
+    p_campaign_id: campaignId,
+    p_telegram_user_id: identity.telegramUserId,
+    p_x_user_id: identity.xUserId,
+    p_verified_at: identity.verifiedAt,
+  });
+}
+
 export async function ingestOracleRaidEvent(client, event) {
   const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
   return client.rpc('ingest_oracle_raid_event', {
