@@ -18,11 +18,13 @@ const state = {
     telegramVerified: false,
     xVerified: false,
     walletVerified: false,
+    tokenAccountReady: false,
     xp: 0,
     rank: '—',
     percentile: 0,
     achievements: [],
   },
+  sessionStatus: 'checking',
 };
 
 const fallbackCampaign = {
@@ -116,12 +118,23 @@ function profileScreen() {
   const fullyVerified=participationReady&&p.walletVerified;
   const credential=(src,alt,ok)=>src?`<img class="credential-badge ${ok?'verified':'locked'}" src="${src}" alt="${alt}" />`:'<span class="rank">—</span>';
   const statusBadge=fullyVerified?badges.fullHero:(participationReady?badges.collective:null);
-  const walletEnabled=Boolean(state.campaignRecord?.enabled);
-  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${escapeHtml(p.name)}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div>${statusBadge?`<img class="identity-status-art" src="${statusBadge}" alt="${fullyVerified?'Fully verified identity':'Collective verified community member'}" />`:`<div class="score-orb"><div><strong>${verifiedCount}/3</strong><small>verified</small></div></div>`}</div><div class="list">
-    <div class="list-row credential-row">${credential(badges.telegram,'Telegram verified',p.telegramVerified)}<div><h3>Telegram identity</h3><p>${p.telegramVerified?'Signed Mini App session verified':'Open through Project Q to verify'}</p></div><b>${p.telegramVerified?'Verified':'Required'}</b></div>
-    <div class="list-row credential-row">${credential(badges.x,'X verified',p.xVerified)}<div><h3>Oracle X identity</h3><p>${p.xVerified?'Permanent X user ID linked':'Authorize through the CrabStar Oracle'}</p></div><button class="secondary" id="oracle-link">${p.xVerified?'Verified':'Open Oracle'}</button></div>
-    <div class="list-row credential-row">${credential(badges.wallet,'Wallet connected and verified',p.walletVerified)}<div><h3>Solana reward wallet</h3><p>${state.wallet?short(state.wallet):(walletEnabled?'Connect Phantom, Solflare or Backpack':'Available when campaign opens')}</p></div><button class="secondary" id="profile-wallet" ${walletEnabled?'':'disabled'}>${state.wallet?'Connected':(walletEnabled?'Connect':'Locked')}</button></div>
-  </div><div class="identity-lock"><div><b>Campaign access: ${participationReady?'Eligible to enroll':'Locked'}</b><p>Telegram and X verification unlock participation. Wallet verification is required before rewards can be finalized.</p></div></div></article>`;
+  const walletEnabled=Boolean(state.campaignRecord?.enabled&&participationReady);
+  const telegramDetail=p.telegramVerified?'Signed Mini App session verified':(state.sessionStatus==='outside'?'Open this app from Project Q in Telegram':'Telegram verification required');
+  const xDetail=p.xVerified?'Permanent Oracle X identity linked':'Complete /linkx with the CrabStar Oracle, then refresh';
+  const walletDetail=p.walletVerified?`Ownership verified · ${short(state.wallet)}`:(state.wallet?short(state.wallet):(walletEnabled?'Connect and sign a no-transaction message':(participationReady?'Available when campaign opens':'Complete Telegram and X first')));
+  return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${escapeHtml(p.name)}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div>${statusBadge?`<img class="identity-status-art" src="${statusBadge}" alt="${fullyVerified?'Fully verified identity':'Collective verified community member'}" />`:`<div class="score-orb"><div><strong>${verifiedCount}/3</strong><small>verified</small></div></div>`}</div>
+  <section class="onboarding-panel" aria-label="Identity onboarding">
+    <div class="onboarding-head"><div><span class="label">Verification path</span><h3>${fullyVerified?'Fully Verified':'Complete your Project Q ID'}</h3></div><b>${verifiedCount}/3</b></div>
+    <div class="progress"><span style="width:${Math.round((verifiedCount/3)*100)}%"></span></div>
+    <div class="onboarding-steps">
+      <article class="onboarding-step ${p.telegramVerified?'complete':'current'}"><span>1</span><div><b>Telegram identity</b><p>${telegramDetail}</p></div><strong>${p.telegramVerified?'Verified':'Required'}</strong></article>
+      <article class="onboarding-step ${p.xVerified?'complete':(p.telegramVerified?'current':'locked')}"><span>2</span><div><b>Oracle X identity</b><p>${xDetail}</p></div><button class="secondary" id="oracle-link">${p.xVerified?'Open Oracle':'Verify X'}</button></article>
+      <article class="onboarding-step ${p.walletVerified?'complete':(walletEnabled?'current':'locked')}"><span>3</span><div><b>Solana reward wallet</b><p>${walletDetail}</p></div><button class="secondary" id="profile-wallet" ${walletEnabled?'':'disabled'}>${p.walletVerified?'Verified':(walletEnabled?'Connect':'Locked')}</button></article>
+    </div>
+    ${p.telegramVerified?`<button class="text-action" id="identity-refresh">Refresh verification status</button>`:''}
+    ${fullyVerified?`<div class="fully-verified"><img src="${badges.full}" alt="Fully verified" /><div><b>Campaign identity complete</b><p>Telegram, Oracle X and wallet ownership are verified. Reward eligibility still follows the published campaign rules and token-account snapshot.</p></div></div>`:''}
+  </section>
+  <div class="identity-lock"><div><b>Campaign access: ${participationReady?'Identity ready':'Locked'}</b><p>${participationReady?(p.walletVerified?'Fully verified for wallet-gated eligibility checks.':'Participation identity is ready. Wallet verification opens with the campaign.'):'Complete Telegram and Oracle X verification to unlock participation.'}</p></div></div></article>`;
 }
 
 const screens={home,missions:missionsScreen,xp:xpScreen,leaderboard:leaderboardScreen,rewards:rewardsScreen,profile:profileScreen};
@@ -153,6 +166,7 @@ async function connectWallet(){
     if(!verifyResponse.ok)throw new Error('verify');
     state.profile.walletVerified=true;
     toast('Wallet ownership verified. No transaction was authorized.');
+    await authenticateTelegram();
     render();
   }catch{toast('Wallet connection or ownership verification was cancelled.');}
 }
@@ -162,7 +176,13 @@ function bind(){
   document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>go(el.dataset.open));
   const wb=document.querySelector('#wallet-button');wb.onclick=connectWallet;if(state.wallet){wb.textContent=short(state.wallet);wb.classList.add('connected');}
   document.querySelector('#profile-wallet')?.addEventListener('click',connectWallet);
-  document.querySelector('#oracle-link')?.addEventListener('click',()=>window.Telegram?.WebApp?.openTelegramLink?.('https://t.me/crabstar_oracle_bot')||window.open('https://t.me/crabstar_oracle_bot','_blank'));
+  document.querySelector('#identity-refresh')?.addEventListener('click',async()=>{
+    state.sessionStatus='checking';
+    await authenticateTelegram();
+    render();
+    toast(state.profile.xVerified?'Oracle X identity confirmed.':'X identity not linked yet.');
+  });
+  document.querySelector('#oracle-link')?.addEventListener('click',()=>window.Telegram?.WebApp?.openTelegramLink?.('https://t.me/crabstar_oracle_bot?start=linkx')||window.open('https://t.me/crabstar_oracle_bot?start=linkx','_blank'));
 }
 
 async function loadCampaign(){
@@ -180,24 +200,35 @@ async function loadCampaign(){
 
 async function authenticateTelegram(){
   const initData=state.telegram?.initData;
-  if(!initData)return;
+  if(!initData){state.sessionStatus='outside';return false;}
+  state.sessionStatus='checking';
   try{
     const response=await fetch('/campaign-app/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData})});
-    if(!response.ok)return;
+    if(!response.ok){state.sessionStatus='error';return false;}
     const session=await response.json();
     state.profile.name=session.user.firstName||session.user.username||'Duck Recruit';
     state.profile.telegramVerified=true;
     state.profile.xVerified=Boolean(session.participant?.xVerified);
     state.profile.walletVerified=Boolean(session.participant?.walletVerified);
+    state.profile.tokenAccountReady=Boolean(session.participant?.tokenAccountReady);
     state.wallet=session.participant?.rewardWallet||null;
     state.profile.xp=Number(session.participant?.totalXp||0);
-  }catch{ /* Fail closed and retain the unverified UI. */ }
+    state.sessionStatus='verified';
+    return true;
+  }catch{
+    state.sessionStatus='error';
+    return false;
+  }
 }
 
 async function boot(){
   const splashStarted=performance.now();
   state.telegram?.ready();
   state.telegram?.expand();
+  state.telegram?.onEvent?.('activated',async()=>{
+    await authenticateTelegram();
+    render();
+  });
   state.screen=location.hash.slice(1) in screens?location.hash.slice(1):'home';
   await Promise.all([loadCampaign(),authenticateTelegram()]);
   render();
