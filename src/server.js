@@ -149,6 +149,24 @@ app.post('/oracle/campaign-raid-event', async (req, res) => {
   }
 });
 
+app.post('/oracle/campaign-identity', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  try {
+    const identity = oracleIngest.validateOracleIdentityEvent(req.body);
+    const result = await oracleIngest.linkOracleIdentity(supabase, identity);
+    return res.status(200).json({ ok: true, identity: result });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('Oracle campaign identity ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'campaign identity rejected',
+    });
+  }
+});
+
 async function handleUpdate(update) {
   if (update.callback_query) return handleCallbackQuery(update.callback_query);
   if (update.message) return handleMessage(update.message);
