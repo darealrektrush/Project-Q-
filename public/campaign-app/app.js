@@ -182,7 +182,7 @@ function bind(){
     render();
     toast(state.profile.xVerified?'Oracle X identity confirmed.':'X identity not linked yet.');
   });
-  document.querySelector('#oracle-link')?.addEventListener('click',()=>window.Telegram?.WebApp?.openTelegramLink?.('https://t.me/crabstar_oracle_bot?start=linkx')||window.open('https://t.me/crabstar_oracle_bot?start=linkx','_blank'));
+  document.querySelector('#oracle-link')?.addEventListener('click',()=>window.Telegram?.WebApp?.openTelegramLink?.('https://t.me/crabstar_oracle_bot')||window.open('https://t.me/crabstar_oracle_bot','_blank'));
 }
 
 async function loadCampaign(){
