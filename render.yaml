@@ -92,6 +92,22 @@ services:
         sync: false
 
   - type: cron
+    name: project-q-settle-campaign-xp
+    runtime: node
+    # No-ops safely while the campaign is DRAFT (settleCampaignRaidXp only
+    # acts on an ACTIVE campaign), so this is safe to schedule ahead of launch.
+    schedule: "*/10 * * * *"
+    buildCommand: npm install
+    startCommand: npm run settle-campaign-xp
+    envVars:
+      - key: BOND_THE_DUCK_CAMPAIGN_ID
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: cron
     name: project-q-signal
     runtime: node
     schedule: "0 0,12 * * *"
