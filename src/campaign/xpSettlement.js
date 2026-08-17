@@ -11,46 +11,18 @@
 // public/campaign-app/campaigns/bond-the-duck-2026.json and referenced in
 // src/campaign/ui.js: Oracle X Raids pay "Up to 20 XP" across 5 verified
 // actions/day (4 XP each) inside the 20/day "Project Q missions" cap, and
-// every award also counts against the 75/day overall cap. This module
-// intentionally does not touch website voting or Telegram-bot XP: neither
-// has an ingest bridge yet (no verification_sources rows, no bot/site
-// integration), so there is nothing pending to settle for them.
+// every award also counts against the 75/day overall cap. Website voting
+// and Telegram-bot XP settle through participationSettlement.js instead --
+// see that file and supabase/campaign_participation.sql.
 
+import { DAILY_XP_CAPS, utcDayKey, loadDailyXpUsage } from './xpCaps.js';
+
+export { DAILY_XP_CAPS };
 export const RAID_XP_PER_ACTION = 4;
-
-export const DAILY_XP_CAPS = Object.freeze({
-  overall: 75,
-  mission: 20, // "Project Q missions" cap; Oracle raids currently the only source
-  participation: 15, // reserved for website voting + Telegram-bot XP once wired
-});
 
 const PENDING_RAID_EVENTS_QUERY =
   '?credited=eq.false&reason=is.null&select=id,cycle_id,telegram_user_id,verified_at,action,raid_id' +
   '&order=verified_at.asc';
-
-function utcDayKey(isoTimestamp) {
-  return isoTimestamp.slice(0, 10);
-}
-
-async function loadDailyXpUsage(client, campaignId, telegramUserId, day) {
-  const rows = await client.select(
-    'xp_ledger',
-    `?campaign_id=eq.${encodeURIComponent(campaignId)}` +
-      `&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +
-      `&awarded_at=gte.${encodeURIComponent(`${day}T00:00:00.000Z`)}` +
-      `&awarded_at=lt.${encodeURIComponent(`${day}T23:59:59.999999Z`)}` +
-      '&select=amount,cap_bucket'
-  );
-  return rows.reduce(
-    (totals, row) => {
-      const amount = Number(row.amount);
-      totals.overall += amount;
-      totals[row.cap_bucket] = (totals[row.cap_bucket] ?? 0) + amount;
-      return totals;
-    },
-    { overall: 0, mission: 0, participation: 0, other: 0 }
-  );
-}
 
 // Settles exactly one pending raid event. Exported separately so callers
 // (and tests) can settle a single known event without a full sweep.
