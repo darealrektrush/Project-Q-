@@ -6,6 +6,7 @@ import {
   buildCampaignHomeText,
   buildCampaignsMenu,
   buildBondTheDuckMenu,
+  resolveCampaignAppUrl,
   buildParticipantStatusText,
   buildParticipantXpText,
   buildMissionsMenu,
@@ -56,8 +57,11 @@ test('Bond the Duck hub can expose the reusable Mini App without changing callba
   const menu = buildBondTheDuckMenu('https://example.com/campaign-app/');
   assert.deepEqual(menu.inline_keyboard[0][0], {
     text: '📱 Open Campaign App',
-    url: 'https://example.com/campaign-app/',
+    web_app: { url: 'https://example.com/campaign-app/' },
   });
+  assert.equal(resolveCampaignAppUrl({
+    RENDER_EXTERNAL_HOSTNAME: 'project-q-dev.onrender.com',
+  }), 'https://project-q-dev.onrender.com/campaign-app/');
 });
 
 test('pre-launch campaign UI never represents the campaign as active', () => {
