@@ -22,6 +22,21 @@ export async function assertCampaignParticipationEnabled(client, enabledFlag) {
   return status;
 }
 
+export async function assertWalletVerificationEnabled(
+  client,
+  telegramUserId,
+  { verificationFlag, participationFlag } = {}
+) {
+  if (verificationFlag !== 'true') {
+    await assertCampaignParticipationEnabled(client, participationFlag);
+  }
+  const participant = await getParticipantStatus(client, telegramUserId);
+  if (!participant.xVerified) {
+    throw new Error('verified Telegram and Oracle X identity required');
+  }
+  return participant;
+}
+
 export async function getParticipantStatus(client, telegramUserId) {
   const id = campaignId();
   const userId = String(telegramUserId);
