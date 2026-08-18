@@ -49,6 +49,14 @@ export function cancelPendingEdit(chatId, userId) {
   return telegram.sendMessage(chatId, 'Admin edit cancelled.', {});
 }
 
+export function isConfiguredPrivateAdmin(userId) {
+  const configured = (process.env.TELEGRAM_ADMIN_USER_IDS ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  return configured.includes(String(userId));
+}
+
 export async function isGroupAdmin(chatId, userId) {
   try {
     const member = await telegram.getChatMember(chatId, userId);
@@ -57,6 +65,11 @@ export async function isGroupAdmin(chatId, userId) {
     console.error('isGroupAdmin check failed', err);
     return false;
   }
+}
+
+export function isAuthorizedAdmin(chatId, userId, chatType) {
+  if (chatType === 'private') return Promise.resolve(isConfiguredPrivateAdmin(userId));
+  return isGroupAdmin(chatId, userId);
 }
 
 function listKeyboard() {
@@ -116,8 +129,8 @@ export async function handleAdminCommand(message) {
   const threadId = message.message_thread_id;
   const userId = message.from.id;
 
-  if (!(await isGroupAdmin(chatId, userId))) {
-    return telegram.sendMessage(chatId, '🚫 Only group admins can use /adminf.', { threadId });
+  if (!(await isAuthorizedAdmin(chatId, userId, message.chat.type))) {
+    return telegram.sendMessage(chatId, '🚫 You are not authorized to use the Project Q admin panel.', { threadId });
   }
 
   return telegram.sendMessage(chatId, '🛠 *Admin panel* — choose a menu/command to edit:', {
@@ -132,8 +145,8 @@ export async function handleAdminCallback(callbackQuery) {
   const userId = callbackQuery.from.id;
   const messageId = callbackQuery.message.message_id;
 
-  if (!(await isGroupAdmin(chatId, userId))) {
-    return telegram.sendMessage(chatId, '🚫 Only group admins can use /adminf.', { threadId });
+  if (!(await isAuthorizedAdmin(chatId, userId, callbackQuery.message.chat.type))) {
+    return telegram.sendMessage(chatId, '🚫 You are not authorized to use the Project Q admin panel.', { threadId });
   }
 
   const [, action, arg1, arg2] = callbackQuery.data.split(':');
