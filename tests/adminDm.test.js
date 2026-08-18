@@ -6,21 +6,21 @@ import {
   isConfiguredPrivateAdmin,
 } from '../src/lib/admin.js';
 
-function withAdminIds(value, run) {
+async function withAdminIds(value, run) {
   const previous = process.env.TELEGRAM_ADMIN_USER_IDS;
   if (value === undefined) delete process.env.TELEGRAM_ADMIN_USER_IDS;
   else process.env.TELEGRAM_ADMIN_USER_IDS = value;
 
   try {
-    return run();
+    return await run();
   } finally {
     if (previous === undefined) delete process.env.TELEGRAM_ADMIN_USER_IDS;
     else process.env.TELEGRAM_ADMIN_USER_IDS = previous;
   }
 }
 
-test('private admin access is restricted to configured Telegram user ids', () => {
-  withAdminIds('12345, 67890', () => {
+test('private admin access is restricted to configured Telegram user ids', async () => {
+  await withAdminIds('12345, 67890', () => {
     assert.equal(isConfiguredPrivateAdmin(12345), true);
     assert.equal(isConfiguredPrivateAdmin('67890'), true);
     assert.equal(isConfiguredPrivateAdmin(99999), false);
