@@ -30,13 +30,6 @@ const ORACLE_CAMPAIGN_SECRET = process.env.ORACLE_CAMPAIGN_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
 
-const STUB_COMMANDS = new Set([
-  '/missions',
-  '/meme',
-  '/feed',
-  '/ask',
-]);
-
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
 
 app.post('/campaign-app/api/session', async (req, res) => {
@@ -245,11 +238,6 @@ async function handleMessage(message) {
     return eventsAdmin.handleAddEventCommand(message);
   }
 
-  if (STUB_COMMANDS.has(command)) {
-    const key = command.slice(1); // e.g. 'missions', 'meme'
-    return renderMenu(chatId, threadId, key, '🚧 Coming soon.');
-  }
-
   switch (command) {
     case '/start':
       return sendHome(chatId, threadId, { isPrivate });
@@ -275,10 +263,21 @@ async function handleMessage(message) {
       return sendSignalCommand(chatId, threadId);
     case '/spaces':
       return sendSpaces(chatId, threadId);
+    case '/events':
+      return sendEvents(chatId, threadId);
+    case '/links':
+      return sendOfficialLinks(chatId, threadId);
+    case '/about':
+      return sendAbout(chatId, threadId);
     case '/campaign':
       return telegram.sendMessage(chatId, await buildCampaignHomeText(), {
         threadId,
         replyMarkup: campaignUi.buildBondTheDuckMenu(),
+      });
+    case '/missions':
+      return telegram.sendMessage(chatId, campaignUi.MISSIONS_HOME_TEXT, {
+        threadId,
+        replyMarkup: campaignUi.buildMissionsMenu(),
       });
     default:
       return;
@@ -357,13 +356,8 @@ async function handleCallbackQuery(callbackQuery) {
   switch (callbackQuery.data) {
     case 'menu:market':
       return sendMarket(chatId, threadId);
-    case 'menu:events': {
-      const text = await events.buildUpcomingText('event', {
-        header: '🗓 *Upcoming Events*',
-        emptyText: '🗓 No events scheduled right now — check back soon.',
-      });
-      return renderMenu(chatId, threadId, 'events', text);
-    }
+    case 'menu:events':
+      return sendEvents(chatId, threadId);
     case 'menu:spaces':
       return sendSpaces(chatId, threadId);
     case 'menu:links':
@@ -509,10 +503,12 @@ function sendHelp(chatId, threadId) {
     '/wallets — Live wallet balances',
     '/door — Beyond the Door',
     '/signal — Current Signal (reveal, ignore, or grab hints for XP)',
+    '/events — Upcoming community events',
     '/spaces — Upcoming Spaces',
+    '/links — Official ecosystem links',
+    '/about — About Project Q',
     '/campaign — Bond the Duck campaign hub',
-    '',
-    '_Coming soon:_ /missions /meme /feed /ask',
+    '/missions — Bond the Duck mission centre',
     '',
     '/helpf — Show this list',
   ].join('\n');
@@ -809,6 +805,14 @@ async function sendSpaces(chatId, threadId) {
     emptyText: '🎙 No Spaces scheduled right now — check back soon.',
   });
   return renderMenu(chatId, threadId, 'spaces', text);
+}
+
+async function sendEvents(chatId, threadId) {
+  const text = await events.buildUpcomingText('event', {
+    header: '🗓 *Upcoming Events*',
+    emptyText: '🗓 No events scheduled right now — check back soon.',
+  });
+  return renderMenu(chatId, threadId, 'events', text);
 }
 
 async function handlePostSignalCommand(message) {
