@@ -6,6 +6,7 @@ import {
   closedCampaignStatus,
   getParticipantRaidStatus,
   assertCampaignParticipationEnabled,
+  assertWalletVerificationEnabled,
 } from '../src/campaign/service.js';
 
 test('missing campaign row remains safely in DRAFT', async () => {
@@ -20,6 +21,34 @@ test('campaign participation requires both the deployment gate and ACTIVE databa
   await assert.rejects(() => assertCampaignParticipationEnabled(active, 'false'), /disabled/);
   await assert.rejects(() => assertCampaignParticipationEnabled(draft, 'true'), /disabled/);
   assert.equal((await assertCampaignParticipationEnabled(active, 'true')).state, 'ACTIVE');
+});
+
+test('wallet verification rehearsal requires Oracle X without activating participation', async () => {
+  const verified = {
+    select: async (table) => table === 'identity_links'
+      ? [{ x_user_id: 'x-1', x_verified_at: '2026-08-17T00:00:00Z' }]
+      : [],
+  };
+  const unverified = { select: async () => [] };
+  const status = await assertWalletVerificationEnabled(verified, 123, {
+    verificationFlag: 'true',
+    participationFlag: 'false',
+  });
+  assert.equal(status.xVerified, true);
+  await assert.rejects(
+    () => assertWalletVerificationEnabled(unverified, 123, {
+      verificationFlag: 'true',
+      participationFlag: 'false',
+    }),
+    /Oracle X identity required/
+  );
+  await assert.rejects(
+    () => assertWalletVerificationEnabled(verified, 123, {
+      verificationFlag: 'false',
+      participationFlag: 'false',
+    }),
+    /participation disabled/
+  );
 });
 
 test('Oracle raid events are summarized for Project Q campaign progress', async () => {
