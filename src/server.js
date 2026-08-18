@@ -270,15 +270,9 @@ async function handleMessage(message) {
     case '/about':
       return sendAbout(chatId, threadId);
     case '/campaign':
-      return telegram.sendMessage(chatId, await buildCampaignHomeText(), {
-        threadId,
-        replyMarkup: campaignUi.buildBondTheDuckMenu(),
-      });
+      return sendCampaignHome(chatId, threadId);
     case '/missions':
-      return telegram.sendMessage(chatId, campaignUi.MISSIONS_HOME_TEXT, {
-        threadId,
-        replyMarkup: campaignUi.buildMissionsMenu(),
-      });
+      return sendMissions(chatId, threadId);
     default:
       return;
   }
@@ -345,6 +339,14 @@ async function handleCallbackQuery(callbackQuery) {
 
   const chatId = callbackQuery.message.chat.id;
 
+  if (callbackQuery.data?.startsWith('admin:live:')) {
+    const key = callbackQuery.data.split(':')[2];
+    if (!admin.isEditableAdminKey(key) || !(await admin.isAuthorizedAdmin(chatId, callbackQuery.from.id, chatType))) {
+      return telegram.sendMessage(chatId, '🚫 You are not authorized to view that Project Q screen.', { threadId });
+    }
+    return sendAdminLiveView(key, chatId, threadId, chatType === 'private');
+  }
+
   if (callbackQuery.data?.startsWith('admin:')) {
     return admin.handleAdminCallback(callbackQuery);
   }
@@ -366,16 +368,8 @@ async function handleCallbackQuery(callbackQuery) {
       return sendAbout(chatId, threadId);
     case 'menu:bagwork':
       return sendBagworkInfo(chatId, threadId);
-    case 'menu:money': {
-      const content = await menuContent.getMenuContent('money');
-      const text = content?.bio_text ||
-        '👁 *Eyes On The Money* — real-time wallet balances, reward splits, and distribution receipts. Pick a section:';
-      const replyMarkup = telegram.buildMoneyMenu();
-      if (content?.media_file_id) {
-        return telegram.sendPhoto(chatId, content.media_file_id, text, { threadId, replyMarkup });
-      }
-      return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
-    }
+    case 'menu:money':
+      return sendMoney(chatId, threadId);
     case 'menu:money:rewards':
       return sendRewards(chatId, threadId);
     case 'menu:money:receipts':
@@ -389,9 +383,9 @@ async function handleCallbackQuery(callbackQuery) {
     case 'menu:campaigns:back':
       return sendHome(chatId, threadId, { isPrivate: chatType === 'private' });
     case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
-      return editMenuMessage(callbackQuery, await buildCampaignHomeText(), campaignUi.buildBondTheDuckMenu());
+      return sendCampaignHome(chatId, threadId);
     case campaignUi.MISSIONS_CALLBACK_PREFIX:
-      return editMenuMessage(callbackQuery, campaignUi.MISSIONS_HOME_TEXT, campaignUi.buildMissionsMenu());
+      return sendMissions(chatId, threadId);
     case `${campaignUi.MISSIONS_CALLBACK_PREFIX}:raids`:
       return editMenuMessage(
         callbackQuery,
@@ -479,6 +473,18 @@ async function renderMenu(chatId, threadId, key, defaultText, { replyMarkup } = 
   return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
 }
 
+async function sendCampaignHome(chatId, threadId) {
+  return renderMenu(chatId, threadId, 'campaign', await buildCampaignHomeText(), {
+    replyMarkup: campaignUi.buildBondTheDuckMenu(),
+  });
+}
+
+function sendMissions(chatId, threadId) {
+  return renderMenu(chatId, threadId, 'missions', campaignUi.MISSIONS_HOME_TEXT, {
+    replyMarkup: campaignUi.buildMissionsMenu(),
+  });
+}
+
 function sendHome(chatId, threadId, { isPrivate = false } = {}) {
   const privateUrl = isPrivate ? null : telegram.botDeepLink('home');
   const defaultText = isPrivate
@@ -549,6 +555,16 @@ async function buildLeaderboardText() {
 
 async function sendLeaderboard(chatId, threadId) {
   return renderMenu(chatId, threadId, 'leaderboard', await buildLeaderboardText());
+}
+
+function sendMoney(chatId, threadId) {
+  return renderMenu(
+    chatId,
+    threadId,
+    'money',
+    '👁 *Eyes On The Money* — real-time wallet balances, reward splits, and distribution receipts. Pick a section:',
+    { replyMarkup: telegram.buildMoneyMenu() }
+  );
 }
 
 function sendRewards(chatId, threadId) {
@@ -813,6 +829,32 @@ async function sendEvents(chatId, threadId) {
     emptyText: '🗓 No events scheduled right now — check back soon.',
   });
   return renderMenu(chatId, threadId, 'events', text);
+}
+
+// Admin "View live" deliberately calls the same send functions as members
+// use. That means the preview includes current data, final buttons and the
+// active media instead of a separate approximation in the admin panel.
+async function sendAdminLiveView(key, chatId, threadId, isPrivate) {
+  switch (key) {
+    case 'home': return sendHome(chatId, threadId, { isPrivate });
+    case 'help': return sendHelp(chatId, threadId);
+    case 'about': return sendAbout(chatId, threadId);
+    case 'campaign': return sendCampaignHome(chatId, threadId);
+    case 'missions': return sendMissions(chatId, threadId);
+    case 'market': return sendMarket(chatId, threadId);
+    case 'leaderboard': return sendLeaderboard(chatId, threadId);
+    case 'bagwork': return sendBagworkInfo(chatId, threadId);
+    case 'bagworkboard': return sendBagworkboard(chatId, threadId);
+    case 'money': return sendMoney(chatId, threadId);
+    case 'rewards': return sendRewards(chatId, threadId);
+    case 'receipts': return sendReceipts(chatId, threadId);
+    case 'wallets': return sendWallets(chatId, threadId);
+    case 'events': return sendEvents(chatId, threadId);
+    case 'spaces': return sendSpaces(chatId, threadId);
+    case 'links': return sendOfficialLinks(chatId, threadId);
+    case 'door': return sendDoorInfo(chatId, threadId);
+    default: return undefined;
+  }
 }
 
 async function handlePostSignalCommand(message) {

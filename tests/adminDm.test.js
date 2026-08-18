@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildAdminPanelKeyboard,
   isAuthorizedAdmin,
+  isEditableAdminKey,
   isConfiguredPrivateAdmin,
 } from '../src/lib/admin.js';
 
@@ -39,4 +41,26 @@ test('private authorization never calls the group administrator lookup', async (
     assert.equal(await isAuthorizedAdmin(-1001, 12345, 'private'), true);
     assert.equal(await isAuthorizedAdmin(-1001, 67890, 'private'), false);
   });
+});
+
+test('admin panel exposes grouped Project Q content controls only', () => {
+  const callbacks = buildAdminPanelKeyboard().inline_keyboard
+    .flat()
+    .map((button) => button.callback_data);
+
+  assert.deepEqual(callbacks, [
+    'admin:section:home',
+    'admin:section:campaign',
+    'admin:section:economy',
+    'admin:section:community',
+    'admin:section:all',
+    'admin:map',
+  ]);
+
+  for (const key of ['home', 'campaign', 'missions', 'market', 'bagwork', 'wallets', 'door']) {
+    assert.equal(isEditableAdminKey(key), true);
+  }
+  for (const legacyKey of ['meme', 'feed', 'ask']) {
+    assert.equal(isEditableAdminKey(legacyKey), false);
+  }
 });
