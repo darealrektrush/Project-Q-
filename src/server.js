@@ -43,7 +43,14 @@ app.post('/campaign-app/api/session', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
     const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
-    return res.status(200).json({ ok: true, user: session.user, participant });
+    return res.status(200).json({
+      ok: true,
+      user: session.user,
+      participant,
+      capabilities: {
+        walletVerification: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED === 'true',
+      },
+    });
   } catch (err) {
     const unavailable = err.message === 'telegram mini app authentication unavailable';
     const databaseFailure = String(err.message).startsWith('Supabase ');
@@ -58,10 +65,10 @@ app.post('/campaign-app/api/session', async (req, res) => {
 app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
-    await campaignService.assertCampaignParticipationEnabled(
-      supabase,
-      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
-    );
+    await campaignService.assertWalletVerificationEnabled(supabase, session.user.id, {
+      verificationFlag: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED,
+      participationFlag: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED,
+    });
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
     const challenge = await walletVerification.createWalletChallenge(supabase, campaignId, session.user.id);
     return res.status(200).json({ ok: true, ...challenge });
@@ -74,10 +81,10 @@ app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
 app.post('/campaign-app/api/wallet/verify', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
-    await campaignService.assertCampaignParticipationEnabled(
-      supabase,
-      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
-    );
+    await campaignService.assertWalletVerificationEnabled(supabase, session.user.id, {
+      verificationFlag: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED,
+      participationFlag: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED,
+    });
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
     const result = await walletVerification.consumeWalletChallenge(supabase, {
       campaignId,
