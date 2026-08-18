@@ -341,8 +341,8 @@ async function handleCallbackQuery(callbackQuery) {
 
   if (callbackQuery.data?.startsWith('admin:live:')) {
     const key = callbackQuery.data.split(':')[2];
-    if (!admin.isEditableAdminKey(key) || !(await admin.isAuthorizedAdmin(chatId, callbackQuery.from.id, chatType))) {
-      return telegram.sendMessage(chatId, '🚫 You are not authorized to view that Project Q screen.', { threadId });
+    if (!admin.isEditableAdminKey(key) || !admin.isPrivateAdminPanelUser(callbackQuery.from.id, chatType)) {
+      return telegram.sendMessage(chatId, '🔒 Project Q Admin Control is available only in the bot’s private DM.', { threadId });
     }
     return sendAdminLiveView(key, chatId, threadId, chatType === 'private');
   }
@@ -467,8 +467,11 @@ async function renderMenu(chatId, threadId, key, defaultText, { replyMarkup } = 
   const content = await menuContent.getMenuContent(key);
   const text = content?.bio_text || defaultText;
 
-  if (content?.media_file_id) {
+  if (content?.media_file_id && text.length <= 1024) {
     return telegram.sendPhoto(chatId, content.media_file_id, text, { threadId, replyMarkup });
+  }
+  if (content?.media_file_id) {
+    await telegram.sendPhoto(chatId, content.media_file_id, '', { threadId });
   }
   return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
 }

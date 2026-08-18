@@ -6,6 +6,7 @@ import {
   isAuthorizedAdmin,
   isEditableAdminKey,
   isConfiguredPrivateAdmin,
+  isPrivateAdminPanelUser,
 } from '../src/lib/admin.js';
 
 async function withAdminIds(value, run) {
@@ -40,6 +41,14 @@ test('private authorization never calls the group administrator lookup', async (
   await withAdminIds('12345', async () => {
     assert.equal(await isAuthorizedAdmin(-1001, 12345, 'private'), true);
     assert.equal(await isAuthorizedAdmin(-1001, 67890, 'private'), false);
+  });
+});
+
+test('admin control is restricted to configured users in the private DM', async () => {
+  await withAdminIds('12345', () => {
+    assert.equal(isPrivateAdminPanelUser(12345, 'private'), true);
+    assert.equal(isPrivateAdminPanelUser(67890, 'private'), false);
+    assert.equal(isPrivateAdminPanelUser(12345, 'supergroup'), false);
   });
 });
 

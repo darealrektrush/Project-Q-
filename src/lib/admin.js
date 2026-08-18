@@ -88,6 +88,12 @@ export function isAuthorizedAdmin(chatId, userId, chatType) {
   return isGroupAdmin(chatId, userId);
 }
 
+// The operator panel is deliberately DM-only. Group administrators retain
+// their operational commands, but cannot open an editor in a community topic.
+export function isPrivateAdminPanelUser(userId, chatType) {
+  return chatType === 'private' && isConfiguredPrivateAdmin(userId);
+}
+
 export function buildAdminPanelKeyboard() {
   return {
     inline_keyboard: [
@@ -173,8 +179,11 @@ async function sendPreview(chatId, threadId, key, field, draft) {
   const preview = `👀 *Preview — ${label}*\n\n${text}`;
   const replyMarkup = confirmKeyboard(field, key);
 
-  if (mediaFileId) {
+  if (mediaFileId && preview.length <= 1024) {
     return telegram.sendPhoto(chatId, mediaFileId, preview, { threadId, replyMarkup });
+  }
+  if (mediaFileId) {
+    await telegram.sendPhoto(chatId, mediaFileId, '', { threadId });
   }
   return telegram.sendMessage(chatId, preview, { threadId, replyMarkup });
 }
@@ -184,8 +193,8 @@ export async function handleAdminCommand(message) {
   const threadId = message.message_thread_id;
   const userId = message.from.id;
 
-  if (!(await isAuthorizedAdmin(chatId, userId, message.chat.type))) {
-    return telegram.sendMessage(chatId, '🚫 You are not authorized to use the Project Q admin panel.', { threadId });
+  if (!isPrivateAdminPanelUser(userId, message.chat.type)) {
+    return telegram.sendMessage(chatId, '🔒 Project Q Admin Control is available only in the bot’s private DM.', { threadId });
   }
 
   return telegram.sendMessage(chatId, panelText(), {
@@ -200,8 +209,8 @@ export async function handleAdminCallback(callbackQuery) {
   const userId = callbackQuery.from.id;
   const messageId = callbackQuery.message.message_id;
 
-  if (!(await isAuthorizedAdmin(chatId, userId, callbackQuery.message.chat.type))) {
-    return telegram.sendMessage(chatId, '🚫 You are not authorized to use the Project Q admin panel.', { threadId });
+  if (!isPrivateAdminPanelUser(userId, callbackQuery.message.chat.type)) {
+    return telegram.sendMessage(chatId, '🔒 Project Q Admin Control is available only in the bot’s private DM.', { threadId });
   }
 
   const [, action, arg1, arg2] = callbackQuery.data.split(':');
