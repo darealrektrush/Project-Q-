@@ -56,6 +56,8 @@ test('Mini App exposes a guided verified onboarding path without activating part
   assert.match(app, /Oracle X identity/);
   assert.match(app, /Solana reward wallet/);
   assert.match(app, /Campaign identity complete/);
-  assert.match(app, /campaignRecord\?\.enabled&&participationReady/);
+  assert.match(app, /participationReady&&\(state\.walletVerificationEnabled\|\|state\.campaignRecord\?\.enabled\)/);
+  assert.match(app, /PROJECT_Q_WALLET_VERIFICATION_ENABLED/);
+  assert.match(app, /walletVerificationEnabled/);
   assert.match(app, /onEvent\?\.\('activated'/);
 });
