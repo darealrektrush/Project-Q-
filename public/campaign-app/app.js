@@ -25,6 +25,7 @@ const state = {
     achievements: [],
   },
   sessionStatus: 'checking',
+  walletVerificationEnabled: false,
 };
 
 const fallbackCampaign = {
@@ -118,10 +119,10 @@ function profileScreen() {
   const fullyVerified=participationReady&&p.walletVerified;
   const credential=(src,alt,ok)=>src?`<img class="credential-badge ${ok?'verified':'locked'}" src="${src}" alt="${alt}" />`:'<span class="rank">—</span>';
   const statusBadge=fullyVerified?badges.fullHero:(participationReady?badges.collective:null);
-  const walletEnabled=Boolean(state.campaignRecord?.enabled&&participationReady);
+  const walletEnabled=Boolean(participationReady&&(state.walletVerificationEnabled||state.campaignRecord?.enabled));
   const telegramDetail=p.telegramVerified?'Signed Mini App session verified':(state.sessionStatus==='outside'?'Open this app from Project Q in Telegram':'Telegram verification required');
   const xDetail=p.xVerified?'Permanent Oracle X identity linked':'Complete /linkx with the CrabStar Oracle, then refresh';
-  const walletDetail=p.walletVerified?`Ownership verified · ${short(state.wallet)}`:(state.wallet?short(state.wallet):(walletEnabled?'Connect and sign a no-transaction message':(participationReady?'Available when campaign opens':'Complete Telegram and X first')));
+  const walletDetail=p.walletVerified?`Ownership verified · ${short(state.wallet)}`:(state.wallet?short(state.wallet):(walletEnabled?'Connect and sign a no-transaction message':(participationReady?(state.walletVerificationEnabled?'Secure devnet verification available':'Available when campaign opens'):'Complete Telegram and X first')));
   return `<article class="card page-card"><div class="page-intro"><div><span class="label">Participant identity</span><h2>${escapeHtml(p.name)}</h2><p>One Telegram identity, one Oracle-verified X account and one verified Solana reward wallet.</p></div>${statusBadge?`<img class="identity-status-art" src="${statusBadge}" alt="${fullyVerified?'Fully verified identity':'Collective verified community member'}" />`:`<div class="score-orb"><div><strong>${verifiedCount}/3</strong><small>verified</small></div></div>`}</div>
   <section class="onboarding-panel" aria-label="Identity onboarding">
     <div class="onboarding-head"><div><span class="label">Verification path</span><h3>${fullyVerified?'Fully Verified':'Complete your Project Q ID'}</h3></div><b>${verifiedCount}/3</b></div>
@@ -146,7 +147,7 @@ function render(){const c=state.campaign||fallbackCampaign;document.querySelecto
 function go(screen){if(!screens[screen])return;state.screen=screen;history.replaceState(null,'',`#${screen}`);render();state.telegram?.HapticFeedback?.impactOccurred('light');}
 
 async function connectWallet(){
-  if(!state.campaignRecord?.enabled){toast('Wallet verification opens when the campaign is enabled.');return;}
+  if(!state.walletVerificationEnabled&&!state.campaignRecord?.enabled){toast('Wallet verification is currently disabled.');return;}
   const provider=window.phantom?.solana||window.solflare||window.backpack;
   if(!provider){toast('Open in Phantom, Solflare or Backpack to connect securely.');window.open('https://phantom.app/','_blank');return;}
   try{
@@ -211,6 +212,7 @@ async function authenticateTelegram(){
     state.profile.xVerified=Boolean(session.participant?.xVerified);
     state.profile.walletVerified=Boolean(session.participant?.walletVerified);
     state.profile.tokenAccountReady=Boolean(session.participant?.tokenAccountReady);
+    state.walletVerificationEnabled=Boolean(session.capabilities?.walletVerification);
     state.wallet=session.participant?.rewardWallet||null;
     state.profile.xp=Number(session.participant?.totalXp||0);
     state.sessionStatus='verified';
