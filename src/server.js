@@ -232,10 +232,10 @@ async function handleMessage(message) {
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
-  if (!isPrivate && command === '/adminf') {
+  if (command === '/adminf') {
     return admin.handleAdminCommand(message);
   }
-  if (!isPrivate && command === '/admincancel') {
+  if (command === '/admincancel') {
     return admin.cancelPendingEdit(chatId, message.from.id);
   }
   if (!isPrivate && command === '/postsignal') {
