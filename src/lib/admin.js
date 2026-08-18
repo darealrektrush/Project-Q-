@@ -1,28 +1,40 @@
 import * as telegram from './telegram.js';
-import { getMenuContent, upsertMenuContent } from './menuContent.js';
+import { getAllMenuContent, getMenuContent, upsertMenuContent } from './menuContent.js';
 
+// These are the actual Project Q surfaces. Keep Oracle-only features out of
+// this list so the private Project Q operator panel cannot accidentally expose
+// or edit the wrong product's content.
 const EDITABLE_KEYS = [
   ['home', 'Home menu'],
   ['help', 'Help'],
+  ['about', 'About Project Q'],
+  ['campaign', 'Bond the Duck campaign'],
+  ['missions', 'Campaign missions'],
   ['market', 'Market'],
-  ['leaderboard', 'Leaderboard'],
-  ['money', 'Eyes On The Money'],
-  ['events', 'Events'],
-  ['links', 'Official Links'],
-  ['about', 'About FawkQ'],
-  ['rewards', 'Rewards'],
+  ['leaderboard', 'XP leaderboard'],
   ['bagwork', 'Bagwork'],
-  ['bagworkboard', 'Bag Workers Leaderboard'],
+  ['bagworkboard', 'Bagwork leaderboard'],
+  ['money', 'Eyes On The Money'],
+  ['rewards', 'Rewards'],
   ['receipts', 'Receipts'],
   ['wallets', 'Wallets'],
-  ['missions', 'Missions'],
-  ['meme', 'Meme'],
-  ['feed', 'Feed'],
-  ['ask', 'Ask'],
+  ['events', 'Events'],
   ['spaces', 'Spaces'],
-  ['door', 'Door'],
+  ['links', 'Official Links'],
+  ['door', 'The Door'],
 ];
 const LABELS = Object.fromEntries(EDITABLE_KEYS);
+
+const SECTIONS = [
+  { key: 'home', label: '🏠 Home & Brand', items: ['home', 'help', 'about'] },
+  { key: 'campaign', label: '🦆 Campaign', items: ['campaign', 'missions'] },
+  {
+    key: 'economy',
+    label: '💰 Economy',
+    items: ['market', 'leaderboard', 'bagwork', 'bagworkboard', 'money', 'rewards', 'receipts', 'wallets'],
+  },
+  { key: 'community', label: '📣 Community', items: ['events', 'spaces', 'links', 'door'] },
+];
 
 const PENDING_TTL_MS = 5 * 60 * 1000;
 // `${chatId}:${userId}` -> { key, field, stage: 'input' | 'confirm', draft, expires }
@@ -57,6 +69,10 @@ export function isConfiguredPrivateAdmin(userId) {
   return configured.includes(String(userId));
 }
 
+export function isEditableAdminKey(key) {
+  return Object.hasOwn(LABELS, key);
+}
+
 export async function isGroupAdmin(chatId, userId) {
   try {
     const member = await telegram.getChatMember(chatId, userId);
@@ -72,21 +88,66 @@ export function isAuthorizedAdmin(chatId, userId, chatType) {
   return isGroupAdmin(chatId, userId);
 }
 
-function listKeyboard() {
-  const rows = EDITABLE_KEYS.map(([key, label]) => [
-    { text: label, callback_data: `admin:item:${key}` },
-  ]);
+// The operator panel is deliberately DM-only. Group administrators retain
+// their operational commands, but cannot open an editor in a community topic.
+export function isPrivateAdminPanelUser(userId, chatType) {
+  return chatType === 'private' && isConfiguredPrivateAdmin(userId);
+}
+
+export function buildAdminPanelKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '🏠 Home & Brand', callback_data: 'admin:section:home' },
+        { text: '🦆 Campaign', callback_data: 'admin:section:campaign' },
+      ],
+      [
+        { text: '💰 Economy', callback_data: 'admin:section:economy' },
+        { text: '📣 Community', callback_data: 'admin:section:community' },
+      ],
+      [
+        { text: '🖼 Content & Media', callback_data: 'admin:section:all' },
+        { text: '📋 Live Menu Map', callback_data: 'admin:map' },
+      ],
+    ],
+  };
+}
+
+function panelText() {
+  return [
+    '🛠 *PROJECT Q // ADMIN CONTROL*',
+    '_Private operator workspace • content, media and live views_',
+    '',
+    'Choose a system to manage.',
+  ].join('\n');
+}
+
+function sectionKeyboard(sectionKey) {
+  const section = SECTIONS.find((candidate) => candidate.key === sectionKey);
+  const keys = sectionKey === 'all' ? EDITABLE_KEYS.map(([key]) => key) : section?.items ?? [];
+  const rows = keys.map((key) => [{ text: LABELS[key], callback_data: `admin:item:${key}` }]);
+  rows.push([{ text: '⬅️ Admin Control', callback_data: 'admin:back' }]);
   return { inline_keyboard: rows };
+}
+
+function sectionText(sectionKey) {
+  if (sectionKey === 'all') return '🖼 *Content & Media*\nChoose any live Project Q screen to manage.';
+  const section = SECTIONS.find((candidate) => candidate.key === sectionKey);
+  return `${section?.label ?? '🛠 Admin'}\nChoose a screen to manage.`;
 }
 
 function itemKeyboard(key) {
   return {
     inline_keyboard: [
       [
-        { text: '✏️ Edit bio', callback_data: `admin:editbio:${key}` },
-        { text: '🖼 Edit media', callback_data: `admin:editmedia:${key}` },
+        { text: '✏️ Edit text', callback_data: `admin:editbio:${key}` },
+        { text: '🖼 Set media', callback_data: `admin:editmedia:${key}` },
       ],
-      [{ text: '⬅️ Back', callback_data: 'admin:back' }],
+      [
+        { text: '👁 View live', callback_data: `admin:live:${key}` },
+        { text: '🗑 Remove media', callback_data: `admin:removemedia:${key}` },
+      ],
+      [{ text: '⬅️ All content', callback_data: 'admin:section:all' }],
     ],
   };
 }
@@ -102,9 +163,9 @@ function confirmKeyboard(field, key) {
   };
 }
 
-// Renders exactly what the live command will look like with the draft
-// change applied (merged with whatever's already saved), so an admin can
-// see it before publishing. Attaches Publish/Discard buttons.
+// Shows the proposed text/media change before publishing. The separate
+// "View live" action runs the actual member-facing screen and is the source
+// of truth for dynamic content, buttons and data.
 async function sendPreview(chatId, threadId, key, field, draft) {
   const content = await getMenuContent(key);
   const label = LABELS[key] ?? key;
@@ -113,13 +174,16 @@ async function sendPreview(chatId, threadId, key, field, draft) {
     field === 'bio'
       ? draft
       : content?.bio_text || `_(live default text for ${label} will show here instead)_`;
-  const mediaFileId = field === 'media' ? draft : content?.media_file_id;
+  const mediaFileId = field === 'media' ? draft : field === 'remove_media' ? null : content?.media_file_id;
 
   const preview = `👀 *Preview — ${label}*\n\n${text}`;
   const replyMarkup = confirmKeyboard(field, key);
 
-  if (mediaFileId) {
+  if (mediaFileId && preview.length <= 1024) {
     return telegram.sendPhoto(chatId, mediaFileId, preview, { threadId, replyMarkup });
+  }
+  if (mediaFileId) {
+    await telegram.sendPhoto(chatId, mediaFileId, '', { threadId });
   }
   return telegram.sendMessage(chatId, preview, { threadId, replyMarkup });
 }
@@ -129,13 +193,13 @@ export async function handleAdminCommand(message) {
   const threadId = message.message_thread_id;
   const userId = message.from.id;
 
-  if (!(await isAuthorizedAdmin(chatId, userId, message.chat.type))) {
-    return telegram.sendMessage(chatId, '🚫 You are not authorized to use the Project Q admin panel.', { threadId });
+  if (!isPrivateAdminPanelUser(userId, message.chat.type)) {
+    return telegram.sendMessage(chatId, '🔒 Project Q Admin Control is available only in the bot’s private DM.', { threadId });
   }
 
-  return telegram.sendMessage(chatId, '🛠 *Admin panel* — choose a menu/command to edit:', {
+  return telegram.sendMessage(chatId, panelText(), {
     threadId,
-    replyMarkup: listKeyboard(),
+    replyMarkup: buildAdminPanelKeyboard(),
   });
 }
 
@@ -145,21 +209,48 @@ export async function handleAdminCallback(callbackQuery) {
   const userId = callbackQuery.from.id;
   const messageId = callbackQuery.message.message_id;
 
-  if (!(await isAuthorizedAdmin(chatId, userId, callbackQuery.message.chat.type))) {
-    return telegram.sendMessage(chatId, '🚫 You are not authorized to use the Project Q admin panel.', { threadId });
+  if (!isPrivateAdminPanelUser(userId, callbackQuery.message.chat.type)) {
+    return telegram.sendMessage(chatId, '🔒 Project Q Admin Control is available only in the bot’s private DM.', { threadId });
   }
 
   const [, action, arg1, arg2] = callbackQuery.data.split(':');
 
   if (action === 'back') {
     pending.delete(pendingKey(chatId, userId));
-    return telegram.editMessageText(chatId, messageId, '🛠 *Admin panel* — choose a menu/command to edit:', {
-      replyMarkup: listKeyboard(),
+    return telegram.editMessageText(chatId, messageId, panelText(), {
+      replyMarkup: buildAdminPanelKeyboard(),
+    });
+  }
+
+  if (action === 'section') {
+    return telegram.editMessageText(chatId, messageId, sectionText(arg1), {
+      replyMarkup: sectionKeyboard(arg1),
+    });
+  }
+
+  if (action === 'map') {
+    const allContent = await getAllMenuContent();
+    const lines = [
+      '📋 *LIVE MENU MAP*',
+      '_Saved overrides currently active in Project Q_',
+      '',
+      ...EDITABLE_KEYS.map(([key, label]) => {
+        const content = allContent[key];
+        const text = content?.bio_text ? 'text ✓' : 'text: default';
+        const media = content?.media_file_id ? 'media ✓' : 'media: none';
+        return `• *${label}* — ${text} · ${media}`;
+      }),
+    ];
+    return telegram.editMessageText(chatId, messageId, lines.join('\n'), {
+      replyMarkup: { inline_keyboard: [[{ text: '⬅️ Admin Control', callback_data: 'admin:back' }]] },
     });
   }
 
   if (action === 'item') {
     const key = arg1;
+    if (!isEditableAdminKey(key)) {
+      return telegram.sendMessage(chatId, 'That screen is no longer managed by Project Q. Open /adminf to continue.', { threadId });
+    }
     const content = await getMenuContent(key);
     const label = LABELS[key] ?? key;
     const lines = [
@@ -174,6 +265,7 @@ export async function handleAdminCallback(callbackQuery) {
 
   if (action === 'editbio') {
     const key = arg1;
+    if (!isEditableAdminKey(key)) return;
     pending.set(pendingKey(chatId, userId), { key, field: 'bio', stage: 'input', expires: Date.now() + PENDING_TTL_MS });
     return telegram.sendMessage(
       chatId,
@@ -184,12 +276,30 @@ export async function handleAdminCallback(callbackQuery) {
 
   if (action === 'editmedia') {
     const key = arg1;
+    if (!isEditableAdminKey(key)) return;
     pending.set(pendingKey(chatId, userId), { key, field: 'media', stage: 'input', expires: Date.now() + PENDING_TTL_MS });
     return telegram.sendMessage(
       chatId,
       `🖼 Send the new image for *${LABELS[key] ?? key}* (or /admincancel to abort). Expires in 5 minutes.`,
       { threadId }
     );
+  }
+
+  if (action === 'removemedia') {
+    const key = arg1;
+    if (!isEditableAdminKey(key)) return;
+    const content = await getMenuContent(key);
+    if (!content?.media_file_id) {
+      return telegram.sendMessage(chatId, `🖼 *${LABELS[key] ?? key}* has no custom media to remove.`, { threadId });
+    }
+    pending.set(pendingKey(chatId, userId), {
+      key,
+      field: 'remove_media',
+      draft: null,
+      stage: 'confirm',
+      expires: Date.now() + PENDING_TTL_MS,
+    });
+    return sendPreview(chatId, threadId, key, 'remove_media', null);
   }
 
   if (action === 'confirm' || action === 'discard') {
@@ -214,7 +324,12 @@ export async function handleAdminCallback(callbackQuery) {
 
     const patch = field === 'bio' ? { bio_text: entry.draft } : { media_file_id: entry.draft };
     await upsertMenuContent(key, patch, userId);
-    return telegram.sendMessage(chatId, `✅ Published — *${label}* ${field === 'bio' ? 'bio' : 'media'} updated.`, {
+    const message = field === 'bio'
+      ? `✅ Published — *${label}* text updated.`
+      : field === 'remove_media'
+        ? `✅ Published — *${label}* media removed.`
+        : `✅ Published — *${label}* media updated.`;
+    return telegram.sendMessage(chatId, message, {
       threadId,
     });
   }
