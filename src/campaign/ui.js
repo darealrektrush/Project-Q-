@@ -9,9 +9,16 @@ export function buildCampaignsMenu() {
   };
 }
 
-export function buildBondTheDuckMenu(appUrl = process.env.PROJECT_Q_CAMPAIGN_APP_URL) {
+export function resolveCampaignAppUrl(env = process.env) {
+  const configured = env.PROJECT_Q_CAMPAIGN_APP_URL?.trim();
+  if (configured) return configured;
+  const hostname = env.RENDER_EXTERNAL_HOSTNAME?.trim();
+  return hostname ? `https://${hostname}/campaign-app/` : null;
+}
+
+export function buildBondTheDuckMenu(appUrl = resolveCampaignAppUrl()) {
   const appButton = appUrl
-    ? [[{ text: '📱 Open Campaign App', url: appUrl }]]
+    ? [[{ text: '📱 Open Campaign App', web_app: { url: appUrl } }]]
     : [];
   return {
     inline_keyboard: [
