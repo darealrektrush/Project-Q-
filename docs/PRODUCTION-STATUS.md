@@ -4,12 +4,12 @@ Last reconciled: 2026-08-19 UTC.
 
 | Area | Status | Evidence | Blocker |
 | --- | --- | --- | --- |
-| Project Q web service | PRODUCTION DEPLOYED | Containment release and schema-recording releases deployed; `/healthz` configured | No external endpoint or authenticated user-flow smoke record |
+| Project Q web service | PRODUCTION DEPLOYED | Main and all production services live at `1d4626e1`; Node 24 LTS; `/healthz` configured | No external endpoint or authenticated user-flow smoke record |
 | Telegram admin menus | PRODUCTION DEPLOYED | Code and service deployed | No controlled live admin-flow verification |
 | Phase 1 database schema | PRODUCTION DEPLOYED | Migrations `20260819052417` and `20260819052500` applied; 12 tables, RLS, grants, and FK indexes verified | No application credential verification |
-| Distribution cron | PRODUCTION DEPLOYED | Fail-closed release deployed; flag defaults off | Last pre-containment run was Supabase 401; first disabled runtime run not yet observed |
-| Signal cron | PRODUCTION DEPLOYED | Fail-closed release deployed; flag defaults off | Last pre-containment run was Supabase 401; first disabled runtime run not yet observed |
-| Bond the Duck foundation | IMPLEMENTED | Schema, state machine, UI, tests | Must remain DRAFT and unfunded |
+| Distribution cron | PRODUCTION DEPLOYED | Fail-closed artifact live; 2026-08-19 06:01 UTC run logged an explicit disabled no-op and finished successfully; publisher ledgers remained empty | Supabase server credential remains unverified; publishing must stay disabled |
+| Signal cron | PRODUCTION DEPLOYED | Fail-closed artifact live; flag defaults off | First disabled runtime run is due at 12:00 UTC; Supabase server credential remains unverified |
+| Bond the Duck foundation | IMPLEMENTED | Schema, state machine, UI, and tests exist; production campaign/XP/payout ledgers remain empty | Must remain DRAFT and unfunded |
 | Oracle raid campaign bridge | IMPLEMENTED | Authenticated ingest route and tests | Campaign disabled; no production events |
 | Oracle identity bridge receiver | PLANNED | No receiver route on `main` | Do not enable publisher |
 
