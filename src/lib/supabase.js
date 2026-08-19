@@ -1,13 +1,29 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-function headers(extra = {}) {
-  return {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+export function buildHeaders(key, extra = {}) {
+  const normalized = String(key ?? '').trim();
+  if (!normalized) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+  }
+  if (normalized.startsWith('sb_publishable_')) {
+    throw new Error('Project Q backend requires a Supabase secret or legacy service-role key');
+  }
+
+  const result = {
+    apikey: normalized,
     'Content-Type': 'application/json',
     ...extra,
   };
+
+  // New sb_secret_ keys are API keys, not JWTs. Sending one as a Bearer token
+  // makes the gateway try to parse it as a JWT and reject the request. Legacy
+  // service-role keys are JWTs and keep the historical Authorization header.
+  if (!normalized.startsWith('sb_secret_')) {
+    result.Authorization = `Bearer ${normalized}`;
+  }
+
+  return result;
 }
 
 async function request(path, { method = 'GET', body, prefer } = {}) {
@@ -17,7 +33,7 @@ async function request(path, { method = 'GET', body, prefer } = {}) {
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     method,
-    headers: headers(prefer ? { Prefer: prefer } : {}),
+    headers: buildHeaders(SUPABASE_SERVICE_ROLE_KEY, prefer ? { Prefer: prefer } : {}),
     body: body ? JSON.stringify(body) : undefined,
   });
 
