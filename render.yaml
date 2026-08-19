@@ -3,9 +3,10 @@ services:
     name: project-q
     runtime: node
     plan: starter
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /healthz
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_ENV
         value: production
@@ -49,9 +50,12 @@ services:
     # month). This runs every 3h; jobs/distribute.js skips the run unless 72
     # real hours have elapsed since the last completed distribution.
     schedule: "0 */3 * * *"
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm run distribute
+    autoDeployTrigger: checksPass
     envVars:
+      - key: PROJECT_Q_DISTRIBUTIONS_ENABLED
+        value: "false"
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
@@ -69,6 +73,8 @@ services:
       - key: TOKEN_MINT
         sync: false
       - key: CREATOR_WALLET_SECRET
+        sync: false
+      - key: CREATOR_WALLET_PUBLIC
         sync: false
       - key: COMMUNITY_WALLET_SECRET
         sync: false
@@ -91,9 +97,12 @@ services:
     name: project-q-signal
     runtime: node
     schedule: "0 0,12 * * *"
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm run post-signal
+    autoDeployTrigger: checksPass
     envVars:
+      - key: PROJECT_Q_SIGNALS_ENABLED
+        value: "false"
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID

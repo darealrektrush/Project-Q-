@@ -4,6 +4,7 @@ import { runStage1, runStage2 } from '../src/lib/splitRewards.js';
 import { supabase } from '../src/lib/supabase.js';
 import * as telegram from '../src/lib/telegram.js';
 import { formatDistributionTweet, tryPostTweet } from '../src/lib/twitter.js';
+import { distributionEnabled, requireEnv } from '../src/lib/featureFlags.js';
 const lamportsToSol = solana.lamportsToSol;
 const MIN_DISTRIBUTION_INTERVAL_MS = 72 * 60 * 60 * 1000;
 const FIRST_DISTRIBUTION_TIME = new Date('2026-08-04T14:00:00-07:00'); // Aug 4, 2026 2:00 PM Pacific Time (PDT/UTC-7); every 72h after that
@@ -198,6 +199,28 @@ async function runStage2AndFinish({ connection, communityKeypair, runId, totalLa
 }
 
 async function main() {
+  if (!distributionEnabled()) {
+    console.log('Distribution disabled: PROJECT_Q_DISTRIBUTIONS_ENABLED is not true.');
+    return;
+  }
+
+  requireEnv([
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'HELIUS_RPC_URL',
+    'TOKEN_MINT',
+    'CREATOR_WALLET_SECRET',
+    'COMMUNITY_WALLET_SECRET',
+    'CREATOR_WALLET_PUBLIC',
+    'COMMUNITY_WALLET_PUBLIC',
+    'DEV_WALLET_PUBLIC',
+    'OCEAN_WALLET_PUBLIC',
+    'BAG_WALLET_PUBLIC',
+    'BUYBACK_RESERVE_WALLET_PUBLIC',
+    'TELEGRAM_BOT_TOKEN',
+    'TELEGRAM_CHAT_ID',
+  ]);
+
   const connection = solana.getConnection();
   const communityKeypair = solana.keypairFromSecret(process.env.COMMUNITY_WALLET_SECRET);
 

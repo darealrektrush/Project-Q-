@@ -241,17 +241,70 @@ alter table distribution_runs add column if not exists network text not null def
 alter table distribution_runs add column if not exists error_message text;
 alter table distribution_runs add column if not exists failed_stage smallint;
 
--- RLS on with no policies: the bot connects with the service role key and
--- bypasses RLS entirely; every other role gets nothing.
+-- RLS on with no policies: Project Q is server-side only. The service role
+-- bypasses RLS; anon and authenticated clients must receive no rows.
+alter table users                     enable row level security;
+alter table missions                  enable row level security;
+alter table user_missions             enable row level security;
 alter table bagwork_events            enable row level security;
 alter table bagwork_payouts           enable row level security;
 alter table bagwork_feedback          enable row level security;
 alter table bagwork_feedback_prompts  enable row level security;
 alter table bagwork_clearances        enable row level security;
+alter table feed_posts                enable row level security;
+alter table distribution_runs         enable row level security;
+alter table distribution_transactions enable row level security;
+alter table menu_content              enable row level security;
+alter table scheduled_events          enable row level security;
+alter table signals                   enable row level security;
+alter table signal_interactions       enable row level security;
 
 -- The leaderboard view must not read through bagwork_payouts' RLS as the
 -- definer; force it to run as whoever's actually querying it.
 alter view bagwork_leaderboard set (security_invoker = on);
+alter view leaderboard set (security_invoker = on);
+
+revoke all on table
+  missions,
+  user_missions,
+  bagwork_events,
+  bagwork_payouts,
+  bagwork_feedback,
+  bagwork_feedback_prompts,
+  bagwork_clearances,
+  feed_posts,
+  distribution_runs,
+  distribution_transactions,
+  scheduled_events,
+  signals,
+  signal_interactions
+from anon, authenticated;
+
+grant select, insert, update, delete on table
+  missions,
+  user_missions,
+  bagwork_events,
+  bagwork_payouts,
+  bagwork_feedback,
+  bagwork_feedback_prompts,
+  bagwork_clearances,
+  feed_posts,
+  distribution_runs,
+  distribution_transactions,
+  scheduled_events,
+  signals,
+  signal_interactions
+to service_role;
+
+revoke all on table bagwork_leaderboard, leaderboard from anon, authenticated;
+grant select on table bagwork_leaderboard, leaderboard to service_role;
+
+revoke all on function increment_user_xp(bigint, bigint, bigint)
+from public, anon, authenticated;
+grant execute on function increment_user_xp(bigint, bigint, bigint)
+to service_role;
+
+grant usage, select on all sequences in schema public to service_role;
 
 
 -- Bond the Duck campaign schema is intentionally isolated in
