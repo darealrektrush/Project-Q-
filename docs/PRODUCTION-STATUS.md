@@ -4,10 +4,11 @@ Last reconciled: 2026-08-19 UTC.
 
 | Area | Status | Evidence | Blocker |
 | --- | --- | --- | --- |
-| Project Q web service | PRODUCTION DEPLOYED | Render deploy at `ab291fe6`; `/healthz` configured | No exact-SHA smoke record |
+| Project Q web service | PRODUCTION DEPLOYED | Containment release and schema-recording releases deployed; `/healthz` configured | No external endpoint or authenticated user-flow smoke record |
 | Telegram admin menus | PRODUCTION DEPLOYED | Code and service deployed | No controlled live admin-flow verification |
-| Distribution cron | PRODUCTION DEPLOYED | Cron artifact exists | Supabase 401; schema absent; release flag defaults off in next revision |
-| Signal cron | PRODUCTION DEPLOYED | Cron artifact exists | Supabase 401; schema absent; release flag defaults off in next revision |
+| Phase 1 database schema | PRODUCTION DEPLOYED | Migrations `20260819052417` and `20260819052558` applied; 12 tables, RLS, grants, and FK indexes verified | No application credential verification |
+| Distribution cron | PRODUCTION DEPLOYED | Fail-closed release deployed; flag defaults off | Last pre-containment run was Supabase 401; first disabled runtime run not yet observed |
+| Signal cron | PRODUCTION DEPLOYED | Fail-closed release deployed; flag defaults off | Last pre-containment run was Supabase 401; first disabled runtime run not yet observed |
 | Bond the Duck foundation | IMPLEMENTED | Schema, state machine, UI, tests | Must remain DRAFT and unfunded |
 | Oracle raid campaign bridge | IMPLEMENTED | Authenticated ingest route and tests | Campaign disabled; no production events |
 | Oracle identity bridge receiver | PLANNED | No receiver route on `main` | Do not enable publisher |
