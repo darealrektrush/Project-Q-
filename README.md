@@ -11,11 +11,13 @@ The application is deployed on Render, but the system is **not production
 verified as a whole**.
 
 - The web service is deployed from `main` with `/healthz` and `/version` routes.
-- Distribution and signal cron services exist, but the 2026-08-19 audit found
-  Supabase `401 Unregistered API key` failures.
-- The shared production database is missing part of the checked-in Phase 1
-  schema. The additive reconciliation migration is under
-  `supabase/migrations/`.
+- Distribution and signal cron services are deployed with explicit activation
+  flags that default to `false`. The last pre-containment runs failed with
+  Supabase `401 Unregistered API key`; a valid server credential still needs
+  to be installed and verified without enabling either job.
+- The Phase 1 schema reconciliation and foreign-key index migrations were
+  applied to the shared production database on 2026-08-19. Required tables,
+  RLS, role grants, and advisor results were verified after apply.
 - Money-moving distributions and scheduled signal publishing are disabled by
   default in `render.yaml`. They require explicit production enablement after
   credentials, schema, tests, wallets, and user flows are verified.
@@ -28,7 +30,7 @@ See [Production status](docs/PRODUCTION-STATUS.md),
 
 ## Runtime
 
-- Node.js 20+
+- Node.js 24 LTS
 - Express
 - Supabase Postgres/Data API
 - Telegram Bot API
