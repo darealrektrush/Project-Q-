@@ -6,7 +6,7 @@ Last reconciled: 2026-08-19 UTC.
 | --- | --- | --- | --- |
 | Project Q web service | PRODUCTION DEPLOYED | Containment release and schema-recording releases deployed; `/healthz` configured | No external endpoint or authenticated user-flow smoke record |
 | Telegram admin menus | PRODUCTION DEPLOYED | Code and service deployed | No controlled live admin-flow verification |
-| Phase 1 database schema | PRODUCTION DEPLOYED | Migrations `20260819052417` and `20260819052558` applied; 12 tables, RLS, grants, and FK indexes verified | No application credential verification |
+| Phase 1 database schema | PRODUCTION DEPLOYED | Migrations `20260819052417` and `20260819052500` applied; 12 tables, RLS, grants, and FK indexes verified | No application credential verification |
 | Distribution cron | PRODUCTION DEPLOYED | Fail-closed release deployed; flag defaults off | Last pre-containment run was Supabase 401; first disabled runtime run not yet observed |
 | Signal cron | PRODUCTION DEPLOYED | Fail-closed release deployed; flag defaults off | Last pre-containment run was Supabase 401; first disabled runtime run not yet observed |
 | Bond the Duck foundation | IMPLEMENTED | Schema, state machine, UI, tests | Must remain DRAFT and unfunded |
