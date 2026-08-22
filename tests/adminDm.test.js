@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildAdminPanelKeyboard,
+  buildAdminItemKeyboard,
   isAuthorizedAdmin,
   isEditableAdminKey,
   isConfiguredPrivateAdmin,
@@ -72,4 +73,14 @@ test('admin panel exposes grouped Project Q content controls only', () => {
   for (const legacyKey of ['meme', 'feed', 'ask']) {
     assert.equal(isEditableAdminKey(legacyKey), false);
   }
+});
+
+test('Bond the Duck content screen exposes readiness in the live admin route', () => {
+  const callbacks = buildAdminItemKeyboard('campaign').inline_keyboard
+    .flat()
+    .map((button) => button.callback_data);
+
+  assert.equal(callbacks[0], 'admin:readiness');
+  assert.ok(callbacks.includes('admin:item:campaign') === false);
+  assert.equal(buildAdminItemKeyboard('missions').inline_keyboard[0][0].callback_data, 'admin:editbio:missions');
 });
