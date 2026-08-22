@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 import {
   isAuthorizedAdmin,
   isConfiguredPrivateAdmin,
+  buildAdminRootKeyboard,
+  buildCampaignAdminKeyboard,
+  buildBondAdminKeyboard,
 } from '../src/lib/admin.js';
 
 async function withAdminIds(value, run) {
@@ -39,4 +42,11 @@ test('private authorization never calls the group administrator lookup', async (
     assert.equal(await isAuthorizedAdmin(-1001, 12345, 'private'), true);
     assert.equal(await isAuthorizedAdmin(-1001, 67890, 'private'), false);
   });
+});
+
+test('campaign administration follows the expected nested Bond the Duck route', () => {
+  assert.equal(buildAdminRootKeyboard().inline_keyboard[0][0].callback_data, 'admin:campaign');
+  assert.equal(buildCampaignAdminKeyboard().inline_keyboard[0][0].callback_data, 'admin:campaign:bond');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[0][0].callback_data, 'admin:readiness');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[1][0].callback_data, 'admin:campaign');
 });
