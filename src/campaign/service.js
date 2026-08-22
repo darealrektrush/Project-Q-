@@ -1,3 +1,5 @@
+import { validateRegistry } from './registry.js';
+
 export const DEFAULT_CAMPAIGN_ID = 'bond-the-duck-2026';
 
 function campaignId() {
@@ -12,6 +14,58 @@ export async function getCampaignStatus(client) {
   );
   return rows[0] ?? {
     id, state: 'DRAFT', ruleset_version: null, funded_base_units: '0', updated_at: null,
+  };
+}
+
+const EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS = 15_000_000_000_000n;
+const EXPECTED_CYCLES = 5;
+const EXPECTED_VERIFICATION_SOURCES = 13;
+
+function enabled(value) {
+  return value === 'true';
+}
+
+export async function getCampaignReadiness(client, env = process.env) {
+  const id = campaignId();
+  const [campaignRows, cycleRows, sourceRows, registryRows] = await Promise.all([
+    client.select('campaigns', `?id=eq.${encodeURIComponent(id)}&select=id,state,rules_hash,ruleset_version,funded_base_units&limit=1`),
+    client.select('cycles', `?campaign_id=eq.${encodeURIComponent(id)}&select=cycle_id,opens_at,closes_at`),
+    client.select('verification_sources', `?campaign_id=eq.${encodeURIComponent(id)}&select=source_key,classification,source`),
+    client.select('deployment_registry', `?campaign_id=eq.${encodeURIComponent(id)}&select=field,value,owner,evidence_url&limit=100`),
+  ]);
+
+  const campaign = campaignRows[0] ?? null;
+  const funded = BigInt(campaign?.funded_base_units ?? 0);
+  const rulesReady = Boolean(campaign?.ruleset_version > 0 && /^[0-9a-f]{64}$/.test(campaign?.rules_hash ?? ''));
+  const sourcesReady = sourceRows.length === EXPECTED_VERIFICATION_SOURCES
+    && sourceRows.every((row) => !['SOURCE_UNAVAILABLE', 'REMOVED_FOR_INTEGRITY'].includes(row.classification));
+  const datesReady = cycleRows.length === EXPECTED_CYCLES
+    && cycleRows.every((row) => row.opens_at && row.closes_at);
+  let registryReady = false;
+  try {
+    validateRegistry(registryRows, { requireComplete: true });
+    registryReady = true;
+  } catch {
+    registryReady = false;
+  }
+
+  const checks = [
+    { key: 'rules', label: 'Rules published and hashed', ready: rulesReady },
+    { key: 'funding', label: '15,000,000 FAWKQ funding verified', ready: funded === EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS },
+    { key: 'registry', label: 'Deployment and vault registry complete', ready: registryReady },
+    { key: 'sources', label: 'Nine voting sites and four bots certified', ready: sourcesReady },
+    { key: 'dates', label: 'Five campaign cycles scheduled', ready: datesReady },
+    { key: 'app', label: 'Campaign app enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED) },
+    { key: 'wallet', label: 'Wallet verification enabled', ready: enabled(env.PROJECT_Q_WALLET_VERIFICATION_ENABLED) },
+    { key: 'settlement', label: 'Campaign XP settlement enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED) },
+  ];
+
+  return {
+    state: campaign?.state ?? 'DRAFT',
+    ready: checks.every((check) => check.ready),
+    readyCount: checks.filter((check) => check.ready).length,
+    totalCount: checks.length,
+    checks,
   };
 }
 
