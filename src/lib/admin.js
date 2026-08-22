@@ -75,14 +75,32 @@ export function isAuthorizedAdmin(chatId, userId, chatType) {
   return isGroupAdmin(chatId, userId);
 }
 
-function listKeyboard() {
+export function buildAdminRootKeyboard() {
   const rows = EDITABLE_KEYS.map(([key, label]) => [
     { text: label, callback_data: `admin:item:${key}` },
   ]);
   return {
     inline_keyboard: [
-      [{ text: '🦆 Bond the Duck Readiness', callback_data: 'admin:readiness' }],
+      [{ text: '🦆 Campaigns', callback_data: 'admin:campaign' }],
       ...rows,
+    ],
+  };
+}
+
+export function buildCampaignAdminKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '🦆 Bond the Duck', callback_data: 'admin:campaign:bond' }],
+      [{ text: '⬅️ Back to Admin', callback_data: 'admin:back' }],
+    ],
+  };
+}
+
+export function buildBondAdminKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '📋 Readiness', callback_data: 'admin:readiness' }],
+      [{ text: '⬅️ Back to Campaigns', callback_data: 'admin:campaign' }],
     ],
   };
 }
@@ -143,7 +161,7 @@ export async function handleAdminCommand(message) {
 
   return telegram.sendMessage(chatId, '🛠 *Admin panel* — choose a menu/command to edit:', {
     threadId,
-    replyMarkup: listKeyboard(),
+    replyMarkup: buildAdminRootKeyboard(),
   });
 }
 
@@ -159,6 +177,19 @@ export async function handleAdminCallback(callbackQuery) {
 
   const [, action, arg1, arg2] = callbackQuery.data.split(':');
 
+  if (action === 'campaign') {
+    if (arg1 === 'bond') {
+      return telegram.editMessageText(chatId, messageId, [
+        '🦆 *Bond the Duck // Campaign Controls*',
+        '',
+        'Review launch readiness without scheduling, funding or activating the campaign.',
+      ].join('\n'), { replyMarkup: buildBondAdminKeyboard() });
+    }
+    return telegram.editMessageText(chatId, messageId, '🦆 *Campaigns* — choose a campaign:', {
+      replyMarkup: buildCampaignAdminKeyboard(),
+    });
+  }
+
   if (action === 'readiness') {
     try {
       const readiness = await getCampaignReadiness(supabase);
@@ -166,7 +197,7 @@ export async function handleAdminCallback(callbackQuery) {
         replyMarkup: {
           inline_keyboard: [
             [{ text: '🔄 Refresh', callback_data: 'admin:readiness' }],
-            [{ text: '⬅️ Back', callback_data: 'admin:back' }],
+            [{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }],
           ],
         },
       });
@@ -179,7 +210,7 @@ export async function handleAdminCallback(callbackQuery) {
   if (action === 'back') {
     pending.delete(pendingKey(chatId, userId));
     return telegram.editMessageText(chatId, messageId, '🛠 *Admin panel* — choose a menu/command to edit:', {
-      replyMarkup: listKeyboard(),
+      replyMarkup: buildAdminRootKeyboard(),
     });
   }
 
