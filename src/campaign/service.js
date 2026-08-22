@@ -1,4 +1,5 @@
 import { validateRegistry } from './registry.js';
+import { createHash } from 'node:crypto';
 
 export const DEFAULT_CAMPAIGN_ID = 'bond-the-duck-2026';
 
@@ -23,6 +24,14 @@ const EXPECTED_VERIFICATION_SOURCES = 13;
 
 function enabled(value) {
   return value === 'true';
+}
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
 
 export async function getCampaignReadiness(client, env = process.env) {
@@ -60,12 +69,25 @@ export async function getCampaignReadiness(client, env = process.env) {
     { key: 'settlement', label: 'Campaign XP settlement enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED) },
   ];
 
+  const reportHash = createHash('sha256').update(canonicalJson({
+    campaign,
+    cycles: [...cycleRows].sort((a, b) => Number(a.cycle_id) - Number(b.cycle_id)),
+    sources: [...sourceRows].sort((a, b) => String(a.source_key).localeCompare(String(b.source_key))),
+    registry: [...registryRows].sort((a, b) => String(a.field).localeCompare(String(b.field))),
+    flags: {
+      app: env.PROJECT_Q_CAMPAIGN_APP_ENABLED ?? null,
+      wallet: env.PROJECT_Q_WALLET_VERIFICATION_ENABLED ?? null,
+      settlement: env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED ?? null,
+    },
+  })).digest('hex');
+
   return {
     state: campaign?.state ?? 'DRAFT',
     ready: checks.every((check) => check.ready),
     readyCount: checks.filter((check) => check.ready).length,
     totalCount: checks.length,
     checks,
+    reportHash,
   };
 }
 
