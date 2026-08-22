@@ -7,7 +7,9 @@ import {
   getParticipantRaidStatus,
   assertCampaignParticipationEnabled,
   assertWalletVerificationEnabled,
+  getCampaignReadiness,
 } from '../src/campaign/service.js';
+import { REQUIRED_REGISTRY_FIELDS } from '../src/campaign/registry.js';
 
 test('missing campaign row remains safely in DRAFT', async () => {
   const client = { select: async () => [] };
@@ -85,4 +87,31 @@ test('closed fallback never reports live campaign state', () => {
   assert.deepEqual({ state: status.state, unavailable: status.unavailable }, {
     state: 'DRAFT', unavailable: true,
   });
+});
+
+test('campaign readiness stays blocked while dates and launch flags are intentionally deferred', async () => {
+  const client = {
+    select: async (table) => {
+      if (table === 'campaigns') return [{
+        id: 'bond-the-duck-2026', state: 'DRAFT', rules_hash: 'a'.repeat(64),
+        ruleset_version: 1, funded_base_units: '15000000000000',
+      }];
+      if (table === 'cycles') return [];
+      if (table === 'verification_sources') return Array.from({ length: 13 }, (_, index) => ({
+        source_key: `source-${index}`, source: index < 9 ? 'vote' : 'event', classification: 'MACHINE_VERIFIED',
+      }));
+      if (table === 'deployment_registry') return REQUIRED_REGISTRY_FIELDS.map((field) => ({
+        field, value: `verified-${field}`, owner: 'operations', evidence_url: `https://example.com/${field}`,
+      }));
+      return [];
+    },
+  };
+  const readiness = await getCampaignReadiness(client, {
+    PROJECT_Q_CAMPAIGN_APP_ENABLED: 'false',
+    PROJECT_Q_WALLET_VERIFICATION_ENABLED: 'false',
+    PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED: 'false',
+  });
+  assert.equal(readiness.ready, false);
+  assert.equal(readiness.readyCount, 4);
+  assert.equal(readiness.checks.find(({ key }) => key === 'dates').ready, false);
 });

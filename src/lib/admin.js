@@ -1,5 +1,8 @@
 import * as telegram from './telegram.js';
 import { getMenuContent, upsertMenuContent } from './menuContent.js';
+import { supabase } from './supabase.js';
+import { getCampaignReadiness } from '../campaign/service.js';
+import { buildCampaignReadinessText } from '../campaign/ui.js';
 
 const EDITABLE_KEYS = [
   ['home', 'Home menu'],
@@ -76,7 +79,12 @@ function listKeyboard() {
   const rows = EDITABLE_KEYS.map(([key, label]) => [
     { text: label, callback_data: `admin:item:${key}` },
   ]);
-  return { inline_keyboard: rows };
+  return {
+    inline_keyboard: [
+      [{ text: '🦆 Bond the Duck Readiness', callback_data: 'admin:readiness' }],
+      ...rows,
+    ],
+  };
 }
 
 function itemKeyboard(key) {
@@ -150,6 +158,23 @@ export async function handleAdminCallback(callbackQuery) {
   }
 
   const [, action, arg1, arg2] = callbackQuery.data.split(':');
+
+  if (action === 'readiness') {
+    try {
+      const readiness = await getCampaignReadiness(supabase);
+      return telegram.editMessageText(chatId, messageId, buildCampaignReadinessText(readiness), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '🔄 Refresh', callback_data: 'admin:readiness' }],
+            [{ text: '⬅️ Back', callback_data: 'admin:back' }],
+          ],
+        },
+      });
+    } catch (err) {
+      console.error('campaign readiness unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Campaign readiness is unavailable. No campaign controls were changed.', { threadId });
+    }
+  }
 
   if (action === 'back') {
     pending.delete(pendingKey(chatId, userId));
