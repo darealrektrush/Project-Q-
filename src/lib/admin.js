@@ -11,6 +11,12 @@ import {
 } from '../campaign/timeline.js';
 import { buildFundingVaultText, getFundingVaultStatus } from '../campaign/funding.js';
 import { buildVerificationSourceText, getVerificationSourceStatus } from '../campaign/verificationSources.js';
+import {
+  buildActivationApprovalText,
+  getActivationApprovalStatus,
+  isConfiguredFounder,
+  recordActivationApproval,
+} from '../campaign/activationApprovals.js';
 
 // These are the actual Project Q surfaces. Keep Oracle-only features out of
 // this list so the private Project Q operator panel cannot accidentally expose
@@ -156,6 +162,7 @@ export function buildAdminItemKeyboard(key) {
         ],
         [{ text: '💰 Funding & Vaults', callback_data: 'admin:funding' }],
         [{ text: '🔎 Verification Sources', callback_data: 'admin:sources' }],
+        [{ text: '🛡 Founder Approvals', callback_data: 'admin:approval' }],
       ]
     : [];
   return {
@@ -342,6 +349,62 @@ export async function handleAdminCallback(callbackQuery) {
     } catch (err) {
       console.error('campaign verification sources unavailable', err.message);
       return telegram.sendMessage(chatId, 'Verification-source status is unavailable. Campaign XP remains disabled.', { threadId });
+    }
+  }
+
+  if (action === 'approval') {
+    try {
+      const status = await getActivationApprovalStatus(supabase);
+      const viewerApproved = status.approvals.some(({ founderUserId }) => founderUserId === String(userId));
+      const actions = [];
+      if (isConfiguredFounder(userId) && status.readyToCollect && !viewerApproved) {
+        actions.push([{ text: '🛡 Review my approval', callback_data: 'admin:approvalreview' }]);
+      }
+      if (isConfiguredFounder(userId) && viewerApproved) {
+        actions.push([{ text: '↩️ Revoke my approval', callback_data: 'admin:approvalrevoke' }]);
+      }
+      actions.push([{ text: '🔄 Refresh', callback_data: 'admin:approval' }]);
+      actions.push([{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }]);
+      return telegram.editMessageText(chatId, messageId, buildActivationApprovalText(status, userId), {
+        replyMarkup: { inline_keyboard: actions },
+      });
+    } catch (err) {
+      console.error('activation approval dashboard unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Founder approval status is unavailable. The campaign remains locked.', { threadId });
+    }
+  }
+
+  if (action === 'approvalreview') {
+    if (!isConfiguredFounder(userId)) {
+      return telegram.sendMessage(chatId, 'Only a configured founder can approve activation.', { threadId });
+    }
+    const status = await getActivationApprovalStatus(supabase);
+    if (!status.readyToCollect) {
+      return telegram.sendMessage(chatId, 'Approval collection is locked because readiness or campaign state changed.', { threadId });
+    }
+    return telegram.editMessageText(chatId, messageId, [
+      '⚠️ *Confirm Founder Approval*',
+      '',
+      `You are approving readiness report \`${status.readiness.reportHash.slice(0, 12)}…\`.`,
+      'This records approval only. It does not activate the campaign or move funds.',
+    ].join('\n'), { replyMarkup: { inline_keyboard: [
+      [{ text: '✅ Confirm approval', callback_data: 'admin:approvalconfirm' }],
+      [{ text: '❌ Cancel', callback_data: 'admin:approval' }],
+    ] } });
+  }
+
+  if (action === 'approvalconfirm' || action === 'approvalrevoke') {
+    try {
+      const status = await recordActivationApproval(supabase, userId, action === 'approvalconfirm');
+      return telegram.editMessageText(chatId, messageId, buildActivationApprovalText(status, userId), {
+        replyMarkup: { inline_keyboard: [
+          [{ text: '🔄 Refresh', callback_data: 'admin:approval' }],
+          [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+        ] },
+      });
+    } catch (err) {
+      console.error('activation approval write rejected', err.message);
+      return telegram.sendMessage(chatId, `🔒 Approval not recorded: ${err.message}`, { threadId });
     }
   }
 
