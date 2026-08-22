@@ -232,10 +232,13 @@ async function handleMessage(message) {
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
-  if (!isPrivate && command === '/adminf') {
+  // Private access is still allowlisted inside handleAdminCommand; group
+  // access still requires Telegram administrator status. Do not gate this
+  // here or configured founders cannot open the private command centre.
+  if (command === '/adminf') {
     return admin.handleAdminCommand(message);
   }
-  if (!isPrivate && command === '/admincancel') {
+  if (command === '/admincancel') {
     return admin.cancelPendingEdit(chatId, message.from.id);
   }
   if (!isPrivate && command === '/postsignal') {
