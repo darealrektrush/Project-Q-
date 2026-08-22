@@ -9,6 +9,7 @@ import {
   getCampaignTimeline,
   saveDraftCampaignTimeline,
 } from '../campaign/timeline.js';
+import { buildFundingVaultText, getFundingVaultStatus } from '../campaign/funding.js';
 
 // These are the actual Project Q surfaces. Keep Oracle-only features out of
 // this list so the private Project Q operator panel cannot accidentally expose
@@ -147,10 +148,13 @@ function sectionText(sectionKey) {
 
 export function buildAdminItemKeyboard(key) {
   const campaignControls = key === 'campaign'
-    ? [[
-        { text: '📋 Readiness', callback_data: 'admin:readiness' },
-        { text: '🗓 Timeline', callback_data: 'admin:timeline' },
-      ]]
+    ? [
+        [
+          { text: '📋 Readiness', callback_data: 'admin:readiness' },
+          { text: '🗓 Timeline', callback_data: 'admin:timeline' },
+        ],
+        [{ text: '💰 Funding & Vaults', callback_data: 'admin:funding' }],
+      ]
     : [];
   return {
     inline_keyboard: [
@@ -307,6 +311,21 @@ export async function handleAdminCallback(callbackQuery) {
         [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
       ] },
     });
+  }
+
+  if (action === 'funding') {
+    try {
+      const status = await getFundingVaultStatus(supabase);
+      return telegram.editMessageText(chatId, messageId, buildFundingVaultText(status), {
+        replyMarkup: { inline_keyboard: [
+          [{ text: '🔄 Refresh', callback_data: 'admin:funding' }],
+          [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+        ] },
+      });
+    } catch (err) {
+      console.error('campaign funding dashboard unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Funding evidence is unavailable. No vault or campaign controls were changed.', { threadId });
+    }
   }
 
   if (action === 'timelineedit') {
