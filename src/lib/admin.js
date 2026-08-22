@@ -3,6 +3,12 @@ import { getAllMenuContent, getMenuContent, upsertMenuContent } from './menuCont
 import { supabase } from './supabase.js';
 import { getCampaignReadiness } from '../campaign/service.js';
 import { buildCampaignReadinessText } from '../campaign/ui.js';
+import {
+  buildCampaignTimeline,
+  buildCampaignTimelineText,
+  getCampaignTimeline,
+  saveDraftCampaignTimeline,
+} from '../campaign/timeline.js';
 
 // These are the actual Project Q surfaces. Keep Oracle-only features out of
 // this list so the private Project Q operator panel cannot accidentally expose
@@ -140,12 +146,15 @@ function sectionText(sectionKey) {
 }
 
 export function buildAdminItemKeyboard(key) {
-  const readiness = key === 'campaign'
-    ? [[{ text: '📋 Readiness', callback_data: 'admin:readiness' }]]
+  const campaignControls = key === 'campaign'
+    ? [[
+        { text: '📋 Readiness', callback_data: 'admin:readiness' },
+        { text: '🗓 Timeline', callback_data: 'admin:timeline' },
+      ]]
     : [];
   return {
     inline_keyboard: [
-      ...readiness,
+      ...campaignControls,
       [
         { text: '✏️ Edit text', callback_data: `admin:editbio:${key}` },
         { text: '🖼 Set media', callback_data: `admin:editmedia:${key}` },
@@ -287,6 +296,55 @@ export async function handleAdminCallback(callbackQuery) {
     }
   }
 
+  if (action === 'timeline') {
+    const timeline = await getCampaignTimeline(supabase);
+    const text = timeline.length
+      ? buildCampaignTimelineText(timeline, 'Bond the Duck // Current Timeline')
+      : '🗓 *Bond the Duck // Timeline*\n\nNo campaign dates are scheduled. The campaign remains DRAFT.';
+    return telegram.editMessageText(chatId, messageId, text, {
+      replyMarkup: { inline_keyboard: [
+        [{ text: timeline.length ? '✏️ Reschedule' : '➕ Set start date', callback_data: 'admin:timelineedit' }],
+        [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+      ] },
+    });
+  }
+
+  if (action === 'timelineedit') {
+    pending.set(pendingKey(chatId, userId), {
+      key: 'campaign', field: 'timeline', stage: 'input', expires: Date.now() + PENDING_TTL_MS,
+    });
+    return telegram.sendMessage(chatId, [
+      '🗓 Send the new campaign start in *Vancouver time*.',
+      'Format: `YYYY-MM-DD HH:MM`',
+      'Example: `2026-09-01 08:00`',
+      '',
+      'The bot will preview five consecutive 48-hour cycles before saving. Use /admincancel to abort.',
+    ].join('\n'), { threadId });
+  }
+
+  if (action === 'timelineconfirm' || action === 'timelinediscard') {
+    const entryKey = pendingKey(chatId, userId);
+    const entry = pending.get(entryKey);
+    if (!entry || entry.field !== 'timeline' || entry.stage !== 'confirm' || Date.now() > entry.expires) {
+      pending.delete(entryKey);
+      return telegram.sendMessage(chatId, 'This timeline preview expired. Open /adminf and try again.', { threadId });
+    }
+    pending.delete(entryKey);
+    if (action === 'timelinediscard') {
+      return telegram.sendMessage(chatId, '❌ Timeline discarded. No campaign dates were changed.', { threadId });
+    }
+    try {
+      await saveDraftCampaignTimeline(supabase, entry.draft, userId);
+      return telegram.sendMessage(chatId, '✅ Timeline saved. The campaign is still DRAFT and has not been activated.', {
+        threadId,
+        replyMarkup: { inline_keyboard: [[{ text: '🗓 View timeline', callback_data: 'admin:timeline' }]] },
+      });
+    } catch (err) {
+      console.error('campaign timeline save failed', err.message);
+      return telegram.sendMessage(chatId, `🔒 Timeline not saved: ${err.message}`, { threadId });
+    }
+  }
+
   if (action === 'editbio') {
     const key = arg1;
     if (!isEditableAdminKey(key)) return;
@@ -367,12 +425,36 @@ export async function handlePendingEditMessage(message) {
   const entry = pending.get(entryKey);
   if (!entry) return;
 
+  if (message.text?.trim().split(/\s+/)[0].split('@')[0] === '/admincancel') {
+    return cancelPendingEdit(chatId, userId);
+  }
+
   if (entry.stage !== 'input') {
     return telegram.sendMessage(
       chatId,
       'Please tap ✅ Publish or ❌ Discard on the preview above, or /admincancel to abort.',
       { threadId }
     );
+  }
+
+  if (entry.field === 'timeline') {
+    if (!message.text) {
+      return telegram.sendMessage(chatId, 'Send the start as YYYY-MM-DD HH:MM in Vancouver time.', { threadId });
+    }
+    try {
+      entry.draft = buildCampaignTimeline(message.text);
+      entry.stage = 'confirm';
+      entry.expires = Date.now() + PENDING_TTL_MS;
+      return telegram.sendMessage(chatId, buildCampaignTimelineText(entry.draft), {
+        threadId,
+        replyMarkup: { inline_keyboard: [[
+          { text: '✅ Save dates', callback_data: 'admin:timelineconfirm' },
+          { text: '❌ Discard', callback_data: 'admin:timelinediscard' },
+        ]] },
+      });
+    } catch (err) {
+      return telegram.sendMessage(chatId, `⚠️ ${err.message}`, { threadId });
+    }
   }
 
   if (entry.field === 'bio') {
