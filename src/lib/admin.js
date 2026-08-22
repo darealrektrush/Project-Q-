@@ -10,6 +10,7 @@ import {
   saveDraftCampaignTimeline,
 } from '../campaign/timeline.js';
 import { buildFundingVaultText, getFundingVaultStatus } from '../campaign/funding.js';
+import { buildVerificationSourceText, getVerificationSourceStatus } from '../campaign/verificationSources.js';
 
 // These are the actual Project Q surfaces. Keep Oracle-only features out of
 // this list so the private Project Q operator panel cannot accidentally expose
@@ -154,6 +155,7 @@ export function buildAdminItemKeyboard(key) {
           { text: '🗓 Timeline', callback_data: 'admin:timeline' },
         ],
         [{ text: '💰 Funding & Vaults', callback_data: 'admin:funding' }],
+        [{ text: '🔎 Verification Sources', callback_data: 'admin:sources' }],
       ]
     : [];
   return {
@@ -325,6 +327,21 @@ export async function handleAdminCallback(callbackQuery) {
     } catch (err) {
       console.error('campaign funding dashboard unavailable', err.message);
       return telegram.sendMessage(chatId, 'Funding evidence is unavailable. No vault or campaign controls were changed.', { threadId });
+    }
+  }
+
+  if (action === 'sources') {
+    try {
+      const status = await getVerificationSourceStatus(supabase);
+      return telegram.editMessageText(chatId, messageId, buildVerificationSourceText(status), {
+        replyMarkup: { inline_keyboard: [
+          [{ text: '🔄 Refresh', callback_data: 'admin:sources' }],
+          [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+        ] },
+      });
+    } catch (err) {
+      console.error('campaign verification sources unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Verification-source status is unavailable. Campaign XP remains disabled.', { threadId });
     }
   }
 
