@@ -9,9 +9,20 @@ export function buildCampaignsMenu() {
   };
 }
 
-export function buildBondTheDuckMenu() {
+export function resolveCampaignAppUrl(env = process.env) {
+  const configured = env.PROJECT_Q_CAMPAIGN_APP_URL?.trim();
+  if (configured) return configured;
+  const hostname = env.RENDER_EXTERNAL_HOSTNAME?.trim();
+  return hostname ? `https://${hostname}/campaign-app/` : null;
+}
+
+export function buildBondTheDuckMenu(appUrl = resolveCampaignAppUrl()) {
+  const appButton = appUrl
+    ? [[{ text: '📱 Open Campaign App', web_app: { url: appUrl } }]]
+    : [];
   return {
     inline_keyboard: [
+      ...appButton,
       [
         { text: '🦆 Overview', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:overview` },
         { text: '✅ Enroll', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:enroll` },
@@ -48,7 +59,7 @@ export function buildMissionsMenu() {
         { text: '🗳 Website Voting', callback_data: `${MISSIONS_CALLBACK_PREFIX}:votes` },
         { text: '🤖 Trending Bots', callback_data: `${MISSIONS_CALLBACK_PREFIX}:bots` },
       ],
-      [{ text: '📋 Other Missions', callback_data: `${MISSIONS_CALLBACK_PREFIX}:other` }],
+      [{ text: '💼 Bagwork Platform', callback_data: 'menu:bagwork' }],
       [{ text: '📈 My Mission Progress', callback_data: `${MISSIONS_CALLBACK_PREFIX}:progress` }],
       [{ text: '⬅️ Back to Bond the Duck', callback_data: CAMPAIGN_CALLBACK_PREFIX }],
     ],
@@ -232,13 +243,13 @@ export function getMissionScreen(screen) {
       '', '*Current state:* Bots not enabled',
     ].join('\n'),
     other: [
-      '📋 *Other Campaign Missions*', '',
-      'Approved participation, content, education, event and onboarding missions will appear here.',
-      '', '*Current state:* Missions not enabled',
+      '💼 *Bagwork Platform*', '',
+      'Content, education, media and contributor work runs through the existing Bagwork platform.',
+      'Approved tasks can earn SOL and campaign XP through the Project Q integration.',
     ].join('\n'),
     progress: [
       '📈 *My Mission Progress*', '',
-      'Verified Oracle raids, website votes, Telegram bots and other campaign missions combine here.',
+      'Verified Oracle raids, website votes, Telegram bots and approved Bagwork records combine here.',
       'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
       '', '*Current state:* Campaign not launched',
     ].join('\n'),

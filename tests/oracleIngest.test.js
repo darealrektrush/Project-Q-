@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ingestOracleRaidEvent, secretMatches, validateOracleRaidEvent,
+  ingestOracleRaidEvent, linkOracleIdentity, secretMatches,
+  validateOracleIdentityEvent, validateOracleRaidEvent,
 } from '../src/campaign/oracleIngest.js';
 
 test('Oracle shared secret comparison fails closed', () => {
@@ -43,4 +44,37 @@ test('validated event is sent only through the atomic ingest RPC', async () => {
   });
   assert.deepEqual(await ingestOracleRaidEvent(client, event), [{ id: 1 }]);
   assert.equal(calls[0][0], 'ingest_oracle_raid_event');
+});
+
+test('Oracle identity validation normalizes permanent identities', () => {
+  const identity = validateOracleIdentityEvent({
+    telegram_user_id: 123,
+    x_user_id: '22446688',
+    verified_at: '2026-08-15T00:00:00Z',
+  });
+  assert.deepEqual(identity, {
+    telegramUserId: 123,
+    xUserId: '22446688',
+    verifiedAt: '2026-08-15T00:00:00.000Z',
+  });
+  assert.throws(() => validateOracleIdentityEvent({
+    telegram_user_id: 'bad', x_user_id: '22446688', verified_at: '2026-08-15T00:00:00Z',
+  }), /telegram_user_id/);
+  assert.throws(() => validateOracleIdentityEvent({
+    telegram_user_id: 123, x_user_id: '', verified_at: '2026-08-15T00:00:00Z',
+  }), /x_user_id/);
+  assert.throws(() => validateOracleIdentityEvent({
+    telegram_user_id: 123, x_user_id: '@changeable_handle', verified_at: '2026-08-15T00:00:00Z',
+  }), /x_user_id/);
+});
+
+test('validated Oracle identity is sent only through the atomic link RPC', async () => {
+  const calls = [];
+  const client = { rpc: async (fn, args) => { calls.push([fn, args]); return [{ x_user_id: '22446688' }]; } };
+  const identity = validateOracleIdentityEvent({
+    telegram_user_id: 123, x_user_id: '22446688', verified_at: '2026-08-15T00:00:00Z',
+  });
+  assert.deepEqual(await linkOracleIdentity(client, identity), [{ x_user_id: '22446688' }]);
+  assert.equal(calls[0][0], 'link_oracle_identity');
+  assert.equal(calls[0][1].p_telegram_user_id, 123);
 });

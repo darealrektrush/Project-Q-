@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as telegram from './lib/telegram.js';
 import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
@@ -13,9 +15,14 @@ import * as eventsAdmin from './lib/eventsAdmin.js';
 import * as campaignUi from './campaign/ui.js';
 import * as campaignService from './campaign/service.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
+import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
+import * as walletVerification from './campaign/walletVerification.js';
 
 const app = express();
 app.use(express.json());
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use('/campaign-app', express.static(path.join(__dirname, '..', 'public', 'campaign-app')));
 
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
@@ -31,6 +38,67 @@ const STUB_COMMANDS = new Set([
 ]);
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
+
+app.post('/campaign-app/api/session', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
+    return res.status(200).json({
+      ok: true,
+      user: session.user,
+      participant,
+      capabilities: {
+        walletVerification: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED === 'true',
+      },
+    });
+  } catch (err) {
+    const unavailable = err.message === 'telegram mini app authentication unavailable';
+    const databaseFailure = String(err.message).startsWith('Supabase ');
+    if (unavailable || databaseFailure) console.error('campaign Mini App session failed', err.message);
+    return res.status(unavailable || databaseFailure ? 503 : 401).json({
+      ok: false,
+      error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
+    });
+  }
+});
+
+app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertWalletVerificationEnabled(supabase, session.user.id, {
+      verificationFlag: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED,
+      participationFlag: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED,
+    });
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const challenge = await walletVerification.createWalletChallenge(supabase, campaignId, session.user.id);
+    return res.status(200).json({ ok: true, ...challenge });
+  } catch (err) {
+    console.error('wallet challenge failed', err.message);
+    return res.status(400).json({ ok: false, error: 'wallet challenge unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/wallet/verify', async (req, res) => {
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertWalletVerificationEnabled(supabase, session.user.id, {
+      verificationFlag: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED,
+      participationFlag: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED,
+    });
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const result = await walletVerification.consumeWalletChallenge(supabase, {
+      campaignId,
+      telegramUserId: session.user.id,
+      nonce: req.body?.nonce,
+      wallet: req.body?.wallet,
+      signature: req.body?.signature,
+    });
+    return res.status(200).json({ ok: true, ...result });
+  } catch (err) {
+    console.error('wallet verification failed', err.message);
+    return res.status(400).json({ ok: false, error: 'wallet verification failed' });
+  }
+});
 
 app.get('/version', (req, res) =>
   res.status(200).json({
@@ -84,6 +152,24 @@ app.post('/oracle/campaign-raid-event', async (req, res) => {
     return res.status(invalid ? 400 : 409).json({
       ok: false,
       error: invalid ? err.message : 'campaign event rejected',
+    });
+  }
+});
+
+app.post('/oracle/campaign-identity', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  try {
+    const identity = oracleIngest.validateOracleIdentityEvent(req.body);
+    const result = await oracleIngest.linkOracleIdentity(supabase, identity);
+    return res.status(200).json({ ok: true, identity: result });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('Oracle campaign identity ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'campaign identity rejected',
     });
   }
 });
@@ -146,10 +232,10 @@ async function handleMessage(message) {
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
 
-  if (command === '/adminf') {
+  if (!isPrivate && command === '/adminf') {
     return admin.handleAdminCommand(message);
   }
-  if (command === '/admincancel') {
+  if (!isPrivate && command === '/admincancel') {
     return admin.cancelPendingEdit(chatId, message.from.id);
   }
   if (!isPrivate && command === '/postsignal') {

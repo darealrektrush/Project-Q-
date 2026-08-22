@@ -15,6 +15,28 @@ export async function getCampaignStatus(client) {
   };
 }
 
+export async function assertCampaignParticipationEnabled(client, enabledFlag) {
+  if (enabledFlag !== 'true') throw new Error('campaign participation disabled');
+  const status = await getCampaignStatus(client);
+  if (status.state !== 'ACTIVE') throw new Error('campaign participation disabled');
+  return status;
+}
+
+export async function assertWalletVerificationEnabled(
+  client,
+  telegramUserId,
+  { verificationFlag, participationFlag } = {}
+) {
+  if (verificationFlag !== 'true') {
+    await assertCampaignParticipationEnabled(client, participationFlag);
+  }
+  const participant = await getParticipantStatus(client, telegramUserId);
+  if (!participant.xVerified) {
+    throw new Error('verified Telegram and Oracle X identity required');
+  }
+  return participant;
+}
+
 export async function getParticipantStatus(client, telegramUserId) {
   const id = campaignId();
   const userId = String(telegramUserId);
@@ -38,6 +60,7 @@ export async function getParticipantStatus(client, telegramUserId) {
     xLinked: Boolean(identity?.x_user_id),
     xVerified: Boolean(identity?.x_verified_at),
     walletLinked: Boolean(identity?.reward_wallet),
+    rewardWallet: identity?.reward_wallet ?? null,
     walletVerified: Boolean(identity?.wallet_verified_at),
     tokenAccountReady: Boolean(identity?.fawkq_token_account),
     xpByCycle,
@@ -70,7 +93,7 @@ export function closedCampaignStatus() {
 export function closedParticipantStatus() {
   return {
     enrolled: false, xLinked: false, xVerified: false, walletLinked: false,
-    walletVerified: false, tokenAccountReady: false, xpByCycle: [], totalXp: 0,
+    walletVerified: false, rewardWallet: null, tokenAccountReady: false, xpByCycle: [], totalXp: 0,
     unavailable: true,
   };
 }
