@@ -1,5 +1,21 @@
 export const CAMPAIGN_CALLBACK_PREFIX = 'menu:campaign:bond';
 
+export function buildCampaignReadinessText(readiness) {
+  const lines = readiness.checks.map(({ label, ready }) => `${ready ? '✅' : '🔒'} ${label}`);
+  return [
+    '🦆 *Bond the Duck // Readiness*',
+    '',
+    `*State:* ${readiness.state}`,
+    `*Passed:* ${readiness.readyCount}/${readiness.totalCount}`,
+    '',
+    ...lines,
+    '',
+    readiness.ready
+      ? 'All readiness gates pass. Activation still requires two founder approvals.'
+      : 'Campaign remains fail-closed. Launch dates can be added after the other gates are complete.',
+  ].join('\n');
+}
+
 export function buildCampaignsMenu() {
   return {
     inline_keyboard: [
