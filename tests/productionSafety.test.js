@@ -26,6 +26,13 @@ test('Render waits for checks before deploying managed services', async () => {
   assert.equal(managedServices, 4);
 });
 
+test('configured founders can route private admin commands to the authorization layer', async () => {
+  const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
+  assert.match(server, /if \(command === '\/adminf'\)/);
+  assert.match(server, /if \(command === '\/admincancel'\)/);
+  assert.doesNotMatch(server, /!isPrivate && command === '\/adminf'/);
+});
+
 test('Phase 1 reconciliation migration contains runtime-critical tables and RLS', async () => {
   const migration = await read(
     'supabase/migrations/20260819050834_reconcile_project_q_phase1.sql'
