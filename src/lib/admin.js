@@ -1,5 +1,8 @@
 import * as telegram from './telegram.js';
 import { getAllMenuContent, getMenuContent, upsertMenuContent } from './menuContent.js';
+import { supabase } from './supabase.js';
+import { getCampaignReadiness } from '../campaign/service.js';
+import { buildCampaignReadinessText } from '../campaign/ui.js';
 
 // These are the actual Project Q surfaces. Keep Oracle-only features out of
 // this list so the private Project Q operator panel cannot accidentally expose
@@ -136,9 +139,13 @@ function sectionText(sectionKey) {
   return `${section?.label ?? '🛠 Admin'}\nChoose a screen to manage.`;
 }
 
-function itemKeyboard(key) {
+export function buildAdminItemKeyboard(key) {
+  const readiness = key === 'campaign'
+    ? [[{ text: '📋 Readiness', callback_data: 'admin:readiness' }]]
+    : [];
   return {
     inline_keyboard: [
+      ...readiness,
       [
         { text: '✏️ Edit text', callback_data: `admin:editbio:${key}` },
         { text: '🖼 Set media', callback_data: `admin:editmedia:${key}` },
@@ -259,8 +266,25 @@ export async function handleAdminCallback(callbackQuery) {
       content?.media_file_id ? 'Media: set' : 'Media: _(none)_',
     ];
     return telegram.editMessageText(chatId, messageId, lines.join('\n'), {
-      replyMarkup: itemKeyboard(key),
+      replyMarkup: buildAdminItemKeyboard(key),
     });
+  }
+
+  if (action === 'readiness') {
+    try {
+      const readiness = await getCampaignReadiness(supabase);
+      return telegram.editMessageText(chatId, messageId, buildCampaignReadinessText(readiness), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '🔄 Refresh', callback_data: 'admin:readiness' }],
+            [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+          ],
+        },
+      });
+    } catch (err) {
+      console.error('campaign readiness unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Campaign readiness is unavailable. No campaign controls were changed.', { threadId });
+    }
   }
 
   if (action === 'editbio') {
