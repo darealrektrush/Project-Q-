@@ -1,0 +1,12 @@
+{
+  "defaultCampaign": "bond-the-duck-2026",
+  "campaigns": [
+    {
+      "id": "bond-the-duck-2026",
+      "file": "bond-the-duck-2026.json",
+      "visible": true,
+      "enabled": false,
+      "archived": false
+    }
+  ]
+}

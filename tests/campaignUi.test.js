@@ -6,6 +6,7 @@ import {
   buildCampaignHomeText,
   buildCampaignsMenu,
   buildBondTheDuckMenu,
+  resolveCampaignAppUrl,
   buildParticipantStatusText,
   buildParticipantXpText,
   buildMissionsMenu,
@@ -26,6 +27,7 @@ test('missions centre exposes Oracle raids and the other campaign lanes', () => 
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:votes`));
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:bots`));
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:progress`));
+  assert.ok(callbacks.includes('menu:bagwork'));
   assert.equal(buildOracleRaidsMenu('@crabstar_oracle_bot').inline_keyboard[0][0].url,
     'https://t.me/crabstar_oracle_bot');
 });
@@ -49,6 +51,17 @@ test('Bond the Duck hub includes every required participant screen', () => {
     assert.ok(getCampaignScreen(screen), `missing copy for ${screen}`);
   }
   assert.ok(callbacks.includes('menu:campaigns'));
+});
+
+test('Bond the Duck hub can expose the reusable Mini App without changing callbacks', () => {
+  const menu = buildBondTheDuckMenu('https://example.com/campaign-app/');
+  assert.deepEqual(menu.inline_keyboard[0][0], {
+    text: '📱 Open Campaign App',
+    web_app: { url: 'https://example.com/campaign-app/' },
+  });
+  assert.equal(resolveCampaignAppUrl({
+    RENDER_EXTERNAL_HOSTNAME: 'project-q-dev.onrender.com',
+  }), 'https://project-q-dev.onrender.com/campaign-app/');
 });
 
 test('pre-launch campaign UI never represents the campaign as active', () => {

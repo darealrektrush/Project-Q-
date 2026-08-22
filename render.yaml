@@ -24,6 +24,12 @@ services:
         sync: false
       - key: ORACLE_CAMPAIGN_SECRET
         sync: false
+      - key: PROJECT_Q_CAMPAIGN_APP_URL
+        sync: false
+      - key: PROJECT_Q_CAMPAIGN_APP_ENABLED
+        value: "false"
+      - key: PROJECT_Q_WALLET_VERIFICATION_ENABLED
+        value: "false"
       - key: FAWKQ_WEBSITE_URL
         sync: false
       - key: XP_PER_SOL
@@ -91,6 +97,24 @@ services:
       - key: DISTRIBUTION_RESERVE_LAMPORTS
         sync: false
       - key: STAGE2_RESERVE_LAMPORTS
+        sync: false
+
+  - type: cron
+    name: project-q-settle-campaign-xp
+    runtime: node
+    # Requires an explicit deployment flag and an ACTIVE campaign row.
+    schedule: "*/10 * * * *"
+    buildCommand: npm ci
+    startCommand: npm run settle-campaign-xp
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED
+        value: "false"
+      - key: BOND_THE_DUCK_CAMPAIGN_ID
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
 
   - type: cron

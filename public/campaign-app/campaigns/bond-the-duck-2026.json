@@ -1,0 +1,69 @@
+{
+  "id": "bond-the-duck-2026",
+  "name": "Bond the Duck",
+  "shortName": "Bond",
+  "sequence": "CAMPAIGN 01",
+  "banner": "/campaign-app/assets/bond-the-duck-campaign-banner.webp",
+  "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
+  "leaderboardIcon": "/campaign-app/assets/missions/leaderboards.webp",
+  "creatorAwardsArtwork": "/campaign-app/assets/creator-awards-distribution.webp",
+  "stateArtwork": {
+    "DISABLED": "/campaign-app/assets/states/empty.webp",
+    "LOCKED": "/campaign-app/assets/states/locked.webp",
+    "COMPLETED": "/campaign-app/assets/states/completed.webp",
+    "ARCHIVED": "/campaign-app/assets/states/archived.webp"
+  },
+  "identityBadges": {
+    "x": "/campaign-app/assets/identity/x-verified.webp",
+    "telegram": "/campaign-app/assets/identity/telegram-verified.webp",
+    "wallet": "/campaign-app/assets/identity/wallet-connected.webp",
+    "collective": "/campaign-app/assets/identity/collective-verified.webp",
+    "rewards": "/campaign-app/assets/identity/rewards-eligible.webp",
+    "full": "/campaign-app/assets/identity/fully-verified.webp",
+    "fullHero": "/campaign-app/assets/identity/fully-verified-hero.webp"
+  },
+  "xpBadges": [
+    { "id": "xp-earned", "label": "XP Earned", "image": "/campaign-app/assets/progression/xp-earned.webp" },
+    { "id": "xp-master", "label": "XP Master", "image": "/campaign-app/assets/progression/xp-master.webp" },
+    { "id": "level-up", "label": "Level Up", "image": "/campaign-app/assets/progression/level-up.webp" },
+    { "id": "rank-up", "label": "Rank Up", "image": "/campaign-app/assets/progression/rank-up.webp" }
+  ],
+  "leaderboardBadges": [
+    { "id": "top-10-percent", "label": "Top 10%", "image": "/campaign-app/assets/progression/top-10-percent.webp" },
+    { "id": "top-5-percent", "label": "Top 5%", "image": "/campaign-app/assets/progression/top-5-percent.webp" },
+    { "id": "top-1-percent", "label": "Top 1%", "image": "/campaign-app/assets/progression/top-1-percent.webp" },
+    { "id": "top-100", "label": "Elite 100", "image": "/campaign-app/assets/progression/top-100.webp" },
+    { "id": "top-10", "label": "Top 10", "image": "/campaign-app/assets/progression/top-10.webp" },
+    { "id": "champion", "label": "Champion", "image": "/campaign-app/assets/progression/champion.webp" }
+  ],
+  "status": "DRAFT",
+  "statusLabel": "PRE-LAUNCH / READINESS MODE",
+  "tagline": "Build reputation. Earn XP. Compete transparently.",
+  "description": "A 10-day verified participation and holder-acquisition campaign powered by Project Q and the CrabStar Oracle.",
+  "activeDays": 10,
+  "cycleHours": 48,
+  "readinessPercent": 42,
+  "xpCaps": {
+    "overallDaily": 75,
+    "participationDaily": 15,
+    "projectQDaily": 20
+  },
+  "eligibility": {
+    "telegramRequired": true,
+    "oracleXRequired": true,
+    "walletRequiredForRewards": true,
+    "minimumFawkqUsd": 2
+  },
+  "releases": [
+    { "label": "Immediate", "percent": 25, "detail": "After cycle verification" },
+    { "label": "Day 13", "percent": 50, "detail": "After final campaign review" },
+    { "label": "Phased", "percent": 25, "detail": "Five releases over 30 days" }
+  ],
+  "missions": [
+    { "id": "oracle-raids", "icon": "⚔️", "image": "/campaign-app/assets/missions/verified-raids.webp", "title": "Oracle X Raids", "description": "Verified likes, reposts, replies and quote posts.", "status": "0 / 5", "reward": "Up to 20 XP", "enabled": false },
+    { "id": "website-voting", "icon": "🗳", "image": "/campaign-app/assets/missions/listing-votes.webp", "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 18 XP", "enabled": false },
+    { "id": "trending-bots", "icon": "🤖", "image": "/campaign-app/assets/missions/bot-trending.webp", "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "enabled": false },
+    { "id": "bagwork", "icon": "💼", "image": "/campaign-app/assets/missions/bagwork.webp", "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + XP", "enabled": true },
+    { "id": "buy-to-earn", "icon": "📊", "image": "/campaign-app/assets/missions/buy-to-earn.webp", "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "enabled": false }
+  ]
+}
