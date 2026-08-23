@@ -31,6 +31,10 @@ services:
         sync: false
       - key: PROJECT_Q_CAMPAIGN_APP_ENABLED
         value: "false"
+      - key: PROJECT_Q_WALLET_VERIFICATION_ENABLED
+        value: "false"
+      - key: PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED
+        value: "false"
       - key: FAWKQ_WEBSITE_URL
         sync: false
       - key: XP_PER_SOL
