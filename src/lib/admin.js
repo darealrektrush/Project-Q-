@@ -12,6 +12,7 @@ import {
 import { buildFundingVaultText, getFundingVaultStatus } from '../campaign/funding.js';
 import { buildVerificationSourceText, getVerificationSourceStatus } from '../campaign/verificationSources.js';
 import { buildLaunchSystemText, getLaunchSystemStatus } from '../campaign/launchSystems.js';
+import { buildRehearsalReadinessText, getRehearsalReadiness } from '../campaign/rehearsal.js';
 import {
   buildActivationApprovalText,
   getActivationApprovalStatus,
@@ -164,6 +165,7 @@ export function buildAdminItemKeyboard(key) {
         [{ text: '💰 Funding & Vaults', callback_data: 'admin:funding' }],
         [{ text: '🔎 Verification Sources', callback_data: 'admin:sources' }],
         [{ text: '⚙️ Launch Systems', callback_data: 'admin:systems' }],
+        [{ text: '🧪 Rehearsal', callback_data: 'admin:rehearsal' }],
         [{ text: '🛡 Founder Approvals', callback_data: 'admin:approval' }],
       ]
     : [];
@@ -370,6 +372,21 @@ export async function handleAdminCallback(callbackQuery) {
         [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
       ] },
     });
+  }
+
+  if (action === 'rehearsal') {
+    try {
+      const status = await getRehearsalReadiness(supabase);
+      return telegram.editMessageText(chatId, messageId, buildRehearsalReadinessText(status), {
+        replyMarkup: { inline_keyboard: [
+          [{ text: '🔄 Refresh', callback_data: 'admin:rehearsal' }],
+          [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+        ] },
+      });
+    } catch (err) {
+      console.error('campaign rehearsal readiness unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Rehearsal status is unavailable. The campaign remains safely closed.', { threadId });
+    }
   }
 
   if (action === 'approval') {
