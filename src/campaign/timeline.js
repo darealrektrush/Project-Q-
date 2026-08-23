@@ -2,6 +2,8 @@ import { DEFAULT_CAMPAIGN_ID } from './service.js';
 
 const CYCLE_COUNT = 5;
 const CYCLE_MS = 48 * 60 * 60 * 1000;
+const REVIEW_MS = 72 * 60 * 60 * 1000;
+const PHASED_RELEASE_MS = 30 * 24 * 60 * 60 * 1000;
 const PACIFIC_ZONE = 'America/Vancouver';
 
 function campaignId(env = process.env) {
@@ -63,7 +65,24 @@ export function buildCampaignTimeline(startInput, now = new Date()) {
   });
 }
 
+export function buildCampaignMilestones(timeline) {
+  if (!Array.isArray(timeline) || timeline.length !== CYCLE_COUNT) {
+    throw new Error('Five campaign cycles are required to calculate milestones.');
+  }
+  const activityClosesAt = new Date(timeline[CYCLE_COUNT - 1].closesAt);
+  if (Number.isNaN(activityClosesAt.getTime())) throw new Error('The campaign timeline contains an invalid closing date.');
+  const day13ReleaseAt = new Date(activityClosesAt.getTime() + REVIEW_MS);
+  const phasedReleaseCompletesAt = new Date(day13ReleaseAt.getTime() + PHASED_RELEASE_MS);
+  return {
+    activityClosesAt: activityClosesAt.toISOString(),
+    reviewClosesAt: day13ReleaseAt.toISOString(),
+    day13ReleaseAt: day13ReleaseAt.toISOString(),
+    phasedReleaseCompletesAt: phasedReleaseCompletesAt.toISOString(),
+  };
+}
+
 export function buildCampaignTimelineText(timeline, heading = 'Bond the Duck // Timeline Preview') {
+  const milestones = buildCampaignMilestones(timeline);
   return [
     `🗓 *${heading}*`,
     '_Vancouver time • five consecutive 48-hour cycles_',
@@ -72,6 +91,12 @@ export function buildCampaignTimelineText(timeline, heading = 'Bond the Duck // 
       `*Cycle ${cycle.cycleId}*`,
       `${formatPacificDate(cycle.opensAt)} → ${formatPacificDate(cycle.closesAt)}`,
     ].join('\n')),
+    '',
+    '*Review & release milestones*',
+    `Activity closes: ${formatPacificDate(milestones.activityClosesAt)}`,
+    `Verification deadline: ${formatPacificDate(milestones.reviewClosesAt)}`,
+    `Day 13 release: ${formatPacificDate(milestones.day13ReleaseAt)}`,
+    `Phased 25% completes: ${formatPacificDate(milestones.phasedReleaseCompletesAt)}`,
   ].join('\n');
 }
 
