@@ -11,6 +11,7 @@ import {
 } from '../campaign/timeline.js';
 import { buildFundingVaultText, getFundingVaultStatus } from '../campaign/funding.js';
 import { buildVerificationSourceText, getVerificationSourceStatus } from '../campaign/verificationSources.js';
+import { buildLaunchSystemText, getLaunchSystemStatus } from '../campaign/launchSystems.js';
 import {
   buildActivationApprovalText,
   getActivationApprovalStatus,
@@ -162,6 +163,7 @@ export function buildAdminItemKeyboard(key) {
         ],
         [{ text: '💰 Funding & Vaults', callback_data: 'admin:funding' }],
         [{ text: '🔎 Verification Sources', callback_data: 'admin:sources' }],
+        [{ text: '⚙️ Launch Systems', callback_data: 'admin:systems' }],
         [{ text: '🛡 Founder Approvals', callback_data: 'admin:approval' }],
       ]
     : [];
@@ -299,6 +301,14 @@ export async function handleAdminCallback(callbackQuery) {
         replyMarkup: {
           inline_keyboard: [
             [{ text: '🔄 Refresh', callback_data: 'admin:readiness' }],
+            [
+              { text: '🗓 Timeline', callback_data: 'admin:timeline' },
+              { text: '💰 Funding', callback_data: 'admin:funding' },
+            ],
+            [
+              { text: '🔎 Sources', callback_data: 'admin:sources' },
+              { text: '⚙️ Systems', callback_data: 'admin:systems' },
+            ],
             [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
           ],
         },
@@ -350,6 +360,16 @@ export async function handleAdminCallback(callbackQuery) {
       console.error('campaign verification sources unavailable', err.message);
       return telegram.sendMessage(chatId, 'Verification-source status is unavailable. Campaign XP remains disabled.', { threadId });
     }
+  }
+
+  if (action === 'systems') {
+    const status = getLaunchSystemStatus();
+    return telegram.editMessageText(chatId, messageId, buildLaunchSystemText(status), {
+      replyMarkup: { inline_keyboard: [
+        [{ text: '🔄 Refresh', callback_data: 'admin:systems' }],
+        [{ text: '⬅️ Bond the Duck campaign', callback_data: 'admin:item:campaign' }],
+      ] },
+    });
   }
 
   if (action === 'approval') {
