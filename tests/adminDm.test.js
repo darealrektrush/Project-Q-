@@ -85,7 +85,8 @@ test('Bond the Duck content screen exposes readiness in the live admin route', (
   assert.equal(callbacks[2], 'admin:funding');
   assert.equal(callbacks[3], 'admin:sources');
   assert.equal(callbacks[4], 'admin:systems');
-  assert.equal(callbacks[5], 'admin:approval');
+  assert.equal(callbacks[5], 'admin:rehearsal');
+  assert.equal(callbacks[6], 'admin:approval');
   assert.ok(callbacks.includes('admin:item:campaign') === false);
   assert.equal(buildAdminItemKeyboard('missions').inline_keyboard[0][0].callback_data, 'admin:editbio:missions');
 });
