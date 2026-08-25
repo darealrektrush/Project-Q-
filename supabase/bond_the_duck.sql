@@ -84,7 +84,7 @@ create table if not exists wallet_challenges (
 
 create table if not exists cycles (
   campaign_id text not null references campaigns(id),
-  cycle_id integer not null check (cycle_id between 1 and 5),
+  cycle_id integer not null check (cycle_id between 1 and 7),
   opens_at timestamptz not null,
   closes_at timestamptz not null,
   cutoff_slot bigint,
@@ -101,7 +101,7 @@ create table if not exists cycles (
 create table if not exists xp_ledger (
   id bigserial primary key,
   campaign_id text not null references campaigns(id),
-  cycle_id integer not null check (cycle_id between 1 and 5),
+  cycle_id integer not null check (cycle_id between 1 and 7),
   telegram_user_id bigint not null,
   source text not null check (source in ('raid','vote','mission','event','content','onboarding','education','idea')),
   cap_bucket text not null check (cap_bucket in ('participation','mission','other')),
@@ -115,7 +115,7 @@ create table if not exists xp_ledger (
 create table if not exists campaign_raid_events (
   id bigserial primary key,
   campaign_id text not null references campaigns(id),
-  cycle_id integer check (cycle_id between 1 and 5),
+  cycle_id integer check (cycle_id between 1 and 7),
   raid_id text not null,
   action text not null check (action in ('like','retweet','reply','bookmark','quotepost')),
   x_user_id text not null,
@@ -175,7 +175,7 @@ create table if not exists allocations (
   id bigserial primary key,
   campaign_id text not null references campaigns(id),
   category text not null check (category in ('activity','buy_to_earn','diamond_duck')),
-  cycle_id integer check (cycle_id between 1 and 5),
+  cycle_id integer check (cycle_id between 1 and 7),
   telegram_user_id bigint,
   reward_wallet text not null,
   gross_base_units numeric(39,0) not null check (gross_base_units >= 0),

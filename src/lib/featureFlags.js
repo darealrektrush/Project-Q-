@@ -19,3 +19,10 @@ export function signalsEnabled(env = process.env) {
   return isEnabled(env.PROJECT_Q_SIGNALS_ENABLED);
 }
 
+export function earnToBurnEnabled(env = process.env) {
+  return isEnabled(env.PROJECT_Q_EARN_TO_BURN_ENABLED);
+}
+
+export function burnVerificationEnabled(env = process.env) {
+  return isEnabled(env.PROJECT_Q_BURN_VERIFICATION_ENABLED);
+}

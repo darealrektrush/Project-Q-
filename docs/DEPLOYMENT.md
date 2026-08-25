@@ -6,6 +6,8 @@
 | --- | --- | --- | --- |
 | Web/Telegram webhook | `project-q` | `main` | `npm start` |
 | Distribution scheduler | `project-q-distribute` | `main` | `npm run distribute` |
+| Campaign XP scheduler | `project-q-settle-campaign-xp` | `main` | `npm run settle-campaign-xp` |
+| Community Pulse scheduler | `project-q-settle-community-activity` | `main` | `npm run settle-community-activity` |
 | Signal scheduler | `project-q-signal` | `main` | `npm run post-signal` |
 
 `project-q-dev` exists as a direct Render service and is not yet represented by
@@ -30,6 +32,16 @@ Web-only/authenticated ingress:
 - `FAWKQ_WEBSITE_URL`
 - `FAWKQ_BAGWORK_URL`
 - `XP_PER_SOL`
+- `PROJECT_Q_COMMUNITY_ACTIVITY_ENABLED` — defaults to `false`
+- `PROJECT_Q_COMMUNITY_CHAT_ID`
+- `PROJECT_Q_COMMUNITY_ACTIVITY_HASH_SECRET`
+- `PROJECT_Q_ACTIVITY_EXCLUDED_TELEGRAM_IDS`
+- `FAWKQ_BOND_CAMPAIGN_POST_ID`
+- `FAWKQ_OFFICIAL_X_USER_ID`
+
+Community Pulse settlement-only:
+
+- `PROJECT_Q_COMMUNITY_ACTIVITY_SETTLEMENT_ENABLED` — defaults to `false`
 
 Distribution-only:
 

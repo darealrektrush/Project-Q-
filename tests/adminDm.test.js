@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
   isAuthorizedAdmin,
@@ -48,5 +49,17 @@ test('campaign administration follows the expected nested Bond the Duck route', 
   assert.equal(buildAdminRootKeyboard().inline_keyboard[0][0].callback_data, 'admin:campaign');
   assert.equal(buildCampaignAdminKeyboard().inline_keyboard[0][0].callback_data, 'admin:campaign:bond');
   assert.equal(buildBondAdminKeyboard().inline_keyboard[0][0].callback_data, 'admin:readiness');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[1][0].callback_data, 'admin:campaign');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[1][0].callback_data, 'admin:burn');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[2][0].callback_data, 'admin:burnflow');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[3][0].callback_data, 'admin:campaign');
+});
+
+test('founder burn callbacks remain private, flag-gated and non-signing', async () => {
+  const source = await readFile(new URL('../src/lib/admin.js', import.meta.url), 'utf8');
+  assert.match(source, /callbackQuery\.message\.chat\.type !== 'private'/);
+  assert.match(source, /!earnToBurnEnabled\(\)/);
+  assert.match(source, /workflow\.founders\.some/);
+  assert.match(source, /recordFounderDecision/);
+  assert.match(source, /approvePublicationDraft/);
+  assert.doesNotMatch(source, /attachExternalBurnSignature/);
 });

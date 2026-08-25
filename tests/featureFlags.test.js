@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  burnVerificationEnabled,
   distributionEnabled,
+  earnToBurnEnabled,
   isEnabled,
   requireEnv,
   signalsEnabled,
@@ -11,6 +13,8 @@ import {
 test('feature flags default to disabled', () => {
   assert.equal(distributionEnabled({}), false);
   assert.equal(signalsEnabled({}), false);
+  assert.equal(earnToBurnEnabled({}), false);
+  assert.equal(burnVerificationEnabled({}), false);
 });
 
 test('feature flags require an explicit true value', () => {

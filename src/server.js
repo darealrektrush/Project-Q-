@@ -14,9 +14,15 @@ import * as events from './lib/events.js';
 import * as eventsAdmin from './lib/eventsAdmin.js';
 import * as campaignUi from './campaign/ui.js';
 import * as campaignService from './campaign/service.js';
+import { closedCampaignLeaderboards, getCampaignLeaderboards } from './campaign/leaderboards.js';
+import { closedMissionEvidence, getParticipantMissionEvidence } from './campaign/missionEvidence.js';
+import * as referrals from './campaign/referrals.js';
+import * as communityActivity from './campaign/communityActivity.js';
+import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import * as walletVerification from './campaign/walletVerification.js';
+import * as earnToBurnService from './earnToBurn/service.js';
 
 const app = express();
 app.use(express.json());
@@ -29,6 +35,8 @@ const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
 const ORACLE_CAMPAIGN_SECRET = process.env.ORACLE_CAMPAIGN_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
+const READINESS_CACHE_MS = 15_000;
+let readinessCache = { value: null, expiresAt: 0, pending: null };
 
 const STUB_COMMANDS = new Set([
   '/missions',
@@ -39,14 +47,125 @@ const STUB_COMMANDS = new Set([
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
 
+app.get('/campaign-app/api/runtime', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const runtime = await campaignService.getCampaignRuntime(supabase);
+    return res.status(200).json({ ok: true, runtime });
+  } catch (err) {
+    console.error('public campaign runtime unavailable', err.message);
+    return res.status(503).json({ ok: false, error: 'campaign runtime unavailable' });
+  }
+});
+
+async function loadPublicReadiness() {
+  if (readinessCache.value && Date.now() < readinessCache.expiresAt) return readinessCache.value;
+  if (readinessCache.pending) return readinessCache.pending;
+  readinessCache.pending = campaignService.getPublicCampaignReadiness(supabase)
+    .then((value) => {
+      readinessCache = { value, expiresAt: Date.now() + READINESS_CACHE_MS, pending: null };
+      return value;
+    })
+    .catch((error) => {
+      readinessCache.pending = null;
+      throw error;
+    });
+  return readinessCache.pending;
+}
+
+app.get('/campaign-app/api/readiness', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    return res.status(200).json({ ok: true, readiness: await loadPublicReadiness() });
+  } catch (err) {
+    console.error('public campaign readiness unavailable', err.message);
+    return res.status(503).json({
+      ok: false,
+      error: 'campaign readiness unavailable',
+      readiness: campaignService.closedPublicCampaignReadiness(),
+    });
+  }
+});
+
+app.get('/campaign-app/api/burns/summary', async (req, res) => {
+  const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+  try {
+    const summary = await earnToBurnService.getEarnToBurnSummary(supabase, campaignId);
+    return res.status(200).json({ ok: true, summary });
+  } catch (err) {
+    console.error('public Earn to Burn summary unavailable', err.message);
+    return res.status(503).json({
+      ok: false,
+      error: 'burn ledger unavailable',
+      summary: earnToBurnService.closedEarnToBurnSummary(campaignId),
+    });
+  }
+});
+
+app.get('/campaign-app/api/burns/receipts/:receiptCode', async (req, res) => {
+  try {
+    const receipt = await earnToBurnService.getBurnReceipt(supabase, req.params.receiptCode);
+    if (!receipt) return res.status(404).json({ ok: false, error: 'burn receipt not found' });
+    return res.status(200).json({ ok: true, receipt });
+  } catch (err) {
+    const invalid = err.message === 'invalid burn receipt code';
+    if (!invalid) console.error('public burn receipt unavailable', err.message);
+    return res.status(invalid ? 400 : 503).json({
+      ok: false,
+      error: invalid ? 'invalid burn receipt code' : 'burn receipt unavailable',
+    });
+  }
+});
+
 app.post('/campaign-app/api/session', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
     const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
+    let referralProfile;
+    let communityProfile;
+    let xInviteStatus;
+    let leaderboards;
+    let missionEvidence;
+    try {
+      await referrals.refreshReferralQualification(supabase, session.user.id);
+      referralProfile = await referrals.getReferralProfile(supabase, session.user.id);
+    } catch (referralError) {
+      console.error('campaign referral profile unavailable', referralError.message);
+      referralProfile = referrals.closedReferralProfile();
+    }
+    try {
+      communityProfile = await communityActivity.getCommunityActivityProfile(supabase, session.user.id);
+    } catch (communityError) {
+      console.error('community activity profile unavailable', communityError.message);
+      communityProfile = communityActivity.closedCommunityActivityProfile();
+    }
+    try {
+      xInviteStatus = await xInvite.getXInviteStatus(supabase, session.user.id);
+    } catch (xInviteError) {
+      console.error('campaign X invite status unavailable', xInviteError.message);
+      xInviteStatus = xInvite.closedXInviteStatus();
+    }
+    try {
+      leaderboards = await getCampaignLeaderboards(supabase, session.user.id);
+    } catch (leaderboardError) {
+      console.error('campaign leaderboards unavailable', leaderboardError.message);
+      leaderboards = closedCampaignLeaderboards(participant.campaignState, 'Verified rankings are temporarily unavailable.');
+    }
+    try {
+      missionEvidence = await getParticipantMissionEvidence(supabase, session.user.id);
+    } catch (missionError) {
+      console.error('campaign mission evidence unavailable', missionError.message);
+      missionEvidence = closedMissionEvidence(participant.campaignState, 'Verified mission evidence is temporarily unavailable.');
+    }
     return res.status(200).json({
       ok: true,
       user: session.user,
       participant,
+      referrals: referralProfile,
+      community: communityProfile,
+      xInvite: xInviteStatus,
+      leaderboards,
+      missionEvidence,
       capabilities: {
         walletVerification: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED === 'true',
       },
@@ -174,6 +293,24 @@ app.post('/oracle/campaign-identity', async (req, res) => {
   }
 });
 
+app.post('/oracle/campaign-x-invite', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  try {
+    const event = xInvite.validateXInviteEvent(req.body, process.env);
+    const result = await xInvite.ingestXInviteEvent(supabase, event);
+    return res.status(200).json({ ok: true, event: result });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('campaign X invite ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'campaign X invite rejected',
+    });
+  }
+});
+
 async function handleUpdate(update) {
   if (update.callback_query) return handleCallbackQuery(update.callback_query);
   if (update.message) return handleMessage(update.message);
@@ -207,14 +344,24 @@ async function handleMessage(message) {
     return eventsAdmin.handleAddEventMessage(message);
   }
 
+  if (message.text) {
+    try {
+      const communityEvent = communityActivity.buildCommunityMessageEvent(message, process.env);
+      if (communityEvent) await communityActivity.ingestCommunityMessage(supabase, communityEvent);
+    } catch (err) {
+      console.error('community activity ingest failed', err.message);
+    }
+  }
+
   if (!message.text) return; // non-text, non-pending messages are ignored
 
   // Preserve the dedicated bagwork feedback deep link, then let every other
   // private command continue through the normal Project Q command router.
+  let startPayload = null;
   if (isPrivate) {
     await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
     const privateText = message.text.trim();
-    const startPayload = privateText.startsWith('/start')
+    startPayload = privateText.startsWith('/start')
       ? privateText.split(/\s+/)[1] ?? null
       : null;
 
@@ -255,6 +402,15 @@ async function handleMessage(message) {
 
   switch (command) {
     case '/start':
+      if (isPrivate && referrals.parseReferralPayload(startPayload)) {
+        try {
+          await referrals.captureReferral(supabase, startPayload, message.from.id);
+          return sendHome(chatId, threadId, { isPrivate, referralCaptured: true });
+        } catch (err) {
+          console.error('campaign referral capture rejected', err.message);
+          return sendHome(chatId, threadId, { isPrivate, referralCaptured: false });
+        }
+      }
       return sendHome(chatId, threadId, { isPrivate });
     case '/helpf':
       return sendHelp(chatId, threadId);
@@ -407,6 +563,20 @@ async function handleCallbackQuery(callbackQuery) {
         await buildOracleRaidsText(callbackQuery.from.id),
         campaignUi.buildOracleRaidsMenu()
       );
+    case `${campaignUi.MISSIONS_CALLBACK_PREFIX}:referrals`: {
+      let referralProfile;
+      try {
+        referralProfile = await referrals.getReferralProfile(supabase, callbackQuery.from.id);
+      } catch (err) {
+        console.error('campaign referral mission unavailable', err.message);
+        referralProfile = referrals.closedReferralProfile();
+      }
+      return editMenuMessage(
+        callbackQuery,
+        campaignUi.buildReferralMissionText(referralProfile),
+        campaignUi.buildMissionScreenMenu()
+      );
+    }
     case 'menu:leaderboard': {
       const { text, mediaFileId } = await getLeaderboardIntro();
       const replyMarkup = telegram.buildLeaderboardMenu();
@@ -455,7 +625,7 @@ async function buildOracleRaidsText(telegramUserId) {
 
 async function buildCampaignHomeText() {
   try {
-    return campaignUi.buildCampaignHomeText(await campaignService.getCampaignStatus(supabase));
+    return campaignUi.buildCampaignHomeText(await campaignService.getCampaignRuntime(supabase));
   } catch (err) {
     console.error('campaign status unavailable', err.message);
     return campaignUi.buildCampaignHomeText(campaignService.closedCampaignStatus());
@@ -488,11 +658,16 @@ async function renderMenu(chatId, threadId, key, defaultText, { replyMarkup } = 
   return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
 }
 
-function sendHome(chatId, threadId, { isPrivate = false } = {}) {
+function sendHome(chatId, threadId, { isPrivate = false, referralCaptured = null } = {}) {
   const privateUrl = isPrivate ? null : telegram.botDeepLink('home');
-  const defaultText = isPrivate
+  let defaultText = isPrivate
     ? '🔒 *Project Q Private Command Centre*\nUse every menu, campaign screen and community tool directly here.'
     : '👁 *FawkQ Home* — pick a section:\n\n_Recommended: open Project Q privately to keep campaign menus out of the community chat._';
+  if (referralCaptured === true) {
+    defaultText += '\n\n✅ *Referral recorded*\nComplete campaign identity, verify a post-referral FAWKQ purchase of at least USD $2, and earn your first verified XP to qualify.';
+  } else if (referralCaptured === false) {
+    defaultText += '\n\n_Referral attribution was not accepted. Existing participants, self-referrals and reused links do not create a new referral._';
+  }
   return renderMenu(chatId, threadId, 'home', defaultText, {
     replyMarkup: telegram.buildHomeMenu({ privateUrl }),
   });

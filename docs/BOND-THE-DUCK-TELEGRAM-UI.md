@@ -28,6 +28,40 @@ The `/campaign` command opens the Bond the Duck hub directly. Every leaf screen
 returns to the hub. The hub returns to Campaigns. Returning to `/start` sends a
 fresh home message so media-based home menus remain valid in Telegram.
 
+## Locked campaign schedule
+
+All operational timestamps use `America/Vancouver` for display and UTC in the
+database. The active campaign opens September 1, 2026 at 8:00 AM PT and closes
+September 15, 2026 at 8:00 AM PT: exactly 14 days divided into seven contiguous
+48-hour activity cycles. September 15–16 is the campaign-close handoff before
+the final review window.
+
+Final verification and review opens September 16 at 8:00 AM PT. September 18
+at 8:00 AM PT is the 48-hour clearance checkpoint; September 19 at 8:00 AM PT
+is the 72-hour maximum. The 50% post-review release becomes eligible only when
+final review clears: September 18 when cleared at the checkpoint, otherwise
+immediately upon clearance no later than September 19.
+
+The recurring 25% verified-activity release remains attached to each completed
+48-hour cycle. The final 25% remains five 5% installments at 6, 12, 18, 24 and
+30 days after the actual post-review release.
+
+The public Mini App runtime uses server time and reports the current calendar
+phase, cycle and next boundary. Calendar time never activates participation by
+itself: the interface shows `LAUNCH BLOCKED` unless the locked schedule is in an
+active cycle, the authoritative campaign database state is `ACTIVE`, and the
+deployment participation gate is explicitly enabled. All seven Supabase cycle
+rows must also match the locked boundaries exactly.
+The client refreshes the authoritative runtime each minute and only animates
+the intervening countdown locally.
+
+The Mini App readiness percentage is calculated from the same eleven launch
+checks used by Project Q administration. The public projection exposes only a
+whitelisted check key, human-readable label and boolean result. Registry
+values, evidence URLs, wallet addresses, founder identifiers and deployment
+credentials are never included. If the readiness service fails, the interface
+shows an unavailable state instead of retaining or inventing a percentage.
+
 ## Participant flows
 
 ### Enrollment and wallet readiness
@@ -84,9 +118,10 @@ participation cap.
 ### Rewards and appeals
 
 Rewards show preliminary/final eligibility, gross base units, manifest version,
-25% immediate, 50% Day 13, five 5% releases, payment signatures and recovery
-state. Rejections expose a privacy-safe reason, evidence deadline, resubmission
-action and appeal state.
+recurring 25% verified-activity releases, the 50% post-review release and five
+final 5% installments. They also show payment signatures and recovery state.
+Rejections expose a privacy-safe reason, evidence deadline, resubmission action
+and appeal state.
 
 ## Permission boundaries
 

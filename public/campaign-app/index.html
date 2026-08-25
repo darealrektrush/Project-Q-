@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#090b0e" />
+  <meta name="theme-color" content="#050505" />
   <title>Project Q Campaign Hub</title>
   <link rel="icon" type="image/webp" href="/campaign-app/assets/project-q-app-icon.webp" />
   <link rel="stylesheet" href="/campaign-app/styles.css" />
@@ -11,28 +11,27 @@
 </head>
 <body class="loading">
   <div id="splash" class="splash" role="status" aria-label="Project Q is loading">
-    <img src="/campaign-app/assets/project-q-splash.webp" alt="Project Q — Built Different. Signal Only." />
+    <img src="/campaign-app/assets/project-q-splash.webp" alt="Project Q — Built Different. Signal Only. Powering the FAWKQ ecosystem." />
   </div>
-  <div class="noise"></div>
+  <div class="noise" aria-hidden="true"></div>
   <div class="app-shell">
     <aside class="rail" aria-label="Primary navigation">
-      <button class="brand" data-screen="home" aria-label="Project Q home">
-        <img src="/campaign-app/assets/project-q-app-icon.webp" alt="" />
+      <button class="brand-banner" data-screen="home" aria-label="Project Q home">
+        <img src="/campaign-app/assets/project-q-horizontal-banner-v3.jpg" alt="Project Q — Identity, Participation, Distribution and Transparency" />
       </button>
       <nav id="desktop-nav"></nav>
-      <div class="rail-profile"><div class="avatar">🦆</div><span class="status-dot"></span></div>
+      <div class="rail-campaign"><span>CAMPAIGN 01</span><b id="rail-campaign-state">SYNCING</b></div>
     </aside>
 
     <main>
       <header class="topbar">
         <div class="topbar-identity">
-          <img class="horizontal-logo" src="/campaign-app/assets/project-q-horizontal-logo.webp" alt="Project Q — Built Different. Signal Only." />
-          <p class="eyebrow" id="campaign-sequence">PROJECT Q / CAMPAIGN HUB</p>
-          <h1 id="screen-title">Campaign Hub</h1>
+          <button class="compact-brand" data-screen="home" aria-label="Project Q home"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /></button>
+          <div><p class="eyebrow" id="campaign-sequence">PROJECT Q / CAMPAIGN HUB</p><h1 id="screen-title">Campaign Hub</h1></div>
         </div>
         <div class="top-actions">
-          <span class="network"><i></i> DEVNET SAFE</span>
-          <button id="wallet-button" class="wallet-button">Connect wallet</button>
+          <span class="network" id="campaign-network-state"><i></i> SYNCING</span>
+          <button id="account-control" class="account-control" aria-label="Open participant profile"><img src="/campaign-app/assets/system/q-id.webp" alt="" /><span class="account-copy"><b>Profile</b><small id="account-name">0/3 ID</small></span><i></i></button>
         </div>
       </header>
 
@@ -41,6 +40,7 @@
 
     <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav>
   </div>
+  <dialog id="mission-dialog" class="mission-dialog" aria-label="Mission details"></dialog>
   <div id="toast" class="toast" role="status"></div>
   <script type="module" src="/campaign-app/app.js"></script>
 </body>

@@ -26,7 +26,9 @@ verified as a whole**.
 
 See [Production status](docs/PRODUCTION-STATUS.md),
 [architecture](docs/ARCHITECTURE.md), and
-[deployment](docs/DEPLOYMENT.md) before release work.
+[deployment](docs/DEPLOYMENT.md) before release work. The draft reusable
+[Earn to Burn engine](docs/EARN-TO-BURN.md) has its own custody boundary and
+release checklist.
 
 ## Runtime
 

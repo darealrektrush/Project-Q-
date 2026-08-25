@@ -9,6 +9,7 @@ import {
   resolveCampaignAppUrl,
   buildParticipantStatusText,
   buildParticipantXpText,
+  buildReferralMissionText,
   buildMissionsMenu,
   buildOracleRaidsMenu,
   buildOracleRaidsText,
@@ -28,8 +29,23 @@ test('missions centre exposes Oracle raids and the other campaign lanes', () => 
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:bots`));
   assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:progress`));
   assert.ok(callbacks.includes('menu:bagwork'));
+  assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:referrals`));
+  assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:missions:community`));
   assert.equal(buildOracleRaidsMenu('@crabstar_oracle_bot').inline_keyboard[0][0].url,
     'https://t.me/crabstar_oracle_bot');
+});
+
+test('verified referral screen exposes the personal funnel without promising an unset XP amount', () => {
+  const text = buildReferralMissionText({
+    link: 'https://t.me/project_q_bot?start=ref_abcd1234efgh',
+    bonusXp: null,
+    counts: { invited: 2, qualified: 1, bonusAwarded: 0 },
+  });
+  assert.match(text, /post-referral FAWKQ purchase of at least USD \$2/);
+  assert.match(text, /Amount pending founder approval/);
+  assert.match(text, /ref_abcd1234efgh/);
+  assert.match(text, /official pinned FAWKQ campaign post/);
+  assert.match(text, /exactly three distinct people/);
 });
 
 test('Oracle raid screen reports credited and pending campaign actions', () => {
@@ -71,6 +87,9 @@ test('pre-launch campaign UI never represents the campaign as active', () => {
 
 test('live campaign and participant data render without opening unavailable actions', () => {
   assert.match(buildCampaignHomeText({ state: 'ACTIVE' }), /Status:\* ACTIVE/);
+  assert.match(buildCampaignHomeText({
+    databaseState: 'DRAFT', displayLabel: 'PRE-LAUNCH', schedule: { label: 'Campaign opens' },
+  }), /Window:\* PRE-LAUNCH[\s\S]*Next:\* Campaign opens/);
   assert.match(buildParticipantStatusText({
     enrolled: true, xLinked: true, xVerified: true, walletLinked: true,
     walletVerified: false, tokenAccountReady: false,

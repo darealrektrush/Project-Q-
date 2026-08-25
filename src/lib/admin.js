@@ -3,6 +3,21 @@ import { getMenuContent, upsertMenuContent } from './menuContent.js';
 import { supabase } from './supabase.js';
 import { getCampaignReadiness } from '../campaign/service.js';
 import { buildCampaignReadinessText } from '../campaign/ui.js';
+import { getEarnToBurnSummary } from '../earnToBurn/service.js';
+import { buildEarnToBurnAdminText } from '../earnToBurn/ui.js';
+import {
+  buildBurnProposalReview,
+  buildBurnWorkflowAdminText,
+  buildBurnWorkflowKeyboard,
+  buildPublicationDraftReview,
+} from '../earnToBurn/adminUi.js';
+import { DEFAULT_EARN_TO_BURN_PROGRAM_ID } from '../earnToBurn/service.js';
+import {
+  approvePublicationDraft,
+  getBurnWorkflowState,
+  recordFounderDecision,
+} from '../earnToBurn/workflow.js';
+import { earnToBurnEnabled } from './featureFlags.js';
 
 const EDITABLE_KEYS = [
   ['home', 'Home menu'],
@@ -100,6 +115,8 @@ export function buildBondAdminKeyboard() {
   return {
     inline_keyboard: [
       [{ text: '📋 Readiness', callback_data: 'admin:readiness' }],
+      [{ text: '🔥 Earn to Burn', callback_data: 'admin:burn' }],
+      [{ text: '🧾 Burn Workflow', callback_data: 'admin:burnflow' }],
       [{ text: '⬅️ Back to Campaigns', callback_data: 'admin:campaign' }],
     ],
   };
@@ -204,6 +221,106 @@ export async function handleAdminCallback(callbackQuery) {
     } catch (err) {
       console.error('campaign readiness unavailable', err.message);
       return telegram.sendMessage(chatId, 'Campaign readiness is unavailable. No campaign controls were changed.', { threadId });
+    }
+  }
+
+  if (action === 'burn') {
+    try {
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
+      const summary = await getEarnToBurnSummary(supabase, campaignId);
+      return telegram.editMessageText(chatId, messageId, buildEarnToBurnAdminText(summary), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '🔄 Refresh', callback_data: 'admin:burn' }],
+            [{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }],
+          ],
+        },
+      });
+    } catch (err) {
+      console.error('Earn to Burn dashboard unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Earn to Burn is unavailable. No proposal, approval or burn was changed.', { threadId });
+    }
+  }
+
+  if (action === 'burnflow') {
+    try {
+      const programId = process.env.PROJECT_Q_EARN_TO_BURN_PROGRAM_ID ?? DEFAULT_EARN_TO_BURN_PROGRAM_ID;
+      const workflow = await getBurnWorkflowState(supabase, programId);
+      const controlsEnabled = callbackQuery.message.chat.type === 'private'
+        && earnToBurnEnabled()
+        && workflow.founders.some(({ founder_user_id: founderUserId }) => String(founderUserId) === String(userId));
+      return telegram.editMessageText(chatId, messageId, buildBurnWorkflowAdminText(workflow, { controlsEnabled }), {
+        replyMarkup: buildBurnWorkflowKeyboard(workflow, { controlsEnabled }),
+      });
+    } catch (err) {
+      console.error('Earn to Burn workflow unavailable', err.message);
+      return telegram.sendMessage(chatId, 'Earn to Burn workflow is unavailable. No workflow state was changed.', { threadId });
+    }
+  }
+
+  if (['burnreview', 'burndecide', 'burnpubreview', 'burnpubapprove'].includes(action)) {
+    if (callbackQuery.message.chat.type !== 'private') {
+      return telegram.sendMessage(chatId, 'Founder burn reviews are available only in an authorized private Project Q chat.', { threadId });
+    }
+    if (!earnToBurnEnabled()) {
+      return telegram.sendMessage(chatId, 'Earn to Burn founder controls are disabled. No decision was recorded.', { threadId });
+    }
+    try {
+      const programId = process.env.PROJECT_Q_EARN_TO_BURN_PROGRAM_ID ?? DEFAULT_EARN_TO_BURN_PROGRAM_ID;
+      let workflow = await getBurnWorkflowState(supabase, programId);
+      if (!workflow.founders.some(({ founder_user_id: founderUserId }) => String(founderUserId) === String(userId))) {
+        throw new Error('founder is not configured for this burn program');
+      }
+      if (action === 'burnreview') {
+        const review = buildBurnProposalReview(workflow, arg1);
+        return telegram.editMessageText(chatId, messageId, review.text, {
+          replyMarkup: review.keyboard,
+          parseMode: 'HTML',
+        });
+      }
+      if (action === 'burndecide') {
+        const review = buildBurnProposalReview(workflow, arg1);
+        await recordFounderDecision(supabase, {
+          proposalId: review.proposal.id,
+          founderUserId: userId,
+          decision: arg2,
+          readinessHash: review.proposal.rules_hash,
+        });
+        workflow = await getBurnWorkflowState(supabase, programId);
+        return telegram.editMessageText(
+          chatId,
+          messageId,
+          `✅ *${arg2} recorded for proposal #${arg1}.*\n\n${buildBurnWorkflowAdminText(workflow, { controlsEnabled: true })}`,
+          { replyMarkup: buildBurnWorkflowKeyboard(workflow, { controlsEnabled: true }) }
+        );
+      }
+      if (action === 'burnpubreview') {
+        const review = buildPublicationDraftReview(workflow, arg1);
+        return telegram.editMessageText(chatId, messageId, review.text, {
+          replyMarkup: review.keyboard,
+          parseMode: 'HTML',
+        });
+      }
+      const review = buildPublicationDraftReview(workflow, arg1);
+      await approvePublicationDraft(supabase, {
+        draftId: review.draft.id,
+        founderUserId: userId,
+        expectedBodyHash: review.draft.body_hash,
+      });
+      workflow = await getBurnWorkflowState(supabase, programId);
+      return telegram.editMessageText(
+        chatId,
+        messageId,
+        `✅ *Exact ${review.draft.platform} draft approved.*\n\n${buildBurnWorkflowAdminText(workflow, { controlsEnabled: true })}`,
+        { replyMarkup: buildBurnWorkflowKeyboard(workflow, { controlsEnabled: true }) }
+      );
+    } catch (err) {
+      console.error('founder Earn to Burn review failed', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'This review is stale, unauthorized or no longer actionable. No decision was recorded; refresh the workflow.',
+        { threadId }
+      );
     }
   }
 

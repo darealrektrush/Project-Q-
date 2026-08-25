@@ -29,7 +29,7 @@ alter table verification_sources
 create table if not exists campaign_participation_events (
   id bigserial primary key,
   campaign_id text not null references campaigns(id),
-  cycle_id integer check (cycle_id between 1 and 5),
+  cycle_id integer check (cycle_id between 1 and 7),
   source text not null check (source in ('vote', 'event')),
   source_key text not null,
   telegram_user_id bigint not null,

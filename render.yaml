@@ -30,6 +30,24 @@ services:
         value: "false"
       - key: PROJECT_Q_WALLET_VERIFICATION_ENABLED
         value: "false"
+      - key: PROJECT_Q_EARN_TO_BURN_ENABLED
+        value: "false"
+      - key: PROJECT_Q_EARN_TO_BURN_PROGRAM_ID
+        value: fawkq-earn-to-burn
+      - key: PROJECT_Q_COMMUNITY_ACTIVITY_ENABLED
+        value: "false"
+      - key: PROJECT_Q_COMMUNITY_CHAT_ID
+        sync: false
+      - key: PROJECT_Q_COMMUNITY_ACTIVITY_HASH_SECRET
+        sync: false
+      - key: PROJECT_Q_ACTIVITY_EXCLUDED_TELEGRAM_IDS
+        sync: false
+      - key: FAWKQ_BOND_CAMPAIGN_POST_ID
+        sync: false
+      - key: FAWKQ_OFFICIAL_X_USER_ID
+        sync: false
+      - key: PROJECT_Q_BURN_VERIFICATION_ENABLED
+        value: "false"
       - key: FAWKQ_WEBSITE_URL
         sync: false
       - key: XP_PER_SOL
@@ -109,6 +127,28 @@ services:
     autoDeployTrigger: checksPass
     envVars:
       - key: PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED
+        value: "false"
+      - key: PROJECT_Q_EARN_TO_BURN_ENABLED
+        value: "false"
+      - key: PROJECT_Q_EARN_TO_BURN_PROGRAM_ID
+        value: fawkq-earn-to-burn
+      - key: BOND_THE_DUCK_CAMPAIGN_ID
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: cron
+    name: project-q-settle-community-activity
+    runtime: node
+    # 09:15 UTC is after midnight in Vancouver year-round; the job settles the prior local day.
+    schedule: "15 9 * * *"
+    buildCommand: npm ci
+    startCommand: npm run settle-community-activity
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PROJECT_Q_COMMUNITY_ACTIVITY_SETTLEMENT_ENABLED
         value: "false"
       - key: BOND_THE_DUCK_CAMPAIGN_ID
         sync: false

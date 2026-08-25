@@ -3,8 +3,8 @@
   "name": "Bond the Duck",
   "shortName": "Bond",
   "sequence": "CAMPAIGN 01",
-  "banner": "/campaign-app/assets/bond-the-duck-campaign-banner.webp",
-  "bannerAlt": "Bond the Duck campaign rewards and verified activity overview",
+  "banner": "/campaign-app/assets/bond-the-duck-campaign-hero-v4.jpg",
+  "bannerAlt": "Bond the Duck — 14-day verified campaign",
   "leaderboardIcon": "/campaign-app/assets/missions/leaderboards.webp",
   "creatorAwardsArtwork": "/campaign-app/assets/creator-awards-distribution.webp",
   "stateArtwork": {
@@ -23,30 +23,114 @@
     "fullHero": "/campaign-app/assets/identity/fully-verified-hero.webp"
   },
   "xpBadges": [
-    { "id": "xp-earned", "label": "XP Earned", "image": "/campaign-app/assets/progression/xp-earned.webp" },
-    { "id": "xp-master", "label": "XP Master", "image": "/campaign-app/assets/progression/xp-master.webp" },
-    { "id": "level-up", "label": "Level Up", "image": "/campaign-app/assets/progression/level-up.webp" },
-    { "id": "rank-up", "label": "Rank Up", "image": "/campaign-app/assets/progression/rank-up.webp" }
+    { "id": "xp-earned", "label": "XP Earned", "description": "Complete your first verified action", "image": "/campaign-app/assets/progression/xp-earned.webp" },
+    { "id": "xp-master", "label": "XP Master", "description": "Reach the published campaign XP threshold", "image": "/campaign-app/assets/progression/xp-master.webp" },
+    { "id": "level-up", "label": "Level Up", "description": "Advance through verified participation", "image": "/campaign-app/assets/progression/level-up.webp" },
+    { "id": "rank-up", "label": "Rank Up", "description": "Enter a published ranking tier", "image": "/campaign-app/assets/progression/rank-up.webp" }
   ],
   "leaderboardBadges": [
-    { "id": "top-10-percent", "label": "Top 10%", "image": "/campaign-app/assets/progression/top-10-percent.webp" },
-    { "id": "top-5-percent", "label": "Top 5%", "image": "/campaign-app/assets/progression/top-5-percent.webp" },
-    { "id": "top-1-percent", "label": "Top 1%", "image": "/campaign-app/assets/progression/top-1-percent.webp" },
-    { "id": "top-100", "label": "Elite 100", "image": "/campaign-app/assets/progression/top-100.webp" },
-    { "id": "top-10", "label": "Top 10", "image": "/campaign-app/assets/progression/top-10.webp" },
-    { "id": "champion", "label": "Champion", "image": "/campaign-app/assets/progression/champion.webp" }
+    { "id": "top-10-percent", "label": "Top 10%", "description": "Finish inside the top ten percent", "image": "/campaign-app/assets/progression/top-10-percent.webp" },
+    { "id": "top-5-percent", "label": "Top 5%", "description": "Finish inside the top five percent", "image": "/campaign-app/assets/progression/top-5-percent.webp" },
+    { "id": "top-1-percent", "label": "Top 1%", "description": "Finish inside the top one percent", "image": "/campaign-app/assets/progression/top-1-percent.webp" },
+    { "id": "top-100", "label": "Elite 100", "description": "Finish among the top 100", "image": "/campaign-app/assets/progression/top-100.webp" },
+    { "id": "top-10", "label": "Top 10", "description": "Finish among the top ten", "image": "/campaign-app/assets/progression/top-10.webp" },
+    { "id": "champion", "label": "Champion", "description": "Finish first in finalized standings", "image": "/campaign-app/assets/progression/champion.webp" }
   ],
   "status": "DRAFT",
   "statusLabel": "PRE-LAUNCH / READINESS MODE",
   "tagline": "Build reputation. Earn XP. Compete transparently.",
-  "description": "A 10-day verified participation and holder-acquisition campaign powered by Project Q and the CrabStar Oracle.",
-  "activeDays": 10,
+  "description": "A 14-day verified participation and holder-acquisition campaign powered by Project Q and the CrabStar Oracle.",
+  "activeDays": 14,
   "cycleHours": 48,
-  "readinessPercent": 42,
+  "reviewWindowHours": { "minimum": 48, "maximum": 72 },
+  "lifecycleDays": 18,
+  "schedule": {
+    "timeZone": "America/Vancouver",
+    "activeLabel": "September 1–15, 2026",
+    "activeOpensAt": "2026-09-01T15:00:00.000Z",
+    "activeClosesAt": "2026-09-15T15:00:00.000Z",
+    "reviewLabel": "September 16–19, 2026",
+    "reviewOpensAt": "2026-09-16T15:00:00.000Z",
+    "review48HourCheckpointAt": "2026-09-18T15:00:00.000Z",
+    "reviewClosesAt": "2026-09-19T15:00:00.000Z",
+    "cycles": [
+      { "cycleId": 1, "opensAt": "2026-09-01T15:00:00.000Z", "closesAt": "2026-09-03T15:00:00.000Z" },
+      { "cycleId": 2, "opensAt": "2026-09-03T15:00:00.000Z", "closesAt": "2026-09-05T15:00:00.000Z" },
+      { "cycleId": 3, "opensAt": "2026-09-05T15:00:00.000Z", "closesAt": "2026-09-07T15:00:00.000Z" },
+      { "cycleId": 4, "opensAt": "2026-09-07T15:00:00.000Z", "closesAt": "2026-09-09T15:00:00.000Z" },
+      { "cycleId": 5, "opensAt": "2026-09-09T15:00:00.000Z", "closesAt": "2026-09-11T15:00:00.000Z" },
+      { "cycleId": 6, "opensAt": "2026-09-11T15:00:00.000Z", "closesAt": "2026-09-13T15:00:00.000Z" },
+      { "cycleId": 7, "opensAt": "2026-09-13T15:00:00.000Z", "closesAt": "2026-09-15T15:00:00.000Z" }
+    ],
+    "postReviewRelease": {
+      "percent": 50,
+      "earliestAt": "2026-09-18T15:00:00.000Z",
+      "noLaterThan": "2026-09-19T15:00:00.000Z",
+      "condition": "FINAL_REVIEW_CLEARED"
+    },
+    "phasedRelease": {
+      "percent": 25,
+      "installments": 5,
+      "installmentPercent": 5,
+      "offsetDaysAfterPostReviewRelease": [6, 12, 18, 24, 30]
+    }
+  },
   "xpCaps": {
     "overallDaily": 75,
     "participationDaily": 15,
     "projectQDaily": 20
+  },
+  "earnToBurn": {
+    "status": "DRAFT",
+    "programId": "fawkq-earn-to-burn",
+    "originalReferenceSupplyBaseUnits": "1000000000000000",
+    "openingBurnBaseUnits": "15000000000000",
+    "openingBurnPercentBps": 150,
+    "openingBurnType": "CREATOR_WALLET_RESERVE",
+    "openingBurnSource": "FAWKQ_CREATOR_WALLET",
+    "openingBurnStatus": "PLANNED",
+    "additionalToCampaignAllocation": true,
+    "milestones": [],
+    "tagline": "Individual activity earns rewards. Collective activity advances transparent burn milestones."
+  },
+  "campaignCommitments": {
+    "campaignRewards": {
+      "amountBaseUnits": "15000000000000",
+      "percentBps": 150,
+      "purpose": "ALL_EXISTING_BOND_THE_DUCK_REWARDS",
+      "fundingSource": "PUBLIC_FOUNDER_WALLETS",
+      "founderContributionBaseUnits": "7500000000000",
+      "founderContributionPercentBps": 75,
+      "founderCount": 2,
+      "fundingDeadline": "BEFORE_CAMPAIGN_LAUNCH",
+      "streamflowDependent": false,
+      "requiresFullFundingBeforeLaunch": true
+    },
+    "diamondDuckBonus": {
+      "amountBaseUnits": "2500000000000",
+      "percentBps": 25,
+      "purpose": "DIAMOND_DUCK_BONUS",
+      "fundingSource": "PUBLIC_FOUNDER_STREAMFLOW_SUPPLY_AFTER_ONCHAIN_UNLOCK",
+      "founderContributionBaseUnits": "1250000000000",
+      "founderContributionPercent": 0.125,
+      "founderCount": 2,
+      "fundingWindowHoursAfterUnlock": 48,
+      "destination": "PUBLIC_SQUADS_DIAMOND_DUCK_BONUS_VAULT",
+      "requiresFullFundingBeforeBonusCalculation": true
+    },
+    "topContributorPrize": {
+      "amountLamports": "1000000000",
+      "amountSol": "1",
+      "purpose": "TOP_BOND_THE_DUCK_CONTRIBUTOR"
+    },
+    "earnToBurn": {
+      "amountBaseUnits": "15000000000000",
+      "percentBps": 150,
+      "source": "FAWKQ_CREATOR_WALLET",
+      "purpose": "ADDITIONAL_EARN_TO_BURN_RESERVE"
+    },
+    "totalTokenCommitmentBaseUnits": "32500000000000",
+    "totalTokenCommitmentPercentBps": 325
   },
   "eligibility": {
     "telegramRequired": true,
@@ -54,16 +138,102 @@
     "walletRequiredForRewards": true,
     "minimumFawkqUsd": 2
   },
+  "referrals": {
+    "status": "DRAFT",
+    "minimumPurchaseUsd": 2,
+    "bonusXp": null,
+    "requiresNewParticipant": true,
+    "requiresVerifiedIdentity": true,
+    "requiresVerifiedPostReferralPurchase": true,
+    "requiresFirstVerifiedXp": true,
+    "xInviteBonus": {
+      "status": "DRAFT",
+      "mainPostId": null,
+      "requiredDistinctMentions": 3,
+      "bonusXp": null,
+      "onePerParticipant": true
+    }
+  },
+  "communityPulse": {
+    "status": "DRAFT",
+    "timeZone": "America/Vancouver",
+    "minimumMessages": 5,
+    "minimumWindows": 3,
+    "windowMinutes": 30,
+    "minimumSpanMinutes": 120,
+    "minimumReplies": 2,
+    "baseXp": 2,
+    "rankBonuses": [6, 5, 4, 3, 2],
+    "maximumDailyXp": 8
+  },
   "releases": [
-    { "label": "Immediate", "percent": 25, "detail": "After cycle verification" },
-    { "label": "Day 13", "percent": 50, "detail": "After final campaign review" },
-    { "label": "Phased", "percent": 25, "detail": "Five releases over 30 days" }
+    { "label": "Verified activity", "percent": 25, "detail": "Recurring release after each 48-hour cycle is verified" },
+    { "label": "Post-review", "percent": 50, "detail": "September 18 if cleared at 48 hours; otherwise immediately upon clearance by September 19" },
+    { "label": "Phased", "percent": 25, "detail": "Five 5% releases at 6-day intervals across 30 days after post-review release" }
   ],
   "missions": [
-    { "id": "oracle-raids", "icon": "⚔️", "image": "/campaign-app/assets/missions/verified-raids.webp", "title": "Oracle X Raids", "description": "Verified likes, reposts, replies and quote posts.", "status": "0 / 5", "reward": "Up to 20 XP", "enabled": false },
-    { "id": "website-voting", "icon": "🗳", "image": "/campaign-app/assets/missions/listing-votes.webp", "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 18 XP", "enabled": false },
-    { "id": "trending-bots", "icon": "🤖", "image": "/campaign-app/assets/missions/bot-trending.webp", "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "enabled": false },
-    { "id": "bagwork", "icon": "💼", "image": "/campaign-app/assets/missions/bagwork.webp", "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + XP", "enabled": true },
-    { "id": "buy-to-earn", "icon": "📊", "image": "/campaign-app/assets/missions/buy-to-earn.webp", "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "enabled": false }
+    {
+      "id": "oracle-raids", "kind": "INDIVIDUAL", "icon": "⚔️", "image": "/campaign-app/assets/missions/v3-oracle-x-raids.webp",
+      "title": "Oracle X Raids", "description": "Verified likes, reposts, replies, quote posts and bookmarks.", "status": "0 / 5", "reward": "Up to 20 XP", "frequency": "Daily", "enabled": false,
+      "verification": "Oracle verifies each accepted X action. Project Q settles 4 XP per action inside the 20 XP mission cap and 75 XP overall daily cap.",
+      "requirements": ["Verified Telegram and Oracle X identity", "Enter through the official Oracle raid flow", "Pass action, timing and replay verification"],
+      "actionLabel": "Open Oracle"
+    },
+    {
+      "id": "website-voting", "kind": "INDIVIDUAL", "icon": "🗳", "image": "/campaign-app/assets/missions/v3-website-voting.webp",
+      "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 11 XP", "frequency": "Per certified source", "enabled": false,
+      "verification": "Each accepted voting source awards 1 XP. Completing every currently available source adds a one-time 2 XP bonus, subject to the shared participation and overall caps.",
+      "requirements": ["Use a source registered by Project Q", "Complete the source-specific cooldown and evidence check", "Duplicate or unavailable-source submissions do not count"],
+      "actionLabel": "View certified sources"
+    },
+    {
+      "id": "trending-bots", "kind": "INDIVIDUAL", "icon": "🤖", "image": "/campaign-app/assets/missions/v3-trending-bots.webp",
+      "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "frequency": "Daily", "enabled": false,
+      "verification": "Each accepted confirmation from a registered Telegram trending bot awards 2 XP, up to 8 XP daily and within the shared 15 XP participation cap.",
+      "requirements": ["Use one of the four registered bots", "Submit an authentic completion confirmation", "Origin, FAWKQ context, timing and uniqueness must verify"],
+      "actionLabel": "View registered bots"
+    },
+    {
+      "id": "bagwork", "kind": "INDIVIDUAL", "icon": "💼", "image": "/campaign-app/assets/missions/v3-bagwork.webp",
+      "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + approved campaign credit", "frequency": "Per approved task", "enabled": true,
+      "verification": "The Bagwork backend records creator clearance, approved submissions, the applicable measurement window and confirmed payouts.",
+      "requirements": ["Apply for clearance before creating the content", "Follow the live task brief and platform requirements", "Only confirmed Bagwork records receive payout or campaign credit"],
+      "actionLabel": "Open Bagwork"
+    },
+    {
+      "id": "buy-to-earn", "kind": "INDIVIDUAL", "icon": "📊", "image": "/campaign-app/assets/missions/v3-buy-to-earn.webp",
+      "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "frequency": "Campaign snapshot", "enabled": false,
+      "verification": "Project Q calculates finalized eligible buys minus eligible sells through approved markets. Tier 1 starts at 0.07 SOL net buy; Tier 2 starts at 0.20 SOL.",
+      "requirements": ["Verified reward wallet and FAWKQ token account", "Finalized activity through approved markets", "Transfers, OTC activity, rewards and manipulation are excluded"],
+      "actionLabel": "View my position", "readOnlyAction": true
+    },
+    {
+      "id": "participation-xp", "kind": "INDIVIDUAL", "icon": "Q", "image": "/campaign-app/assets/missions/v3-participation-xp.webp",
+      "title": "Participation XP", "description": "Settle verified campaign participation into your auditable Project Q XP record.", "status": "0 / 75", "reward": "Up to daily caps", "frequency": "Daily ledger", "enabled": false,
+      "verification": "This is the combined Project Q record—not a separate submission. Accepted missions settle into an append-only XP ledger with 15 participation, 20 mission and 75 overall XP daily caps.",
+      "requirements": ["Complete an eligible mission through its official flow", "Wait for source verification and Project Q settlement", "Pending or rejected evidence awards no XP"],
+      "actionLabel": "View XP ledger", "readOnlyAction": true
+    },
+    {
+      "id": "community-pulse", "kind": "INDIVIDUAL", "icon": "◉", "image": "/campaign-app/assets/missions/v3-community-pulse.webp",
+      "title": "Community Pulse", "description": "Earn daily XP through sustained, meaningful participation in the official FAWKQ community.", "status": "Daily", "reward": "Up to 8 XP", "frequency": "Daily", "enabled": false,
+      "verification": "Qualify with 5 useful messages across 3 separate 30-minute windows, 2 genuine replies and at least a 2-hour activity span. Daily Top 5 bonuses can raise the award from 2 XP to 8 XP.",
+      "requirements": ["Participate in the configured official FAWKQ community", "Commands, bots, repeated text and low-content messages do not count", "Project Q stores a content fingerprint rather than raw message text"],
+      "actionLabel": "View Community Pulse", "readOnlyAction": true
+    },
+    {
+      "id": "verified-referrals", "kind": "INDIVIDUAL", "icon": "↗", "image": "/campaign-app/assets/missions/v3-verified-referrals.webp",
+      "title": "Verified Referrals", "description": "Invite a new participant who verifies, buys at least $2 of FAWKQ and earns verified XP.", "status": "Draft", "reward": "Bonus XP · amount pending", "frequency": "Per qualified new participant", "enabled": false,
+      "verification": "First-touch attribution records the referral. Qualification requires a new participant, verified Telegram/X/wallet identity, a verified post-referral FAWKQ purchase of at least $2 and later positive campaign XP.",
+      "requirements": ["Share your personal opaque Project Q referral link", "The referred participant must complete every qualification stage", "Self-referrals, duplicate identities and recycled wallets do not qualify"],
+      "actionLabel": "My referral link", "readOnlyAction": true
+    },
+    {
+      "id": "earn-to-burn", "kind": "COLLECTIVE", "icon": "🔥", "image": "/campaign-app/assets/missions/v3-earn-to-burn.webp",
+      "title": "Earn to Burn", "description": "Every verified campaign XP advances shared burn milestones and public receipts.", "status": "Draft", "reward": "Collective progress", "frequency": "Campaign-wide", "enabled": false,
+      "verification": "One settled campaign XP advances one append-only collective progress unit. Only the separate 15,000,000 FAWKQ creator-wallet reserve is designated for approved milestone burns.",
+      "requirements": ["Milestone terms and rules hash must be published", "Two founders independently approve the same immutable proposal", "Every executed burn must reconcile on-chain and publish a receipt"],
+      "actionLabel": "View public ledger", "readOnlyAction": true
+    }
   ]
 }

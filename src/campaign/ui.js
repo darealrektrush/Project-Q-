@@ -60,6 +60,8 @@ export function buildMissionsMenu() {
         { text: '🤖 Trending Bots', callback_data: `${MISSIONS_CALLBACK_PREFIX}:bots` },
       ],
       [{ text: '💼 Bagwork Platform', callback_data: 'menu:bagwork' }],
+      [{ text: '◉ Community Pulse', callback_data: `${MISSIONS_CALLBACK_PREFIX}:community` }],
+      [{ text: '↗️ Verified Referrals', callback_data: `${MISSIONS_CALLBACK_PREFIX}:referrals` }],
       [{ text: '📈 My Mission Progress', callback_data: `${MISSIONS_CALLBACK_PREFIX}:progress` }],
       [{ text: '⬅️ Back to Bond the Duck', callback_data: CAMPAIGN_CALLBACK_PREFIX }],
     ],
@@ -84,14 +86,16 @@ export const MISSIONS_HOME_TEXT = [
 ].join('\n');
 
 export function buildCampaignHomeText(campaign = { state: 'DRAFT' }) {
-  const state = campaign.state ?? 'DRAFT';
+  const state = campaign.databaseState ?? campaign.state ?? 'DRAFT';
   const closed = !['ACTIVE', 'VERIFYING', 'ALLOCATIONS_FROZEN', 'DISTRIBUTING', 'COMPLETED'].includes(state);
   return [
     '🦆 *Bond the Duck*',
     '',
-    'A 10-day verified-participation and holder-acquisition campaign powered by Project Q.',
+    'A 14-day verified-participation and holder-acquisition campaign powered by Project Q.',
     '',
     `*Status:* ${state}${state === 'DRAFT' ? ' / pre-launch' : ''}`,
+    ...(campaign.displayLabel ? [`*Window:* ${campaign.displayLabel}`] : []),
+    ...(campaign.schedule?.label ? [`*Next:* ${campaign.schedule.label}`] : []),
     ...(campaign.unavailable ? ['Campaign data is not connected yet; this screen is safely closed.'] : []),
     ...(closed ? ['The campaign is not accepting enrollment, XP, buys or reward claims.'] : []),
     '',
@@ -113,14 +117,14 @@ export function buildCampaignReadinessText(readiness) {
     '',
     readiness.ready
       ? 'All readiness gates pass. Activation still requires two founder approvals.'
-      : 'Campaign remains fail-closed. Launch dates can be added after the other gates are complete.',
+      : 'Campaign remains fail-closed until every launch gate passes.',
   ].join('\n');
 }
 
 const SCREEN_TEXT = Object.freeze({
   overview: [
     '🦆 *Campaign Overview*', '',
-    '10 active days · five 48-hour cycles · 15,000,000 FAWKQ main allocation.',
+    'September 1–15 · 14 active days · seven 48-hour cycles · 15,000,000 FAWKQ main allocation.',
     '7.5M supports combined verified activity and 7.5M supports buy-to-earn.',
     '', '*Current state:* DRAFT',
   ].join('\n'),
@@ -167,14 +171,14 @@ const SCREEN_TEXT = Object.freeze({
   ].join('\n'),
   rewards: [
     '🎁 *Rewards & Releases*', '',
-    'Activity awards: 25% after verification · 50% on Day 13 · five 5% releases over 30 days.',
+    'Activity awards: recurring 25% releases after verified 48-hour cycles · 50% after review clears September 18–19 · five 5% releases over the following 30 days.',
     'This screen will show preliminary and final eligibility, allocations, payment status and recovery state.',
     '', '*Current state:* No allocation exists',
   ].join('\n'),
   rules: [
     '📜 *Rules & Eligibility*', '',
     'One Telegram · one X identity · one reward wallet.',
-    'An existing FAWKQ token account is required before cycle close. Final eligibility also requires at least USD $2 of FAWKQ at the approved Day-10 snapshot.',
+    'An existing FAWKQ token account is required before cycle close. Final eligibility also requires at least USD $2 of FAWKQ at the approved Day-14 snapshot.',
     '', '*Current state:* Final rules will be published and hashed before scheduling',
   ].join('\n'),
   treasury: [
@@ -219,6 +223,28 @@ export function buildParticipantXpText(status) {
   ].join('\n');
 }
 
+export function buildReferralMissionText(profile) {
+  const counts = profile?.counts ?? {};
+  const bonus = Number.isInteger(profile?.bonusXp) ? `${profile.bonusXp} XP` : 'Amount pending founder approval';
+  const link = profile?.link ? `\`${String(profile.link).replace(/`/g, '')}\`` : 'Unavailable until the referral database is ready.';
+  return [
+    '↗️ *Verified Referrals*', '',
+    'Invite a real participant into Bond the Duck. A link click alone earns nothing.',
+    '', '*Qualification:*',
+    '1. New participant joins through your personal link.',
+    '2. Telegram, X identity and reward wallet are verified.',
+    '3. A post-referral FAWKQ purchase of at least USD $2 is verified.',
+    '4. The participant earns their first verified campaign XP.',
+    '', `*Referral bonus:* ${bonus}`,
+    `*Invited:* ${Number(counts.invited ?? 0)} · *Qualified:* ${Number(counts.qualified ?? 0)} · *Awarded:* ${Number(counts.bonusAwarded ?? 0)}`,
+    '', '*Your personal link:*', link,
+    '', '*One-time X invite bonus:*',
+    'Reply once to the official pinned FAWKQ campaign post and mention exactly three distinct people who would genuinely be interested.',
+    'The Oracle verifies your linked X identity, the reply target and the mentions. Bonus XP amount is pending founder approval.',
+    '', '_Self-referrals, existing participants, duplicate identities, recycled wallets, unverified purchases, copied replies and repeated X entries do not qualify._',
+  ].join('\n');
+}
+
 export function buildOracleRaidsText(status) {
   if (status.unavailable) {
     return [
@@ -258,6 +284,18 @@ export function getMissionScreen(screen) {
       'Four certified Telegram bots award 2 XP each after origin, timing, FAWKQ-context and uniqueness checks.',
       '', '*Current state:* Bots not enabled',
     ].join('\n'),
+    community: [
+      '◉ *Community Pulse*', '',
+      'Earn daily XP for sustained, meaningful participation in the official FAWKQ community.',
+      '', '*Daily qualification:*',
+      '• 5 useful messages',
+      '• 3 separate 30-minute activity windows',
+      '• 2 genuine replies to other members',
+      '• 2 hours from first to last qualifying message',
+      '', '*XP:* 2 base XP when qualified, plus +6 / +5 / +4 / +3 / +2 for the daily Top 5. Maximum 8 XP per day.',
+      '', '_Commands, bots, low-content posts and repeated text do not count. Project Q stores a content fingerprint, not your message text._',
+      '', '*Current state:* Readiness mode',
+    ].join('\n'),
     other: [
       '💼 *Bagwork Platform*', '',
       'Content, education, media and contributor work runs through the existing Bagwork platform.',
@@ -265,7 +303,7 @@ export function getMissionScreen(screen) {
     ].join('\n'),
     progress: [
       '📈 *My Mission Progress*', '',
-      'Verified Oracle raids, website votes, Telegram bots and approved Bagwork records combine here.',
+      'Verified Oracle raids, website votes, Telegram bots, Community Pulse and approved Bagwork records combine here.',
       'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
       '', '*Current state:* Campaign not launched',
     ].join('\n'),
