@@ -202,7 +202,7 @@ create trigger burn_publication_guard before insert or update on public.burn_pub
 for each row execute function public.validate_burn_publication_draft();
 
 create or replace function public.reject_immutable_burn_ledger_mutation()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = pg_catalog as $$
 begin
   raise exception '% is append-only', tg_table_name;
 end;

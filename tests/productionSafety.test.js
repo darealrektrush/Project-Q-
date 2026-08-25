@@ -36,6 +36,10 @@ test('Earn to Burn migration is server-only, append-only and two-founder gated',
   }
   assert.match(migration, /revoke all on public\.earn_to_burn_programs[\s\S]+from anon, authenticated/);
   assert.match(migration, /reject_immutable_burn_ledger_mutation/);
+  assert.match(
+    migration,
+    /reject_immutable_burn_ledger_mutation\(\)[\s\S]+set search_path = pg_catalog/,
+  );
   assert.match(migration, /approval_count = 2/);
   assert.match(migration, /requires exactly two configured founders/);
   assert.match(migration, /verified burn proof identity mismatch/);
@@ -96,6 +100,9 @@ test('staged migrations cover every current Supabase foreign-key advisor finding
   const phaseOneIndexes = await read(
     'supabase/migrations/20260819053000_index_project_q_foreign_keys.sql'
   );
+  const flywheelIndexes = await read(
+    'supabase/migrations/20260825215000_index_campaign_flywheel_foreign_keys.sql'
+  );
   for (const index of [
     'bagwork_clearances_user_id_idx',
     'bagwork_feedback_user_id_idx',
@@ -108,6 +115,18 @@ test('staged migrations cover every current Supabase foreign-key advisor finding
     phaseOneSchema,
     /create index if not exists distribution_transactions_run_idx[\s\S]+distribution_transactions\(run_id\)/
   );
+  for (const index of [
+    'burn_audit_log_proposal_id_idx',
+    'burn_progress_events_campaign_id_idx',
+    'burn_proposals_campaign_id_idx',
+    'burn_receipts_campaign_id_idx',
+    'campaign_referrals_bonus_xp_ledger_id_idx',
+    'campaign_referrals_campaign_code_idx',
+    'campaign_referrals_first_xp_ledger_id_idx',
+    'campaign_x_invites_bonus_xp_ledger_id_idx',
+  ]) {
+    assert.match(flywheelIndexes, new RegExp(`create index if not exists ${index}`));
+  }
 });
 
 test('Bond the Duck participation migration remains server-only and fail-closed', async () => {
