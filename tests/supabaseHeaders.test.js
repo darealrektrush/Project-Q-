@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildHeaders } from '../src/lib/supabase.js';
+import { buildHeaders, buildStorageHeaders } from '../src/lib/supabase.js';
 
 test('new Supabase secret keys are sent only as apikey', () => {
   const headers = buildHeaders('sb_secret_example');
@@ -24,4 +24,12 @@ test('publishable keys are rejected for backend services', () => {
 
 test('header construction never includes a missing key', () => {
   assert.throws(() => buildHeaders(''), /SUPABASE_SERVICE_ROLE_KEY is not set/);
+});
+
+test('private evidence uploads preserve secret-key handling and exact image content type', () => {
+  const headers = buildStorageHeaders('sb_secret_example', 'image/webp', { 'x-upsert': 'false' });
+  assert.equal(headers.apikey, 'sb_secret_example');
+  assert.equal(headers.Authorization, undefined);
+  assert.equal(headers['Content-Type'], 'image/webp');
+  assert.equal(headers['x-upsert'], 'false');
 });

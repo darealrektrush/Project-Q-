@@ -13,6 +13,13 @@ async function call(method, payload) {
   return data.result;
 }
 
+async function callMultipart(method, form) {
+  const res = await fetch(`${API_BASE()}/${method}`, { method: 'POST', body: form });
+  const data = await res.json();
+  if (!data.ok) throw new Error(`Telegram ${method} failed: ${data.description}`);
+  return data.result;
+}
+
 export function sendMessage(chatId, text, { threadId, replyMarkup, parseMode = 'Markdown' } = {}) {
   return call('sendMessage', {
     chat_id: chatId,
@@ -32,6 +39,19 @@ export function sendPhoto(chatId, photo, caption, { threadId, replyMarkup, parse
     reply_markup: replyMarkup,
     parse_mode: parseMode,
   });
+}
+
+export function sendPhotoBytes(chatId, bytes, contentType, caption, {
+  threadId, replyMarkup, parseMode = 'Markdown', filename = 'evidence.jpg',
+} = {}) {
+  const form = new FormData();
+  form.set('chat_id', String(chatId));
+  form.set('photo', new Blob([bytes], { type: contentType }), filename);
+  form.set('caption', caption);
+  form.set('parse_mode', parseMode);
+  if (threadId) form.set('message_thread_id', String(threadId));
+  if (replyMarkup) form.set('reply_markup', JSON.stringify(replyMarkup));
+  return callMultipart('sendPhoto', form);
 }
 
 export function editMessageText(chatId, messageId, text, { replyMarkup, parseMode = 'Markdown' } = {}) {

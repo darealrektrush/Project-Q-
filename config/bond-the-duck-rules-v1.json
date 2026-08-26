@@ -1,0 +1,111 @@
+{
+  "schema": "bond-campaign-rules-v1",
+  "campaignId": "bond-the-duck-2026",
+  "rulesetVersion": 1,
+  "status": "DRAFT",
+  "schedule": {
+    "timeZone": "America/Vancouver",
+    "activeOpensAt": "2026-09-01T15:00:00.000Z",
+    "activeClosesAt": "2026-09-15T15:00:00.000Z",
+    "activeDays": 14,
+    "cycleHours": 48,
+    "cycleCount": 7,
+    "reviewOpensAt": "2026-09-16T15:00:00.000Z",
+    "review48HourCheckpointAt": "2026-09-18T15:00:00.000Z",
+    "reviewClosesAt": "2026-09-19T15:00:00.000Z"
+  },
+  "eligibility": {
+    "telegramRequired": true,
+    "oracleXRequired": true,
+    "walletRequiredForRewards": true,
+    "minimumFawkqUsd": 2
+  },
+  "xpCaps": {
+    "overallDaily": 75,
+    "participationDaily": 15,
+    "projectQDaily": 20,
+    "trendingBotsDaily": 20
+  },
+  "verificationSources": {
+    "websiteVotingCount": 9,
+    "websiteVoting": [
+      { "sourceKey": "web:geckoterminal", "name": "GeckoTerminal", "url": "https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM", "verificationMode": "AGGREGATE_ONLY", "classification": "COMMUNITY_PROGRESS_ONLY", "certificationStatus": "OBSERVED_NO_USER_RECEIPT", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:top100token", "name": "Top100Token", "url": "https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinmooner", "name": "CoinMooner", "url": "https://coinmooner.com/coins/fawk-q-fawkq", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
+      { "sourceKey": "web:gemfinder", "name": "GemFinder", "url": "https://gemfinder.cc/gem/29742", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
+      { "sourceKey": "web:coinsniper", "name": "CoinSniper", "url": "https://coinsniper.net/coin/92949", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinmun", "name": "CoinMun", "url": "https://coinmun.com/coins/fawk-q", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
+      { "sourceKey": "web:coinboom", "name": "CoinBoom", "url": "https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "NO_FREE_VOTE_OBSERVED", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinbuzzer", "name": "CoinBuzzer", "url": "https://coinbuzzer.me/coin/860", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinscope", "name": "CoinScope", "url": "https://www.coinscope.co/coin/fawkq", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false }
+    ],
+    "telegramBotFirstDailyXp": 2,
+    "telegramBotRepeatXp": 1,
+    "telegramBotDailyMaximumXp": 20,
+    "telegramPushPointPerAcceptedVote": 1,
+    "telegramBotCooldownSeconds": {
+      "@majorbuybot": 7200,
+      "@wtftrending": 3600,
+      "@trenchobot": 86400,
+      "@BBtrendingbot": 3600,
+      "@drokiatrendsbot": 3600
+    },
+    "telegramBotCooldownCertification": {
+      "@majorbuybot": "OBSERVED",
+      "@wtftrending": "OBSERVED",
+      "@trenchobot": "OBSERVED",
+      "@BBtrendingbot": "OBSERVED",
+      "@drokiatrendsbot": "OBSERVED"
+    },
+    "telegramBots": [
+      "@majorbuybot",
+      "@wtftrending",
+      "@trenchobot",
+      "@BBtrendingbot",
+      "@drokiatrendsbot"
+    ]
+  },
+  "commitments": {
+    "campaignRewardsBaseUnits": "15000000000000",
+    "campaignFounderCount": 2,
+    "campaignPerFounderBaseUnits": "7500000000000",
+    "diamondDuckBaseUnits": "2500000000000",
+    "diamondDuckPerFounderBaseUnits": "1250000000000",
+    "topContributorLamports": "1000000000",
+    "earnToBurnBaseUnits": "15000000000000",
+    "earnToBurnSource": "FAWKQ_CREATOR_WALLET",
+    "totalTokenCommitmentBaseUnits": "32500000000000"
+  },
+  "releases": {
+    "verifiedActivityPercent": 25,
+    "postReviewPercent": 50,
+    "phasedPercent": 25,
+    "phasedInstallments": 5,
+    "phasedInstallmentPercent": 5,
+    "phasedOffsetDays": [6, 12, 18, 24, 30]
+  },
+  "missions": [
+    "oracle-raids",
+    "website-voting",
+    "trending-bots",
+    "bagwork",
+    "buy-to-earn",
+    "participation-xp",
+    "community-pulse",
+    "verified-referrals",
+    "earn-to-burn"
+  ],
+  "referrals": {
+    "minimumPurchaseUsd": 2,
+    "bonusXp": null,
+    "xInviteMainPostId": null,
+    "xInviteRequiredDistinctMentions": 3,
+    "xInviteBonusXp": null
+  },
+  "earnToBurn": {
+    "programId": "fawkq-earn-to-burn",
+    "openingBurnBaseUnits": "15000000000000",
+    "openingBurnType": "CREATOR_WALLET_RESERVE",
+    "milestones": []
+  }
+}

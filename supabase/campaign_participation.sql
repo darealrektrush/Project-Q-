@@ -1,7 +1,7 @@
 -- Generic participation-mission bridge for Bond the Duck: website voting and
 -- Telegram trending-bot confirmations. Mirrors the ingest_oracle_raid_event
 -- shape (accept-then-settle, never trust the client, fail closed) but is
--- source-agnostic so each of the nine voting sites and four trending bots
+-- source-agnostic so each of the nine voting sites and five trending bots
 -- reuses one table and one RPC instead of one-off schemas per integration.
 --
 -- Unlike Oracle raids (where Oracle itself verifies the X action before
@@ -17,7 +17,7 @@
 -- can be ingested for it (see the classification check inside the RPC).
 
 -- verification_sources (defined in bond_the_duck.sql) is shared by both the
--- 9 website-voting sources and the 4 Telegram trending-bot sources, keyed
+-- 9 website-voting sources and the 5 Telegram trending-bot sources, keyed
 -- only by source_key. The vote-completion bonus in
 -- participationSettlement.js needs to know which source_keys are voting
 -- sites (as opposed to bots) to count "every currently available voting
@@ -56,9 +56,10 @@ grant usage, select on sequence campaign_participation_events_id_seq to service_
 -- Accept one already-verified participation event (a website vote or a
 -- Telegram trending-bot confirmation) into the campaign ledger. As with
 -- ingest_oracle_raid_event, this only records that a claimed action arrived;
--- it never decides XP -- that is the separate settlement pipeline
--- (src/campaign/xpSettlement.js), applying the same 15 XP/day participation
--- cap and 75 XP/day overall cap as every other campaign XP source.
+-- it never decides XP -- that is the separate settlement pipeline. Website
+-- votes use the 15 XP participation bucket. Telegram bot votes use their own
+-- 20 XP trending bucket, while every accepted bot event remains an auditable
+-- Trending Push even when no more XP can be awarded that day.
 create or replace function ingest_campaign_participation_event(
   p_campaign_id text,
   p_source text,
@@ -113,7 +114,7 @@ begin
   ) then raise exception 'campaign identity is not verified'; end if;
 
   if source_row.cooldown_seconds > 0 then
-    select max(received_at) into last_event_at from campaign_participation_events
+    select max(verified_at) into last_event_at from campaign_participation_events
       where campaign_id = p_campaign_id and source_key = p_source_key
         and telegram_user_id = p_telegram_user_id;
     if last_event_at is not null and p_verified_at < last_event_at + make_interval(secs => source_row.cooldown_seconds) then

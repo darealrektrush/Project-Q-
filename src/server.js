@@ -22,10 +22,27 @@ import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import * as walletVerification from './campaign/walletVerification.js';
+import {
+  WEBSITE_VOTE_PROFILES,
+  buildWebsiteVoteChallenge,
+  closedWebsiteVoteParticipantState,
+  getWebsiteVoteParticipantState,
+  publicWebsiteVoteAttempt,
+  startWebsiteVoteAttempt,
+} from './campaign/websiteVoteVerification.js';
+import { uploadWebsiteVoteProof } from './campaign/websiteVoteProofUpload.js';
+import {
+  TELEGRAM_TRENDING_BOT_PROFILES,
+  getTelegramTrendingReceiptSources,
+  handleTelegramTrendingReceipt,
+  isTelegramTrendingReceiptCandidate,
+  publicTelegramTrendingSource,
+} from './campaign/telegramTrendingReceipts.js';
+import { telegramTrendingReceiptsEnabled } from './lib/featureFlags.js';
 import * as earnToBurnService from './earnToBurn/service.js';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '100kb', strict: true }));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use('/campaign-app', express.static(path.join(__dirname, '..', 'public', 'campaign-app')));
@@ -126,6 +143,8 @@ app.post('/campaign-app/api/session', async (req, res) => {
     let xInviteStatus;
     let leaderboards;
     let missionEvidence;
+    let websiteVotes;
+    let telegramTrendingSources;
     try {
       await referrals.refreshReferralQualification(supabase, session.user.id);
       referralProfile = await referrals.getReferralProfile(supabase, session.user.id);
@@ -157,6 +176,28 @@ app.post('/campaign-app/api/session', async (req, res) => {
       console.error('campaign mission evidence unavailable', missionError.message);
       missionEvidence = closedMissionEvidence(participant.campaignState, 'Verified mission evidence is temporarily unavailable.');
     }
+    try {
+      websiteVotes = await getWebsiteVoteParticipantState(supabase, session.user.id);
+    } catch (websiteVoteError) {
+      console.error('website vote participant state unavailable', websiteVoteError.message);
+      websiteVotes = closedWebsiteVoteParticipantState();
+    }
+    if (telegramTrendingReceiptsEnabled(process.env)) {
+      try {
+        telegramTrendingSources = (await getTelegramTrendingReceiptSources(supabase))
+          .map(publicTelegramTrendingSource);
+      } catch (trendingError) {
+        console.error('Telegram trending source state unavailable', trendingError.message);
+      }
+    }
+    telegramTrendingSources ??= TELEGRAM_TRENDING_BOT_PROFILES.map((source) => ({
+      sourceKey: source.sourceKey,
+      handle: source.handle,
+      cooldownSeconds: source.cooldownSeconds,
+      accepting: false,
+      status: 'FEATURE_DISABLED',
+      verificationMode: null,
+    }));
     return res.status(200).json({
       ok: true,
       user: session.user,
@@ -166,8 +207,12 @@ app.post('/campaign-app/api/session', async (req, res) => {
       xInvite: xInviteStatus,
       leaderboards,
       missionEvidence,
+      websiteVotes,
+      telegramTrendingSources,
       capabilities: {
         walletVerification: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED === 'true',
+        websiteVoteReview: process.env.PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED === 'true',
+        telegramTrendingReceipts: telegramTrendingReceiptsEnabled(process.env),
       },
     });
   } catch (err) {
@@ -180,6 +225,89 @@ app.post('/campaign-app/api/session', async (req, res) => {
     });
   }
 });
+
+function websiteVoteHttpError(res, error, operation) {
+  const message = String(error?.message || '');
+  const unauthorized = message.includes('telegram init data') || message.includes('telegram user');
+  const notFound = message.includes('attempt not found') || message.includes('unknown website vote attempt');
+  const unavailable = message.startsWith('Supabase ');
+  const invalid = message.startsWith('invalid ');
+  console.error(`${operation} failed`, message);
+  return res.status(unauthorized ? 401 : notFound ? 404 : unavailable ? 503 : invalid ? 400 : 409).json({
+    ok: false,
+    error: unauthorized ? 'invalid telegram session'
+      : notFound ? 'website vote attempt not found'
+        : unavailable ? 'website vote verification unavailable'
+          : invalid ? message : 'website vote action rejected',
+  });
+}
+
+app.post('/campaign-app/api/votes/status', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const websiteVotes = await getWebsiteVoteParticipantState(supabase, session.user.id);
+    return res.status(200).json({ ok: true, websiteVotes });
+  } catch (error) {
+    return websiteVoteHttpError(res, error, 'website vote status');
+  }
+});
+
+app.post('/campaign-app/api/votes/attempts', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    await campaignService.assertCampaignParticipationEnabled(
+      supabase,
+      process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED
+    );
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const source = WEBSITE_VOTE_PROFILES.find(({ sourceKey }) => sourceKey === req.body?.sourceKey);
+    if (!source) throw new Error('unknown website vote source');
+    const { challenge, challengeHash } = buildWebsiteVoteChallenge();
+    const rows = await startWebsiteVoteAttempt(supabase, {
+      campaignId,
+      sourceKey: source.sourceKey,
+      telegramUserId: session.user.id,
+      challengeHash,
+    });
+    const attempt = publicWebsiteVoteAttempt(Array.isArray(rows) ? rows[0] : rows);
+    return res.status(201).json({
+      ok: true,
+      attempt,
+      challenge,
+      source: { sourceKey: source.sourceKey, name: source.name, url: source.url },
+    });
+  } catch (error) {
+    return websiteVoteHttpError(res, error, 'website vote attempt');
+  }
+});
+
+app.post(
+  '/campaign-app/api/votes/proof',
+  express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '2mb' }),
+  async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+      const session = validateTelegramInitData(
+        req.get('x-project-q-init-data'),
+        process.env.TELEGRAM_BOT_TOKEN
+      );
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+      const attempt = await uploadWebsiteVoteProof(supabase, {
+        campaignId,
+        telegramUserId: session.user.id,
+        attemptId: req.get('x-project-q-vote-attempt'),
+        challenge: req.get('x-project-q-vote-challenge'),
+        bytes: req.body,
+        contentType: req.get('content-type'),
+      });
+      return res.status(202).json({ ok: true, attempt });
+    } catch (error) {
+      return websiteVoteHttpError(res, error, 'website vote proof upload');
+    }
+  }
+);
 
 app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
   try {
@@ -228,7 +356,7 @@ app.get('/version', (req, res) =>
 
 app.post('/webhook', async (req, res) => {
   const header = req.get('x-telegram-bot-api-secret-token');
-  if (!TELEGRAM_WEBHOOK_SECRET || header !== TELEGRAM_WEBHOOK_SECRET) {
+  if (!oracleIngest.secretMatches(header, TELEGRAM_WEBHOOK_SECRET)) {
     return res.sendStatus(401);
   }
 
@@ -244,7 +372,7 @@ app.post('/webhook', async (req, res) => {
 
 app.post('/bagwork', async (req, res) => {
   const header = req.get('x-bagwork-secret');
-  if (!BAGWORK_SECRET || header !== BAGWORK_SECRET) {
+  if (!oracleIngest.secretMatches(header, BAGWORK_SECRET)) {
     return res.status(401).json({ error: 'unauthorized' });
   }
 
@@ -325,6 +453,41 @@ async function handleMessage(message) {
   // can finish an edit regardless of normal topic/command gating.
   if (admin.hasPendingEdit(chatId, message.from.id)) {
     return admin.handlePendingEditMessage(message);
+  }
+
+  // Participants prove trending-bot votes by forwarding the original bot
+  // completion message to Project Q in DM. Numeric origin IDs, fresh source
+  // certifications, receipt markers, cooldowns and replay protection are all
+  // enforced before an event is recorded. Never log the forwarded body.
+  if (telegramTrendingReceiptsEnabled(process.env)
+    && isTelegramTrendingReceiptCandidate(message)) {
+    try {
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID
+        ?? campaignService.DEFAULT_CAMPAIGN_ID;
+      const result = await handleTelegramTrendingReceipt(supabase, message, {
+        campaignId,
+        env: process.env,
+      });
+      if (result.contextStored) {
+        return telegram.sendMessage(
+          chatId,
+          `${telegram.escapeMarkdown(result.sourceHandle)} context saved. ` +
+            'Forward the matching completion receipt within the certified window.'
+        );
+      }
+      return telegram.sendMessage(
+        chatId,
+        `Receipt accepted for ${telegram.escapeMarkdown(result.sourceHandle)}. ` +
+          'One Trending Push was recorded; XP remains subject to settlement and daily caps.'
+      );
+    } catch (err) {
+      console.error('Telegram trending receipt rejected', String(err?.message || 'unknown error'));
+      return telegram.sendMessage(
+        chatId,
+        'Receipt not accepted. Forward a fresh completion message from a certified ' +
+          'campaign bot directly to Project Q. Screenshots and copied text are not accepted.'
+      );
+    }
   }
 
   // First-payout feedback replies arrive as a DM or a reply in fawkq-bagwork,

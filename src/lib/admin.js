@@ -3,6 +3,30 @@ import { getMenuContent, upsertMenuContent } from './menuContent.js';
 import { supabase } from './supabase.js';
 import { getCampaignReadiness } from '../campaign/service.js';
 import { buildCampaignReadinessText } from '../campaign/ui.js';
+import {
+  buildSourceCertificationAdminText,
+  getVerificationSourceCertificationState,
+} from '../campaign/sourceCertifications.js';
+import {
+  buildCampaignReadinessApprovalKeyboard,
+  buildCampaignReadinessApprovalText,
+  getCampaignReadinessApprovalStatus,
+  readinessDecisionIdempotencyKey,
+  recordCampaignReadinessDecision,
+} from '../campaign/readinessApprovals.js';
+import {
+  buildRulesGovernanceKeyboard,
+  buildRulesGovernanceText,
+  finalizeApprovedRules,
+  getCampaignRulesGovernanceState,
+  recordFinalRulesDecision,
+  rulesGovernanceIdempotencyKey,
+} from '../campaign/rulesGovernance.js';
+import {
+  decideWebsiteVoteReview,
+  getWebsiteVoteReviewEvidence,
+  getWebsiteVoteReviewQueue,
+} from '../campaign/websiteVoteReviewQueue.js';
 import { getEarnToBurnSummary } from '../earnToBurn/service.js';
 import { buildEarnToBurnAdminText } from '../earnToBurn/ui.js';
 import {
@@ -17,7 +41,12 @@ import {
   getBurnWorkflowState,
   recordFounderDecision,
 } from '../earnToBurn/workflow.js';
-import { earnToBurnEnabled } from './featureFlags.js';
+import {
+  campaignReadinessApprovalsEnabled,
+  campaignRulesGovernanceEnabled,
+  earnToBurnEnabled,
+  websiteVoteReviewEnabled,
+} from './featureFlags.js';
 
 const EDITABLE_KEYS = [
   ['home', 'Home menu'],
@@ -115,11 +144,115 @@ export function buildBondAdminKeyboard() {
   return {
     inline_keyboard: [
       [{ text: '📋 Readiness', callback_data: 'admin:readiness' }],
+      [{ text: '🛡 Source Certifications', callback_data: 'admin:sourcecerts' }],
+      [{ text: '🗳 Website Vote Reviews', callback_data: 'admin:votequeue:0' }],
+      [{ text: '🔐 Launch Approvals', callback_data: 'admin:launchapprovals' }],
+      [{ text: '📜 Final Rules', callback_data: 'admin:rulesflow' }],
       [{ text: '🔥 Earn to Burn', callback_data: 'admin:burn' }],
       [{ text: '🧾 Burn Workflow', callback_data: 'admin:burnflow' }],
       [{ text: '⬅️ Back to Campaigns', callback_data: 'admin:campaign' }],
     ],
   };
+}
+
+export function buildWebsiteVoteReviewQueueText(queue, { offset = 0, pageSize = 10 } = {}) {
+  const start = Math.max(0, Number(offset) || 0);
+  const items = queue.items.slice(start, start + pageSize);
+  const lines = [
+    '🗳 *Website Vote Review Queue*',
+    '',
+    `${queue.items.length} pending private proof${queue.items.length === 1 ? '' : 's'}`,
+    'Oldest evidence is reviewed first. Opening a proof does not approve it.',
+    '',
+  ];
+  if (!items.length) lines.push('_No website vote proofs are waiting for review._');
+  for (const item of items) {
+    const risks = item.riskFlags.length ? ` · ${item.riskFlags.length} gate${item.riskFlags.length === 1 ? '' : 's'}` : '';
+    lines.push(`*#${item.id} · ${telegram.escapeMarkdown(item.sourceName)}*`);
+    lines.push(`${telegram.escapeMarkdown(item.participantTag)} · ${item.ageMinutes ?? '—'}m waiting${risks}`);
+  }
+  lines.push('', '_Private founder review · no evidence URLs are exposed_');
+  return lines.join('\n');
+}
+
+export function buildWebsiteVoteReviewQueueKeyboard(queue, { offset = 0, pageSize = 10 } = {}) {
+  const start = Math.max(0, Number(offset) || 0);
+  const items = queue.items.slice(start, start + pageSize);
+  const rows = items.map((item) => [{
+    text: `Review #${item.id} · ${item.sourceName}`,
+    callback_data: `admin:votereview:${item.id}`,
+  }]);
+  const pagination = [];
+  if (start > 0) pagination.push({ text: '← Newer', callback_data: `admin:votequeue:${Math.max(0, start - pageSize)}` });
+  if (start + pageSize < queue.items.length) pagination.push({ text: 'Older →', callback_data: `admin:votequeue:${start + pageSize}` });
+  if (pagination.length) rows.push(pagination);
+  rows.push([{ text: '🔄 Refresh', callback_data: `admin:votequeue:${start}` }]);
+  rows.push([{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }]);
+  return { inline_keyboard: rows };
+}
+
+export function buildWebsiteVoteReviewCaption(item) {
+  const risks = item.riskFlags.length
+    ? item.riskFlags.map((flag) => `• ${flag.replaceAll('_', ' ')}`).join('\n')
+    : '• No automated gate warnings';
+  return [
+    `🗳 *Website Vote Proof #${item.id}*`,
+    '',
+    `Source: *${telegram.escapeMarkdown(item.sourceName)}*`,
+    `Participant: ${telegram.escapeMarkdown(item.participantTag)}`,
+    `Submitted: ${telegram.escapeMarkdown(item.submittedAt || 'Unavailable')}`,
+    `Waiting: ${item.ageMinutes ?? '—'} minutes`,
+    `Proof hash: \`${item.proofSha256.slice(0, 12)}…\``,
+    '',
+    '*Automated gates*',
+    risks,
+    '',
+    '_Compare the visible source, FAWKQ identity and post-vote/cooldown state before deciding._',
+  ].join('\n');
+}
+
+export function buildWebsiteVoteReviewDecisionKeyboard(item) {
+  return {
+    inline_keyboard: [
+      [{ text: '✅ Approve verified vote', callback_data: `admin:votedecide:${item.id}:a` }],
+      [
+        { text: '❌ Unclear proof', callback_data: `admin:votedecide:${item.id}:r-format` },
+        { text: '❌ Wrong source', callback_data: `admin:votedecide:${item.id}:r-source` },
+      ],
+      [
+        { text: '❌ Timing', callback_data: `admin:votedecide:${item.id}:r-timing` },
+        { text: '❌ Duplicate', callback_data: `admin:votedecide:${item.id}:r-duplicate` },
+      ],
+      [{ text: '🔒 Privacy resubmit', callback_data: `admin:votedecide:${item.id}:r-privacy` }],
+      [{ text: '⬅️ Back to queue', callback_data: 'admin:votequeue:0' }],
+    ],
+  };
+}
+
+async function getLaunchApprovalPanel(userId, chatType) {
+  const readiness = await getCampaignReadiness(supabase);
+  const status = await getCampaignReadinessApprovalStatus(supabase, {
+    campaignId: readiness.campaignId,
+    reportVersion: readiness.reportVersion,
+    reportHash: readiness.reportHash,
+    readinessReady: readiness.ready,
+    campaignState: readiness.state,
+  });
+  const controlsEnabled = chatType === 'private'
+    && campaignReadinessApprovalsEnabled()
+    && status.founders.some(({ founderUserId }) => String(founderUserId) === String(userId));
+  return { readiness, status, controlsEnabled };
+}
+
+async function getRulesGovernancePanel(userId, chatType) {
+  const state = await getCampaignRulesGovernanceState(
+    supabase,
+    process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026'
+  );
+  const controlsEnabled = chatType === 'private'
+    && campaignRulesGovernanceEnabled()
+    && state.founders.some(({ founderUserId }) => String(founderUserId) === String(userId));
+  return { state, controlsEnabled };
 }
 
 function itemKeyboard(key) {
@@ -221,6 +354,284 @@ export async function handleAdminCallback(callbackQuery) {
     } catch (err) {
       console.error('campaign readiness unavailable', err.message);
       return telegram.sendMessage(chatId, 'Campaign readiness is unavailable. No campaign controls were changed.', { threadId });
+    }
+  }
+
+  if (action === 'sourcecerts') {
+    try {
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
+      const state = await getVerificationSourceCertificationState(supabase, campaignId);
+      return telegram.editMessageText(chatId, messageId, buildSourceCertificationAdminText(state), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '🔄 Refresh', callback_data: 'admin:sourcecerts' }],
+            [{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }],
+          ],
+        },
+      });
+    } catch (err) {
+      console.error('verification source certifications unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'Verification source certifications are unavailable. No source, campaign state or reward setting was changed.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'votequeue') {
+    if (callbackQuery.message.chat.type !== 'private' || !websiteVoteReviewEnabled()) {
+      return telegram.sendMessage(
+        chatId,
+        'Website vote evidence review is available only to an authorized founder in a private Project Q chat while review controls are enabled.',
+        { threadId }
+      );
+    }
+    try {
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
+      const queue = await getWebsiteVoteReviewQueue(supabase, {
+        campaignId, reviewerUserId: userId,
+      });
+      const offset = Math.max(0, Number(arg1) || 0);
+      const text = buildWebsiteVoteReviewQueueText(queue, { offset });
+      const replyMarkup = buildWebsiteVoteReviewQueueKeyboard(queue, { offset });
+      if (callbackQuery.message.photo) {
+        return telegram.sendMessage(chatId, text, { threadId, replyMarkup });
+      }
+      return telegram.editMessageText(chatId, messageId, text, { replyMarkup });
+    } catch (err) {
+      console.error('website vote review queue unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'The private website vote queue is unavailable or unauthorized. No evidence or reward record was changed.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'votereview') {
+    if (callbackQuery.message.chat.type !== 'private' || !websiteVoteReviewEnabled()) {
+      return telegram.sendMessage(chatId, 'Private website vote review is disabled or unauthorized.', { threadId });
+    }
+    try {
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
+      const { item, evidence } = await getWebsiteVoteReviewEvidence(supabase, {
+        campaignId, reviewerUserId: userId, attemptId: arg1,
+      });
+      return telegram.sendPhotoBytes(
+        chatId,
+        evidence.bytes,
+        evidence.contentType,
+        buildWebsiteVoteReviewCaption(item),
+        {
+          threadId,
+          replyMarkup: buildWebsiteVoteReviewDecisionKeyboard(item),
+          filename: `website-vote-${item.id}.${evidence.extension}`,
+        }
+      );
+    } catch (err) {
+      console.error('website vote evidence preview unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'That proof is stale, unavailable, unauthorized or failed its integrity check. No decision was recorded.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'votedecide') {
+    if (callbackQuery.message.chat.type !== 'private' || !websiteVoteReviewEnabled()) {
+      return telegram.sendMessage(chatId, 'Private website vote review is disabled or unauthorized.', { threadId });
+    }
+    try {
+      const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026';
+      const approve = arg2 === 'a';
+      const rejectionCode = String(arg2 || '').startsWith('r-') ? String(arg2).slice(2) : null;
+      if (!approve && !rejectionCode) throw new Error('invalid website vote review decision');
+      await decideWebsiteVoteReview(supabase, {
+        campaignId,
+        reviewerUserId: userId,
+        attemptId: arg1,
+        decision: approve ? 'APPROVE' : 'REJECT',
+        rejectionCode,
+      });
+      const decisionText = approve ? 'APPROVED' : 'REJECTED';
+      const confirmation = `✅ *Website vote proof #${Number(arg1)} ${decisionText}*\n\nThe append-only review decision was recorded. XP remains subject to settlement and campaign caps.`;
+      if (callbackQuery.message.photo) {
+        await telegram.editMessageCaption(chatId, messageId, confirmation, { replyMarkup: { inline_keyboard: [] } });
+      } else {
+        await telegram.editMessageText(chatId, messageId, confirmation, { replyMarkup: { inline_keyboard: [] } });
+      }
+      const queue = await getWebsiteVoteReviewQueue(supabase, { campaignId, reviewerUserId: userId });
+      return telegram.sendMessage(chatId, buildWebsiteVoteReviewQueueText(queue), {
+        threadId,
+        replyMarkup: buildWebsiteVoteReviewQueueKeyboard(queue),
+      });
+    } catch (err) {
+      console.error('website vote review decision failed', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'This proof is stale, already decided, unauthorized or no longer actionable. No new decision was recorded.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'launchapprovals') {
+    try {
+      const { status, controlsEnabled } = await getLaunchApprovalPanel(
+        userId,
+        callbackQuery.message.chat.type
+      );
+      return telegram.editMessageText(
+        chatId,
+        messageId,
+        buildCampaignReadinessApprovalText(status),
+        {
+          replyMarkup: buildCampaignReadinessApprovalKeyboard(status, {
+            controlsEnabled,
+            viewerUserId: userId,
+          }),
+        }
+      );
+    } catch (err) {
+      console.error('campaign launch approvals unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'Campaign launch approvals are unavailable. No decision or campaign state was changed.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'launchdecision') {
+    if (callbackQuery.message.chat.type !== 'private') {
+      return telegram.sendMessage(
+        chatId,
+        'Founder launch decisions are available only in an authorized private Project Q chat.',
+        { threadId }
+      );
+    }
+    if (!campaignReadinessApprovalsEnabled()) {
+      return telegram.sendMessage(
+        chatId,
+        'Campaign launch approvals are disabled. No decision was recorded.',
+        { threadId }
+      );
+    }
+    try {
+      const { readiness, status, controlsEnabled } = await getLaunchApprovalPanel(userId, 'private');
+      if (!controlsEnabled || !status.acceptingDecisions) {
+        throw new Error('campaign readiness decision is not currently authorized');
+      }
+      const idempotencyKey = readinessDecisionIdempotencyKey({
+        callbackQueryId: callbackQuery.id,
+        campaignId: readiness.campaignId,
+        founderUserId: userId,
+      });
+      await recordCampaignReadinessDecision(supabase, {
+        campaignId: readiness.campaignId,
+        founderUserId: userId,
+        reportVersion: readiness.reportVersion,
+        reportHash: readiness.reportHash,
+        decision: arg1,
+        idempotencyKey,
+      });
+      const refreshed = await getLaunchApprovalPanel(userId, 'private');
+      return telegram.editMessageText(
+        chatId,
+        messageId,
+        buildCampaignReadinessApprovalText(refreshed.status),
+        {
+          replyMarkup: buildCampaignReadinessApprovalKeyboard(refreshed.status, {
+            controlsEnabled: refreshed.controlsEnabled,
+            viewerUserId: userId,
+          }),
+        }
+      );
+    } catch (err) {
+      console.error('campaign launch decision failed', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'This readiness report is blocked, stale, unauthorized or no longer actionable. No decision was recorded; refresh launch approvals.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'rulesflow') {
+    try {
+      const { state, controlsEnabled } = await getRulesGovernancePanel(
+        userId,
+        callbackQuery.message.chat.type
+      );
+      return telegram.editMessageText(chatId, messageId, buildRulesGovernanceText(state), {
+        replyMarkup: buildRulesGovernanceKeyboard(state, { controlsEnabled, viewerUserId: userId }),
+      });
+    } catch (err) {
+      console.error('campaign rules governance unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'Final-rules governance is unavailable. No proposal, decision or campaign setting was changed.',
+        { threadId }
+      );
+    }
+  }
+
+  if (['rulesdecide', 'rulesfinalize'].includes(action)) {
+    if (callbackQuery.message.chat.type !== 'private') {
+      return telegram.sendMessage(
+        chatId,
+        'Final-rules decisions are available only in an authorized private Project Q chat.',
+        { threadId }
+      );
+    }
+    if (!campaignRulesGovernanceEnabled()) {
+      return telegram.sendMessage(
+        chatId,
+        'Final-rules governance is disabled. No decision or campaign setting was changed.',
+        { threadId }
+      );
+    }
+    try {
+      const { state, controlsEnabled } = await getRulesGovernancePanel(userId, 'private');
+      const proposal = state.proposals.find(({ id }) => String(id) === String(arg1));
+      if (!controlsEnabled || !proposal || proposal.finalized || !proposal.semanticRulesValid) {
+        throw new Error('final rules proposal is stale or unauthorized');
+      }
+      if (action === 'rulesdecide') {
+        await recordFinalRulesDecision(supabase, {
+          proposalId: proposal.id,
+          founderUserId: userId,
+          decision: arg2,
+          idempotencyKey: rulesGovernanceIdempotencyKey({
+            action: `rules-${arg2}`,
+            callbackQueryId: callbackQuery.id,
+            campaignId: state.campaign.id,
+            founderUserId: userId,
+          }),
+        });
+      } else {
+        if (!proposal.finalizable) throw new Error('final rules do not have two current approvals');
+        await finalizeApprovedRules(supabase, {
+          proposalId: proposal.id,
+          founderUserId: userId,
+        });
+      }
+      const refreshed = await getRulesGovernancePanel(userId, 'private');
+      return telegram.editMessageText(chatId, messageId, buildRulesGovernanceText(refreshed.state), {
+        replyMarkup: buildRulesGovernanceKeyboard(refreshed.state, {
+          controlsEnabled: refreshed.controlsEnabled,
+          viewerUserId: userId,
+        }),
+      });
+    } catch (err) {
+      console.error('campaign rules governance action failed', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'This final-rules proposal is stale, blocked, unauthorized or no longer actionable. No campaign state, funding or reward setting was changed.',
+        { threadId }
+      );
     }
   }
 

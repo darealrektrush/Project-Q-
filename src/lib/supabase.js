@@ -26,6 +26,12 @@ export function buildHeaders(key, extra = {}) {
   return result;
 }
 
+export function buildStorageHeaders(key, contentType, extra = {}) {
+  const headers = buildHeaders(key, extra);
+  headers['Content-Type'] = contentType;
+  return headers;
+}
+
 async function request(path, { method = 'GET', body, prefer } = {}) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set');
@@ -46,6 +52,43 @@ async function request(path, { method = 'GET', body, prefer } = {}) {
   return res.json();
 }
 
+async function storageRequest(path, {
+  method = 'POST', body, contentType = 'application/octet-stream', jsonBody = false,
+  responseType = 'json',
+} = {}) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set');
+  }
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/${path}`, {
+    method,
+    headers: buildStorageHeaders(
+      SUPABASE_SERVICE_ROLE_KEY,
+      jsonBody ? 'application/json' : contentType,
+      jsonBody || method !== 'POST' ? {} : { 'x-upsert': 'false' }
+    ),
+    body: jsonBody ? JSON.stringify(body) : body,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase Storage ${method} failed: ${response.status} ${text}`);
+  }
+  if (response.status === 204) return null;
+  if (responseType === 'buffer') {
+    return {
+      bytes: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers.get('content-type') || 'application/octet-stream',
+    };
+  }
+  return response.json();
+}
+
+function storagePath(bucket, objectPath) {
+  const safeBucket = encodeURIComponent(String(bucket || ''));
+  const safeObject = String(objectPath || '').split('/').map(encodeURIComponent).join('/');
+  if (!safeBucket || !safeObject) throw new Error('invalid Supabase Storage path');
+  return `${safeBucket}/${safeObject}`;
+}
+
 export const supabase = {
   select: (table, query = '') => request(`${table}${query}`),
   insert: (table, rows) =>
@@ -59,4 +102,15 @@ export const supabase = {
       prefer: 'resolution=merge-duplicates,return=representation',
     }),
   rpc: (fn, args = {}) => request(`rpc/${fn}`, { method: 'POST', body: args }),
+  uploadObject: (bucket, objectPath, bytes, contentType) =>
+    storageRequest(`object/${storagePath(bucket, objectPath)}`, {
+      method: 'POST', body: bytes, contentType,
+    }),
+  removeObjects: (bucket, objectPaths) => storageRequest(`object/${encodeURIComponent(bucket)}`, {
+    method: 'DELETE', body: { prefixes: objectPaths }, jsonBody: true,
+  }),
+  downloadObject: (bucket, objectPath) =>
+    storageRequest(`object/${storagePath(bucket, objectPath)}`, {
+      method: 'GET', responseType: 'buffer',
+    }),
 };

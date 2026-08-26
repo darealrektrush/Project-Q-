@@ -104,7 +104,7 @@ create table if not exists xp_ledger (
   cycle_id integer not null check (cycle_id between 1 and 7),
   telegram_user_id bigint not null,
   source text not null check (source in ('raid','vote','mission','event','content','onboarding','education','idea')),
-  cap_bucket text not null check (cap_bucket in ('participation','mission','other')),
+  cap_bucket text not null check (cap_bucket in ('participation','mission','trending','other')),
   amount integer not null check (amount >= 0),
   mission_code text,
   idempotency_key text not null,
@@ -322,9 +322,9 @@ begin
     raise exception 'registry, source certification and public schedule evidence required';
   end if;
   if p_expected_state = 'SCHEDULED' and p_next_state = 'ACTIVE'
-     and (not (p_evidence ?& array['readinessReportHash','founderApprovals'])
+     and (not (p_evidence ?& array['readinessReportVersion','readinessReportHash','founderApprovals'])
        or (p_evidence->>'founderApprovals')::integer <> 2) then
-    raise exception 'readiness report and two founder approvals required';
+    raise exception 'versioned readiness report and two founder approvals required';
   end if;
   if p_expected_state = 'ACTIVE' and p_next_state = 'VERIFYING'
      and not (p_evidence ?& array['campaignClosedAt','cutoffSlot']) then

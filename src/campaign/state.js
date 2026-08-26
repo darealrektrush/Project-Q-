@@ -40,7 +40,7 @@ const REQUIRED_EXIT_EVIDENCE = Object.freeze({
   'DRAFT->READINESS_BLOCKED': ['rulesHash', 'rulesetVersion'],
   'READINESS_BLOCKED->FUNDED': ['fundedBaseUnits', 'expectedFundedBaseUnits', 'activationVaultBaseUnits', 'scheduledVaultBaseUnits', 'solOperationsLamports', 'vaultsVerifiedAt'],
   'FUNDED->SCHEDULED': ['registryHash', 'sourcesCertifiedAt', 'publicTimesPublishedAt'],
-  'SCHEDULED->ACTIVE': ['readinessReportHash', 'founderApprovals'],
+  'SCHEDULED->ACTIVE': ['readinessReportVersion', 'readinessReportHash', 'founderApprovals'],
   'ACTIVE->VERIFYING': ['campaignClosedAt', 'cutoffSlot'],
   'VERIFYING->ALLOCATIONS_FROZEN': ['manifestHash', 'appealsClosedAt', 'verificationCompleteAt'],
   'ALLOCATIONS_FROZEN->DISTRIBUTING': ['proposalRef', 'founderApprovals'],

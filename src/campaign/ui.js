@@ -107,11 +107,15 @@ export const CAMPAIGN_HOME_TEXT = buildCampaignHomeText();
 
 export function buildCampaignReadinessText(readiness) {
   const lines = readiness.checks.map(({ label, ready }) => `${ready ? '✅' : '🔒'} ${label}`);
+  const reportLine = /^[0-9a-f]{64}$/.test(readiness.reportHash || '')
+    ? [`*Report:* \`${readiness.reportHash}\``]
+    : ['*Report:* unavailable'];
   return [
     '🦆 *Bond the Duck // Readiness*',
     '',
     `*State:* ${readiness.state}`,
     `*Passed:* ${readiness.readyCount}/${readiness.totalCount}`,
+    ...reportLine,
     '',
     ...lines,
     '',
@@ -142,7 +146,7 @@ const SCREEN_TEXT = Object.freeze({
   xp: [
     '⚡ *My Campaign XP*', '',
     'Verified, pending and rejected campaign XP will appear here with daily-cap usage and an auditable history.',
-    'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
+    'Participation: 15/day · Trending bots: 20/day · Project Q missions: 20/day · Overall: 75/day.',
     '', '*Current state:* No campaign XP is being awarded',
   ].join('\n'),
   leaderboard: [
@@ -153,8 +157,9 @@ const SCREEN_TEXT = Object.freeze({
   ].join('\n'),
   missions: [
     '🎯 *Missions & Voting*', '',
-    'This centre will contain campaign missions, nine certified website-voting sources and four verified Telegram trending bots.',
-    'Telegram bot confirmations award 2 XP each when origin, timing and uniqueness checks pass.',
+    'This centre will contain campaign missions, nine certified website-voting sources and five verified Telegram trending bots.',
+    'First daily bot vote: 2 XP · repeat votes after certified cooldown: 1 XP · 20 bot XP/day.',
+    'Every accepted bot vote also counts as one uncapped Trending Push.',
     '', '*Current state:* Sources are not enabled',
   ].join('\n'),
   buy: [
@@ -219,7 +224,7 @@ export function buildParticipantXpText(status) {
     `*Verified total:* ${status.totalXp} XP`,
     ...cycles,
     '',
-    'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
+    'Participation: 15/day · Trending bots: 20/day · Project Q missions: 20/day · Overall: 75/day.',
   ].join('\n');
 }
 
@@ -281,7 +286,9 @@ export function getMissionScreen(screen) {
     ].join('\n'),
     bots: [
       '🤖 *Telegram Trending Bots*', '',
-      'Four certified Telegram bots award 2 XP each after origin, timing, FAWKQ-context and uniqueness checks.',
+      'Five registered Telegram bots accept repeat votes after their certified provider cooldowns.',
+      'First daily vote per bot: 2 XP · later verified votes: 1 XP · maximum 20 bot XP/day.',
+      'After the XP cap, accepted receipts still add Trending Push points and leaderboard pressure.',
       '', '*Current state:* Bots not enabled',
     ].join('\n'),
     community: [
@@ -304,7 +311,7 @@ export function getMissionScreen(screen) {
     progress: [
       '📈 *My Mission Progress*', '',
       'Verified Oracle raids, website votes, Telegram bots, Community Pulse and approved Bagwork records combine here.',
-      'Participation cap: 15/day · Project Q missions: 20/day · Overall: 75/day.',
+      'Participation: 15/day · Trending bots: 20/day · Project Q missions: 20/day · Overall: 75/day.',
       '', '*Current state:* Campaign not launched',
     ].join('\n'),
   };

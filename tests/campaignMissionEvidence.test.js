@@ -56,7 +56,7 @@ test('active mission evidence reports aggregate participant state without privat
   });
   assert.deepEqual(result.oracleRaids, { verified: 2, pending: 1, rejected: 1, target: 5 });
   assert.deepEqual(result.websiteVoting, { verified: 1, pending: 1, rejected: 0, target: 2 });
-  assert.deepEqual(result.trendingBots, { verified: 1, pending: 0, rejected: 1, target: 2 });
+  assert.deepEqual(result.trendingBots, { verified: 1, pending: 0, rejected: 1, target: 2, pushPoints: 2 });
   assert.ok(queries.find(([table, query]) => table === 'campaign_raid_events' && query.includes('2026-08-25')));
   const serialized = JSON.stringify(result);
   assert.doesNotMatch(serialized, /telegram|source_key|evidence_ref|duplicate|daily_cap_reached/);
@@ -78,5 +78,5 @@ test('closed mission evidence returns only zeroed aggregate lanes', () => {
   const result = closedMissionEvidence('ACTIVE', 'temporarily unavailable');
   assert.equal(result.available, false);
   assert.equal(result.reason, 'temporarily unavailable');
-  assert.deepEqual(result.trendingBots, { verified: 0, pending: 0, rejected: 0, target: 4 });
+  assert.deepEqual(result.trendingBots, { verified: 0, pending: 0, rejected: 0, target: 5, pushPoints: 0 });
 });

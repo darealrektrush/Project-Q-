@@ -16,6 +16,26 @@ const NAV_ICONS = {
   rewards: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v11H4zM3 6.5h18V10H3zM12 6.5V21"/><path d="M12 6.5H8.7A2.7 2.7 0 1 1 12 3.2zm0 0h3.3A2.7 2.7 0 1 0 12 3.2z"/></svg>',
 };
 
+const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
+
+const READINESS_GROUPS = [
+  {
+    id: 'foundation', label: 'Campaign foundation', number: '01',
+    description: 'Rules, funding, registry evidence, certified sources and the locked seven-cycle schedule.',
+    keys: ['rules', 'funding', 'registry', 'sources', 'dates'],
+  },
+  {
+    id: 'operations', label: 'Participation rails', number: '02',
+    description: 'The Mini App, wallet ownership flow and XP settlement worker must be explicitly enabled.',
+    keys: ['app', 'wallet', 'settlement'],
+  },
+  {
+    id: 'burn', label: 'Earn to Burn', number: '03',
+    description: 'Burn rules, the creator-wallet source, founders, milestones and on-chain verification remain separate.',
+    keys: ['burn-rules', 'burn-progress', 'burn-verification'],
+  },
+];
+
 const state = {
   screen: 'home',
   telegram: window.Telegram?.WebApp,
@@ -29,6 +49,9 @@ const state = {
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
   missionEvidence: { available: false, oracleRaids: null, websiteVoting: null, trendingBots: null },
+  websiteVotes: { available: false, enabled: false, generatedAt: null, sources: [] },
+  telegramTrendingSources: [],
+  websiteVoteFlow: null,
   referrals: {
     code: null, link: null,
     counts: { invited: 0, qualified: 0, bonusAwarded: 0 },
@@ -37,7 +60,7 @@ const state = {
   profileView: 'overview',
   activeMissionId: null,
   leaderboardView: 'overall',
-  leaderboards: { overall: [], '48h': [], missions: [], community: [], burn: [] },
+  leaderboards: { overall: [], '48h': [], missions: [], trending: [], community: [], burn: [] },
   leaderboardMeta: null,
   profile: {
     name: window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Duck Recruit',
@@ -47,7 +70,7 @@ const state = {
     tokenAccountReady: false,
     xp: 0,
     todayXp: 0,
-    todayXpByBucket: { participation: 0, mission: 0, other: 0 },
+    todayXpByBucket: { participation: 0, mission: 0, trending: 0, other: 0 },
     rank: '—',
     rankChange: null,
     percentile: 0,
@@ -61,20 +84,21 @@ const state = {
     xVerifiedAt: null,
     walletVerifiedAt: null,
     xpByCycle: [],
-    xpByBucket: { participation: 0, mission: 0, other: 0 },
+    xpByBucket: { participation: 0, mission: 0, trending: 0, other: 0 },
     buyToEarn: null,
     activity: [],
     achievements: [],
   },
   sessionStatus: 'checking',
   walletVerificationEnabled: false,
+  websiteVoteReviewEnabled: false,
 };
 
 const fallbackCampaign = {
   id: 'unavailable', name: 'Campaign Hub', shortName: 'Campaign', sequence: 'CAMPAIGN HUB',
   status: 'DISABLED', statusLabel: 'NO ACTIVE CAMPAIGN', tagline: 'Campaign data unavailable.',
   description: 'Project Q campaign records remain safely closed.',
-  xpCaps: { overallDaily: 0, participationDaily: 0, projectQDaily: 0 },
+  xpCaps: { overallDaily: 0, participationDaily: 0, projectQDaily: 0, trendingBotsDaily: 0 },
   releases: [], missions: [],
   stateArtwork: { DISABLED: '/campaign-app/assets/states/empty.webp' },
 };
@@ -173,7 +197,49 @@ function readinessDetailsMarkup() {
   const checks = available ? readiness.checks.map(({ key, label, ready }) =>
     `<article class="readiness-gate ${ready ? 'complete' : 'pending'}" data-readiness-key="${escapeHtml(key)}"><i>${ready ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${ready ? 'Verified' : 'Pending'}</b></article>`
   ).join('') : '<div class="readiness-empty"><b>No launch state is being inferred.</b><p>Project Q will retry the authoritative readiness service automatically.</p></div>';
-  return `<details class="readiness-details"><summary><span><small>Public launch gates</small><b>${escapeHtml(status)}</b></span><em>${available ? 'Review gates' : 'Retrying'}</em></summary><div class="readiness-gates">${checks}</div><footer>Read-only readiness · no activation or treasury controls</footer></details>`;
+  return `<details class="readiness-details"><summary><span><small>Public launch gates</small><b>${escapeHtml(status)}</b></span><em>${available ? 'Review gates' : 'Retrying'}</em></summary><div class="readiness-gates">${checks}</div><footer><span>Read-only readiness · no activation or treasury controls</span><button class="text-action" data-screen="readiness">Open launch status →</button></footer></details>`;
+}
+
+function readinessGroupMarkup(group, checks) {
+  const groupChecks = group.keys.map((key) => checks.find((check) => check.key === key)).filter(Boolean);
+  const complete = groupChecks.length > 0 && groupChecks.every(({ ready }) => ready);
+  const passed = groupChecks.filter(({ ready }) => ready).length;
+  return `<article class="launch-group ${complete ? 'complete' : 'pending'}"><header><span>${escapeHtml(group.number)}</span><div><small>${escapeHtml(group.id)}</small><h3>${escapeHtml(group.label)}</h3><p>${escapeHtml(group.description)}</p></div>${statePill(complete ? 'VERIFIED' : `${passed}/${groupChecks.length} READY`, complete ? 'success' : 'pending')}</header><div class="launch-gates">${groupChecks.map(({ key, label, ready }) => `<div class="${ready ? 'complete' : 'pending'}" data-readiness-key="${escapeHtml(key)}"><i>${ready ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${ready ? 'Verified' : 'Pending'}</b></div>`).join('')}</div></article>`;
+}
+
+function readinessCommitmentsMarkup(campaign) {
+  const commitments = campaign.campaignCommitments || {};
+  if (!commitments.campaignRewards) return '';
+  const rows = [
+    ['Campaign pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Funded before launch'],
+    ['Diamond Duck', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Separate post-unlock bonus'],
+    ['Top Duck', `${escapeHtml(commitments.topContributorPrize.amountSol)} SOL`, 'Top overall contributor'],
+    ['Earn to Burn', `${formatBaseUnits(commitments.earnToBurn.amountBaseUnits)} FAWKQ`, 'Separate creator-wallet reserve'],
+  ];
+  return `<section class="launch-commitments">${rows.map(([label, amount, detail]) => `<article><span>${label}</span><strong>${amount}</strong><small>${detail}</small></article>`).join('')}</section>`;
+}
+
+function readinessScreen() {
+  const c = state.campaign || fallbackCampaign;
+  const readiness = state.readiness || {};
+  const available = Boolean(readiness.available && readiness.totalCount);
+  const percent = available ? Math.max(0, Math.min(100, Number(readiness.percent || 0))) : 0;
+  const checks = Array.isArray(readiness.checks) ? readiness.checks : [];
+  const reportHash = /^[0-9a-f]{64}$/.test(readiness.reportHash || '') ? readiness.reportHash : null;
+  const launchState = readiness.ready ? 'READY FOR FOUNDER REVIEW' : available ? 'LAUNCH BLOCKED' : 'STATE UNAVAILABLE';
+  const launchTone = readiness.ready ? 'success' : 'pending';
+  const groups = available
+    ? READINESS_GROUPS.map((group) => readinessGroupMarkup(group, checks)).join('')
+    : '<section class="command-card launch-unavailable"><b>No launch state is being inferred.</b><p>Project Q will retry the authoritative readiness service. Every operational action remains disabled.</p></section>';
+  return `<section class="launch-command command-card"><div><span class="label">Campaign 01 · Launch control</span><h2>${launchState}</h2><p>${available ? `${Number(readiness.readyCount)} of ${Number(readiness.totalCount)} public gates are verified.` : 'The readiness service is unavailable.'} The campaign cannot open from this screen.</p>${statePill(launchState, launchTone)}</div><img src="/campaign-app/assets/system/q-campaigns.webp" alt="Project Q campaigns" /></section>
+  <section class="launch-progress command-card"><div><span>Public readiness</span><strong>${available ? `${percent}%` : '—'}</strong></div><div class="progress" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${available ? `aria-valuenow="${percent}"` : ''}><span style="width:${percent}%"></span></div><small>${readiness.ready ? 'All public gates verified. Two founder approvals are still required for activation.' : 'Fail-closed until every required gate passes.'}</small></section>
+  <div class="section-head compact-head"><div><span class="label">Launch sequence</span><h2>Three controlled layers</h2></div><span>Evidence-bound</span></div>
+  <section class="launch-groups">${groups}</section>
+  <div class="section-head"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
+  ${readinessCommitmentsMarkup(c)}
+  <section class="readiness-fingerprint command-card"><div><span class="label">Readiness fingerprint</span><h3>${reportHash ? 'Exact reviewed state' : 'Report unavailable'}</h3><p>${reportHash ? 'This SHA-256 fingerprint changes whenever the readiness evidence or an operational gate changes.' : 'A fingerprint appears only when Project Q can build the authoritative readiness report.'}</p></div><code>${reportHash || 'No report hash available'}</code><small>${escapeHtml(readiness.reportVersion || 'readiness report pending')}</small></section>
+  <section class="launch-safety"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><div><b>Founder approval remains outside this public screen.</b><p>Project Q may calculate, verify and publish status. It cannot activate the campaign, hold a treasury signer or execute a transfer from this interface.</p></div></section>
+  <button class="outline-action launch-back" data-screen="home">← Back to campaign home</button>`;
 }
 
 function metric(label, value, detail = '') {
@@ -260,11 +326,15 @@ function missionTelemetry(mission) {
   }[mission.id];
   if (evidence?.available && lane) {
     const target = Number(lane.target || 0);
+    const pushPoints = Number(lane.pushPoints || 0);
     return {
-      detail: target ? `${Number(lane.verified || 0)} / ${target} verified` : `${Number(lane.verified || 0)} verified`,
+      detail: mission.id === 'trending-bots'
+        ? `${pushPoints} pushes · ${Number(lane.verified || 0)} / ${target} bots`
+        : (target ? `${Number(lane.verified || 0)} / ${target} verified` : `${Number(lane.verified || 0)} verified`),
       verified: Number(lane.verified || 0),
       pending: Number(lane.pending || 0),
       rejected: Number(lane.rejected || 0),
+      pushPoints,
     };
   }
   if (mission.id === 'participation-xp') {
@@ -299,7 +369,7 @@ function missionCard(mission) {
   const tone = hasAcceptedEvidence ? 'success' : 'pending';
   const action = mission.enabled ? (mission.id === 'buy-to-earn' ? 'View' : 'Open') : 'Details';
   const evidenceLine = telemetry && ('verified' in telemetry)
-    ? `<span class="mission-evidence"><i>${Number(telemetry.verified || 0)} verified</i><i>${Number(telemetry.pending || 0)} pending</i><i class="rejected">${Number(telemetry.rejected || 0)} rejected</i></span>`
+    ? `<span class="mission-evidence"><i>${Number(telemetry.verified || 0)} verified</i>${mission.id === 'trending-bots' ? `<i>${Number(telemetry.pushPoints || 0)} pushes</i>` : ''}<i>${Number(telemetry.pending || 0)} pending</i><i class="rejected">${Number(telemetry.rejected || 0)} rejected</i></span>`
     : '';
   return `<button class="mission-card ${oracle ? 'oracle-mission' : ''} ${collective ? 'collective' : ''}" data-mission-id="${escapeHtml(mission.id)}">${visual}<span class="mission-copy"><span class="mission-title"><b>${escapeHtml(mission.title)}</b>${statePill(status, tone)}</span><small>${escapeHtml(mission.description)}</small><span class="mission-meta"><em>${escapeHtml(mission.reward)}</em><span>${escapeHtml(telemetry?.detail || mission.status)}</span></span>${evidenceLine}</span><span class="mission-action">${action}</span></button>`;
 }
@@ -340,26 +410,27 @@ function badgeGallery(badges = []) {
 function xpScreen() {
   const c = state.campaign || fallbackCampaign;
   const caps = c.xpCaps || fallbackCampaign.xpCaps;
-  const otherCap = Math.max(0, caps.overallDaily - caps.participationDaily - caps.projectQDaily);
+  const otherCap = Math.max(0, caps.overallDaily - caps.participationDaily
+    - caps.projectQDaily - caps.trendingBotsDaily);
   const today = state.profile.todayXpByBucket || {};
   const activity = state.profile.activity || [];
   return `<section class="xp-command command-card"><span class="label">Verified XP</span><strong>${Number(state.profile.xp || 0).toLocaleString()} <em>XP</em></strong><small>Today ${Number(state.profile.todayXp || 0) > 0 ? '+' : ''}${Number(state.profile.todayXp || 0)}</small><div class="xp-orbit"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" /></div></section>
-  <section class="command-card progress-panel"><div class="panel-title"><span>Daily progress</span><small>Overall cap ${Number(caps.overallDaily || 0)} XP</small></div>${progressRow('Participation', today.participation, caps.participationDaily)}${progressRow('Project Q missions', today.mission, caps.projectQDaily)}${progressRow('Other verified activity', today.other, otherCap)}</section>
+  <section class="command-card progress-panel"><div class="panel-title"><span>Daily progress</span><small>Overall cap ${Number(caps.overallDaily || 0)} XP</small></div>${progressRow('Participation', today.participation, caps.participationDaily)}${progressRow('Trending bots', today.trending, caps.trendingBotsDaily)}${progressRow('Project Q missions', today.mission, caps.projectQDaily)}${progressRow('Other verified activity', today.other, otherCap)}</section>
   ${communityPulsePanel()}
   <div class="section-head compact-head"><div><span class="label">XP ledger</span><h2>Auditable participation</h2></div><span>Source · status · time</span></div>
   <section class="ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>No verified activity yet</b><p>Each action appears here only after its source is verified and XP is settled.</p></div>'}</section>
   <div class="section-head"><div><span class="label">Achievements</span><h2>Campaign progression</h2></div><span>Calculated from verified records</span></div>${badgeGallery(c.xpBadges)}`;
 }
 
-function leaderboardRow(row, index) {
+function leaderboardRow(row, index, unit = 'XP') {
   const isUser = Boolean(row.isUser) || String(row.name) === String(state.profile.name);
-  return `<article class="leaderboard-row ${isUser ? 'you' : ''}"><span>${String(row.rank || index + 1).padStart(2, '0')}</span><div><b>${isUser ? 'YOU' : escapeHtml(row.name)}</b><small>${escapeHtml(row.detail || 'Verified participant')}</small></div><strong>${Number(row.xp || 0).toLocaleString()} XP</strong></article>`;
+  return `<article class="leaderboard-row ${isUser ? 'you' : ''}"><span>${String(row.rank || index + 1).padStart(2, '0')}</span><div><b>${isUser ? 'YOU' : escapeHtml(row.name)}</b><small>${escapeHtml(row.detail || 'Verified participant')}</small></div><strong>${Number(row.xp || 0).toLocaleString()} ${escapeHtml(unit)}</strong></article>`;
 }
 
 function leaderboardScreen() {
   const c = state.campaign || fallbackCampaign;
   const rows = state.leaderboards[state.leaderboardView] || [];
-  const tabs = [['overall', 'Overall'], ['48h', '48H'], ['missions', 'Missions'], ['community', 'Community'], ['burn', 'Earn-to-Burn']];
+  const tabs = [['overall', 'Overall'], ['48h', '48H'], ['missions', 'Missions'], ['trending', 'Trending'], ['community', 'Community'], ['burn', 'Earn-to-Burn']];
   const view = state.leaderboardMeta?.[state.leaderboardView];
   const change = Number(state.profile.rankChange || 0);
   const rankDetail = view?.available ? `${Number(view.participantCount || 0).toLocaleString()} verified participants` : 'Finalized verified standings';
@@ -368,7 +439,7 @@ function leaderboardScreen() {
   const mode = state.leaderboardMeta?.available ? 'VERIFIED RECORDS' : 'READINESS MODE';
   return `<section class="rank-command command-card"><div><span class="label">Your rank</span><strong>${escapeHtml(state.profile.rank)}</strong><small>${change ? `${change > 0 ? '↑' : '↓'} ${Math.abs(change)} today` : rankDetail}</small></div><img src="/campaign-app/assets/system/q-signal.webp" alt="" /></section>
   <div class="tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.leaderboardView === id ? 'active' : ''}" data-leaderboard-view="${id}" role="tab" aria-selected="${state.leaderboardView === id}">${label}</button>`).join('')}</div>
-  <section class="leaderboard-list">${rows.length ? rows.map(leaderboardRow).join('') : `<div class="empty compact"><b>${escapeHtml(emptyTitle)}</b><p>${escapeHtml(emptyDetail)}</p></div>`}</section>
+  <section class="leaderboard-list">${rows.length ? rows.map((row, index) => leaderboardRow(row, index, view?.unit || 'XP')).join('') : `<div class="empty compact"><b>${escapeHtml(emptyTitle)}</b><p>${escapeHtml(emptyDetail)}</p></div>`}</section>
   <div class="leaderboard-clock"><span>Leaderboard updates after finalized verification</span><b>${mode}</b></div>
   <div class="section-head"><div><span class="label">Rank achievements</span><h2>Performance badges</h2></div><span>Finalized standings only</span></div>${badgeGallery(c.leaderboardBadges)}`;
 }
@@ -569,6 +640,7 @@ const screens = {
   rewards: rewardsScreen,
   burns: burnsScreen,
   profile: profileScreen,
+  readiness: readinessScreen,
 };
 
 function toast(message) {
@@ -581,7 +653,7 @@ function toast(message) {
 function render() {
   const c = state.campaign || fallbackCampaign;
   const navTitle = NAV.find(([id]) => id === state.screen)?.[2];
-  const screenTitle = state.screen === 'home' ? 'Project Q' : (navTitle || (state.screen === 'profile' ? 'Profile' : state.screen === 'burns' ? 'Earn to Burn' : c.name));
+  const screenTitle = state.screen === 'home' ? 'Project Q' : (navTitle || (state.screen === 'profile' ? 'Profile' : state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
   document.querySelector('#desktop-nav').innerHTML = navMarkup();
   document.querySelector('#mobile-nav').innerHTML = navMarkup();
   document.querySelector('#screen').innerHTML = screens[state.screen]();
@@ -663,20 +735,238 @@ function openExternal(url) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+function websiteVoteSourceState(sourceKey) {
+  return state.websiteVotes?.sources?.find((source) => source.sourceKey === sourceKey) || null;
+}
+
+function websiteVoteStatusCopy(source) {
+  if (!source) return 'Readiness status unavailable';
+  if (source.status === 'AVAILABLE') return 'Verified flow available · 1 XP';
+  if (source.status === 'IN_PROGRESS') return 'Vote attempt in progress';
+  if (source.status === 'PENDING_REVIEW') return 'Proof submitted · review pending';
+  if (source.status === 'ON_COOLDOWN') return `Next vote ${formatProfileDate(source.nextAvailableAt)}`;
+  if (source.status === 'COMMUNITY_ONLY') return 'Community signal only · no individual XP';
+  if (source.status === 'PENDING_CERTIFICATION') return 'Source certification pending · no XP';
+  return 'Source unavailable · no XP';
+}
+
+function websiteVoteFlowMarkup() {
+  const flow = state.websiteVoteFlow;
+  if (!flow?.attempt || !flow?.source) return '';
+  const code = String(flow.challenge || '').slice(0, 12).toUpperCase();
+  return `<section class="vote-proof-flow" aria-label="Website vote proof">
+    <header><span><small>Active proof attempt</small><b>${escapeHtml(flow.source.name)}</b></span>${statePill('15 MINUTES', 'pending')}</header>
+    <div class="vote-proof-code"><span>Project Q proof code</span><strong>${escapeHtml(code)}</strong><small>Keep this screen open. The full challenge stays only in this session.</small></div>
+    <ol><li>Complete the vote on the official FAWKQ page.</li><li>Capture the post-vote or cooldown state with the source and FAWKQ visible.</li><li>Return here and submit the original screenshot.</li></ol>
+    <div class="vote-proof-expiry"><span>Attempt expires</span><b data-countdown data-target-at="${escapeHtml(flow.attempt.expiresAt || '')}">${escapeHtml(formatCountdown(flow.attempt.expiresAt))}</b></div>
+    <label class="vote-proof-picker"><input id="website-vote-proof-file" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" /><span><b>Select screenshot</b><small>JPG, PNG or WebP · maximum 2 MB</small></span><i>＋</i></label>
+    <button id="website-vote-proof-submit" class="gold-action compact" type="button" disabled><span><b>Submit private proof</b><small>Project Q verification required before XP</small></span><i>→</i></button>
+    <small class="vote-proof-privacy">Crop unrelated notifications, balances and private messages. Evidence is stored privately and is never published in the participant interface.</small>
+  </section>`;
+}
+
+function storeWebsiteVoteFlow(flow) {
+  try {
+    if (flow) window.sessionStorage?.setItem(WEBSITE_VOTE_FLOW_SESSION_KEY, JSON.stringify(flow));
+    else window.sessionStorage?.removeItem(WEBSITE_VOTE_FLOW_SESSION_KEY);
+  } catch { /* tab-only recovery is optional */ }
+}
+
+function restoreWebsiteVoteFlow() {
+  try {
+    const flow = JSON.parse(window.sessionStorage?.getItem(WEBSITE_VOTE_FLOW_SESSION_KEY) || 'null');
+    const expiresAt = new Date(flow?.attempt?.expiresAt).getTime();
+    const sourceKnown = state.websiteVotes?.sources?.some(({ sourceKey }) => sourceKey === flow?.source?.sourceKey);
+    if (!flow?.attempt?.id || !/^[0-9a-f]{64}$/.test(flow?.challenge || '')
+      || !sourceKnown || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      storeWebsiteVoteFlow(null);
+      return;
+    }
+    state.websiteVoteFlow = flow;
+  } catch {
+    storeWebsiteVoteFlow(null);
+  }
+}
+
+async function refreshWebsiteVoteState() {
+  const initData = state.telegram?.initData;
+  if (!initData) return false;
+  const response = await fetch('/campaign-app/api/votes/status', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData }),
+  });
+  if (!response.ok) return false;
+  const payload = await response.json();
+  state.websiteVotes = payload.websiteVotes || state.websiteVotes;
+  return true;
+}
+
+function bindMissionDialog(dialog, missionId) {
+  dialog.querySelector('[data-mission-action]')?.addEventListener('click', () => executeMissionAction(missionId));
+  dialog.querySelectorAll('[data-vote-source-key]').forEach((button) => {
+    button.addEventListener('click', () => startWebsiteVote(button.dataset.voteSourceKey));
+  });
+  const picker = dialog.querySelector('#website-vote-proof-file');
+  const submit = dialog.querySelector('#website-vote-proof-submit');
+  if (picker && submit) {
+    picker.addEventListener('change', () => {
+      const file = picker.files?.[0];
+      submit.disabled = !file;
+      picker.closest('label')?.classList.toggle('selected', Boolean(file));
+      if (file) picker.nextElementSibling.querySelector('b').textContent = file.name;
+    });
+    submit.addEventListener('click', () => submitWebsiteVoteProofFile(picker.files?.[0], submit));
+  }
+}
+
+function refreshOpenMission() {
+  const dialog = document.querySelector('#mission-dialog');
+  const mission = state.campaign?.missions?.find(({ id }) => id === state.activeMissionId);
+  if (!dialog || !mission) return;
+  dialog.innerHTML = missionDetailMarkup(mission);
+  bindMissionDialog(dialog, mission.id);
+  updateCountdownLabels();
+}
+
+async function startWebsiteVote(sourceKey) {
+  const initData = state.telegram?.initData;
+  if (!initData) { toast('Open Project Q inside Telegram to start verified voting.'); return; }
+  try {
+    const response = await fetch('/campaign-app/api/votes/attempts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData, sourceKey }),
+    });
+    if (!response.ok) throw new Error('attempt rejected');
+    const payload = await response.json();
+    state.websiteVoteFlow = {
+      attempt: payload.attempt,
+      challenge: payload.challenge,
+      source: payload.source,
+    };
+    storeWebsiteVoteFlow(state.websiteVoteFlow);
+    const source = websiteVoteSourceState(sourceKey);
+    if (source) {
+      source.status = 'IN_PROGRESS';
+      source.attempt = payload.attempt;
+    }
+    refreshOpenMission();
+    openExternal(payload.source.url);
+    toast(`Vote attempt started for ${payload.source.name}. Return with the screenshot.`);
+  } catch {
+    await refreshWebsiteVoteState().catch(() => false);
+    refreshOpenMission();
+    toast('That voting source is unavailable, uncertified or still on cooldown.');
+  }
+}
+
+async function submitWebsiteVoteProofFile(file, button) {
+  const flow = state.websiteVoteFlow;
+  const initData = state.telegram?.initData;
+  if (!flow?.attempt || !flow.challenge || !initData || !file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+    toast('Use an original JPG, PNG or WebP screenshot under 2 MB.');
+    return;
+  }
+  button.disabled = true;
+  button.classList.add('loading-action');
+  try {
+    const response = await fetch('/campaign-app/api/votes/proof', {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type,
+        'x-project-q-init-data': initData,
+        'x-project-q-vote-attempt': String(flow.attempt.id),
+        'x-project-q-vote-challenge': flow.challenge,
+      },
+      body: file,
+    });
+    if (!response.ok) throw new Error('proof rejected');
+    state.websiteVoteFlow = null;
+    storeWebsiteVoteFlow(null);
+    await refreshWebsiteVoteState();
+    refreshOpenMission();
+    toast('Proof submitted privately. Project Q review is pending.');
+  } catch {
+    button.disabled = false;
+    button.classList.remove('loading-action');
+    toast('Proof was not accepted. Check the attempt timer and image format.');
+  }
+}
+
 function missionDetailMarkup(mission) {
   const telemetry = missionTelemetry(mission);
   const actionEnabled = Boolean(mission.enabled || mission.readOnlyAction);
+  const footerActionEnabled = actionEnabled && mission.id !== 'website-voting';
   const requirements = Array.isArray(mission.requirements) ? mission.requirements : [];
+  const sourceConfig = state.campaign?.verificationSources || {};
+  const configuredSources = mission.id === 'website-voting'
+    ? (Array.isArray(sourceConfig.websiteVoting) ? sourceConfig.websiteVoting : [])
+    : mission.id === 'trending-bots' && Array.isArray(sourceConfig.telegramBots)
+      ? sourceConfig.telegramBots.map((name) => ({
+        sourceKey: `telegram:${String(name).replace(/^@/, '').toLowerCase()}`,
+        name,
+        url: `https://t.me/${String(name).replace(/^@/, '')}`,
+        cooldownSeconds: Number(sourceConfig.telegramBotCooldownSeconds?.[name] || 0),
+        cooldownCertification: sourceConfig.telegramBotCooldownCertification?.[name] || 'PENDING_EXACT',
+      }))
+      : [];
+  const sourceList = configuredSources.length
+    ? `<section class="mission-rule-block"><span class="label">Registered sources</span><div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, certificationStatus, individualXpEligible }) => {
+      let safeUrl = null;
+      try {
+        const candidate = new URL(String(url || ''));
+        if (candidate.protocol === 'https:') safeUrl = candidate.href;
+      } catch { /* invalid targets remain visibly unavailable */ }
+      const cooldown = cooldownCertification === 'PENDING_EXACT'
+        ? 'Exact cooldown pending certification'
+        : cooldownSeconds >= 3600
+          ? `${cooldownSeconds / 3600}-hour cooldown`
+          : 'Cooldown verified at action time';
+      const websiteState = verificationMode === 'SCREENSHOT_REVIEW'
+        ? 'Nonce-bound proof review'
+        : verificationMode === 'AGGREGATE_ONLY'
+          ? 'Community signal only · no individual XP'
+          : verificationMode === 'PENDING_LIVE_TEST'
+            ? 'Live certification pending · no XP'
+            : verificationMode === 'SOURCE_UNAVAILABLE'
+              ? `${String(certificationStatus || 'Unavailable').replaceAll('_', ' ').toLowerCase()} · no XP`
+              : null;
+      const runtimeSource = sourceKey ? websiteVoteSourceState(sourceKey) : null;
+      const runtimeStatus = runtimeSource?.status || null;
+      const telegramSource = String(sourceKey || '').startsWith('telegram:')
+        ? state.telegramTrendingSources.find((source) => source.sourceKey === sourceKey)
+        : null;
+      const sourceActionEnabled = actionEnabled && Boolean(safeUrl)
+        && (verificationMode ? Boolean(individualXpEligible) && runtimeStatus === 'AVAILABLE'
+          : telegramSource ? telegramSource.accepting : true);
+      const sourceState = verificationMode
+        ? (runtimeSource ? websiteVoteStatusCopy(runtimeSource) : websiteState)
+        : telegramSource
+          ? telegramSource.status === 'AVAILABLE'
+            ? `${telegramSource.verificationMode === 'PAIRED_CONTEXT' ? 'Paired receipt' : 'Direct receipt'} · verified`
+            : String(telegramSource.status || 'Readiness gated').replaceAll('_', ' ').toLowerCase()
+          : (actionEnabled ? 'Official destination' : 'Readiness gated');
+      const content = `<span><b>${escapeHtml(name)}</b><small>${escapeHtml(`${cooldown} · ${sourceState}`)}</small></span><i>${sourceActionEnabled ? 'START' : runtimeStatus === 'PENDING_REVIEW' ? 'PENDING' : '🔒'}</i>`;
+      if (verificationMode) {
+        return `<button type="button" data-vote-source-key="${escapeHtml(sourceKey || '')}" ${sourceActionEnabled ? '' : 'disabled'}>${content}</button>`;
+      }
+      return sourceActionEnabled && safeUrl
+        ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${content}</a>`
+        : `<div>${content}</div>`;
+    }).join('')}</div></section>`
+    : '';
   const evidence = telemetry && ('verified' in telemetry)
-    ? `<div class="mission-detail-evidence"><div><span>Verified</span><b>${Number(telemetry.verified || 0)}</b></div><div><span>Pending</span><b>${Number(telemetry.pending || 0)}</b></div><div><span>Rejected</span><b>${Number(telemetry.rejected || 0)}</b></div></div>`
+    ? `<div class="mission-detail-evidence"><div><span>Verified</span><b>${Number(telemetry.verified || 0)}</b></div>${mission.id === 'trending-bots' ? `<div><span>Pushes</span><b>${Number(telemetry.pushPoints || 0)}</b></div>` : ''}<div><span>Pending</span><b>${Number(telemetry.pending || 0)}</b></div><div><span>Rejected</span><b>${Number(telemetry.rejected || 0)}</b></div></div>`
     : `<div class="mission-personal-line"><span>Personal status</span><b>${escapeHtml(telemetry?.detail || 'No verified participant record yet')}</b></div>`;
   return `<form method="dialog" class="mission-sheet"><button class="mission-sheet-close" value="close" aria-label="Close mission details">×</button>
     <header class="mission-sheet-hero"><img src="${escapeHtml(mission.image)}" alt="" /><div><span class="label">${escapeHtml(mission.kind === 'COLLECTIVE' ? 'Collective mission' : 'Mission lane')}</span><h2>${escapeHtml(mission.title)}</h2><p>${escapeHtml(mission.description)}</p></div>${statePill(mission.enabled ? 'AVAILABLE' : mission.status)}</header>
     <section class="mission-facts"><div><span>Reward</span><b>${escapeHtml(mission.reward)}</b></div><div><span>Frequency</span><b>${escapeHtml(mission.frequency || 'Campaign')}</b></div><div><span>Your progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div></section>
     ${evidence}
     <section class="mission-rule-block"><span class="label">How Project Q verifies it</span><p>${escapeHtml(mission.verification || 'Verification rules will be published before this mission opens.')}</p></section>
+    ${sourceList}
+    ${mission.id === 'website-voting' ? websiteVoteFlowMarkup() : ''}
     <section class="mission-rule-block"><span class="label">Requirements</span><ol>${requirements.map((requirement) => `<li>${escapeHtml(requirement)}</li>`).join('')}</ol></section>
-    <footer class="mission-sheet-actions"><button type="button" class="gold-action compact" data-mission-action="${escapeHtml(mission.id)}" ${actionEnabled ? '' : 'disabled'}><span><b>${escapeHtml(actionEnabled ? (mission.actionLabel || 'Open mission') : 'Readiness gate closed')}</b><small>${escapeHtml(actionEnabled ? 'Continue through the official verified flow' : 'No submission can be made yet')}</small></span><i>→</i></button><small>Only verified Project Q records count. Opening a destination does not guarantee XP or rewards.</small></footer>
+    <footer class="mission-sheet-actions"><button type="button" class="gold-action compact" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}><span><b>${escapeHtml(mission.id === 'website-voting' && actionEnabled ? 'Choose a verified source above' : footerActionEnabled ? (mission.actionLabel || 'Open mission') : 'Readiness gate closed')}</b><small>${escapeHtml(mission.id === 'website-voting' && actionEnabled ? 'Each source opens through its own protected attempt' : footerActionEnabled ? 'Continue through the official verified flow' : 'No submission can be made yet')}</small></span><i>→</i></button><small>Only verified Project Q records count. Opening a destination does not guarantee XP or rewards.</small></footer>
   </form>`;
 }
 
@@ -708,7 +998,7 @@ function openMission(missionId) {
     if (event.target === dialog) closeMission();
   };
   dialog.onclose = () => { state.activeMissionId = null; };
-  dialog.querySelector('[data-mission-action]')?.addEventListener('click', () => executeMissionAction(missionId));
+  bindMissionDialog(dialog, missionId);
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
 }
@@ -821,9 +1111,12 @@ async function authenticateTelegram() {
     state.community = session.community || state.community;
     state.xInvite = session.xInvite || state.xInvite;
     state.missionEvidence = session.missionEvidence || state.missionEvidence;
+    state.websiteVotes = session.websiteVotes || state.websiteVotes;
+    state.telegramTrendingSources = session.telegramTrendingSources || state.telegramTrendingSources;
+    state.websiteVoteReviewEnabled = Boolean(session.capabilities?.websiteVoteReview);
     state.leaderboardMeta = session.leaderboards || null;
     if (session.leaderboards) {
-      for (const key of ['overall', '48h', 'missions', 'community', 'burn']) {
+      for (const key of ['overall', '48h', 'missions', 'trending', 'community', 'burn']) {
         state.leaderboards[key] = session.leaderboards[key]?.rows || [];
       }
       const rank = session.leaderboards.overall?.participantRank;
@@ -846,6 +1139,7 @@ async function boot() {
   state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); render(); });
   state.screen = location.hash.slice(1) in screens ? location.hash.slice(1) : 'home';
   await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
+  restoreWebsiteVoteFlow();
   render();
   setInterval(updateCountdownLabels, 1000);
   setInterval(async () => { await Promise.all([loadCampaignRuntime(), loadCampaignReadiness()]); render(); }, 60000);

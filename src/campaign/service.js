@@ -1,5 +1,8 @@
-import { validateRegistry } from './registry.js';
-import { loadDailyXpUsage, utcDayKey } from './xpCaps.js';
+import { hashRegistry, validateRegistry } from './registry.js';
+import { createCampaignReadinessReport } from './readinessReport.js';
+import { rulesetRowMatchesCampaign } from './rules.js';
+import { evaluateSourceCertifications } from './sourceCertifications.js';
+import { campaignDayKey, loadDailyXpUsage } from './xpCaps.js';
 import { EXPECTED_CYCLES, getCampaignRuntimeState, lockedCampaignCyclesMatch } from './schedule.js';
 
 export const DEFAULT_CAMPAIGN_ID = 'bond-the-duck-2026';
@@ -36,7 +39,6 @@ export async function getCampaignRuntime(client, {
 }
 
 const EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS = 15_000_000_000_000n;
-const EXPECTED_VERIFICATION_SOURCES = 13;
 const PUBLIC_READINESS_KEYS = new Set([
   'rules', 'funding', 'registry', 'sources', 'dates', 'app', 'wallet', 'settlement',
   'burn-rules', 'burn-progress', 'burn-verification',
@@ -48,15 +50,28 @@ function enabled(value) {
 
 export async function getCampaignReadiness(client, env = process.env) {
   const id = campaignId();
-  const [campaignRows, cycleRows, sourceRows, registryRows, burnProgramRows] = await Promise.all([
+  const [
+    campaignRows, rulesetRows, cycleRows, sourceRows, sourceCertificationRows,
+    registryRows, burnProgramRows,
+  ] = await Promise.all([
     client.select(
       'campaigns',
       `?id=eq.${encodeURIComponent(id)}&select=id,state,rules_hash,ruleset_version,funded_base_units&limit=1`
     ),
+    client.select(
+      'ruleset_versions',
+      `?campaign_id=eq.${encodeURIComponent(id)}&select=campaign_id,version,rules_json,rules_hash&order=version.desc&limit=20`
+    ),
     client.select('cycles', `?campaign_id=eq.${encodeURIComponent(id)}&select=cycle_id,opens_at,closes_at`),
     client.select(
       'verification_sources',
-      `?campaign_id=eq.${encodeURIComponent(id)}&select=source_key,classification,source`
+      `?campaign_id=eq.${encodeURIComponent(id)}&select=campaign_id,source_key,classification,source,target_url`
+    ),
+    client.select(
+      'verification_source_certifications',
+      `?campaign_id=eq.${encodeURIComponent(id)}` +
+        '&select=id,campaign_id,source_key,source_kind,classification,health,evidence_url,evidence_hash,checked_at,expires_at' +
+        '&order=checked_at.desc,id.desc&limit=500'
     ),
     client.select(
       'deployment_registry',
@@ -70,23 +85,36 @@ export async function getCampaignReadiness(client, env = process.env) {
 
   const campaign = campaignRows[0] ?? null;
   const funded = BigInt(campaign?.funded_base_units ?? 0);
-  const rulesReady = Boolean(
-    campaign?.ruleset_version > 0 && /^[0-9a-f]{64}$/.test(campaign?.rules_hash ?? '')
+  const currentRuleset = rulesetRows.find(
+    ({ version }) => Number(version) === Number(campaign?.ruleset_version)
   );
-  const sourcesReady = sourceRows.length === EXPECTED_VERIFICATION_SOURCES
-    && sourceRows.every((row) => !['SOURCE_UNAVAILABLE', 'REMOVED_FOR_INTEGRITY'].includes(row.classification));
+  const rulesReady = rulesetRowMatchesCampaign(campaign, currentRuleset);
+  const sourceCertificationState = evaluateSourceCertifications(
+    sourceRows,
+    sourceCertificationRows
+  );
   const datesReady = lockedCampaignCyclesMatch(cycleRows);
   let registryReady = false;
+  let registryHash = null;
   try {
     validateRegistry(registryRows, { requireComplete: true });
     registryReady = true;
+    registryHash = hashRegistry(registryRows);
   } catch {
     registryReady = false;
+    try {
+      registryHash = hashRegistry(registryRows);
+    } catch {
+      registryHash = null;
+    }
   }
   const burnProgram = burnProgramRows[0] ?? null;
   let burnRulesReady = false;
+  let burnSources = [];
+  let burnFounders = [];
+  let burnMilestones = [];
   if (burnProgram) {
-    const [burnSources, burnFounders, burnMilestones] = await Promise.all([
+    [burnSources, burnFounders, burnMilestones] = await Promise.all([
       client.select('burn_source_accounts', `?program_id=eq.${encodeURIComponent(burnProgram.id)}&select=source_type,approved,evidence_url,verified_at`),
       client.select('burn_program_founders', `?program_id=eq.${encodeURIComponent(burnProgram.id)}&select=founder_user_id`),
       client.select('burn_milestones', `?program_id=eq.${encodeURIComponent(burnProgram.id)}&select=id,rules_hash,progress_target_units,burn_amount_base_units,state`),
@@ -106,10 +134,14 @@ export async function getCampaignReadiness(client, env = process.env) {
   }
 
   const checks = [
-    { key: 'rules', label: 'Rules published and hashed', ready: rulesReady },
+    { key: 'rules', label: 'Final rules complete and hash-matched', ready: rulesReady },
     { key: 'funding', label: '15,000,000 FAWKQ funding verified', ready: funded === EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS },
     { key: 'registry', label: 'Deployment and vault registry complete', ready: registryReady },
-    { key: 'sources', label: 'Nine voting sites and four bots certified', ready: sourcesReady },
+    {
+      key: 'sources',
+      label: 'Nine voting sites and five Telegram bots currently certified',
+      ready: sourceCertificationState.ready,
+    },
     { key: 'dates', label: `${EXPECTED_CYCLES} locked 48-hour cycles scheduled`, ready: datesReady },
     { key: 'app', label: 'Campaign app enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED) },
     { key: 'wallet', label: 'Wallet verification enabled', ready: enabled(env.PROJECT_Q_WALLET_VERIFICATION_ENABLED) },
@@ -119,9 +151,33 @@ export async function getCampaignReadiness(client, env = process.env) {
     { key: 'burn-verification', label: 'On-chain burn verification enabled', ready: enabled(env.PROJECT_Q_BURN_VERIFICATION_ENABLED) },
   ];
 
+  const flags = {
+    campaignApp: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED),
+    walletVerification: enabled(env.PROJECT_Q_WALLET_VERIFICATION_ENABLED),
+    campaignXpSettlement: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED),
+    earnToBurn: enabled(env.PROJECT_Q_EARN_TO_BURN_ENABLED),
+    burnVerification: enabled(env.PROJECT_Q_BURN_VERIFICATION_ENABLED),
+  };
+  const { reportVersion, reportHash } = createCampaignReadinessReport({
+    campaignId: id,
+    campaign,
+    checks,
+    cycles: cycleRows,
+    sources: sourceRows,
+    sourceCertifications: sourceCertificationState.latestCertifications,
+    registryHash,
+    burnProgram,
+    burnSources,
+    burnFounders,
+    burnMilestones,
+    flags,
+  });
+
   return {
     campaignId: id,
     state: campaign?.state ?? 'DRAFT',
+    reportVersion,
+    reportHash,
     ready: checks.every((check) => check.ready),
     readyCount: checks.filter((check) => check.ready).length,
     totalCount: checks.length,
@@ -141,6 +197,8 @@ export function toPublicCampaignReadiness(readiness) {
     available: true,
     campaignId: String(readiness?.campaignId || DEFAULT_CAMPAIGN_ID),
     state: String(readiness?.state || 'DRAFT'),
+    reportVersion: String(readiness?.reportVersion || ''),
+    reportHash: /^[0-9a-f]{64}$/.test(readiness?.reportHash || '') ? readiness.reportHash : null,
     ready: totalCount > 0 && readyCount === totalCount,
     readyCount,
     totalCount,
@@ -158,6 +216,8 @@ export function closedPublicCampaignReadiness() {
     available: false,
     campaignId: DEFAULT_CAMPAIGN_ID,
     state: 'DRAFT',
+    reportVersion: '',
+    reportHash: null,
     ready: false,
     readyCount: 0,
     totalCount: 0,
@@ -244,7 +304,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
       `?campaign_id=eq.${encodeURIComponent(id)}${walletFilter}` +
         '&select=eligible_bought_base_units,eligible_sold_base_units,net_buy_lamports,tier,weight,snapshot_usd,eligible&limit=1'
     ),
-    loadDailyXpUsage(client, id, userId, utcDayKey(now)),
+    loadDailyXpUsage(client, id, userId, campaignDayKey(now)),
     client.select('campaigns', `?id=eq.${encodeURIComponent(id)}&select=state&limit=1`),
   ]);
 
@@ -258,10 +318,12 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
 
   const xpByCycle = xpRows.map((row) => ({ cycleId: Number(row.cycle_id), xp: Number(row.xp) }));
   const xpByBucket = xpDetailRows.reduce((totals, row) => {
-    const bucket = ['participation', 'mission', 'other'].includes(row.cap_bucket) ? row.cap_bucket : 'other';
+    const bucket = ['participation', 'mission', 'trending', 'other'].includes(row.cap_bucket)
+      ? row.cap_bucket
+      : 'other';
     totals[bucket] += Number(row.amount || 0);
     return totals;
-  }, { participation: 0, mission: 0, other: 0 });
+  }, { participation: 0, mission: 0, trending: 0, other: 0 });
   const allocationByCategory = allocationRows.reduce((totals, row) => {
     const category = row.category || 'other';
     totals[category] = (BigInt(totals[category] ?? 0) + BigInt(row.gross_base_units ?? 0)).toString();
@@ -292,6 +354,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     todayXpByBucket: {
       participation: Number(dailyXp.participation || 0),
       mission: Number(dailyXp.mission || 0),
+      trending: Number(dailyXp.trending || 0),
       other: Number(dailyXp.other || 0),
     },
     xpByBucket,

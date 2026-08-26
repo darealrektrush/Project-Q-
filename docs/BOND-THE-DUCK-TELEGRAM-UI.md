@@ -16,7 +16,7 @@ permissions; it does not activate the campaign or authorize treasury actions.
 | My Status | `menu:campaign:bond:status` | Eligibility, readiness, rank and deadline | Not launched |
 | My XP | `menu:campaign:bond:xp` | Verified/pending/rejected XP and cap usage | No XP awarded |
 | Leaderboard | `menu:campaign:bond:leaderboard` | Current cycle and campaign standings | No active cycle |
-| Missions & Voting | `menu:campaign:bond:missions` | Missions, nine sites and four Telegram bots | Sources disabled |
+| Missions & Voting | `menu:campaign:bond:missions` | Missions, nine sites and five Telegram bots | Sources disabled |
 | Oracle Raids | `menu:campaign:bond:missions:raids` | Oracle-launched X raids, verification and campaign credit | Read-only history; sources disabled |
 | Buy-to-Earn | `menu:campaign:bond:buy` | Net-buy tier and eligibility status | Tracking inactive |
 | Cycle Results | `menu:campaign:bond:cycles` | Snapshots, public draw and winners | No results |
@@ -107,13 +107,55 @@ service-role key.
 
 ### Vote & Trend
 
-Website flow: open registered site → submit vote number or signed mission token
-→ add evidence only when requested → receive a per-source verdict.
+Website flow: Project Q creates a 15-minute nonce-bound attempt → opens the
+exact registered FAWKQ page → participant votes → participant returns with a
+post-vote/cooldown screenshot → Project Q hashes and deduplicates the evidence
+→ source-specific review approves or rejects it. Opening a page never awards
+XP. Public vote-counter movement is corroboration only, never identity proof.
+The participant uploads an original JPEG, PNG or WebP up to 2 MB into a private
+Supabase Storage bucket through the Project Q server; the browser never receives
+storage credentials or a public evidence URL. The raw challenge exists only in
+the participant's tab session and the submission RPC checks the signed Telegram
+identity, attempt ownership, challenge hash, expiry and exact image hash. A
+valid attempt may finish during the review phase if its 15-minute timer began
+while participation was active.
 
-Telegram bot flow: open one of four registered bots → forward the completion
-receipt → validate numeric bot origin, FAWKQ context, time and uniqueness → award
-2 XP or return a review reason. Website and bot voting share the 15 XP daily
-participation cap.
+Telegram bot flow: open one of five registered bots → vote for FAWKQ → privately
+forward the original completion receipt to Project Q within ten minutes →
+validate the permanent numeric bot origin, FAWKQ context, time, global replay
+hash, current health certification and provider cooldown → award 2 XP for that
+bot's first Vancouver campaign-day vote or 1 XP for a later verified vote.
+WTF Trending is the one paired flow: the participant forwards its FAWKQ context
+message first, then its token-generic success message within five minutes.
+Trending-bot XP has a dedicated 20 XP daily cap. Every accepted receipt remains
+one Trending Push after the cap; website voting stays inside the separate 15 XP
+participation bucket.
+
+The registered website set is GeckoTerminal, Top100Token, CoinMooner,
+GemFinder, CoinSniper, CoinMun, CoinBoom, CoinBuzzer and CoinScope. The August
+25 read-only audit found a usable 24-hour screenshot-review path on CoinMooner,
+GemFinder and CoinMun. GeckoTerminal is aggregate community progress only.
+Top100Token and CoinSniper require a normal-browser live test; CoinBoom had no
+visible free vote; CoinBuzzer and CoinScope were unavailable. Only sources with
+an individual-verification classification and a current healthy certification
+can accept participant evidence or award XP.
+
+This is the strongest provider-independent fallback, not machine proof of a
+vote. Exact-hash replay protection is active. Perceptual duplicate detection,
+OCR/source-state scoring and provider API/webhook adapters remain separate
+hardening steps; they must not be represented as active until deployed and
+certified.
+
+Authorized website reviews run only in a configured founder's private Project
+Q chat while the dedicated review flag is enabled. The queue is oldest-first,
+paginates ten proofs at a time and renders only a deterministic participant
+pseudonym. When a founder opens an item, Project Q downloads the private object
+server-side, validates its MIME signature, recomputes SHA-256 and refuses to
+show altered evidence. Approvals use one fixed auditable reason; rejections use
+one of five explicit categories: unclear proof, wrong source, unverifiable
+timing, duplicate/inconsistent evidence or privacy-safe resubmission. The
+database independently rechecks campaign-founder authorization and attempt
+state before its append-only RPC records the decision.
 
 ### Rewards and appeals
 

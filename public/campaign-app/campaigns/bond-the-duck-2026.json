@@ -78,7 +78,8 @@
   "xpCaps": {
     "overallDaily": 75,
     "participationDaily": 15,
-    "projectQDaily": 20
+    "projectQDaily": 20,
+    "trendingBotsDaily": 20
   },
   "earnToBurn": {
     "status": "DRAFT",
@@ -166,6 +167,45 @@
     "rankBonuses": [6, 5, 4, 3, 2],
     "maximumDailyXp": 8
   },
+  "verificationSources": {
+    "websiteVotingCount": 9,
+    "websiteVoting": [
+      { "sourceKey": "web:geckoterminal", "name": "GeckoTerminal", "url": "https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM", "verificationMode": "AGGREGATE_ONLY", "classification": "COMMUNITY_PROGRESS_ONLY", "certificationStatus": "OBSERVED_NO_USER_RECEIPT", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:top100token", "name": "Top100Token", "url": "https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinmooner", "name": "CoinMooner", "url": "https://coinmooner.com/coins/fawk-q-fawkq", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
+      { "sourceKey": "web:gemfinder", "name": "GemFinder", "url": "https://gemfinder.cc/gem/29742", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
+      { "sourceKey": "web:coinsniper", "name": "CoinSniper", "url": "https://coinsniper.net/coin/92949", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinmun", "name": "CoinMun", "url": "https://coinmun.com/coins/fawk-q", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
+      { "sourceKey": "web:coinboom", "name": "CoinBoom", "url": "https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "NO_FREE_VOTE_OBSERVED", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinbuzzer", "name": "CoinBuzzer", "url": "https://coinbuzzer.me/coin/860", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false },
+      { "sourceKey": "web:coinscope", "name": "CoinScope", "url": "https://www.coinscope.co/coin/fawkq", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false }
+    ],
+    "telegramBotFirstDailyXp": 2,
+    "telegramBotRepeatXp": 1,
+    "telegramBotDailyMaximumXp": 20,
+    "telegramPushPointPerAcceptedVote": 1,
+    "telegramBotCooldownSeconds": {
+      "@majorbuybot": 7200,
+      "@wtftrending": 3600,
+      "@trenchobot": 86400,
+      "@BBtrendingbot": 3600,
+      "@drokiatrendsbot": 3600
+    },
+    "telegramBotCooldownCertification": {
+      "@majorbuybot": "OBSERVED",
+      "@wtftrending": "OBSERVED",
+      "@trenchobot": "OBSERVED",
+      "@BBtrendingbot": "OBSERVED",
+      "@drokiatrendsbot": "OBSERVED"
+    },
+    "telegramBots": [
+      "@majorbuybot",
+      "@wtftrending",
+      "@trenchobot",
+      "@BBtrendingbot",
+      "@drokiatrendsbot"
+    ]
+  },
   "releases": [
     { "label": "Verified activity", "percent": 25, "detail": "Recurring release after each 48-hour cycle is verified" },
     { "label": "Post-review", "percent": 50, "detail": "September 18 if cleared at 48 hours; otherwise immediately upon clearance by September 19" },
@@ -188,10 +228,10 @@
     },
     {
       "id": "trending-bots", "kind": "INDIVIDUAL", "icon": "🤖", "image": "/campaign-app/assets/missions/v3-trending-bots.webp",
-      "title": "Trending Bots", "description": "Four verified Telegram trending actions.", "status": "0 / 4", "reward": "Up to 8 XP", "frequency": "Daily", "enabled": false,
-      "verification": "Each accepted confirmation from a registered Telegram trending bot awards 2 XP, up to 8 XP daily and within the shared 15 XP participation cap.",
-      "requirements": ["Use one of the four registered bots", "Submit an authentic completion confirmation", "Origin, FAWKQ context, timing and uniqueness must verify"],
-      "actionLabel": "View registered bots"
+      "title": "Trending Bots", "description": "Repeat verified pushes whenever each bot cooldown resets.", "status": "0 pushes", "reward": "2 XP first · 1 XP repeats · 20 XP daily", "frequency": "Every certified cooldown", "enabled": false,
+      "verification": "Open a registered bot, vote for FAWKQ, then privately forward the original completion message to Project Q within 10 minutes. Project Q verifies the permanent numeric bot ID, success text, FAWKQ context, timestamp, certified cooldown and global replay hash. Every accepted receipt adds one uncapped Trending Push.",
+      "requirements": ["Direct-receipt bots: forward the original FAWKQ success message to Project Q", "WTF Trending: first forward the FAWKQ vote-context message, then its matching generic success message", "The first accepted vote per bot each Vancouver campaign day earns 2 XP; certified repeats earn 1 XP up to 20 daily, while every accepted receipt adds one Trending Push"],
+      "actionLabel": "Choose a verified bot"
     },
     {
       "id": "bagwork", "kind": "INDIVIDUAL", "icon": "💼", "image": "/campaign-app/assets/missions/v3-bagwork.webp",

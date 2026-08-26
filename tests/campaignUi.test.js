@@ -13,6 +13,7 @@ import {
   buildMissionsMenu,
   buildOracleRaidsMenu,
   buildOracleRaidsText,
+  buildCampaignReadinessText,
   getCampaignScreen,
 } from '../src/campaign/ui.js';
 
@@ -83,6 +84,19 @@ test('Bond the Duck hub can expose the reusable Mini App without changing callba
 test('pre-launch campaign UI never represents the campaign as active', () => {
   assert.match(CAMPAIGN_HOME_TEXT, /DRAFT \/ pre-launch/);
   assert.match(CAMPAIGN_HOME_TEXT, /not accepting enrollment, XP, buys or reward claims/);
+});
+
+test('authorized readiness view binds founder review to an exact report fingerprint', () => {
+  const hash = 'd'.repeat(64);
+  const text = buildCampaignReadinessText({
+    state: 'DRAFT', ready: false, readyCount: 1, totalCount: 2, reportHash: hash,
+    checks: [
+      { label: 'Rules published and hashed', ready: true },
+      { label: 'Funding verified', ready: false },
+    ],
+  });
+  assert.match(text, new RegExp(hash));
+  assert.match(text, /Campaign remains fail-closed/);
 });
 
 test('live campaign and participant data render without opening unavailable actions', () => {
