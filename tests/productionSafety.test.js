@@ -342,6 +342,9 @@ test('staged migrations cover every current Supabase foreign-key advisor finding
   const flywheelIndexes = await read(
     'supabase/migrations/20260825215000_index_campaign_flywheel_foreign_keys.sql'
   );
+  const verificationIndexes = await read(
+    'supabase/migrations/20260826030000_index_campaign_verification_foreign_keys.sql'
+  );
   for (const index of [
     'bagwork_clearances_user_id_idx',
     'bagwork_feedback_user_id_idx',
@@ -365,6 +368,21 @@ test('staged migrations cover every current Supabase foreign-key advisor finding
     'campaign_x_invites_bonus_xp_ledger_id_idx',
   ]) {
     assert.match(flywheelIndexes, new RegExp(`create index if not exists ${index}`));
+  }
+  for (const index of [
+    'campaign_readiness_approvals_founder_idx',
+    'campaign_ruleset_decisions_founder_idx',
+    'campaign_ruleset_decisions_proposal_campaign_idx',
+    'campaign_ruleset_finalizations_founder_idx',
+    'campaign_ruleset_finalizations_proposal_campaign_idx',
+    'campaign_ruleset_proposals_founder_idx',
+    'telegram_trending_receipts_source_idx',
+    'telegram_trending_receipts_context_idx',
+    'telegram_trending_source_configs_founder_idx',
+    'verification_source_certifications_founder_idx',
+    'website_vote_attempts_participation_event_idx',
+  ]) {
+    assert.match(verificationIndexes, new RegExp(`create index if not exists ${index}`));
   }
 });
 
