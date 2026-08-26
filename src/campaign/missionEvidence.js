@@ -1,4 +1,5 @@
 import { DEFAULT_CAMPAIGN_ID } from './service.js';
+import { campaignDayBounds, campaignDayKey } from './xpCaps.js';
 
 const EVIDENCE_VISIBLE_STATES = new Set([
   'ACTIVE', 'PAUSED', 'VERIFYING', 'ALLOCATIONS_FROZEN',
@@ -9,8 +10,8 @@ function campaignId() {
   return process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? DEFAULT_CAMPAIGN_ID;
 }
 
-function emptyLane(target = 0) {
-  return { verified: 0, pending: 0, rejected: 0, target };
+function emptyLane(target = 0, extras = {}) {
+  return { verified: 0, pending: 0, rejected: 0, target, ...extras };
 }
 
 export function closedMissionEvidence(campaignState = 'DRAFT', reason = 'Mission evidence opens with the campaign.') {
@@ -21,13 +22,13 @@ export function closedMissionEvidence(campaignState = 'DRAFT', reason = 'Mission
     reason,
     oracleRaids: emptyLane(5),
     websiteVoting: emptyLane(9),
-    trendingBots: emptyLane(4),
+    trendingBots: emptyLane(5, { pushPoints: 0 }),
   };
 }
 
-function summarize(rows, target, { uniqueSources = false } = {}) {
+function summarize(rows, target, { uniqueSources = false, includePushPoints = false } = {}) {
   const accepted = rows.filter(({ credited }) => credited);
-  return {
+  const result = {
     verified: uniqueSources
       ? new Set(accepted.map(({ source_key }) => source_key).filter(Boolean)).size
       : accepted.length,
@@ -35,6 +36,8 @@ function summarize(rows, target, { uniqueSources = false } = {}) {
     rejected: rows.filter(({ credited, reason }) => !credited && Boolean(reason)).length,
     target,
   };
+  if (includePushPoints) result.pushPoints = accepted.length;
+  return result;
 }
 
 export async function getParticipantMissionEvidence(
@@ -53,9 +56,7 @@ export async function getParticipantMissionEvidence(
 
   const parsedNow = new Date(now);
   if (Number.isNaN(parsedNow.getTime())) throw new Error('invalid mission evidence timestamp');
-  const day = parsedNow.toISOString().slice(0, 10);
-  const start = `${day}T00:00:00.000Z`;
-  const end = `${day}T23:59:59.999999Z`;
+  const { start, end } = campaignDayBounds(campaignDayKey(parsedNow));
   const participantFilter = `?campaign_id=eq.${encodeURIComponent(id)}` +
     `&telegram_user_id=eq.${encodeURIComponent(userId)}`;
 
@@ -79,7 +80,7 @@ export async function getParticipantMissionEvidence(
     client.select(
       'verification_sources',
       `?campaign_id=eq.${encodeURIComponent(id)}` +
-        '&classification=not.in.(SOURCE_UNAVAILABLE,REMOVED_FOR_INTEGRITY)' +
+        '&classification=in.(MACHINE_VERIFIED,PROOF_SUPPORTED)' +
         '&select=source_key,source&limit=100'
     ),
   ]);
@@ -93,6 +94,6 @@ export async function getParticipantMissionEvidence(
     reason: null,
     oracleRaids: summarize(raidRows, 5),
     websiteVoting: summarize(voteRows, voteTarget, { uniqueSources: true }),
-    trendingBots: summarize(botRows, botTarget, { uniqueSources: true }),
+    trendingBots: summarize(botRows, botTarget, { uniqueSources: true, includePushPoints: true }),
   };
 }

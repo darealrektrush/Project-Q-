@@ -50,6 +50,7 @@ test('public runtime opens only with the feature flag and exact seven-cycle data
 test('public readiness exposes only whitelisted gate status without registry evidence', () => {
   const readiness = toPublicCampaignReadiness({
     campaignId: 'bond-the-duck-2026', state: 'DRAFT',
+    reportVersion: 'bond-readiness-v1', reportHash: 'c'.repeat(64),
     secretRegistryValue: 'do-not-expose',
     checks: [
       { key: 'rules', label: 'Rules published and hashed', ready: true, evidence_url: 'private' },
@@ -60,6 +61,8 @@ test('public readiness exposes only whitelisted gate status without registry evi
   assert.equal(readiness.readyCount, 1);
   assert.equal(readiness.totalCount, 2);
   assert.equal(readiness.percent, 50);
+  assert.equal(readiness.reportVersion, 'bond-readiness-v1');
+  assert.equal(readiness.reportHash, 'c'.repeat(64));
   assert.deepEqual(readiness.checks, [
     { key: 'rules', label: 'Rules published and hashed', ready: true },
     { key: 'funding', label: 'Funding verified', ready: false },
@@ -67,6 +70,7 @@ test('public readiness exposes only whitelisted gate status without registry evi
   assert.doesNotMatch(JSON.stringify(readiness), /do-not-expose|private-wallet|evidence_url|internal-secret/);
   assert.deepEqual(closedPublicCampaignReadiness().checks, []);
   assert.equal(closedPublicCampaignReadiness().available, false);
+  assert.equal(closedPublicCampaignReadiness().reportHash, null);
 });
 
 test('campaign participation requires both the deployment gate and ACTIVE database state', async () => {
@@ -131,12 +135,15 @@ test('participant status derives verification readiness and sums XP', async () =
       if (table === 'campaign_xp_totals') return [{ cycle_id: 1, xp: 12 }, { cycle_id: 2, xp: 7 }];
       if (table === 'xp_ledger' && query.includes('awarded_at=gte')) return [
         { amount: 5, cap_bucket: 'mission' }, { amount: 3, cap_bucket: 'participation' },
+        { amount: 2, cap_bucket: 'trending' },
       ];
       if (table === 'xp_ledger') return [
         { id: 4, cycle_id: 2, source: 'mission', cap_bucket: 'mission', amount: 7,
           mission_code: 'oracle-raids', awarded_at: '2026-08-25T12:00:00Z' },
         { id: 3, cycle_id: 1, source: 'event', cap_bucket: 'participation', amount: 5,
           mission_code: 'community-pulse', awarded_at: '2026-08-24T12:00:00Z' },
+        { id: 2, cycle_id: 1, source: 'event', cap_bucket: 'trending', amount: 2,
+          mission_code: 'telegram:majorbuybot', awarded_at: '2026-08-24T11:00:00Z' },
       ];
       if (table === 'allocations') return [
         { id: 1, category: 'activity', cycle_id: 1, reward_wallet: 'wallet-1', gross_base_units: '1000000', calc_version: 1, created_at: '2026-08-24T12:00:00Z' },
@@ -159,9 +166,9 @@ test('participant status derives verification readiness and sums XP', async () =
   assert.equal(status.rewardWallet, 'wallet-1');
   assert.equal(status.tokenAccountReady, true);
   assert.equal(status.totalXp, 19);
-  assert.equal(status.todayXp, 8);
-  assert.deepEqual(status.todayXpByBucket, { participation: 3, mission: 5, other: 0 });
-  assert.equal(status.completedMissionCount, 2);
+  assert.equal(status.todayXp, 10);
+  assert.deepEqual(status.todayXpByBucket, { participation: 3, mission: 5, trending: 2, other: 0 });
+  assert.equal(status.completedMissionCount, 3);
   assert.equal(status.allocationBaseUnits, '4000000');
   assert.deepEqual(status.allocationByCategory, { activity: '1500000', buy_to_earn: '2500000' });
   assert.equal(status.rewards.allocatedBaseUnits, '4000000');
@@ -187,15 +194,26 @@ test('closed fallback never reports live campaign state', () => {
 });
 
 test('campaign readiness stays blocked while dates and launch flags are intentionally deferred', async () => {
+  const checkedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const client = {
     select: async (table) => {
       if (table === 'campaigns') return [{
         id: 'bond-the-duck-2026', state: 'DRAFT', rules_hash: 'a'.repeat(64),
         ruleset_version: 1, funded_base_units: '15000000000000',
       }];
+      if (table === 'ruleset_versions') return [];
       if (table === 'cycles') return [];
-      if (table === 'verification_sources') return Array.from({ length: 13 }, (_, index) => ({
-        source_key: `source-${index}`, source: index < 9 ? 'vote' : 'event', classification: 'MACHINE_VERIFIED',
+      if (table === 'verification_sources') return Array.from({ length: 14 }, (_, index) => ({
+        campaign_id: 'bond-the-duck-2026', source_key: `source-${index}`,
+        source: index < 9 ? 'vote' : 'event', classification: 'MACHINE_VERIFIED',
+      }));
+      if (table === 'verification_source_certifications') return Array.from({ length: 14 }, (_, index) => ({
+        id: index + 1, campaign_id: 'bond-the-duck-2026', source_key: `source-${index}`,
+        source_kind: index < 9 ? 'WEBSITE_VOTE' : 'TELEGRAM_BOT',
+        classification: 'MACHINE_VERIFIED', health: 'HEALTHY',
+        evidence_url: `https://example.com/source-${index}`, evidence_hash: 'b'.repeat(64),
+        checked_at: checkedAt, expires_at: expiresAt,
       }));
       if (table === 'deployment_registry') return REQUIRED_REGISTRY_FIELDS.map((field) => ({
         field, value: `verified-${field}`, owner: 'operations', evidence_url: `https://example.com/${field}`,
@@ -209,7 +227,8 @@ test('campaign readiness stays blocked while dates and launch flags are intentio
     PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED: 'false',
   });
   assert.equal(readiness.ready, false);
-  assert.equal(readiness.readyCount, 4);
+  assert.equal(readiness.readyCount, 3);
+  assert.equal(readiness.checks.find(({ key }) => key === 'rules').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'dates').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-rules').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-progress').ready, false);

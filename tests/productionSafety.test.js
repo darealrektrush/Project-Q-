@@ -20,8 +20,247 @@ test('Render keeps money-moving and publishing jobs disabled by default', async 
   );
   assert.match(blueprint, /PROJECT_Q_EARN_TO_BURN_ENABLED\n\s+value: "false"/);
   assert.match(blueprint, /PROJECT_Q_BURN_VERIFICATION_ENABLED\n\s+value: "false"/);
+  assert.match(blueprint, /PROJECT_Q_CAMPAIGN_READINESS_APPROVALS_ENABLED\n\s+value: "false"/);
+  assert.match(blueprint, /PROJECT_Q_CAMPAIGN_RULES_GOVERNANCE_ENABLED\n\s+value: "false"/);
+  assert.match(blueprint, /PROJECT_Q_SOURCE_CERTIFICATION_ENABLED\n\s+value: "false"/);
+  assert.match(blueprint, /PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED\n\s+value: "false"/);
+  assert.match(blueprint, /PROJECT_Q_TRENDING_RECEIPTS_ENABLED\n\s+value: "false"/);
   assert.match(blueprint, /PROJECT_Q_COMMUNITY_ACTIVITY_ENABLED\n\s+value: "false"/);
   assert.match(blueprint, /PROJECT_Q_COMMUNITY_ACTIVITY_SETTLEMENT_ENABLED\n\s+value: "false"/);
+});
+
+test('webhook secrets use constant-time comparison and JSON bodies stay bounded', async () => {
+  const server = await read('src/server.js');
+  assert.match(server, /express\.json\(\{ limit: '100kb', strict: true \}\)/);
+  assert.match(server, /secretMatches\(header, TELEGRAM_WEBHOOK_SECRET\)/);
+  assert.match(server, /secretMatches\(header, BAGWORK_SECRET\)/);
+});
+
+test('verification source certifications are append-only, private and non-activating', async () => {
+  const migration = await read(
+    'supabase/migrations/20260825233000_verification_source_certifications.sql'
+  );
+  assert.match(migration, /create table if not exists public\.verification_source_certifications/);
+  assert.match(migration, /source_kind in \('WEBSITE_VOTE','TELEGRAM_BOT'\)/);
+  assert.match(migration, /expires_at <= checked_at \+ interval '72 hours'/);
+  assert.match(migration, /verification_source_certifications_immutable/);
+  assert.match(migration, /before update or delete on public\.verification_source_certifications/);
+  assert.match(migration, /security invoker set search_path = ''/);
+  assert.match(migration, /founder is not authorized for this campaign/);
+  assert.match(migration, /certification does not match registered source/);
+  assert.match(migration, /alter table public\.verification_source_certifications enable row level security/);
+  assert.match(migration, /revoke all on public\.verification_source_certifications[\s\S]+from public, anon, authenticated/);
+  assert.match(migration, /grant execute on function public\.record_verification_source_certification[\s\S]+to service_role/);
+  assert.doesNotMatch(migration, /insert into public\.verification_sources/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+  assert.doesNotMatch(migration, /funded_base_units/i);
+});
+
+test('five confirmed Telegram bots are registered pending evidence without activating rewards', async () => {
+  const migration = await read(
+    'supabase/migrations/20260825234000_register_bond_telegram_bots.sql'
+  );
+  for (const sourceKey of [
+    'telegram:majorbuybot', 'telegram:wtftrending', 'telegram:trenchobot',
+    'telegram:bbtrendingbot', 'telegram:drokiatrendsbot',
+  ]) {
+    assert.match(migration, new RegExp(sourceKey));
+  }
+  assert.match(migration, /'telegram:majorbuybot', 'PROOF_SUPPORTED', 7200/);
+  assert.match(migration, /'telegram:wtftrending', 'PROOF_SUPPORTED', 3600/);
+  assert.match(migration, /'telegram:trenchobot', 'PROOF_SUPPORTED', 86400/);
+  assert.match(migration, /'telegram:bbtrendingbot', 'PROOF_SUPPORTED', 3600/);
+  assert.match(migration, /'telegram:drokiatrendsbot', 'PROOF_SUPPORTED', 3600/);
+  assert.match(migration, /matching_bots <> 5 or registered_bot_total <> 5/);
+  assert.match(migration, /add column if not exists target_url text/);
+  assert.doesNotMatch(migration, /insert into public\.verification_source_certifications/i);
+  assert.doesNotMatch(migration, /insert into public\.xp_ledger/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+});
+
+test('repeat Trending Push mechanics are auditable and remain non-activating', async () => {
+  const migration = await read(
+    'supabase/migrations/20260826001000_lock_repeat_trending_push_mechanics.sql'
+  );
+  assert.match(migration, /cap_bucket in \('participation','mission','trending','other'\)/);
+  assert.match(migration, /'telegram:majorbuybot' then 7200/);
+  assert.match(migration, /'telegram:wtftrending' then 3600/);
+  assert.match(migration, /'telegram:trenchobot' then 86400/);
+  assert.match(migration, /campaign_participation_events_trending_rank_idx/);
+  assert.match(migration, /where source = 'event' and credited = true/);
+  assert.doesNotMatch(migration, /insert into public\.xp_ledger/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+});
+
+test('nine founder-supplied voting URLs are registered pending certification only', async () => {
+  const migration = await read(
+    'supabase/migrations/20260825235000_register_bond_voting_websites.sql'
+  );
+  for (const sourceKey of [
+    'web:geckoterminal', 'web:top100token', 'web:coinmooner', 'web:gemfinder',
+    'web:coinsniper', 'web:coinmun', 'web:coinboom', 'web:coinbuzzer', 'web:coinscope',
+  ]) {
+    assert.match(migration, new RegExp(sourceKey));
+  }
+  assert.match(migration, /'PROOF_SUPPORTED', 86400, 'PENDING_CERTIFICATION', null, 'vote'/);
+  assert.match(migration, /matching_websites <> 9 or registered_website_total <> 9/);
+  assert.doesNotMatch(migration, /insert into public\.verification_source_certifications/i);
+  assert.doesNotMatch(migration, /insert into public\.xp_ledger/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+});
+
+test('website vote proof workflow is private, review-gated and fail-closed', async () => {
+  const migration = await read(
+    'supabase/migrations/20260826002000_website_vote_proof_workflow.sql'
+  );
+  for (const table of ['website_vote_attempts', 'website_vote_reviews']) {
+    assert.match(migration, new RegExp(`create table if not exists public\\.${table}`));
+    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
+  }
+  assert.match(migration, /expires_at <= started_at \+ interval '15 minutes'/);
+  assert.match(migration, /website_vote_attempts_one_open_idx/);
+  assert.match(migration, /website_vote_attempts_proof_sha_idx/);
+  assert.match(migration, /website_vote_reviews_immutable/);
+  assert.match(migration, /'bond-vote-proofs', 'bond-vote-proofs', false, 2097152/);
+  assert.match(migration, /allowed_mime_types @> array\['image\/jpeg','image\/png','image\/webp'\]/);
+  assert.match(migration, /website vote attempt rate limit reached/);
+  assert.match(migration, /classification not in \('MACHINE_VERIFIED','PROOF_SUPPORTED'\)/);
+  assert.match(migration, /website vote attempt does not belong to participant/);
+  assert.match(migration, /website vote challenge does not match attempt/);
+  assert.match(migration, /participation source certification is missing, stale or unhealthy/);
+  assert.match(migration, /reviewer is not authorized for this campaign/);
+  assert.match(migration, /public\.ingest_campaign_participation_event/);
+  assert.match(migration, /'web:geckoterminal' then 'COMMUNITY_PROGRESS_ONLY'/);
+  assert.match(migration, /proof_supported_count <> 3/);
+  assert.match(migration, /revoke all on public\.website_vote_attempts, public\.website_vote_reviews[\s\S]+from public, anon, authenticated/);
+  assert.match(migration, /grant execute on function public\.review_website_vote_proof[\s\S]+to service_role/);
+  assert.doesNotMatch(migration, /insert into public\.xp_ledger/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+});
+
+test('Telegram trending receipts bind permanent IDs, paired context and global replay protection', async () => {
+  const migration = await read(
+    'supabase/migrations/20260826003000_telegram_trending_receipt_workflow.sql'
+  );
+  for (const [source, numericId] of [
+    ['telegram:majorbuybot', '7098195052'],
+    ['telegram:wtftrending', '7812045152'],
+    ['telegram:trenchobot', '8094927043'],
+    ['telegram:bbtrendingbot', '8196088162'],
+    ['telegram:drokiatrendsbot', '8500408157'],
+  ]) {
+    assert.match(migration, new RegExp(`'${source}', ${numericId}`));
+  }
+  for (const table of [
+    'telegram_trending_source_configs',
+    'telegram_trending_receipt_contexts',
+    'telegram_trending_receipts',
+  ]) {
+    assert.match(migration, new RegExp(`create table if not exists public\\.${table}`));
+    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
+  }
+  assert.match(migration, /verification_mode in \('DIRECT_RECEIPT','PAIRED_CONTEXT'\)/);
+  assert.match(migration, /'telegram:wtftrending', 7812045152,[\s\S]+?'PAIRED_CONTEXT'/);
+  assert.match(migration, /unique \(campaign_id, receipt_hash\)/);
+  assert.match(migration, /matching fresh FAWKQ context is required/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /order by certification\.checked_at desc, certification\.id desc/);
+  assert.match(migration, /revoke all on function public\.ingest_telegram_trending_receipt[\s\S]+from public, anon, authenticated/);
+  assert.match(migration, /grant execute on function public\.ingest_telegram_trending_receipt[\s\S]+to service_role/);
+  assert.doesNotMatch(migration, /insert into public\.xp_ledger/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+});
+
+test('campaign activation requires two current approvals for the exact readiness report', async () => {
+  const migration = await read(
+    'supabase/migrations/20260825230000_campaign_readiness_approvals.sql'
+  );
+  for (const table of ['campaign_founders', 'campaign_readiness_approvals']) {
+    assert.match(migration, new RegExp(`create table if not exists public\\.${table}`));
+    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
+  }
+  assert.match(migration, /campaign_readiness_approvals_immutable/);
+  assert.match(migration, /before update or delete on public\.campaign_readiness_approvals/);
+  assert.match(migration, /security invoker set search_path = ''/);
+  assert.match(migration, /p_decision is null or p_decision not in \('APPROVE','HOLD'\)/);
+  assert.match(migration, /campaign requires exactly two enabled founders/);
+  assert.match(migration, /where id = p_campaign_id and state = 'SCHEDULED'/);
+  assert.match(migration, /new\.evidence->>'readinessReportHash'/);
+  assert.match(migration, /new\.evidence->>'readinessReportVersion'/);
+  assert.match(migration, /distinct on \(approval\.founder_user_id\)/);
+  assert.match(migration, /where decision = 'APPROVE'/);
+  assert.match(migration, /approval_count <> 2/);
+  assert.match(migration, /before insert on public\.campaign_state_transitions/);
+  assert.match(migration, /revoke all on public\.campaign_founders, public\.campaign_readiness_approvals[\s\S]+from public, anon, authenticated/);
+  assert.doesNotMatch(migration, /update public\.campaigns set state = 'ACTIVE'/i);
+  const campaignSchema = await read('supabase/bond_the_duck.sql');
+  assert.match(
+    campaignSchema,
+    /array\['readinessReportVersion','readinessReportHash','founderApprovals'\]/
+  );
+});
+
+test('Bond the Duck draft provisioning is inert, idempotent and evidence-safe', async () => {
+  const migration = await read(
+    'supabase/migrations/20260825231000_provision_bond_the_duck_draft.sql'
+  );
+  assert.match(migration, /'bond-the-duck-2026', 1, expected_rules_hash, null, 'DRAFT', 0/);
+  assert.match(migration, /"status":"DRAFT"/);
+  assert.match(migration, /"campaignRewardsBaseUnits":"15000000000000"/);
+  assert.match(migration, /"diamondDuckBaseUnits":"2500000000000"/);
+  assert.match(migration, /"topContributorLamports":"1000000000"/);
+  assert.match(migration, /"earnToBurnBaseUnits":"15000000000000"/);
+  assert.match(migration, /on conflict \(id\) do nothing/);
+  assert.match(migration, /on conflict \(campaign_id, version\) do nothing/);
+  assert.match(migration, /refusing to provision over a changed Bond the Duck campaign/);
+  assert.match(migration, /refusing to provision over Bond the Duck cycle evidence/);
+  assert.match(migration, /matching_cycles <> 7/);
+  assert.doesNotMatch(migration, /insert into public\.campaign_founders/i);
+  assert.doesNotMatch(migration, /insert into public\.verification_sources/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
+  assert.doesNotMatch(migration, /'ACTIVE'/);
+  assert.doesNotMatch(migration, /funded_base_units[^\n]+15000000000000/i);
+});
+
+test('final campaign rules require exact semantics and two current founder approvals', async () => {
+  const migration = await read(
+    'supabase/migrations/20260825232000_campaign_ruleset_governance.sql'
+  );
+  for (const table of [
+    'campaign_ruleset_proposals', 'campaign_ruleset_decisions', 'campaign_ruleset_finalizations',
+  ]) {
+    assert.match(migration, new RegExp(`create table if not exists public\\.${table}`));
+    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(migration, new RegExp(`${table}_immutable`));
+  }
+  assert.match(migration, /validate_bond_campaign_final_rules/);
+  assert.match(migration, /security invoker set search_path = ''/);
+  assert.match(migration, /is distinct from 'bond-the-duck-2026'/);
+  assert.match(migration, /campaignRewardsBaseUnits.*15000000000000/);
+  assert.match(migration, /diamondDuckBaseUnits.*2500000000000/);
+  assert.match(migration, /topContributorLamports.*1000000000/);
+  assert.match(migration, /earnToBurnBaseUnits.*15000000000000/);
+  assert.match(migration, /milestone_burn_total = 15000000000000/);
+  assert.match(migration, /telegramBotDailyMaximumXp.*20/);
+  assert.match(migration, /telegramBotRepeatXp.*1/);
+  assert.match(migration, /telegramPushPointPerAcceptedVote.*1/);
+  assert.match(migration, /@drokiatrendsbot/);
+  assert.match(migration, /CoinScope/);
+  assert.match(migration, /campaign requires exactly two enabled founders/);
+  assert.match(migration, /distinct on \(decision\.founder_user_id\)/);
+  assert.match(migration, /approval_count <> 2/);
+  assert.match(migration, /insert into public\.ruleset_versions/);
+  assert.match(migration, /update public\.campaigns set[\s\S]+ruleset_version = proposal\.version[\s\S]+rules_hash = proposal\.rules_hash/);
+  assert.match(migration, /revoke all on public\.campaign_ruleset_proposals[\s\S]+from public, anon, authenticated/);
+  assert.doesNotMatch(migration, /state\s*=\s*'ACTIVE'/i);
+  assert.doesNotMatch(migration, /funded_base_units\s*=/i);
+  assert.doesNotMatch(migration, /insert into public\.campaign_state_transitions/i);
 });
 
 test('Earn to Burn migration is server-only, append-only and two-founder gated', async () => {
@@ -139,4 +378,6 @@ test('Bond the Duck participation migration remains server-only and fail-closed'
   assert.match(migration, /grant execute on function public\.link_oracle_identity[\s\S]+to service_role/);
   assert.match(migration, /campaigns where id = p_campaign_id and state = 'ACTIVE'/);
   assert.match(migration, /participation source type does not match registry/);
+  assert.match(migration, /make_interval\(secs => source_row\.cooldown_seconds\)/);
+  assert.match(migration, /participation source is on cooldown for this participant/);
 });

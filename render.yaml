@@ -48,6 +48,16 @@ services:
         sync: false
       - key: PROJECT_Q_BURN_VERIFICATION_ENABLED
         value: "false"
+      - key: PROJECT_Q_CAMPAIGN_READINESS_APPROVALS_ENABLED
+        value: "false"
+      - key: PROJECT_Q_CAMPAIGN_RULES_GOVERNANCE_ENABLED
+        value: "false"
+      - key: PROJECT_Q_SOURCE_CERTIFICATION_ENABLED
+        value: "false"
+      - key: PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED
+        value: "false"
+      - key: PROJECT_Q_TRENDING_RECEIPTS_ENABLED
+        value: "false"
       - key: FAWKQ_WEBSITE_URL
         sync: false
       - key: XP_PER_SOL

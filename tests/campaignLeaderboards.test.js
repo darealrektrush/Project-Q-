@@ -44,6 +44,10 @@ test('active rankings aggregate verified records and never expose participant id
         { telegram_user_id: 100, xp_awarded: 3 }, { telegram_user_id: 100, xp_awarded: 2 },
         { telegram_user_id: 300, xp_awarded: 8 },
       ];
+      if (table === 'campaign_participation_events') return [
+        { telegram_user_id: 100 }, { telegram_user_id: 100 },
+        { telegram_user_id: 300 }, { telegram_user_id: 999 },
+      ];
       return [];
     },
   };
@@ -57,6 +61,9 @@ test('active rankings aggregate verified records and never expose participant id
   assert.equal(result.overall.rows[1].name, 'YOU');
   assert.equal(result['48h'].rows[0].xp, 8);
   assert.equal(result.missions.participantRank, 1);
+  assert.equal(result.trending.rows[0].xp, 2);
+  assert.equal(result.trending.rows[0].name, 'YOU');
+  assert.equal(result.trending.unit, 'PUSHES');
   assert.equal(result.community.rows[0].xp, 8);
   assert.equal(result.burn.available, false);
   assert.match(result.burn.reason, /not finalized/);
@@ -92,5 +99,6 @@ test('closed leaderboard fallback never fabricates identities or scores', () => 
   assert.equal(result.available, false);
   assert.equal(result.overall.reason, 'temporarily unavailable');
   assert.deepEqual(result.overall.rows, []);
+  assert.deepEqual(result.trending.rows, []);
   assert.deepEqual(result.burn.rows, []);
 });

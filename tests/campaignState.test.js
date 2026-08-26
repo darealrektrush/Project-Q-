@@ -35,6 +35,21 @@ test('paused campaign resumes only to recorded prior state with two founders', (
   assert.equal(assertTransition('PAUSED', 'ACTIVE', { resumeState: 'ACTIVE', evidence: { resolved: true }, founderApprovals: 2 }), true);
 });
 
+test('activation evidence binds two approvals to an exact versioned readiness report', () => {
+  const evidence = {
+    readinessReportVersion: 'bond-readiness-v1',
+    readinessReportHash: 'a'.repeat(64),
+    founderApprovals: 2,
+  };
+  assert.equal(assertTransition('SCHEDULED', 'ACTIVE', { evidence }), true);
+  assert.throws(
+    () => assertTransition('SCHEDULED', 'ACTIVE', {
+      evidence: { readinessReportHash: evidence.readinessReportHash, founderApprovals: 2 },
+    }),
+    /readinessReportVersion/
+  );
+});
+
 test('funding gate reconciles the locked vault split and SOL operations balance', () => {
   const evidence = {
     expectedFundedBaseUnits: '15000000000000',

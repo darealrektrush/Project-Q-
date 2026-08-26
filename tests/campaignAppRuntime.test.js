@@ -11,9 +11,10 @@ async function loadRuntime() {
     readFile(new URL('campaigns/bond-the-duck-2026.json', root), 'utf8').then(JSON.parse),
   ]);
   const context = {
-    window: { Telegram: null, scrollTo() {}, open() {} },
+    window: { Telegram: null, scrollTo() {}, open() {}, sessionStorage: null },
     location: { hash: '', search: '' },
     URLSearchParams,
+    URL,
     TextEncoder,
     console,
     setTimeout,
@@ -42,6 +43,12 @@ async function loadRuntime() {
     };
     globalThis.__missionDetails = Object.fromEntries(state.campaign.missions.map((mission) => [mission.id, missionDetailMarkup(mission)]));
     globalThis.__renderMissionDetail = (mission) => missionDetailMarkup(mission);
+    globalThis.__renderWebsiteVoteDetail = (websiteVotes, flow = null) => {
+      state.websiteVotes = websiteVotes;
+      state.websiteVoteFlow = flow;
+      const mission = { ...state.campaign.missions.find(({ id }) => id === 'website-voting'), enabled: true };
+      return missionDetailMarkup(mission);
+    };
     globalThis.__renderRewardsWith = (rewards) => {
       state.profile.rewards = rewards;
       state.profile.allocation = rewards.allocatedBaseUnits;
@@ -57,6 +64,10 @@ async function loadRuntime() {
       state.readiness = readiness;
       return home();
     };
+    globalThis.__renderReadinessWith = (readiness) => {
+      state.readiness = readiness;
+      return readinessScreen();
+    };
   `;
   vm.runInContext(instrumented, context);
   return context;
@@ -65,7 +76,7 @@ async function loadRuntime() {
 test('every Project Q V3 screen renders from the real Bond campaign config', async () => {
   const context = await loadRuntime();
   assert.deepEqual(Array.from(context.__nav, ([id]) => id), ['home', 'missions', 'xp', 'leaderboard', 'rewards']);
-  for (const screen of ['home', 'missions', 'xp', 'leaderboard', 'rewards', 'burns', 'profile']) {
+  for (const screen of ['home', 'missions', 'xp', 'leaderboard', 'rewards', 'burns', 'profile', 'readiness']) {
     assert.equal(typeof context.__rendered[screen], 'string');
     assert.ok(context.__rendered[screen].length > 300, `${screen} should render substantial native UI`);
   }
@@ -83,6 +94,26 @@ test('every Project Q V3 screen renders from the real Bond campaign config', asy
   assert.match(context.__profiles.rewards, /Recorded allocation/);
   assert.match(context.__profiles.referrals, /\$2 buy pending/);
   assert.match(context.__profiles.identity, /Privacy &amp; security|Privacy & security/);
+});
+
+test('Launch Readiness screen groups all public gates and exposes only the report fingerprint', async () => {
+  const context = await loadRuntime();
+  const keys = ['rules', 'funding', 'registry', 'sources', 'dates', 'app', 'wallet', 'settlement', 'burn-rules', 'burn-progress', 'burn-verification'];
+  const rendered = context.__renderReadinessWith({
+    available: true, ready: false, readyCount: 5, totalCount: 11, percent: 45,
+    reportVersion: 'bond-readiness-v1', reportHash: 'e'.repeat(64),
+    checks: keys.map((key, index) => ({ key, label: `Gate ${key}`, ready: index < 5 })),
+  });
+  assert.match(rendered, /LAUNCH BLOCKED/);
+  assert.match(rendered, /Campaign foundation/);
+  assert.match(rendered, /Participation rails/);
+  assert.match(rendered, /Earn to Burn/);
+  assert.match(rendered, /15,000,000 FAWKQ/);
+  assert.match(rendered, /2,500,000 FAWKQ/);
+  assert.match(rendered, /1 SOL/);
+  assert.match(rendered, new RegExp('e'.repeat(64)));
+  assert.match(rendered, /cannot activate the campaign/);
+  assert.doesNotMatch(rendered, /evidence_url|founder_user_id|source_key|service_role/i);
 });
 
 test('V3 readiness templates never fabricate participant results', async () => {
@@ -132,10 +163,11 @@ test('home renders authoritative campaign phase, cycle rail and fail-closed laun
 
 test('XP progress bars render authoritative daily bucket usage', async () => {
   const context = await loadRuntime();
-  const rendered = context.__renderXpWithDailyBuckets({ participation: 3, mission: 8, other: 4 });
+  const rendered = context.__renderXpWithDailyBuckets({ participation: 3, trending: 9, mission: 8, other: 4 });
   assert.match(rendered, /Participation[\s\S]*3 \/ 15/);
+  assert.match(rendered, /Trending bots[\s\S]*9 \/ 20/);
   assert.match(rendered, /Project Q missions[\s\S]*8 \/ 20/);
-  assert.match(rendered, /Other verified activity[\s\S]*4 \/ 40/);
+  assert.match(rendered, /Other verified activity[\s\S]*4 \/ 20/);
 });
 
 test('mission cards render verified, pending and rejected participant evidence', async () => {
@@ -144,11 +176,11 @@ test('mission cards render verified, pending and rejected participant evidence',
     available: true,
     oracleRaids: { verified: 2, pending: 1, rejected: 1, target: 5 },
     websiteVoting: { verified: 4, pending: 0, rejected: 0, target: 9 },
-    trendingBots: { verified: 1, pending: 1, rejected: 0, target: 4 },
+    trendingBots: { verified: 1, pending: 1, rejected: 0, target: 5, pushPoints: 4 },
   });
   assert.match(rendered, /Oracle X Raids[\s\S]*2 \/ 5 verified[\s\S]*1 pending[\s\S]*1 rejected/);
   assert.match(rendered, /Website Voting[\s\S]*4 \/ 9 verified/);
-  assert.match(rendered, /Trending Bots[\s\S]*1 \/ 4 verified/);
+  assert.match(rendered, /Trending Bots[\s\S]*4 pushes · 1 \/ 5 bots/);
   assert.doesNotMatch(rendered, /telegram_user_id|source_key|evidence_ref/);
 });
 
@@ -161,10 +193,42 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
     assert.match(detail, /Only verified Project Q records count/);
   }
   assert.match(context.__missionDetails['website-voting'], /Up to 11 XP/);
+  assert.match(context.__missionDetails['website-voting'], /Registered sources/);
+  assert.match(context.__missionDetails['website-voting'], /GeckoTerminal/);
+  assert.match(context.__missionDetails['website-voting'], /CoinScope/);
+  assert.match(context.__missionDetails['trending-bots'], /drokiatrendsbot/);
   assert.match(context.__missionDetails['website-voting'], /Readiness gate closed/);
   assert.match(context.__missionDetails.bagwork, /Open Bagwork/);
   assert.doesNotMatch(context.__missionDetails.bagwork, /Open Bagwork[\s\S]*disabled/);
   assert.match(context.__missionDetails['earn-to-burn'], /View public ledger/);
+});
+
+test('website voting renders source-specific readiness and the private proof workflow', async () => {
+  const context = await loadRuntime();
+  const sources = context.__renderWebsiteVoteDetail({
+    available: true, enabled: true,
+    sources: [
+      { sourceKey: 'web:coinmooner', status: 'AVAILABLE', nextAvailableAt: null },
+      { sourceKey: 'web:gemfinder', status: 'PENDING_REVIEW', nextAvailableAt: null },
+      { sourceKey: 'web:coinmun', status: 'ON_COOLDOWN', nextAvailableAt: '2026-09-03T12:00:00Z' },
+      { sourceKey: 'web:geckoterminal', status: 'COMMUNITY_ONLY', nextAvailableAt: null },
+    ],
+  });
+  assert.match(sources, /data-vote-source-key="web:coinmooner"[^>]*>[^]*START/);
+  assert.match(sources, /GemFinder[^]*Proof submitted · review pending[^]*PENDING/);
+  assert.match(sources, /CoinMun[^]*Next vote/);
+  assert.match(sources, /GeckoTerminal[^]*Community signal only · no individual XP/);
+
+  const active = context.__renderWebsiteVoteDetail({ available: true, enabled: true, sources: [] }, {
+    challenge: 'a'.repeat(64),
+    source: { sourceKey: 'web:coinmooner', name: 'CoinMooner', url: 'https://coinmooner.com' },
+    attempt: { id: 44, status: 'OPEN', expiresAt: '2026-09-02T12:15:00Z' },
+  });
+  assert.match(active, /Active proof attempt/);
+  assert.match(active, /AAAAAAAAAAAA/);
+  assert.match(active, /website-vote-proof-file/);
+  assert.match(active, /Submit private proof/);
+  assert.doesNotMatch(active, /proof_sha256|proof_storage_key|reviewer_user_id/);
 });
 
 test('mission detail copy is escaped before it reaches the sheet', async () => {

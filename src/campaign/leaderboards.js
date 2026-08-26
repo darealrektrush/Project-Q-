@@ -10,8 +10,8 @@ function campaignId() {
   return process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? DEFAULT_CAMPAIGN_ID;
 }
 
-function emptyView(reason, available = false) {
-  return { available, reason, rows: [], participantRank: null, participantXp: 0, participantCount: 0 };
+function emptyView(reason, available = false, unit = 'XP') {
+  return { available, reason, rows: [], participantRank: null, participantXp: 0, participantCount: 0, unit };
 }
 
 export function closedCampaignLeaderboards(state = 'DRAFT', reason = 'Rankings open when the campaign is active.') {
@@ -22,9 +22,20 @@ export function closedCampaignLeaderboards(state = 'DRAFT', reason = 'Rankings o
     overall: emptyView(reason),
     '48h': emptyView(reason),
     missions: emptyView(reason),
+    trending: emptyView(reason, false, 'PUSHES'),
     community: emptyView(reason),
     burn: emptyView('Earn-to-Burn contributor attribution is not finalized.'),
   };
+}
+
+function countRows(rows, allowedIds) {
+  const totals = new Map();
+  for (const row of rows) {
+    const userId = String(row.telegram_user_id ?? '');
+    if (!userId || !allowedIds.has(userId)) continue;
+    totals.set(userId, (totals.get(userId) ?? 0) + 1);
+  }
+  return totals;
 }
 
 function addRows(rows, amountField, allowedIds) {
@@ -48,7 +59,7 @@ function compareUserIds(a, b) {
   return a.localeCompare(b);
 }
 
-function makeView(totals, requesterId, detail, limit = DEFAULT_LIMIT) {
+function makeView(totals, requesterId, detail, limit = DEFAULT_LIMIT, unit = 'XP') {
   const ranked = [...totals.entries()]
     .map(([userId, xp]) => ({ userId, xp }))
     .sort((a, b) => b.xp - a.xp || compareUserIds(a.userId, b.userId))
@@ -63,6 +74,7 @@ function makeView(totals, requesterId, detail, limit = DEFAULT_LIMIT) {
     participantRank: participant?.rank ?? null,
     participantXp: participant?.xp ?? 0,
     participantCount: ranked.length,
+    unit,
     rows: selected.map(({ userId, xp, rank }) => ({
       rank,
       xp,
@@ -88,7 +100,7 @@ export async function getCampaignLeaderboards(
   if (!VISIBLE_RANKING_STATES.has(state)) return closedCampaignLeaderboards(state);
 
   const since = new Date(new Date(now).getTime() - 48 * 60 * 60 * 1000).toISOString();
-  const [identityRows, overallRows, recentRows, missionRows, communityRows] = await Promise.all([
+  const [identityRows, overallRows, recentRows, trendingRows, missionRows, communityRows] = await Promise.all([
     client.select(
       'identity_links',
       `?campaign_id=eq.${encodeURIComponent(id)}&x_verified_at=not.is.null&select=telegram_user_id&limit=10000`
@@ -101,6 +113,11 @@ export async function getCampaignLeaderboards(
       'xp_ledger',
       `?campaign_id=eq.${encodeURIComponent(id)}&awarded_at=gte.${encodeURIComponent(since)}` +
         '&select=telegram_user_id,amount&limit=10000'
+    ),
+    client.select(
+      'campaign_participation_events',
+      `?campaign_id=eq.${encodeURIComponent(id)}&source=eq.event&credited=eq.true` +
+        '&select=telegram_user_id&limit=10000'
     ),
     client.select(
       'xp_ledger',
@@ -122,6 +139,9 @@ export async function getCampaignLeaderboards(
     overall: makeView(addRows(overallRows, 'xp', verifiedIds), requesterId, 'Verified campaign XP', limit),
     '48h': makeView(addRows(recentRows, 'amount', verifiedIds), requesterId, 'Verified XP · last 48 hours', limit),
     missions: makeView(addRows(missionRows, 'amount', verifiedIds), requesterId, 'Verified mission XP', limit),
+    trending: makeView(
+      countRows(trendingRows, verifiedIds), requesterId, 'Accepted Telegram trending pushes', limit, 'PUSHES'
+    ),
     community: makeView(addRows(communityRows, 'xp_awarded', verifiedIds), requesterId, 'Qualified Community Pulse XP', limit),
     burn: emptyView('Earn-to-Burn contributor attribution is not finalized.'),
   };

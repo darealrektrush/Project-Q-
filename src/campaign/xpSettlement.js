@@ -15,7 +15,7 @@
 // and Telegram-bot XP settle through participationSettlement.js instead --
 // see that file and supabase/campaign_participation.sql.
 
-import { DAILY_XP_CAPS, utcDayKey, loadDailyXpUsage } from './xpCaps.js';
+import { DAILY_XP_CAPS, campaignDayKey, loadDailyXpUsage } from './xpCaps.js';
 
 export { DAILY_XP_CAPS };
 export const RAID_XP_PER_ACTION = 4;
@@ -27,7 +27,7 @@ const PENDING_RAID_EVENTS_QUERY =
 // Settles exactly one pending raid event. Exported separately so callers
 // (and tests) can settle a single known event without a full sweep.
 export async function settleRaidEvent(client, campaignId, event, now = new Date()) {
-  const day = utcDayKey(now.toISOString());
+  const day = campaignDayKey(now);
   const usage = await loadDailyXpUsage(client, campaignId, event.telegram_user_id, day);
   const overallRemaining = Math.max(0, DAILY_XP_CAPS.overall - usage.overall);
   const missionRemaining = Math.max(0, DAILY_XP_CAPS.mission - usage.mission);

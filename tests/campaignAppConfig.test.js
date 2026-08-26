@@ -93,6 +93,20 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.ok(campaign.missions.every(({ actionLabel, frequency }) => actionLabel && frequency));
   assert.equal(campaign.missions.filter(({ kind }) => kind === 'INDIVIDUAL').length, 8);
   assert.equal(campaign.missions.find(({ id }) => id === 'website-voting').reward, 'Up to 11 XP');
+  const trendingBots = campaign.missions.find(({ id }) => id === 'trending-bots');
+  assert.equal(campaign.xpCaps.trendingBotsDaily, 20);
+  assert.equal(campaign.verificationSources.telegramBotFirstDailyXp, 2);
+  assert.equal(campaign.verificationSources.telegramBotRepeatXp, 1);
+  assert.equal(campaign.verificationSources.telegramBotDailyMaximumXp, 20);
+  assert.equal(campaign.verificationSources.telegramPushPointPerAcceptedVote, 1);
+  assert.deepEqual(campaign.verificationSources.telegramBotCooldownSeconds, {
+    '@majorbuybot': 7200,
+    '@wtftrending': 3600,
+    '@trenchobot': 86400,
+    '@BBtrendingbot': 3600,
+    '@drokiatrendsbot': 3600,
+  });
+  assert.match(trendingBots.verification, /uncapped Trending Push/);
   const earnToBurn = campaign.missions.find(({ id }) => id === 'earn-to-burn');
   assert.equal(earnToBurn.kind, 'COLLECTIVE');
   assert.equal(earnToBurn.reward, 'Collective progress');
@@ -126,6 +140,19 @@ test('Mini App exposes a guided verified onboarding path without activating part
   assert.match(app, /participationReady && \(state\.walletVerificationEnabled \|\| state\.campaignRecord\?\.enabled\)/);
   assert.match(app, /walletVerificationEnabled/);
   assert.match(app, /onEvent\?\.\('activated'/);
+});
+
+test('website vote evidence stays behind Telegram authentication and server-only storage', async () => {
+  const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
+  const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
+  assert.match(server, /\/campaign-app\/api\/votes\/attempts/);
+  assert.match(server, /\/campaign-app\/api\/votes\/proof/);
+  assert.match(server, /express\.raw\(\{ type: \['image\/jpeg', 'image\/png', 'image\/webp'\], limit: '2mb' \}\)/);
+  assert.match(server, /validateTelegramInitData[\s\S]*x-project-q-init-data/);
+  assert.match(app, /Start vote|data-vote-source-key/);
+  assert.match(app, /Submit private proof/);
+  assert.match(app, /x-project-q-vote-challenge/);
+  assert.doesNotMatch(app, /SUPABASE_SERVICE_ROLE_KEY|sb_secret_|proof_storage_key/);
 });
 
 test('Mini App V3 uses the five-screen command center and canonical Oracle branding', async () => {

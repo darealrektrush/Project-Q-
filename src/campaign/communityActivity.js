@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 
 import { DEFAULT_CAMPAIGN_ID } from './service.js';
-import { DAILY_XP_CAPS, loadDailyXpUsage, utcDayKey } from './xpCaps.js';
+import { DAILY_XP_CAPS, campaignDayKey, loadDailyXpUsage } from './xpCaps.js';
 
 export const COMMUNITY_TIME_ZONE = 'America/Vancouver';
 export const COMMUNITY_ACTIVITY_RULES = Object.freeze({
@@ -146,7 +146,7 @@ export async function settleCommunityActivityDay(
   for (const result of results) {
     let xpAwarded = 0;
     if (result.eligible) {
-      const usage = await loadDailyXpUsage(client, id, result.telegramUserId, utcDayKey(awardedAt));
+      const usage = await loadDailyXpUsage(client, id, result.telegramUserId, campaignDayKey(awardedAt));
       const available = Math.max(0, Math.min(
         DAILY_XP_CAPS.overall - usage.overall,
         DAILY_XP_CAPS.participation - usage.participation

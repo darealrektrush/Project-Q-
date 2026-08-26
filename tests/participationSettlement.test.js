@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {
   VOTE_XP_PER_SITE,
   VOTE_COMPLETION_BONUS_XP,
-  BOT_XP_PER_ACTION,
+  BOT_FIRST_DAILY_XP,
+  BOT_REPEAT_XP,
+  BOT_DAILY_XP_CAP,
+  TRENDING_PUSH_PER_ACCEPTED_ACTION,
   settleParticipationEvent,
   settleCampaignParticipationXp,
 } from '../src/campaign/participationSettlement.js';
@@ -17,6 +20,7 @@ function fakeClient({
   verificationSources = [],
   creditedVoteSourceKeys = [],
   bonusAlreadyPaid = false,
+  earlierBotActions = [],
 } = {}) {
   const calls = { insert: [], update: [] };
   const client = {
@@ -26,6 +30,7 @@ function fakeClient({
         if (query.includes('credited=eq.true')) {
           return creditedVoteSourceKeys.map((sourceKey) => ({ source_key: sourceKey }));
         }
+        if (query.includes('&id=lt.')) return earlierBotActions;
         return pendingEvents;
       }
       if (table === 'xp_ledger') {
@@ -49,7 +54,7 @@ function fakeClient({
   return { client, calls };
 }
 
-test('a fresh bot confirmation is credited the flat 2 XP bot rate, no bonus', async () => {
+test('the first daily bot confirmation earns 2 XP and one Trending Push', async () => {
   const { client, calls } = fakeClient();
   const event = {
     id: 1, cycle_id: 1, source: 'event', source_key: 'major-buy-bot', telegram_user_id: 123,
@@ -57,10 +62,27 @@ test('a fresh bot confirmation is credited the flat 2 XP bot rate, no bonus', as
   };
   const result = await settleParticipationEvent(client, CAMPAIGN_ID, event, new Date('2026-08-17T12:00:00Z'));
 
-  assert.deepEqual(result, { eventId: 1, credited: true, amount: BOT_XP_PER_ACTION, bonusAmount: 0, reason: null });
+  assert.deepEqual(result, {
+    eventId: 1, credited: true, amount: BOT_FIRST_DAILY_XP, bonusAmount: 0,
+    pushPoints: TRENDING_PUSH_PER_ACCEPTED_ACTION, reason: null,
+  });
   assert.equal(calls.insert.length, 1);
   assert.equal(calls.insert[0][1][0].source, 'event');
-  assert.equal(calls.insert[0][1][0].amount, BOT_XP_PER_ACTION);
+  assert.equal(calls.insert[0][1][0].amount, BOT_FIRST_DAILY_XP);
+  assert.equal(calls.insert[0][1][0].cap_bucket, 'trending');
+});
+
+test('a later bot confirmation after cooldown earns 1 XP and another Trending Push', async () => {
+  const { client, calls } = fakeClient({ earlierBotActions: [{ id: 1 }] });
+  const event = {
+    id: 2, cycle_id: 1, source: 'event', source_key: 'telegram:majorbuybot', telegram_user_id: 123,
+    verified_at: '2026-08-17T02:00:00Z',
+  };
+  const result = await settleParticipationEvent(client, CAMPAIGN_ID, event, new Date('2026-08-17T12:00:00Z'));
+
+  assert.equal(result.amount, BOT_REPEAT_XP);
+  assert.equal(result.pushPoints, 1);
+  assert.equal(calls.insert[0][1][0].amount, BOT_REPEAT_XP);
 });
 
 test('a fresh vote is credited 1 XP per site with no bonus when sites remain', async () => {
@@ -121,9 +143,9 @@ test('the completion bonus is never paid twice', async () => {
   assert.equal(calls.insert.length, 1); // site award only, no duplicate bonus row
 });
 
-test('the 15 XP/day participation cap limits both votes and bots', async () => {
+test('the dedicated 20 XP/day trending cap limits bot XP', async () => {
   const { client } = fakeClient({
-    ledgerRows: [{ amount: 14, cap_bucket: 'participation' }],
+    ledgerRows: [{ amount: BOT_DAILY_XP_CAP - 1, cap_bucket: 'trending' }],
   });
   const event = {
     id: 5, cycle_id: 1, source: 'event', source_key: 'baldbuddy', telegram_user_id: 123,
@@ -135,9 +157,9 @@ test('the 15 XP/day participation cap limits both votes and bots', async () => {
   assert.equal(result.credited, true);
 });
 
-test('an exhausted daily cap holds the event instead of crediting it', async () => {
+test('an accepted bot receipt after the XP cap still becomes a Trending Push', async () => {
   const { client, calls } = fakeClient({
-    ledgerRows: [{ amount: 15, cap_bucket: 'participation' }],
+    ledgerRows: [{ amount: BOT_DAILY_XP_CAP, cap_bucket: 'trending' }],
   });
   const event = {
     id: 6, cycle_id: 1, source: 'event', source_key: 'trencho', telegram_user_id: 123,
@@ -145,8 +167,12 @@ test('an exhausted daily cap holds the event instead of crediting it', async () 
   };
   const result = await settleParticipationEvent(client, CAMPAIGN_ID, event, new Date('2026-08-17T12:00:00Z'));
 
-  assert.deepEqual(result, { eventId: 6, credited: false, amount: 0, bonusAmount: 0, reason: 'daily_cap_reached' });
+  assert.deepEqual(result, {
+    eventId: 6, credited: true, amount: 0, bonusAmount: 0, pushPoints: 1,
+    reason: 'trending_push_only',
+  });
   assert.equal(calls.insert.length, 0);
+  assert.deepEqual(calls.update[0][2], { credited: true, reason: 'trending_push_only' });
 });
 
 test('the 75 XP/day overall cap also limits participation settlement', async () => {
@@ -175,13 +201,28 @@ test('a full sweep settles pending events oldest first', async () => {
   assert.equal(skipped, null);
   assert.equal(settled.length, 2);
   assert.deepEqual(settled.map((row) => row.eventId), [20, 21]);
-  assert.ok(settled.every((row) => row.amount === BOT_XP_PER_ACTION));
+  assert.ok(settled.every((row) => row.amount === BOT_FIRST_DAILY_XP));
 });
 
 test('settlement no-ops for a campaign that is not ACTIVE', async () => {
   const { client, calls } = fakeClient({ campaignState: 'DRAFT' });
   const result = await settleCampaignParticipationXp(client, CAMPAIGN_ID);
 
-  assert.deepEqual(result, { settled: [], skipped: 'campaign is not ACTIVE' });
+  assert.deepEqual(result, {
+    settled: [], skipped: 'campaign is not accepting participation settlement',
+  });
   assert.equal(calls.insert.length, 0);
+});
+
+test('review-window settlement can credit an already-submitted verified website proof', async () => {
+  const pendingEvents = [{
+    id: 30, cycle_id: 7, source: 'vote', source_key: 'web:coinmun',
+    telegram_user_id: 9, verified_at: '2026-09-15T14:59:00.000Z',
+  }];
+  const { client } = fakeClient({ campaignState: 'VERIFYING', pendingEvents });
+  const result = await settleCampaignParticipationXp(client, CAMPAIGN_ID, {
+    now: new Date('2026-09-16T18:00:00.000Z'),
+  });
+  assert.equal(result.skipped, null);
+  assert.equal(result.settled[0].amount, 1);
 });
