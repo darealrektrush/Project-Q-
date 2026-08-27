@@ -428,6 +428,9 @@ test('locked Bond reward values migration only updates the inert DRAFT ruleset',
   assert.match(migration, /campaign_row\.funded_base_units <> 0/);
   assert.match(migration, /campaign_ruleset_proposals/);
   assert.match(migration, /campaign_ruleset_finalizations/);
+  assert.match(migration, /insert into public\.ruleset_versions/);
+  assert.match(migration, /ruleset_version = 2/);
+  assert.doesNotMatch(migration, /update\s+public\.ruleset_versions/i);
   assert.doesNotMatch(migration, /set\s+state\s*=\s*'ACTIVE'/i);
   assert.doesNotMatch(migration, /insert\s+into\s+public\.xp_ledger/i);
   assert.doesNotMatch(migration, /insert\s+into\s+public\.(earn_to_burn_programs|burn_milestones|burn_proposals)/i);

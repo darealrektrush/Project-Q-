@@ -17,7 +17,7 @@ const readDraft = async () => JSON.parse(await readFile(
 function finalized(rules) {
   return {
     ...structuredClone(rules),
-    rulesetVersion: 2,
+    rulesetVersion: rules.rulesetVersion + 1,
     status: 'FINAL',
     referrals: {
       ...rules.referrals,
@@ -37,7 +37,7 @@ test('reviewed draft rules lock campaign economics but remain launch-blocked', a
   const draft = inspectBondCampaignRules(rules);
   assert.equal(draft.valid, false);
   assert.match(draft.rulesHash, /^[0-9a-f]{64}$/);
-  assert.equal(draft.rulesHash, 'f593a15ddaccffb870dcd24e12711692bdfa1e921150ce1c39f1c2fdaefb4020');
+  assert.equal(draft.rulesHash, '3f633f57407b3db02a24045293718cf8b3d7dfd3af7b15521a0bac7a58dc2f90');
   assert.deepEqual(rules.missions, BOND_RULES_MISSION_IDS);
   assert.deepEqual(draft.blockers, [
     'ruleset status is not FINAL',
@@ -119,13 +119,13 @@ test('final rules require exact locked commitments, schedule and nine mission la
 test('database rules gate requires matching final JSON, version and hash', async () => {
   const rules = finalized(await readDraft());
   const inspection = inspectBondCampaignRules(rules);
-  const campaign = { ruleset_version: 2, rules_hash: inspection.rulesHash };
-  const row = { version: 2, rules_hash: inspection.rulesHash, rules_json: rules };
+  const campaign = { ruleset_version: 3, rules_hash: inspection.rulesHash };
+  const row = { version: 3, rules_hash: inspection.rulesHash, rules_json: rules };
   assert.equal(rulesetRowMatchesCampaign(campaign, row), true);
-  assert.equal(rulesetRowMatchesCampaign(campaign, { ...row, version: 1 }), false);
+  assert.equal(rulesetRowMatchesCampaign(campaign, { ...row, version: 2 }), false);
   assert.equal(rulesetRowMatchesCampaign(campaign, {
     ...row,
-    rules_json: { ...rules, rulesetVersion: 3 },
+    rules_json: { ...rules, rulesetVersion: 4 },
   }), false);
   assert.equal(rulesetRowMatchesCampaign(campaign, { ...row, rules_hash: 'a'.repeat(64) }), false);
 });
