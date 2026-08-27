@@ -3,6 +3,7 @@ import { supabase } from '../src/lib/supabase.js';
 import { DEFAULT_CAMPAIGN_ID } from '../src/campaign/service.js';
 import { settleCampaignRaidXp } from '../src/campaign/xpSettlement.js';
 import { settleCampaignParticipationXp } from '../src/campaign/participationSettlement.js';
+import { settleCampaignBonusXp } from '../src/campaign/bonusSettlement.js';
 import { DEFAULT_EARN_TO_BURN_PROGRAM_ID } from '../src/earnToBurn/service.js';
 import { syncXpProgress } from '../src/earnToBurn/workflow.js';
 
@@ -15,11 +16,13 @@ async function main() {
 
   const raidResult = await settleCampaignRaidXp(supabase, campaignId);
   const participationResult = await settleCampaignParticipationXp(supabase, campaignId);
-  const settled = [...raidResult.settled, ...participationResult.settled];
-  const skipped = raidResult.skipped ?? participationResult.skipped;
+  const bonusResult = await settleCampaignBonusXp(supabase, campaignId);
+  const settled = [...raidResult.settled, ...participationResult.settled, ...bonusResult.settled];
+  const skipReasons = [raidResult.skipped, participationResult.skipped, bonusResult.skipped]
+    .filter(Boolean);
 
-  if (skipped) {
-    console.log(`Campaign XP settlement skipped for ${campaignId}: ${skipped}.`);
+  if (settled.length === 0 && skipReasons.length === 3) {
+    console.log(`Campaign XP settlement skipped for ${campaignId}: ${skipReasons.join('; ')}.`);
     return;
   }
 

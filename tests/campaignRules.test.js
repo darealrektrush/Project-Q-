@@ -37,7 +37,7 @@ test('reviewed draft rules lock campaign economics but remain launch-blocked', a
   const draft = inspectBondCampaignRules(rules);
   assert.equal(draft.valid, false);
   assert.match(draft.rulesHash, /^[0-9a-f]{64}$/);
-  assert.equal(draft.rulesHash, '3f633f57407b3db02a24045293718cf8b3d7dfd3af7b15521a0bac7a58dc2f90');
+  assert.equal(draft.rulesHash, '7a90e066c2288be109a78f99d1cb9b3d7f6954a12a855a50c4e8a9e803448fe0');
   assert.deepEqual(rules.missions, BOND_RULES_MISSION_IDS);
   assert.deepEqual(draft.blockers, [
     'ruleset status is not FINAL',
@@ -52,7 +52,7 @@ test('draft rules, Mini App campaign config and provisioning migration cannot dr
     'utf8'
   ));
   const migration = await readFile(
-    new URL('../supabase/migrations/20260827030000_lock_bond_reward_values_and_burn_plan.sql', import.meta.url),
+    new URL('../supabase/migrations/20260827040000_lock_bond_bonus_queue_and_settlement.sql', import.meta.url),
     'utf8'
   );
   const inspection = inspectBondCampaignRules(rules);
@@ -73,6 +73,7 @@ test('draft rules, Mini App campaign config and provisioning migration cannot dr
   assert.equal(rules.commitments.earnToBurnBaseUnits,
     campaign.campaignCommitments.earnToBurn.amountBaseUnits);
   assert.equal(rules.referrals.bonusXp, campaign.referrals.bonusXp);
+  assert.equal(rules.referrals.bonusCapPolicy, campaign.referrals.bonusCapPolicy);
   assert.equal(rules.referrals.xInviteMainPostId, campaign.referrals.xInviteBonus.mainPostId);
   assert.equal(rules.referrals.xInviteBonusXp, campaign.referrals.xInviteBonus.bonusXp);
   assert.deepEqual(rules.earnToBurn.milestones, campaign.earnToBurn.milestones);
@@ -119,13 +120,13 @@ test('final rules require exact locked commitments, schedule and nine mission la
 test('database rules gate requires matching final JSON, version and hash', async () => {
   const rules = finalized(await readDraft());
   const inspection = inspectBondCampaignRules(rules);
-  const campaign = { ruleset_version: 3, rules_hash: inspection.rulesHash };
-  const row = { version: 3, rules_hash: inspection.rulesHash, rules_json: rules };
+  const campaign = { ruleset_version: 4, rules_hash: inspection.rulesHash };
+  const row = { version: 4, rules_hash: inspection.rulesHash, rules_json: rules };
   assert.equal(rulesetRowMatchesCampaign(campaign, row), true);
-  assert.equal(rulesetRowMatchesCampaign(campaign, { ...row, version: 2 }), false);
+  assert.equal(rulesetRowMatchesCampaign(campaign, { ...row, version: 3 }), false);
   assert.equal(rulesetRowMatchesCampaign(campaign, {
     ...row,
-    rules_json: { ...rules, rulesetVersion: 4 },
+    rules_json: { ...rules, rulesetVersion: 5 },
   }), false);
   assert.equal(rulesetRowMatchesCampaign(campaign, { ...row, rules_hash: 'a'.repeat(64) }), false);
 });

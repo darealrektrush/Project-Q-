@@ -157,6 +157,7 @@
     "status": "REWARD_LOCKED",
     "minimumPurchaseUsd": 2,
     "bonusXp": 10,
+    "bonusCapPolicy": "QUEUE_EXACT_UNDER_OVERALL_DAILY_CAP",
     "requiresNewParticipant": true,
     "requiresVerifiedIdentity": true,
     "requiresVerifiedPostReferralPurchase": true,
@@ -278,7 +279,7 @@
     {
       "id": "verified-referrals", "kind": "INDIVIDUAL", "icon": "↗", "image": "/campaign-app/assets/missions/v3-verified-referrals.webp",
       "title": "Verified Referrals", "description": "Invite a new participant who verifies, buys at least $2 of FAWKQ and earns verified XP.", "status": "Reward locked", "reward": "10 XP per qualified referral", "frequency": "Per qualified new participant", "enabled": false,
-      "verification": "First-touch attribution records the referral. Qualification requires a new participant, verified Telegram/X/wallet identity, a verified post-referral FAWKQ purchase of at least $2 and later positive campaign XP.",
+      "verification": "First-touch attribution records the referral. Qualification requires a new participant, verified Telegram/X/wallet identity, a verified post-referral FAWKQ purchase of at least $2 and later positive campaign XP. Exact bonuses queue when the participant lacks room under the 75 XP daily cap.",
       "requirements": ["Share your personal opaque Project Q referral link", "The referred participant must complete every qualification stage", "Self-referrals, duplicate identities and recycled wallets do not qualify"],
       "actionLabel": "My referral link", "readOnlyAction": true
     },

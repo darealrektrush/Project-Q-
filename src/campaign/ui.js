@@ -244,6 +244,7 @@ export function buildReferralMissionText(profile) {
     '3. A post-referral FAWKQ purchase of at least USD $2 is verified.',
     '4. The participant earns their first verified campaign XP.',
     '', `*Referral bonus:* ${bonus}`,
+    'Exact bonuses queue until a campaign settlement day has enough room under the 75 XP daily cap.',
     `*Invited:* ${Number(counts.invited ?? 0)} · *Qualified:* ${Number(counts.qualified ?? 0)} · *Awarded:* ${Number(counts.bonusAwarded ?? 0)}`,
     '', '*Your personal link:*', link,
     '', '*One-time X invite bonus:*',

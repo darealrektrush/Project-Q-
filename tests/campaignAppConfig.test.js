@@ -68,6 +68,7 @@ test('campaign registry points to a valid reusable default campaign', async () =
   assert.equal(campaign.referrals.minimumPurchaseUsd, 2);
   assert.equal(campaign.referrals.status, 'REWARD_LOCKED');
   assert.equal(campaign.referrals.bonusXp, 10);
+  assert.equal(campaign.referrals.bonusCapPolicy, 'QUEUE_EXACT_UNDER_OVERALL_DAILY_CAP');
   assert.equal(campaign.referrals.requiresVerifiedPostReferralPurchase, true);
   assert.equal(campaign.referrals.xInviteBonus.requiredDistinctMentions, 3);
   assert.equal(campaign.referrals.xInviteBonus.status, 'REWARD_LOCKED_AWAITING_POST');

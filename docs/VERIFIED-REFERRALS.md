@@ -13,13 +13,15 @@ A referral qualifies only when:
 5. the referred participant earns positive, verified campaign XP after referral acceptance; and
 6. no duplicate X identity, reward wallet, purchase reference or participant attribution exists.
 
-The founder-approved referral reward is **10 XP per qualified new participant**. The value is locked in the reviewed DRAFT rules; no XP is awarded until the campaign is finalized, activated and the idempotent settlement path is enabled.
+The founder-approved referral reward is **10 XP per qualified new participant**. The reward is never reduced: if fewer than 10 XP remain under the participant's 75 XP daily cap, it stays queued and is retried on the next settlement day with enough room. The value and queue policy are locked in the reviewed DRAFT rules; no XP is awarded until the campaign is finalized, activated and the idempotent settlement path is enabled.
 
 ## One-time X invite bonus
 
 Verified Referrals also contains a separate one-time bonus action: reply to the official pinned FAWKQ Bond the Duck post and mention exactly three distinct people who would genuinely be interested. The Oracle must verify the linked X author, conversation ID, directly referenced post and mention user IDs. The participant and official FAWKQ account are excluded from the three mentions, and each participant and reply can qualify only once.
 
-The founder-approved one-time X invite reward is **5 XP**. The official pinned FAWKQ campaign post ID still must be published and locked before the rules can become FINAL. Repeated entries, copied replies and automated mention farming do not qualify.
+The founder-approved one-time X invite reward is **5 XP** and uses the same exact queue policy. The official pinned FAWKQ campaign post ID still must be published and locked before the rules can become FINAL. Repeated entries, copied replies and automated mention farming do not qualify.
+
+Project Q may continue settling queued bonuses through the VERIFYING window. The database blocks the campaign from freezing allocations while any qualified referral or verified X invite is still waiting for its exact bonus.
 
 ## Participant experience
 
