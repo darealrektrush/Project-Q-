@@ -1,7 +1,7 @@
 {
   "schema": "bond-campaign-rules-v1",
   "campaignId": "bond-the-duck-2026",
-  "rulesetVersion": 2,
+  "rulesetVersion": 3,
   "status": "DRAFT",
   "schedule": {
     "timeZone": "America/Vancouver",
@@ -98,6 +98,7 @@
   "referrals": {
     "minimumPurchaseUsd": 2,
     "bonusXp": 10,
+    "bonusCapPolicy": "QUEUE_EXACT_UNDER_OVERALL_DAILY_CAP",
     "xInviteMainPostId": null,
     "xInviteRequiredDistinctMentions": 3,
     "xInviteBonusXp": 5

@@ -1,4 +1,5 @@
 import { hashRuleset } from './state.js';
+import { BONUS_CAP_POLICY } from './rewardValues.js';
 
 export const BOND_RULES_SCHEMA = 'bond-campaign-rules-v1';
 export const BOND_RULES_MISSION_IDS = Object.freeze([
@@ -147,6 +148,9 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
   const referrals = rules.referrals || {};
   if (referrals.minimumPurchaseUsd !== 2) blockers.push('referral purchase minimum is not USD $2');
   if (!POSITIVE_XP(referrals.bonusXp)) blockers.push('verified referral bonus XP is not finalized');
+  if (referrals.bonusCapPolicy !== BONUS_CAP_POLICY) {
+    blockers.push('referral bonuses do not use the locked exact queue policy');
+  }
   if (!/^[0-9]{1,24}$/.test(String(referrals.xInviteMainPostId || ''))) {
     blockers.push('official pinned FAWKQ campaign post ID is not finalized');
   }

@@ -436,3 +436,37 @@ test('locked Bond reward values migration only updates the inert DRAFT ruleset',
   assert.doesNotMatch(migration, /insert\s+into\s+public\.(earn_to_burn_programs|burn_milestones|burn_proposals)/i);
   assert.doesNotMatch(migration, /insert\s+into\s+public\.campaign_state_transitions/i);
 });
+
+test('exact queued campaign bonuses are atomic, final-rules gated and service-only', async () => {
+  const migration = await read(
+    'supabase/migrations/20260827040000_lock_bond_bonus_queue_and_settlement.sql'
+  );
+  assert.match(migration, /insert into public\.ruleset_versions/);
+  assert.match(migration, /ruleset_version = 3/);
+  assert.match(migration, /bonusCapPolicy.*QUEUE_EXACT_UNDER_OVERALL_DAILY_CAP/);
+  assert.doesNotMatch(migration, /update\s+public\.ruleset_versions/i);
+  assert.match(migration, /campaign_row\.state <> 'DRAFT'/);
+  assert.match(migration, /campaign_row\.funded_base_units <> 0/);
+  assert.match(migration, /create index if not exists campaign_referrals_pending_bonus_idx/);
+  assert.match(migration, /create index if not exists campaign_x_invites_pending_bonus_idx/);
+  assert.match(migration, /only the first bonus XP ledger link may be attached/);
+  assert.match(migration, /guard_campaign_bonus_queue_before_freeze/);
+  assert.match(migration, /new\.from_state = 'VERIFYING' and new\.to_state = 'ALLOCATIONS_FROZEN'/);
+  assert.match(migration, /all exact campaign bonuses must settle before allocations freeze/);
+  assert.match(migration, /security invoker[\s\S]+set search_path = public/);
+  assert.match(migration, /campaign_row\.state not in \('ACTIVE', 'VERIFYING'\)/);
+  assert.match(migration, /rules_row\.rules_json->>'status' <> 'FINAL'/);
+  assert.match(migration, /rules_row\.rules_hash <> campaign_row\.rules_hash/);
+  assert.match(migration, /rules_row\.rules_json#>>'\{referrals,bonusXp\}' <> '10'/);
+  assert.match(migration, /rules_row\.rules_json#>>'\{referrals,xInviteBonusXp\}' <> '5'/);
+  assert.match(migration, /used_xp \+ bonus_amount > 75/);
+  assert.match(migration, /'status', 'QUEUED_DAILY_CAP', 'amount', 0/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /lock table public\.xp_ledger in share row exclusive mode/);
+  assert.match(migration, /on conflict \(campaign_id, idempotency_key\) do nothing/);
+  assert.match(migration, /revoke all on function public\.settle_campaign_bonus_award\(text,text,bigint\)[\s\S]+from public, anon, authenticated/);
+  assert.match(migration, /grant execute on function public\.settle_campaign_bonus_award\(text,text,bigint\)[\s\S]+to service_role/);
+  assert.doesNotMatch(migration, /set\s+state\s*=\s*'ACTIVE'/i);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.(earn_to_burn_programs|burn_milestones|burn_proposals)/i);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.campaign_state_transitions/i);
+});

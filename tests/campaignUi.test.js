@@ -50,6 +50,7 @@ test('verified referral screen exposes the locked referral and X invite rewards'
   assert.match(text, /ref_abcd1234efgh/);
   assert.match(text, /official pinned FAWKQ campaign post/);
   assert.match(text, /exactly three distinct people/);
+  assert.match(text, /exact bonuses queue until a campaign settlement day has enough room/i);
 });
 
 test('Oracle raid screen reports credited and pending campaign actions', () => {
