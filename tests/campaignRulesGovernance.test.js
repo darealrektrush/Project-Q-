@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { inspectBondCampaignRules } from '../src/campaign/rules.js';
+import {
+  BOND_EARN_TO_BURN_MILESTONES,
+  inspectBondCampaignRules,
+} from '../src/campaign/rules.js';
 import {
   buildRulesGovernanceKeyboard,
   buildRulesGovernanceText,
@@ -29,11 +32,7 @@ async function finalRules() {
     },
     earnToBurn: {
       ...draft.earnToBurn,
-      milestones: [{
-        id: 'opening-burn',
-        progressTargetUnits: '1000',
-        burnAmountBaseUnits: '15000000000000',
-      }],
+      milestones: structuredClone(BOND_EARN_TO_BURN_MILESTONES),
     },
   };
 }

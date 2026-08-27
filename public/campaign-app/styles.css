@@ -181,6 +181,15 @@ h1 { margin: 0; color: var(--text); font-size: 16px; font-weight: 650; letter-sp
 .burn-utility b { font-size: 11px; }
 .burn-utility em { overflow: hidden; color: var(--muted); font-size: 8px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
 .burn-utility > i { color: var(--gold-2); font-style: normal; }
+.burn-plan { overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius); background: #080808; }
+.burn-plan-row { min-height: 66px; padding: 10px 13px; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto auto; align-items: center; gap: 11px; border-bottom: 1px solid var(--line-soft); }
+.burn-plan-row:last-child { border-bottom: 0; }
+.burn-plan-row > span { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--gold-2); font-size: 8px; font-weight: 800; }
+.burn-plan-row b, .burn-plan-row small { display: block; }
+.burn-plan-row b { color: var(--text-soft); font-size: 9px; }
+.burn-plan-row small { margin-top: 3px; color: var(--muted); font-size: 7px; }
+.burn-plan-row > strong { color: var(--gold-2); font-size: 9px; white-space: nowrap; }
+.burn-plan-row.complete { border-left: 2px solid rgba(100, 201, 135, .48); }
 .ecosystem-strip { margin-top: 12px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-soft); border-radius: var(--radius); background: #070707; }
 .ecosystem-strip > div { min-width: 0; padding: 4px 10px; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 9px; }
 .ecosystem-strip > div + div { border-left: 1px solid var(--line-soft); }
@@ -689,6 +698,9 @@ h1 { margin: 0; color: var(--text); font-size: 16px; font-weight: 650; letter-sp
   .onboarding-step { grid-template-columns: 36px minmax(0, 1fr); }
   .onboarding-step > button, .onboarding-step > strong { grid-column: 2; justify-self: start; }
   .burn-receipt { align-items: flex-start; flex-direction: column; }
+  .burn-plan-row { grid-template-columns: 28px minmax(0, 1fr) auto; }
+  .burn-plan-row > strong { grid-column: 2; }
+  .burn-plan-row > .state-pill { grid-column: 3; grid-row: 1 / span 2; }
   .section-head > span { display: none; }
 }
 

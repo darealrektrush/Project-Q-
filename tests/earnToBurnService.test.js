@@ -19,6 +19,8 @@ test('public summary is derived from append-only progress and receipts', async (
   const summary=await getEarnToBurnSummary(client,'bond');
   assert.equal(summary.progressUnits,'25');
   assert.equal(summary.nextMilestone.progressBps,2500);
+  assert.equal(summary.milestones.length,1);
+  assert.equal(summary.milestones[0].progressBps,2500);
   assert.equal(summary.currentSupplyBaseUnits,'999999999658335');
 });
 
