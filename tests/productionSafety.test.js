@@ -300,6 +300,23 @@ test('Earn to Burn migration is server-only, append-only and two-founder gated',
   assert.doesNotMatch(migration, /slot bigint not null unique/);
 });
 
+test('Bond founder registration is numeric-ID bound and cannot activate Earn to Burn', async () => {
+  const migration = await read(
+    'supabase/migrations/20260827020000_register_bond_founders_and_burn_source_identity.sql'
+  );
+  assert.match(migration, /8560606243, '@darealrektrush'/);
+  assert.match(migration, /1767783978, '@AndrewNicholls'/);
+  assert.match(migration, /enabled_founders <> 2 or expected_founders <> 2/);
+  assert.match(migration, /add column if not exists founder_label text/);
+  assert.match(migration, /state = 'DRAFT'/);
+  assert.doesNotMatch(migration, /insert into public\.earn_to_burn_programs/i);
+  assert.doesNotMatch(migration, /insert into public\.burn_program_founders/i);
+  assert.doesNotMatch(migration, /insert into public\.burn_milestones/i);
+  assert.doesNotMatch(migration, /insert into public\.burn_source_accounts/i);
+  assert.doesNotMatch(migration, /update public\.campaigns/i);
+  assert.doesNotMatch(migration, /state\s*=\s*'ACTIVE'/i);
+});
+
 test('Render waits for checks before deploying managed services', async () => {
   const blueprint = await read('render.yaml');
   const managedServices = (blueprint.match(/autoDeployTrigger: checksPass/g) ?? []).length;

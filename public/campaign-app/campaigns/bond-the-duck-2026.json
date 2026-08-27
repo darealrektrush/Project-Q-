@@ -84,6 +84,11 @@
   "earnToBurn": {
     "status": "DRAFT",
     "programId": "fawkq-earn-to-burn",
+    "mint": "GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump",
+    "tokenProgramId": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "decimals": 6,
+    "creatorWallet": "7kGJBag2VcjR4JB7qLStgizLa2eDQuGtiysZKzEetRMT",
+    "sourceTokenAccount": "3BZHPnTFuzxxaMFHo2Gv54uNP7Uw53cyoEMptnjZoxfa",
     "originalReferenceSupplyBaseUnits": "1000000000000000",
     "openingBurnBaseUnits": "15000000000000",
     "openingBurnPercentBps": 150,

@@ -30,6 +30,11 @@ test('campaign registry points to a valid reusable default campaign', async () =
   assert.equal(campaign.leaderboardBadges.length, 6);
   assert.ok(Array.isArray(campaign.missions));
   assert.equal(campaign.earnToBurn.status, 'DRAFT');
+  assert.equal(campaign.earnToBurn.mint, 'GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump');
+  assert.equal(campaign.earnToBurn.tokenProgramId, 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+  assert.equal(campaign.earnToBurn.decimals, 6);
+  assert.equal(campaign.earnToBurn.creatorWallet, '7kGJBag2VcjR4JB7qLStgizLa2eDQuGtiysZKzEetRMT');
+  assert.equal(campaign.earnToBurn.sourceTokenAccount, '3BZHPnTFuzxxaMFHo2Gv54uNP7Uw53cyoEMptnjZoxfa');
   assert.equal(campaign.earnToBurn.openingBurnBaseUnits, '15000000000000');
   assert.equal(campaign.earnToBurn.openingBurnSource, 'FAWKQ_CREATOR_WALLET');
   assert.equal(campaign.earnToBurn.additionalToCampaignAllocation, true);

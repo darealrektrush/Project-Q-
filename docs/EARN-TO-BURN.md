@@ -32,9 +32,15 @@ The 15,000,000 FAWKQ reserve remains in the creator wallet. Squads is not part o
 - Mint: `GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump`
 - Token program: Token-2022 (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
 - Decimals: `6`
+- Creator wallet: `7kGJBag2VcjR4JB7qLStgizLa2eDQuGtiysZKzEetRMT`
+- Creator-wallet Token-2022 associated token account: `3BZHPnTFuzxxaMFHo2Gv54uNP7Uw53cyoEMptnjZoxfa`
 - Original/reference supply: `1,000,000,000` FAWKQ (`1000000000000000` base units)
 - Supply observed during the 2026-08-24 audit: `999,999,999.658335` FAWKQ (`999999999658335` base units)
 - Planned opening burn: `15,000,000` FAWKQ (`15000000000000` base units)
+
+The source balance is deliberately not hard-coded. Project Q must read the finalized Token-2022 account balance immediately before preparing each milestone transaction and again while verifying the confirmed burn.
+
+The two private Telegram approval identities are bound by immutable numeric IDs, not mutable usernames: `8560606243` (`@darealrektrush`) and `1767783978` (`@AndrewNicholls`). These IDs authorize only Project Q approval records; they do not grant wallet authority.
 
 ## Bond the Duck commitments
 
