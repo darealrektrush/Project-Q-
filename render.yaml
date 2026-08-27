@@ -16,6 +16,8 @@ services:
         sync: false
       - key: TELEGRAM_WEBHOOK_SECRET
         sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        value: https://project-q-8k3a.onrender.com/webhook
       - key: TELEGRAM_CHAT_ID
         sync: false
       - key: TELEGRAM_TOPIC_IDS

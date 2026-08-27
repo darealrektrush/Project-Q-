@@ -27,6 +27,9 @@ Shared server configuration:
 Web-only/authenticated ingress:
 
 - `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_WEBHOOK_URL` — exact production HTTPS `/webhook` endpoint; when set,
+  the web service idempotently reconciles Telegram on startup without dropping
+  pending updates
 - `BAGWORK_SECRET`
 - `ORACLE_CAMPAIGN_SECRET`
 - `FAWKQ_WEBSITE_URL`
