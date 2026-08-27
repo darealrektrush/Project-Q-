@@ -56,7 +56,7 @@ test('X invite status exposes verification without leaking mentioned identities'
     reply_post_id: '1001', verified_at: '2026-08-25T12:00:00Z', bonus_xp_ledger_id: null,
   }] };
   assert.deepEqual(await getXInviteStatus(client, '42', { id: 'bond-test' }), {
-    verified: true, replyPostId: '1001', verifiedAt: '2026-08-25T12:00:00Z', bonusAwarded: false,
+    verified: true, replyPostId: '1001', verifiedAt: '2026-08-25T12:00:00Z', bonusXp: 5, bonusAwarded: false,
   });
 });
 

@@ -66,10 +66,12 @@ test('campaign registry points to a valid reusable default campaign', async () =
   assert.equal(campaign.campaignCommitments.earnToBurn.amountBaseUnits, '15000000000000');
   assert.equal(campaign.campaignCommitments.totalTokenCommitmentBaseUnits, '32500000000000');
   assert.equal(campaign.referrals.minimumPurchaseUsd, 2);
-  assert.equal(campaign.referrals.bonusXp, null);
+  assert.equal(campaign.referrals.status, 'REWARD_LOCKED');
+  assert.equal(campaign.referrals.bonusXp, 10);
   assert.equal(campaign.referrals.requiresVerifiedPostReferralPurchase, true);
   assert.equal(campaign.referrals.xInviteBonus.requiredDistinctMentions, 3);
-  assert.equal(campaign.referrals.xInviteBonus.bonusXp, null);
+  assert.equal(campaign.referrals.xInviteBonus.status, 'REWARD_LOCKED_AWAITING_POST');
+  assert.equal(campaign.referrals.xInviteBonus.bonusXp, 5);
   assert.equal(campaign.communityPulse.minimumMessages, 5);
   assert.equal(campaign.communityPulse.minimumWindows, 3);
   assert.equal(campaign.communityPulse.minimumReplies, 2);

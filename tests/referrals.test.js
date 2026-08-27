@@ -6,6 +6,7 @@ import {
   buildReferralLink,
   captureReferral,
   evaluateReferralQualification,
+  getReferralProfile,
   getOrCreateReferralCode,
   parseReferralPayload,
   refreshReferralQualification,
@@ -77,6 +78,16 @@ test('referral profile counts distinguish active funnel stages from awarded bonu
     invited: 5, verifying: 1, purchasePending: 1, participationPending: 1,
     qualified: 2, bonusAwarded: 1,
   });
+});
+
+test('referral profile exposes the locked referral and X invite reward values', async () => {
+  const client = { select: async () => [] };
+  const profile = await getReferralProfile(client, 123, {
+    id: 'bond-the-duck-2026',
+    createCode: false,
+  });
+  assert.equal(profile.bonusXp, 10);
+  assert.equal(profile.xInviteBonusXp, 5);
 });
 
 test('qualification refresh advances evidence monotonically without issuing bonus XP', async () => {

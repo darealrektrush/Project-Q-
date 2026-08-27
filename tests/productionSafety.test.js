@@ -416,3 +416,20 @@ test('Bond the Duck participation migration remains server-only and fail-closed'
   assert.match(migration, /make_interval\(secs => source_row\.cooldown_seconds\)/);
   assert.match(migration, /participation source is on cooldown for this participant/);
 });
+
+test('locked Bond reward values migration only updates the inert DRAFT ruleset', async () => {
+  const migration = await read(
+    'supabase/migrations/20260827030000_lock_bond_reward_values_and_burn_plan.sql'
+  );
+  assert.match(migration, /expected_rules#>>'\{referrals,bonusXp\}' <> '10'/);
+  assert.match(migration, /expected_rules#>>'\{referrals,xInviteBonusXp\}' <> '5'/);
+  assert.match(migration, /jsonb_array_length\(expected_rules#>'\{earnToBurn,milestones\}'\) <> 5/);
+  assert.match(migration, /campaign_row\.state <> 'DRAFT'/);
+  assert.match(migration, /campaign_row\.funded_base_units <> 0/);
+  assert.match(migration, /campaign_ruleset_proposals/);
+  assert.match(migration, /campaign_ruleset_finalizations/);
+  assert.doesNotMatch(migration, /set\s+state\s*=\s*'ACTIVE'/i);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.xp_ledger/i);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.(earn_to_burn_programs|burn_milestones|burn_proposals)/i);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.campaign_state_transitions/i);
+});

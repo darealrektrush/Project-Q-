@@ -37,14 +37,16 @@ test('missions centre exposes Oracle raids and the other campaign lanes', () => 
     'https://t.me/crabstar_oracle_bot');
 });
 
-test('verified referral screen exposes the personal funnel without promising an unset XP amount', () => {
+test('verified referral screen exposes the locked referral and X invite rewards', () => {
   const text = buildReferralMissionText({
     link: 'https://t.me/project_q_bot?start=ref_abcd1234efgh',
-    bonusXp: null,
+    bonusXp: 10,
+    xInviteBonusXp: 5,
     counts: { invited: 2, qualified: 1, bonusAwarded: 0 },
   });
   assert.match(text, /post-referral FAWKQ purchase of at least USD \$2/);
-  assert.match(text, /Amount pending founder approval/);
+  assert.match(text, /Referral bonus:\* 10 XP/);
+  assert.match(text, /Verified bonus: 5 XP/);
   assert.match(text, /ref_abcd1234efgh/);
   assert.match(text, /official pinned FAWKQ campaign post/);
   assert.match(text, /exactly three distinct people/);
