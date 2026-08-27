@@ -44,3 +44,59 @@ test('wallet verification consumes the nonce before linking the verified wallet'
   assert.equal(calls[1][0], 'upsert');
   assert.equal(calls[1][2][0].wallet_verified_at, now.toISOString());
 });
+
+test('wallet verification blocks self-service destination changes after an allocation exists', async () => {
+  const currentWallet = generateKeyPairSync('ed25519');
+  const nextWallet = generateKeyPairSync('ed25519');
+  const currentAddress = bs58.encode(currentWallet.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32));
+  const nextAddress = bs58.encode(nextWallet.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32));
+  const expiresAt = '2026-08-16T00:10:00.000Z';
+  const now = new Date('2026-08-16T00:05:00.000Z');
+  const message = buildWalletChallengeMessage({ campaignId: 'bond', telegramUserId: 42, nonce: 'nonce', expiresAt });
+  const signature = sign(null, Buffer.from(message), nextWallet.privateKey).toString('base64');
+  let mutated = false;
+  const client = {
+    select: async (table) => {
+      if (table === 'wallet_challenges') return [{ id: 7, expires_at: expiresAt }];
+      if (table === 'identity_links') return [{ reward_wallet: currentAddress }];
+      if (table === 'allocations') return [{ id: 99 }];
+      return [];
+    },
+    update: async () => { mutated = true; return []; },
+    upsert: async () => { mutated = true; return []; },
+  };
+  await assert.rejects(
+    () => consumeWalletChallenge(client, {
+      campaignId: 'bond', telegramUserId: 42, nonce: 'nonce', wallet: nextAddress, signature,
+    }, now),
+    /reward wallet locked after allocation/
+  );
+  assert.equal(mutated, false);
+});
+
+test('pre-allocation wallet replacement clears stale token-account readiness', async () => {
+  const currentWallet = generateKeyPairSync('ed25519');
+  const nextWallet = generateKeyPairSync('ed25519');
+  const currentAddress = bs58.encode(currentWallet.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32));
+  const nextAddress = bs58.encode(nextWallet.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32));
+  const expiresAt = '2026-08-16T00:10:00.000Z';
+  const now = new Date('2026-08-16T00:05:00.000Z');
+  const message = buildWalletChallengeMessage({ campaignId: 'bond', telegramUserId: 42, nonce: 'nonce', expiresAt });
+  const signature = sign(null, Buffer.from(message), nextWallet.privateKey).toString('base64');
+  let linked;
+  const client = {
+    select: async (table) => {
+      if (table === 'wallet_challenges') return [{ id: 7, expires_at: expiresAt }];
+      if (table === 'identity_links') return [{ reward_wallet: currentAddress }];
+      if (table === 'allocations') return [];
+      return [];
+    },
+    update: async () => [{ id: 7 }],
+    upsert: async (_table, rows) => { linked = rows[0]; return [{}]; },
+  };
+  await consumeWalletChallenge(client, {
+    campaignId: 'bond', telegramUserId: 42, nonce: 'nonce', wallet: nextAddress, signature,
+  }, now);
+  assert.equal(linked.reward_wallet, nextAddress);
+  assert.equal(linked.fawkq_token_account, null);
+});

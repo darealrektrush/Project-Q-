@@ -28,7 +28,7 @@ async function loadRuntime() {
     state.campaign = ${JSON.stringify(campaign)};
     globalThis.__rendered = Object.fromEntries(Object.entries(screens).map(([key, screen]) => [key, screen()]));
     globalThis.__profiles = {};
-    for (const view of ['overview', 'activity', 'rewards', 'referrals', 'identity']) {
+    for (const view of ['overview', 'wallet', 'activity', 'rewards', 'referrals', 'identity']) {
       state.profileView = view;
       globalThis.__profiles[view] = profileScreen();
     }
@@ -54,6 +54,17 @@ async function loadRuntime() {
       state.profile.allocation = rewards.allocatedBaseUnits;
       state.profileView = 'rewards';
       return { screen: rewardsScreen(), profile: profileScreen() };
+    };
+    globalThis.__renderWalletWith = ({ wallet, tokenAccount, status, recorded = false }) => {
+      state.wallet = wallet;
+      state.walletStatus = status;
+      state.profile.walletVerified = Boolean(wallet);
+      state.profile.walletVerifiedAt = '2026-08-27T18:00:00.000Z';
+      state.profile.tokenAccountReady = Boolean(tokenAccount);
+      state.profile.tokenAccount = tokenAccount;
+      state.profile.rewards.recorded = recorded;
+      state.profileView = 'wallet';
+      return profileScreen();
     };
     globalThis.__renderHomeWithRuntime = (runtime) => {
       state.runtime = runtime;
@@ -90,6 +101,7 @@ test('every Project Q V3 screen renders from the real Bond campaign config', asy
   assert.match(context.__rendered.rewards, /No participant allocation exists yet/);
   assert.match(context.__profiles.identity, /oracle-logo\.jpg/);
   assert.match(context.__profiles.overview, /48H XP cycles/);
+  assert.match(context.__profiles.wallet, /Wallet cockpit/);
   assert.match(context.__profiles.activity, /Activity ledger/);
   assert.match(context.__profiles.rewards, /Recorded allocation/);
   assert.match(context.__profiles.referrals, /\$2 buy pending/);
@@ -120,7 +132,7 @@ test('V3 readiness templates never fabricate participant results', async () => {
   const { __rendered: rendered } = await loadRuntime();
   const all = Object.values(rendered).join('\n');
   assert.doesNotMatch(all, /184,250|1,240 XP|@AlphaDuck|@TideBuilder/);
-  assert.match(rendered.rewards, /Recorded allocation[\s\S]*—/);
+  assert.match(rendered.rewards, /Project Q Reward Vault[\s\S]*—/);
   assert.match(rendered.leaderboard, /Rankings are not live/);
   assert.doesNotMatch(rendered.home, /42%/);
 });
@@ -253,7 +265,7 @@ test('Rewards renders exact participant allocation and release records without c
     failedBaseUnits: '0',
     releaseCount: 2,
     releases: [
-      { category: 'activity', cycleId: 1, percent: 25, scheduledAt: '2026-08-26T12:00:00Z', amountBaseUnits: '18000000000', status: 'paid' },
+      { category: 'activity', cycleId: 1, percent: 25, scheduledAt: '2026-08-26T12:00:00Z', amountBaseUnits: '18000000000', status: 'paid', transactionSignature: '5'.repeat(88) },
       { category: 'activity', cycleId: 1, percent: 50, scheduledAt: '2026-08-28T12:00:00Z', amountBaseUnits: '42000000000', status: 'scheduled' },
     ],
   });
@@ -262,6 +274,32 @@ test('Rewards renders exact participant allocation and release records without c
   assert.match(rendered.screen, /18,000/);
   assert.match(rendered.screen, /Activity rewards · Cycle 1/);
   assert.match(rendered.screen, /paid/);
+  assert.match(rendered.screen, /No claim transaction required/);
+  assert.match(rendered.screen, new RegExp(`solscan\\.io/tx/${'5'.repeat(88)}`));
   assert.match(rendered.profile, /Scheduled[\s\S]*42,000/);
   assert.doesNotMatch(`${rendered.screen}\n${rendered.profile}`, /Claimable|claim tokens|sign transaction/i);
+});
+
+test('Wallet cockpit renders verified on-chain state without custody or transfer controls', async () => {
+  const context = await loadRuntime();
+  const wallet = '7kGJBag2VcjR4JB7qLStgizLa2eDQuGtiysZKzEetRMT';
+  const tokenAccount = '3BZHPnTFuzxxaMFHo2Gv54uNP7Uw53cyoEMptnjZoxfa';
+  const rendered = context.__renderWalletWith({
+    wallet,
+    tokenAccount,
+    recorded: true,
+    status: {
+      available: true, network: 'mainnet-beta',
+      mint: 'GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump',
+      tokenProgramId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
+      decimals: 6, balanceBaseUnits: '23110000000000', tokenAccountCount: 1,
+      observedAt: '2026-08-27T18:00:00.000Z',
+    },
+  });
+  assert.match(rendered, /23,110,000/);
+  assert.match(rendered, new RegExp(wallet));
+  assert.match(rendered, new RegExp(tokenAccount));
+  assert.match(rendered, /Locked after allocation/);
+  assert.match(rendered, /Non-custodial by design/);
+  assert.doesNotMatch(rendered, /Send FAWKQ|Transfer FAWKQ|seed phrase input/i);
 });

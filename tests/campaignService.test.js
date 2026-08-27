@@ -151,10 +151,14 @@ test('participant status derives verification readiness and sums XP', async () =
         { id: 3, category: 'buy_to_earn', cycle_id: null, reward_wallet: 'wallet-1', gross_base_units: '2500000', calc_version: 1, created_at: '2026-08-25T12:00:00Z' },
       ];
       if (table === 'releases') return [
-        { allocation_id: 2, pct: 25, scheduled_at: '2026-08-26T12:00:00Z', amount_base_units: '375000', status: 'paid' },
-        { allocation_id: 2, pct: 75, scheduled_at: '2026-08-27T12:00:00Z', amount_base_units: '1125000', status: 'scheduled' },
-        { allocation_id: 3, pct: 25, scheduled_at: '2026-08-26T12:00:00Z', amount_base_units: '625000', status: 'proposed' },
+        { allocation_id: 2, pct: 25, scheduled_at: '2026-08-26T12:00:00Z', amount_base_units: '375000', status: 'paid', payment_key: 'activity:cycle-1:25' },
+        { allocation_id: 2, pct: 75, scheduled_at: '2026-08-27T12:00:00Z', amount_base_units: '1125000', status: 'scheduled', payment_key: 'activity:cycle-1:75' },
+        { allocation_id: 3, pct: 25, scheduled_at: '2026-08-26T12:00:00Z', amount_base_units: '625000', status: 'proposed', payment_key: 'buy:campaign:25' },
       ];
+      if (table === 'treasury_transactions') return [{
+        payment_key: 'activity:cycle-1:25', tx_signature: '5'.repeat(88),
+        confirmed_block_time: '2026-08-26T12:02:00Z', reconciliation_status: 'reconciled',
+      }];
       if (table === 'positions') return [{ tier: 1, weight: 1, eligible: true, snapshot_usd: '12.50' }];
       if (table === 'campaigns') return [{ state: 'ACTIVE' }];
       return [];
@@ -176,7 +180,11 @@ test('participant status derives verification readiness and sums XP', async () =
   assert.equal(status.rewards.distributedBaseUnits, '375000');
   assert.equal(status.rewards.failedBaseUnits, '0');
   assert.equal(status.rewards.releaseCount, 3);
+  assert.equal(status.rewards.receiptCount, 1);
   assert.equal(status.rewards.releases[0].category, 'activity');
+  assert.equal(status.rewards.releases[0].transactionSignature, '5'.repeat(88));
+  assert.equal(status.rewards.releases[1].transactionSignature, null);
+  assert.equal(status.fawkqTokenAccount, 'ata-1');
   const allocationQuery = queries.find(([table]) => table === 'allocations')[1];
   assert.match(allocationQuery, /gross_base_units/);
   assert.match(allocationQuery, /or=\(telegram_user_id\.eq\.123,reward_wallet\.eq\.wallet-1\)/);

@@ -22,6 +22,7 @@ import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import * as walletVerification from './campaign/walletVerification.js';
+import * as walletStatus from './campaign/walletStatus.js';
 import {
   WEBSITE_VOTE_PROFILES,
   buildWebsiteVoteChallenge,
@@ -344,6 +345,33 @@ app.post('/campaign-app/api/wallet/verify', async (req, res) => {
   } catch (err) {
     console.error('wallet verification failed', err.message);
     return res.status(400).json({ ok: false, error: 'wallet verification failed' });
+  }
+});
+
+app.post('/campaign-app/api/wallet/status', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const identityRows = await supabase.select(
+      'identity_links',
+      `?campaign_id=eq.${encodeURIComponent(campaignId)}` +
+        `&telegram_user_id=eq.${encodeURIComponent(String(session.user.id))}` +
+        '&select=reward_wallet,wallet_verified_at&limit=1'
+    );
+    const identity = identityRows[0];
+    if (!identity?.reward_wallet || !identity.wallet_verified_at) {
+      return res.status(409).json({ ok: false, error: 'verified reward wallet required' });
+    }
+    const status = await walletStatus.getFawkqWalletStatus(solana.getConnection(), identity.reward_wallet);
+    return res.status(200).json({ ok: true, status });
+  } catch (err) {
+    console.error('campaign wallet status unavailable', err.message);
+    return res.status(503).json({
+      ok: false,
+      error: 'wallet status unavailable',
+      status: walletStatus.closedFawkqWalletStatus(),
+    });
   }
 });
 

@@ -60,6 +60,23 @@ export async function consumeWalletChallenge(client, { campaignId, telegramUserI
   });
   if (!verifySolanaWalletSignature(wallet, message, signature)) throw new Error('invalid wallet signature');
 
+  const identityRows = await client.select(
+    'identity_links',
+    `?campaign_id=eq.${encodeURIComponent(campaignId)}&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +
+      '&select=reward_wallet&limit=1'
+  );
+  const currentWallet = identityRows[0]?.reward_wallet ?? null;
+  const walletChanged = Boolean(currentWallet && currentWallet !== wallet);
+  if (walletChanged) {
+    const allocationRows = await client.select(
+      'allocations',
+      `?campaign_id=eq.${encodeURIComponent(campaignId)}` +
+        `&or=(telegram_user_id.eq.${encodeURIComponent(String(telegramUserId))},reward_wallet.eq.${encodeURIComponent(currentWallet)})` +
+        '&select=id&limit=1'
+    );
+    if (allocationRows.length) throw new Error('reward wallet locked after allocation');
+  }
+
   const consumed = await client.update('wallet_challenges', `?id=eq.${challenge.id}&consumed_at=is.null`, {
     consumed_at: now.toISOString(),
   });
@@ -69,6 +86,7 @@ export async function consumeWalletChallenge(client, { campaignId, telegramUserI
     telegram_user_id: String(telegramUserId),
     reward_wallet: wallet,
     wallet_verified_at: now.toISOString(),
+    ...(walletChanged ? { fawkq_token_account: null } : {}),
   }], 'campaign_id,telegram_user_id');
   return { wallet, verifiedAt: now.toISOString() };
 }

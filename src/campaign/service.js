@@ -262,6 +262,14 @@ function sumBaseUnits(rows, field = 'amount_base_units') {
   return rows.reduce((total, row) => total + BigInt(row[field] ?? 0), 0n).toString();
 }
 
+function safePaymentKey(value) {
+  return typeof value === 'string' && /^[A-Za-z0-9:_-]{1,160}$/.test(value) ? value : null;
+}
+
+function safeTransactionSignature(value) {
+  return typeof value === 'string' && /^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(value) ? value : null;
+}
+
 export async function getParticipantStatus(client, telegramUserId, { now = new Date().toISOString() } = {}) {
   const id = campaignId();
   const userId = String(telegramUserId);
@@ -313,8 +321,23 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
   const releaseRows = allocationIds.length ? await client.select(
     'releases',
     `?allocation_id=in.(${allocationIds.join(',')})` +
-      '&select=allocation_id,pct,scheduled_at,amount_base_units,status&order=scheduled_at.asc&limit=500'
+      '&select=allocation_id,pct,scheduled_at,amount_base_units,status,payment_key&order=scheduled_at.asc&limit=500'
   ) : [];
+  const paymentKeys = [...new Set(releaseRows.map(({ payment_key: paymentKey }) => safePaymentKey(paymentKey)).filter(Boolean))];
+  const transactionRows = paymentKeys.length ? await client.select(
+    'treasury_transactions',
+    `?payment_key=in.(${paymentKeys.map(encodeURIComponent).join(',')})` +
+      '&status=eq.executed&tx_signature=not.is.null' +
+      '&select=payment_key,tx_signature,confirmed_block_time,reconciliation_status&order=created_at.desc&limit=500'
+  ) : [];
+  const transactionByPaymentKey = new Map();
+  for (const transaction of transactionRows) {
+    const paymentKey = safePaymentKey(transaction.payment_key);
+    const signature = safeTransactionSignature(transaction.tx_signature);
+    if (paymentKey && signature && !transactionByPaymentKey.has(paymentKey)) {
+      transactionByPaymentKey.set(paymentKey, { ...transaction, tx_signature: signature });
+    }
+  }
 
   const xpByCycle = xpRows.map((row) => ({ cycleId: Number(row.cycle_id), xp: Number(row.xp) }));
   const xpByBucket = xpDetailRows.reduce((totals, row) => {
@@ -348,6 +371,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     walletVerified: Boolean(identity?.wallet_verified_at),
     walletVerifiedAt: identity?.wallet_verified_at ?? null,
     tokenAccountReady: Boolean(identity?.fawkq_token_account),
+    fawkqTokenAccount: identity?.fawkq_token_account ?? null,
     xpByCycle,
     totalXp: xpByCycle.reduce((total, row) => total + row.xp, 0),
     todayXp: Number(dailyXp.overall || 0),
@@ -378,8 +402,10 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
       distributedBaseUnits: releaseRows.length ? sumBaseUnits(distributedReleases) : null,
       failedBaseUnits: releaseRows.length ? sumBaseUnits(failedReleases) : null,
       releaseCount: releaseRows.length,
+      receiptCount: transactionByPaymentKey.size,
       releases: releaseRows.map((row) => {
         const allocation = allocationById.get(String(row.allocation_id));
+        const transaction = transactionByPaymentKey.get(safePaymentKey(row.payment_key));
         return {
           category: allocation?.category ?? 'other',
           cycleId: allocation?.cycle_id == null ? null : Number(allocation.cycle_id),
@@ -387,6 +413,9 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
           scheduledAt: row.scheduled_at,
           amountBaseUnits: String(row.amount_base_units ?? 0),
           status: row.status,
+          transactionSignature: transaction?.tx_signature ?? null,
+          confirmedBlockTime: transaction?.confirmed_block_time ?? null,
+          reconciliationStatus: transaction?.reconciliation_status ?? null,
         };
       }),
     },
@@ -421,13 +450,14 @@ export function closedParticipantStatus() {
   return {
     enrolled: false, xLinked: false, xVerified: false, walletLinked: false,
     enrolledAt: null, xVerifiedAt: null, walletVerifiedAt: null,
-    walletVerified: false, rewardWallet: null, tokenAccountReady: false, xpByCycle: [], totalXp: 0,
+    walletVerified: false, rewardWallet: null, tokenAccountReady: false, fawkqTokenAccount: null,
+    xpByCycle: [], totalXp: 0,
     todayXp: 0, todayXpByBucket: { participation: 0, mission: 0, other: 0 },
     xpByBucket: { participation: 0, mission: 0, other: 0 }, recentActivity: [],
     completedMissionCodes: [], completedMissionCount: 0, allocationBaseUnits: null,
     allocationByCategory: {}, rewards: { recorded: false, allocatedBaseUnits: null,
       scheduledBaseUnits: null, distributedBaseUnits: null, failedBaseUnits: null,
-      releaseCount: 0, releases: [] }, buyToEarn: null, campaignState: 'DRAFT',
+      releaseCount: 0, receiptCount: 0, releases: [] }, buyToEarn: null, campaignState: 'DRAFT',
     unavailable: true,
   };
 }
