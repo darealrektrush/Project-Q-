@@ -52,6 +52,7 @@ export function closedEarnToBurnSummary(campaignId) {
     hardCapBaseUnits: '0',
     progressUnits: '0',
     burnCount: 0,
+    milestones: [],
     nextMilestone: null,
     receipts: [],
     unavailable: true,

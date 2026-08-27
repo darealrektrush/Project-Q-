@@ -33,7 +33,21 @@ test('campaign registry points to a valid reusable default campaign', async () =
   assert.equal(campaign.earnToBurn.openingBurnBaseUnits, '15000000000000');
   assert.equal(campaign.earnToBurn.openingBurnSource, 'FAWKQ_CREATOR_WALLET');
   assert.equal(campaign.earnToBurn.additionalToCampaignAllocation, true);
-  assert.deepEqual(campaign.earnToBurn.milestones, []);
+  assert.equal(campaign.earnToBurn.progressUnit, 'VERIFIED_CAMPAIGN_XP');
+  assert.equal(campaign.earnToBurn.approvalModel, 'TWO_FOUNDER_PROJECT_Q_APPROVALS');
+  assert.equal(campaign.earnToBurn.executionModel, 'CREATOR_WALLET_FOUNDER_SIGNATURE');
+  assert.deepEqual(
+    campaign.earnToBurn.milestones.map(({ progressTargetUnits }) => progressTargetUnits),
+    ['2000', '5000', '9000', '14000', '20000']
+  );
+  assert.ok(campaign.earnToBurn.milestones.every(({ burnAmountBaseUnits }) =>
+    burnAmountBaseUnits === '3000000000000'
+  ));
+  assert.equal(
+    campaign.earnToBurn.milestones.reduce((total, { burnAmountBaseUnits }) =>
+      total + BigInt(burnAmountBaseUnits), 0n),
+    15_000_000_000_000n
+  );
   assert.equal(campaign.campaignCommitments.campaignRewards.amountBaseUnits, '15000000000000');
   assert.equal(campaign.campaignCommitments.campaignRewards.founderContributionBaseUnits, '7500000000000');
   assert.equal(campaign.campaignCommitments.campaignRewards.streamflowDependent, false);
@@ -109,8 +123,9 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.match(trendingBots.verification, /uncapped Trending Push/);
   const earnToBurn = campaign.missions.find(({ id }) => id === 'earn-to-burn');
   assert.equal(earnToBurn.kind, 'COLLECTIVE');
-  assert.equal(earnToBurn.reward, 'Collective progress');
+  assert.equal(earnToBurn.reward, '5 × 3M FAWKQ burns');
   assert.equal(earnToBurn.enabled, false);
+  assert.equal(earnToBurn.reward, '5 × 3M FAWKQ burns');
   assert.equal(campaign.missions.some(({ id }) => id === 'content'), false);
 });
 
@@ -203,7 +218,7 @@ test('Mini App exposes a read-only Earn to Burn ledger without signer controls',
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
   assert.match(app, /Collective mission/);
   assert.match(app, /No Earn to Burn transaction has been executed or confirmed/);
-  assert.match(app, /Project Q never holds a treasury signer/);
+  assert.match(app, /Project Q never stores its private key/);
   assert.match(app, /loadBurnSummary/);
   assert.doesNotMatch(app, /executeBurn|signBurn|burnTokens/);
 });

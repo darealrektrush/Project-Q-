@@ -19,6 +19,28 @@ export const BOND_RULES_TELEGRAM_BOTS = Object.freeze([
   '@BBtrendingbot',
   '@drokiatrendsbot',
 ]);
+export const BOND_EARN_TO_BURN_MILESTONES = Object.freeze([
+  Object.freeze({
+    id: 'bond-burn-1', sequence: 1, label: 'Burn Milestone 1',
+    progressTargetUnits: '2000', burnAmountBaseUnits: '3000000000000', burnType: 'RESERVE_BURN',
+  }),
+  Object.freeze({
+    id: 'bond-burn-2', sequence: 2, label: 'Burn Milestone 2',
+    progressTargetUnits: '5000', burnAmountBaseUnits: '3000000000000', burnType: 'RESERVE_BURN',
+  }),
+  Object.freeze({
+    id: 'bond-burn-3', sequence: 3, label: 'Burn Milestone 3',
+    progressTargetUnits: '9000', burnAmountBaseUnits: '3000000000000', burnType: 'RESERVE_BURN',
+  }),
+  Object.freeze({
+    id: 'bond-burn-4', sequence: 4, label: 'Burn Milestone 4',
+    progressTargetUnits: '14000', burnAmountBaseUnits: '3000000000000', burnType: 'RESERVE_BURN',
+  }),
+  Object.freeze({
+    id: 'bond-burn-5', sequence: 5, label: 'Burn Milestone 5',
+    progressTargetUnits: '20000', burnAmountBaseUnits: '3000000000000', burnType: 'RESERVE_BURN',
+  }),
+]);
 export const BOND_RULES_TELEGRAM_BOT_COOLDOWNS = Object.freeze({
   '@majorbuybot': 7200,
   '@wtftrending': 3600,
@@ -157,8 +179,19 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
         totalBurn += amount;
       }
       if (totalBurn !== 15_000_000_000_000n) throw new Error('burn total mismatch');
+      const lockedPlan = burn.milestones.map((milestone) => ({
+        id: milestone.id,
+        sequence: milestone.sequence,
+        label: milestone.label,
+        progressTargetUnits: String(milestone.progressTargetUnits),
+        burnAmountBaseUnits: String(milestone.burnAmountBaseUnits),
+        burnType: milestone.burnType,
+      }));
+      if (JSON.stringify(lockedPlan) !== JSON.stringify(BOND_EARN_TO_BURN_MILESTONES)) {
+        throw new Error('burn plan mismatch');
+      }
     } catch {
-      blockers.push('Earn to Burn milestones do not form a unique ordered 15,000,000 FAWKQ plan');
+      blockers.push('Earn to Burn milestones are not the locked five-step 15,000,000 FAWKQ plan');
     }
   }
 

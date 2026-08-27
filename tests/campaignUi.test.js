@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   CAMPAIGN_CALLBACK_PREFIX,
   CAMPAIGN_HOME_TEXT,
@@ -79,6 +80,14 @@ test('Bond the Duck hub can expose the reusable Mini App without changing callba
   assert.equal(resolveCampaignAppUrl({
     RENDER_EXTERNAL_HOSTNAME: 'project-q-dev.onrender.com',
   }), 'https://project-q-dev.onrender.com/campaign-app/');
+});
+
+test('Mini App publishes the locked five-step burn plan without exposing a signer', async () => {
+  const app = await readFile(new URL('../public/campaign-app/app.js', import.meta.url), 'utf8');
+  assert.match(app, /Locked milestone plan/);
+  assert.match(app, /Five verified unlocks/);
+  assert.match(app, /one creator-wallet execution signature/);
+  assert.doesNotMatch(app, /CREATOR_WALLET_SECRET|privateKey|secretKey/);
 });
 
 test('pre-launch campaign UI never represents the campaign as active', () => {

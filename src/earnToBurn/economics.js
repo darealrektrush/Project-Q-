@@ -80,6 +80,17 @@ export function publicBurnSummary({ program, milestones = [], receipts = [], pro
       new Date(b.confirmed_at ?? b.block_time) - new Date(a.confirmed_at ?? a.block_time)
     )[0].supply_after_base_units)
     : observedStart;
+  const publicMilestones = [...milestones]
+    .sort((a, b) => Number(a.sequence) - Number(b.sequence))
+    .map((milestone) => ({
+      id: milestone.id,
+      sequence: Number(milestone.sequence),
+      label: milestone.label,
+      state: milestone.state,
+      progressTargetUnits: String(milestone.progress_target_units),
+      burnAmountBaseUnits: String(milestone.burn_amount_base_units),
+      progressBps: progressBps(progressUnits, milestone.progress_target_units),
+    }));
 
   return {
     programId: program.id,
@@ -96,6 +107,7 @@ export function publicBurnSummary({ program, milestones = [], receipts = [], pro
     hardCapBaseUnits: String(program.hard_cap_base_units),
     progressUnits: progressUnits.toString(),
     burnCount: receipts.length,
+    milestones: publicMilestones,
     nextMilestone: nextMilestone ? {
       id: nextMilestone.id,
       label: nextMilestone.label,

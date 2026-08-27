@@ -91,7 +91,16 @@
     "openingBurnSource": "FAWKQ_CREATOR_WALLET",
     "openingBurnStatus": "PLANNED",
     "additionalToCampaignAllocation": true,
-    "milestones": [],
+    "progressUnit": "VERIFIED_CAMPAIGN_XP",
+    "approvalModel": "TWO_FOUNDER_PROJECT_Q_APPROVALS",
+    "executionModel": "CREATOR_WALLET_FOUNDER_SIGNATURE",
+    "milestones": [
+      { "id": "bond-burn-1", "sequence": 1, "label": "Burn Milestone 1", "progressTargetUnits": "2000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-2", "sequence": 2, "label": "Burn Milestone 2", "progressTargetUnits": "5000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-3", "sequence": 3, "label": "Burn Milestone 3", "progressTargetUnits": "9000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-4", "sequence": 4, "label": "Burn Milestone 4", "progressTargetUnits": "14000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-5", "sequence": 5, "label": "Burn Milestone 5", "progressTargetUnits": "20000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" }
+    ],
     "tagline": "Individual activity earns rewards. Collective activity advances transparent burn milestones."
   },
   "campaignCommitments": {
@@ -270,9 +279,9 @@
     },
     {
       "id": "earn-to-burn", "kind": "COLLECTIVE", "icon": "🔥", "image": "/campaign-app/assets/missions/v3-earn-to-burn.webp",
-      "title": "Earn to Burn", "description": "Every verified campaign XP advances shared burn milestones and public receipts.", "status": "Draft", "reward": "Collective progress", "frequency": "Campaign-wide", "enabled": false,
-      "verification": "One settled campaign XP advances one append-only collective progress unit. Only the separate 15,000,000 FAWKQ creator-wallet reserve is designated for approved milestone burns.",
-      "requirements": ["Milestone terms and rules hash must be published", "Two founders independently approve the same immutable proposal", "Every executed burn must reconcile on-chain and publish a receipt"],
+      "title": "Earn to Burn", "description": "Every verified campaign XP advances five shared burn milestones and public receipts.", "status": "Plan locked", "reward": "5 × 3M FAWKQ burns", "frequency": "Campaign-wide", "enabled": false,
+      "verification": "One settled campaign XP advances one append-only collective progress unit. Milestones unlock at 2,000, 5,000, 9,000, 14,000 and 20,000 verified XP, with 3,000,000 FAWKQ assigned to each burn.",
+      "requirements": ["Only finalized, deduplicated campaign XP advances progress", "Two founders independently approve the same immutable proposal", "The creator wallet signs once before Project Q verifies and publishes the burn receipt"],
       "actionLabel": "View public ledger", "readOnlyAction": true
     }
   ]

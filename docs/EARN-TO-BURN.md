@@ -6,26 +6,26 @@ In the Bond the Duck Mini App, Earn to Burn appears in Missions as the ninth vis
 
 ## Current state
 
-- The engine, public ledger UI, read-only admin view, proof verifier, publishing-draft builder and database migration are built on a feature branch.
-- The program remains `DRAFT`. The migration has not been applied to production and no program, milestone, proposal, receipt or publication row is seeded by it.
+- The engine, public ledger UI, read-only admin view, proof verifier, publishing-draft builder and database migration are present on `main`.
+- The Earn-to-Burn schema migration is applied to the Project Q Supabase project. No program, milestone, proposal, receipt or publication row is seeded, so production remains inert.
 - `PROJECT_Q_EARN_TO_BURN_ENABLED` and `PROJECT_Q_BURN_VERIFICATION_ENABLED` default to `false`.
 - No burn has been executed or confirmed by this module.
 - The planned opening burn is an additional 15,000,000 FAWKQ from the FAWKQ creator wallet. It is not part of the 15,000,000 FAWKQ campaign reward pool, the 2,500,000 FAWKQ Diamond Duck bonus, or the 1 SOL top-contributor prize.
-- Post-launch milestone thresholds, dates and amounts remain deliberately unset pending testing and founder approval.
+- The five campaign-wide XP thresholds and equal burn amounts are founder-approved product rules, but they are not yet finalized into a production rules hash or seeded into the live program.
 
 ## Trust boundary
 
-Project Q never stores a treasury secret, holds a signer or sends a burn transaction. Its responsibilities are limited to:
+Project Q never stores a treasury secret or holds signing authority. The approved target experience allows it to prepare the exact unsigned burn transaction only after dual approval; the creator wallet still provides the irreversible execution signature. Its responsibilities are limited to:
 
 1. recording qualifying progress from approved, deduplicated sources;
 2. enforcing program, milestone, source-account and hard-cap rules;
 3. recording decisions from exactly two configured founders;
-4. attaching the signature of an externally executed transaction only after both approvals;
+4. preparing the fixed burn transaction after both approvals and accepting the creator wallet's signed result;
 5. verifying the finalized Token or Token-2022 burn instruction and exact account/supply deltas;
 6. writing an immutable receipt and audit event; and
 7. preparing platform-specific publishing drafts for separate approval.
 
-The external treasury workflow remains independently governed. For a Squads-controlled account, its 2-of-3 policy is additional to—not replaced by—the two-founder Project Q approval record.
+The 15,000,000 FAWKQ reserve remains in the creator wallet. Squads is not part of this burn flow. The two-founder Project Q approval record is an application control; the creator-wallet signature is the on-chain authorization.
 
 ## FAWKQ identity and exact arithmetic
 
@@ -61,18 +61,26 @@ The one-billion value is a campaign reference, not a substitute for an on-chain 
 
 When both the campaign and Earn to Burn program are enabled, the existing campaign XP settlement job can synchronize positive, verified `xp_ledger` awards into the append-only burn progress ledger. The current engine uses one verified campaign XP as one collective progress unit. Every source row is referenced by its immutable XP ledger ID, and a unique constraint plus one atomic database function prevents replay or double counting.
 
-After synchronization, every still-locked milestone at or below the verified total becomes `UNLOCKED` and receives an audit event. No milestone rows are seeded by the migration, so this mechanism remains inert until founders approve the thresholds, burn amounts and shared rules hash.
+After synchronization, every still-locked milestone at or below the verified total becomes `UNLOCKED` and receives an audit event. No milestone rows are currently seeded, so this mechanism remains inert until the final shared rules hash is approved and provisioned.
+
+| Milestone | Cumulative verified XP | Burn amount | Cumulative burn |
+| --- | ---: | ---: | ---: |
+| 1 | 2,000 | 3,000,000 FAWKQ | 3,000,000 FAWKQ |
+| 2 | 5,000 | 3,000,000 FAWKQ | 6,000,000 FAWKQ |
+| 3 | 9,000 | 3,000,000 FAWKQ | 9,000,000 FAWKQ |
+| 4 | 14,000 | 3,000,000 FAWKQ | 12,000,000 FAWKQ |
+| 5 | 20,000 | 3,000,000 FAWKQ | 15,000,000 FAWKQ |
 
 ## Proposal and confirmation workflow
 
 1. An unlocked milestone and approved, evidenced creator-wallet token account are selected.
 2. Project Q creates an immutable-term proposal and moves the milestone to approval pending.
 3. Exactly two configured founders independently approve the same rules/readiness hash. Either can hold; cancellation requires both founders.
-4. After approval, an operator may attach only the signature of a transaction executed outside Project Q.
+4. After approval, Project Q prepares the exact transaction. The connected creator wallet reviews and signs once; no Project Q server receives the private key.
 5. Project Q waits for Solana finalization, validates the Token-2022 burn instruction (including Squads inner instructions), exact mint/source/amount, source-account delta and expected supply delta.
 6. An immutable receipt is recorded and missing platform publishing drafts are prepared. Each draft carries a SHA-256 content hash; founder approval must match that exact reviewed hash, and the database rejects direct draft-to-published transitions. Existing approved or published drafts are never reset.
 
-The Telegram admin workflow stays read-only while the Earn to Burn feature flag is off. When enabled, an allowlisted founder can use a private Project Q chat to review the exact immutable proposal terms and record an approve, hold or cancel decision. A founder can also review and approve the exact stored publication body and SHA-256 hash. The panel has no signature-attachment, transaction-building, signing, burn-execution or publishing control.
+The Telegram admin workflow stays read-only while the Earn to Burn feature flag is off. When enabled, an allowlisted founder can use a private Project Q chat to review the exact immutable proposal terms and record an approve, hold or cancel decision. A founder can also review and approve the exact stored publication body and SHA-256 hash. Transaction preparation and connected-wallet execution remain a separate implementation step and are not available in production today.
 
 ## Release checklist
 

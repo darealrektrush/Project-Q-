@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import {
+  BOND_EARN_TO_BURN_MILESTONES,
   BOND_RULES_MISSION_IDS,
   inspectBondCampaignRules,
   rulesetRowMatchesCampaign,
@@ -26,7 +27,7 @@ function finalized(rules) {
     },
     earnToBurn: {
       ...rules.earnToBurn,
-      milestones: [{ id: 'opening', progressTargetUnits: '1000', burnAmountBaseUnits: '15000000000000' }],
+      milestones: structuredClone(BOND_EARN_TO_BURN_MILESTONES),
     },
   };
 }
@@ -86,6 +87,15 @@ test('final rules require exact locked commitments, schedule and nine mission la
   assert.equal(inspectBondCampaignRules({
     ...ready,
     commitments: { ...ready.commitments, topContributorLamports: '0' },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    earnToBurn: {
+      ...ready.earnToBurn,
+      milestones: ready.earnToBurn.milestones.map((milestone, index) =>
+        index === 0 ? { ...milestone, progressTargetUnits: '1999' } : milestone
+      ),
+    },
   }).valid, false);
   assert.equal(inspectBondCampaignRules({
     ...ready,
