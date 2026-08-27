@@ -97,15 +97,21 @@
   ],
   "referrals": {
     "minimumPurchaseUsd": 2,
-    "bonusXp": null,
+    "bonusXp": 10,
     "xInviteMainPostId": null,
     "xInviteRequiredDistinctMentions": 3,
-    "xInviteBonusXp": null
+    "xInviteBonusXp": 5
   },
   "earnToBurn": {
     "programId": "fawkq-earn-to-burn",
     "openingBurnBaseUnits": "15000000000000",
     "openingBurnType": "CREATOR_WALLET_RESERVE",
-    "milestones": []
+    "milestones": [
+      { "id": "bond-burn-1", "sequence": 1, "label": "Burn Milestone 1", "progressTargetUnits": "2000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-2", "sequence": 2, "label": "Burn Milestone 2", "progressTargetUnits": "5000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-3", "sequence": 3, "label": "Burn Milestone 3", "progressTargetUnits": "9000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-4", "sequence": 4, "label": "Burn Milestone 4", "progressTargetUnits": "14000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
+      { "id": "bond-burn-5", "sequence": 5, "label": "Burn Milestone 5", "progressTargetUnits": "20000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" }
+    ]
   }
 }

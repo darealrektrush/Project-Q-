@@ -231,6 +231,9 @@ export function buildParticipantXpText(status) {
 export function buildReferralMissionText(profile) {
   const counts = profile?.counts ?? {};
   const bonus = Number.isInteger(profile?.bonusXp) ? `${profile.bonusXp} XP` : 'Amount pending founder approval';
+  const xInviteBonus = Number.isInteger(profile?.xInviteBonusXp)
+    ? `${profile.xInviteBonusXp} XP`
+    : 'Amount pending founder approval';
   const link = profile?.link ? `\`${String(profile.link).replace(/`/g, '')}\`` : 'Unavailable until the referral database is ready.';
   return [
     '↗️ *Verified Referrals*', '',
@@ -245,7 +248,7 @@ export function buildReferralMissionText(profile) {
     '', '*Your personal link:*', link,
     '', '*One-time X invite bonus:*',
     'Reply once to the official pinned FAWKQ campaign post and mention exactly three distinct people who would genuinely be interested.',
-    'The Oracle verifies your linked X identity, the reply target and the mentions. Bonus XP amount is pending founder approval.',
+    `The Oracle verifies your linked X identity, the reply target and the mentions. Verified bonus: ${xInviteBonus}.`,
     '', '_Self-referrals, existing participants, duplicate identities, recycled wallets, unverified purchases, copied replies and repeated X entries do not qualify._',
   ].join('\n');
 }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { DEFAULT_CAMPAIGN_ID } from './service.js';
+import { X_INVITE_BONUS_XP } from './rewardValues.js';
 
 const ID = /^[0-9]{1,24}$/;
 
@@ -68,10 +69,18 @@ export async function getXInviteStatus(client, telegramUserId, { id = campaignId
     verified: true,
     replyPostId: row.reply_post_id,
     verifiedAt: row.verified_at,
+    bonusXp: X_INVITE_BONUS_XP,
     bonusAwarded: row.bonus_xp_ledger_id != null,
-  } : { verified: false, replyPostId: null, verifiedAt: null, bonusAwarded: false };
+  } : { verified: false, replyPostId: null, verifiedAt: null, bonusXp: X_INVITE_BONUS_XP, bonusAwarded: false };
 }
 
 export function closedXInviteStatus() {
-  return { verified: false, replyPostId: null, verifiedAt: null, bonusAwarded: false, unavailable: true };
+  return {
+    verified: false,
+    replyPostId: null,
+    verifiedAt: null,
+    bonusXp: X_INVITE_BONUS_XP,
+    bonusAwarded: false,
+    unavailable: true,
+  };
 }

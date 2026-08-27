@@ -13,13 +13,13 @@ A referral qualifies only when:
 5. the referred participant earns positive, verified campaign XP after referral acceptance; and
 6. no duplicate X identity, reward wallet, purchase reference or participant attribution exists.
 
-The referral bonus amount is deliberately unset. No XP is awarded until founders publish the amount in the campaign rules, update the rules hash and enable the settlement path.
+The founder-approved referral reward is **10 XP per qualified new participant**. The value is locked in the reviewed DRAFT rules; no XP is awarded until the campaign is finalized, activated and the idempotent settlement path is enabled.
 
 ## One-time X invite bonus
 
 Verified Referrals also contains a separate one-time bonus action: reply to the official pinned FAWKQ Bond the Duck post and mention exactly three distinct people who would genuinely be interested. The Oracle must verify the linked X author, conversation ID, directly referenced post and mention user IDs. The participant and official FAWKQ account are excluded from the three mentions, and each participant and reply can qualify only once.
 
-This bonus amount is also deliberately unset. Repeated entries, copied replies and automated mention farming do not qualify.
+The founder-approved one-time X invite reward is **5 XP**. The official pinned FAWKQ campaign post ID still must be published and locked before the rules can become FINAL. Repeated entries, copied replies and automated mention farming do not qualify.
 
 ## Participant experience
 
@@ -36,15 +36,15 @@ This bonus amount is also deliberately unset. Repeated entries, copied replies a
 - Existing campaign participants and self-referrals are rejected atomically.
 - Existing unique identity constraints continue to prevent one X account or wallet from backing multiple participants.
 - A dedicated purchase-proof row must reference a post-referral acquisition of at least USD $2; a balance snapshot alone does not prove a purchase.
-- Bonus XP will use an idempotent `xp_ledger` key and remains subject to the overall campaign XP policy once its amount is approved.
+- Bonus XP will use an idempotent `xp_ledger` key and remains subject to the overall campaign XP policy when settlement is enabled.
 
 ## Current implementation state
 
-The repository contains the referral data model, atomic capture RPC, bot deep-link capture, participant profile API, Mini App Profile UI, Telegram mission screen and deterministic qualification evaluator. The migration has not been applied to production. Purchase-proof ingestion and bonus-XP settlement remain fail-closed until the Buy-to-Earn verifier and final referral XP amount are approved.
+The repository contains the referral data model, atomic capture RPC, bot deep-link capture, participant profile API, Mini App Profile UI, Telegram mission screen and deterministic qualification evaluator. The 10 XP referral value and 5 XP X invite value are locked in the reviewed DRAFT rules. Purchase-proof ingestion and bonus-XP settlement remain fail-closed until the Buy-to-Earn verifier, official pinned X post ID and final campaign rules are ready.
 
 ## Rollout and rollback
 
-1. Approve referral bonus XP, daily-cap treatment and campaign rules hash.
+1. Lock the official pinned X post ID and finalize the complete campaign rules hash through founder governance.
 2. Connect the Buy-to-Earn verifier to `campaign_referral_purchase_proofs`.
 3. Apply the migration to a non-production branch and test self-referrals, existing users, duplicate identities, duplicate wallets, replayed links and purchases below USD $2.
 4. Rehearse qualification and one idempotent XP award.

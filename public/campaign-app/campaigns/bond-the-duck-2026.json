@@ -154,18 +154,18 @@
     "minimumFawkqUsd": 2
   },
   "referrals": {
-    "status": "DRAFT",
+    "status": "REWARD_LOCKED",
     "minimumPurchaseUsd": 2,
-    "bonusXp": null,
+    "bonusXp": 10,
     "requiresNewParticipant": true,
     "requiresVerifiedIdentity": true,
     "requiresVerifiedPostReferralPurchase": true,
     "requiresFirstVerifiedXp": true,
     "xInviteBonus": {
-      "status": "DRAFT",
+      "status": "REWARD_LOCKED_AWAITING_POST",
       "mainPostId": null,
       "requiredDistinctMentions": 3,
-      "bonusXp": null,
+      "bonusXp": 5,
       "onePerParticipant": true
     }
   },
@@ -277,7 +277,7 @@
     },
     {
       "id": "verified-referrals", "kind": "INDIVIDUAL", "icon": "↗", "image": "/campaign-app/assets/missions/v3-verified-referrals.webp",
-      "title": "Verified Referrals", "description": "Invite a new participant who verifies, buys at least $2 of FAWKQ and earns verified XP.", "status": "Draft", "reward": "Bonus XP · amount pending", "frequency": "Per qualified new participant", "enabled": false,
+      "title": "Verified Referrals", "description": "Invite a new participant who verifies, buys at least $2 of FAWKQ and earns verified XP.", "status": "Reward locked", "reward": "10 XP per qualified referral", "frequency": "Per qualified new participant", "enabled": false,
       "verification": "First-touch attribution records the referral. Qualification requires a new participant, verified Telegram/X/wallet identity, a verified post-referral FAWKQ purchase of at least $2 and later positive campaign XP.",
       "requirements": ["Share your personal opaque Project Q referral link", "The referred participant must complete every qualification stage", "Self-referrals, duplicate identities and recycled wallets do not qualify"],
       "actionLabel": "My referral link", "readOnlyAction": true

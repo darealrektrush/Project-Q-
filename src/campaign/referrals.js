@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 
 import { DEFAULT_CAMPAIGN_ID } from './service.js';
+import { VERIFIED_REFERRAL_BONUS_XP, X_INVITE_BONUS_XP } from './rewardValues.js';
 
 const REFERRAL_CODE_PATTERN = /^[a-z0-9_-]{8,24}$/;
 
@@ -107,7 +108,8 @@ export async function getReferralProfile(
     code: code?.code ?? null,
     link: code?.code ? buildReferralLink(code.code, botUsername) : null,
     counts: summarizeReferrals(rows),
-    bonusXp: null,
+    bonusXp: VERIFIED_REFERRAL_BONUS_XP,
+    xInviteBonusXp: X_INVITE_BONUS_XP,
     minimumPurchaseUsd: 2,
     qualification: ['IDENTITY_VERIFIED', 'PURCHASE_VERIFIED', 'FIRST_VERIFIED_XP'],
   };
@@ -118,7 +120,8 @@ export function closedReferralProfile() {
     code: null,
     link: null,
     counts: emptyCounts(),
-    bonusXp: null,
+    bonusXp: VERIFIED_REFERRAL_BONUS_XP,
+    xInviteBonusXp: X_INVITE_BONUS_XP,
     minimumPurchaseUsd: 2,
     qualification: ['IDENTITY_VERIFIED', 'PURCHASE_VERIFIED', 'FIRST_VERIFIED_XP'],
     unavailable: true,
