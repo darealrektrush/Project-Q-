@@ -1,7 +1,7 @@
 {
   "schema": "bond-campaign-rules-v1",
   "campaignId": "bond-the-duck-2026",
-  "rulesetVersion": 1,
+  "rulesetVersion": 2,
   "status": "DRAFT",
   "schedule": {
     "timeZone": "America/Vancouver",
