@@ -40,6 +40,10 @@ const state = {
   screen: 'home',
   telegram: window.Telegram?.WebApp,
   wallet: null,
+  walletStatus: {
+    available: false, network: 'mainnet-beta', mint: null, tokenProgramId: null,
+    decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, observedAt: null,
+  },
   campaign: null,
   campaignRecord: null,
   runtime: null,
@@ -68,6 +72,7 @@ const state = {
     xVerified: false,
     walletVerified: false,
     tokenAccountReady: false,
+    tokenAccount: null,
     xp: 0,
     todayXp: 0,
     todayXpByBucket: { participation: 0, mission: 0, trending: 0, other: 0 },
@@ -78,7 +83,7 @@ const state = {
     allocation: null,
     allocationByCategory: {},
     rewards: { recorded: false, allocatedBaseUnits: null, scheduledBaseUnits: null,
-      distributedBaseUnits: null, failedBaseUnits: null, releaseCount: 0, releases: [] },
+      distributedBaseUnits: null, failedBaseUnits: null, releaseCount: 0, receiptCount: 0, releases: [] },
     campaignState: 'DRAFT',
     enrolledAt: null,
     xVerifiedAt: null,
@@ -110,6 +115,8 @@ function escapeHtml(value) {
 }
 
 function short(value) { return `${value.slice(0, 5)}…${value.slice(-5)}`; }
+function isSolanaAddress(value) { return typeof value === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value); }
+function isSolanaSignature(value) { return typeof value === 'string' && /^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(value); }
 function bytesToBase64(bytes) {
   let binary = '';
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
@@ -457,6 +464,52 @@ function formatBaseUnits(value, decimals = 6) {
 
 function formatPercentBps(value = 0) { return `${(Number(value) / 100).toFixed(2)}%`; }
 
+function subtractBaseUnits(total, paid) {
+  if (total == null || paid == null) return null;
+  try {
+    const remaining = BigInt(total) - BigInt(paid);
+    return (remaining < 0n ? 0n : remaining).toString();
+  } catch { return null; }
+}
+
+function hasPositiveBaseUnits(value) {
+  try { return BigInt(value ?? 0) > 0n; }
+  catch { return false; }
+}
+
+function readinessGate(key) {
+  return state.readiness?.checks?.find((check) => check.key === key)?.ready === true;
+}
+
+function rewardDeliveryState(rewards) {
+  const releases = rewards.releases || [];
+  if (releases.some(({ status }) => status === 'failed')) return { label: 'RECOVERY REVIEW', tone: 'blocked' };
+  if (rewards.recorded && hasPositiveBaseUnits(rewards.allocatedBaseUnits)
+      && subtractBaseUnits(rewards.allocatedBaseUnits, rewards.distributedBaseUnits || '0') === '0') {
+    return { label: 'DELIVERED', tone: 'success' };
+  }
+  if (releases.some(({ status }) => ['paid', 'recovered'].includes(status))) return { label: 'DISTRIBUTING', tone: 'success' };
+  if (releases.length) return { label: 'SCHEDULED', tone: 'pending' };
+  if (rewards.recorded) return { label: 'ALLOCATION RECORDED', tone: 'pending' };
+  return { label: 'NOT FINALIZED', tone: 'pending' };
+}
+
+function automaticDeliveryRail(rewards) {
+  const releases = rewards.releases || [];
+  const walletReady = state.profile.walletVerified;
+  const allocationReady = Boolean(rewards.recorded);
+  const treasuryReady = readinessGate('funding') && readinessGate('registry');
+  const scheduled = releases.length > 0;
+  const receiptReady = releases.some(({ transactionSignature }) => isSolanaSignature(transactionSignature));
+  const steps = [
+    ['Reward wallet', walletReady, walletReady ? 'Ownership verified' : 'Verification required'],
+    ['Allocation', allocationReady, allocationReady ? 'Recorded by Project Q' : 'Awaiting finalized record'],
+    ['Squads delivery', treasuryReady && scheduled, treasuryReady ? (scheduled ? 'Release scheduled' : 'Awaiting release record') : 'Treasury setup pending'],
+    ['On-chain receipt', receiptReady, receiptReady ? 'Finalized proof available' : 'Appears after distribution'],
+  ];
+  return `<section class="delivery-rail command-card"><header><div><span class="label">Automatic delivery</span><h3>No claim transaction required.</h3><p>Project Q records the allocation. The founders authorize distribution through Squads, and FAWKQ arrives directly in the verified reward wallet.</p></div>${statePill(receiptReady ? 'RECEIPT READY' : 'FOUNDER CONTROLLED', receiptReady ? 'success' : 'pending')}</header><div class="delivery-steps">${steps.map(([label, complete, detail], index) => `<article class="${complete ? 'complete' : ''}"><i>${complete ? '✓' : index + 1}</i><div><b>${escapeHtml(label)}</b><small>${escapeHtml(detail)}</small></div></article>`).join('')}</div></section>`;
+}
+
 function rewardCategoryLabel(category) {
   return ({ activity: 'Activity rewards', buy_to_earn: 'Buy-to-Earn', diamond_duck: 'Diamond Duck' })[category] || 'Campaign reward';
 }
@@ -467,7 +520,10 @@ function participantReleaseRow(release) {
   const failed = status === 'failed';
   const symbol = complete ? '✓' : failed ? '!' : '○';
   const detail = `${formatBaseUnits(release.amountBaseUnits)} FAWKQ · ${formatProfileDate(release.scheduledAt)} · ${status.replaceAll('_', ' ')}`;
-  return `<article class="${complete ? 'complete' : failed ? 'failed' : ''}"><span>${Number(release.percent || 0)}%</span><div><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · Cycle ${Number(release.cycleId)}` : ''}</b><small>${escapeHtml(detail)}</small></div><i>${symbol}</i></article>`;
+  const receipt = isSolanaSignature(release.transactionSignature)
+    ? `<a href="https://solscan.io/tx/${encodeURIComponent(release.transactionSignature)}" target="_blank" rel="noopener noreferrer" aria-label="Open finalized Solana receipt">Receipt ↗</a>`
+    : '';
+  return `<article class="${complete ? 'complete' : failed ? 'failed' : ''}"><span>${Number(release.percent || 0)}%</span><div><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · Cycle ${Number(release.cycleId)}` : ''}</b><small>${escapeHtml(detail)}</small></div><div class="release-proof">${receipt}<i>${symbol}</i></div></article>`;
 }
 
 function rewardsScreen() {
@@ -478,8 +534,16 @@ function rewardsScreen() {
   const allocation = rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : '—';
   const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : '—';
   const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '—';
+  const outstandingBaseUnits = rewards.recorded
+    ? subtractBaseUnits(rewards.allocatedBaseUnits, rewards.distributedBaseUnits || '0')
+    : null;
+  const outstanding = outstandingBaseUnits == null ? '—' : formatBaseUnits(outstandingBaseUnits);
   const failed = rewards.releaseCount ? BigInt(rewards.failedBaseUnits || 0) : 0n;
   const actualReleases = rewards.releases || [];
+  const delivery = rewardDeliveryState(rewards);
+  const walletBalance = state.walletStatus.available
+    ? formatBaseUnits(state.walletStatus.balanceBaseUnits, state.walletStatus.decimals)
+    : '—';
   const commitmentRows = commitments.campaignRewards ? [
     ['Campaign reward pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Existing missions and campaign rewards'],
     ['Diamond Duck bonus', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Separate founder Streamflow supply after unlock'],
@@ -492,10 +556,12 @@ function rewardsScreen() {
   const notice = failed > 0n
     ? `<div><b>One or more releases require recovery review</b><p>${formatBaseUnits(failed.toString())} FAWKQ is recorded in failed release state. No balance is represented as distributed until recovery is recorded.</p></div>`
     : rewards.recorded
-      ? '<div><b>Participant reward record loaded</b><p>Allocation and release totals come from Project Q records. This interface cannot claim, sign or transfer funds.</p></div>'
+      ? '<div><b>Participant reward record loaded</b><p>Campaign rewards are delivered automatically from the founder-controlled Squads treasury. No claim transaction or private key is requested by Project Q.</p></div>'
       : '<div><b>No participant allocation exists yet</b><p>Reward balances remain blank until review and finalized allocation records exist.</p></div>';
-  return `<section class="reward-vault command-card"><div><span class="label">Recorded allocation</span><strong>${allocation}</strong><em>FAWKQ</em>${statePill(rewards.recorded ? 'RECORDED' : 'NOT FINALIZED', rewards.recorded ? 'success' : 'pending')}</div><img src="/campaign-app/assets/system/q-vault.webp" alt="Project Q reward vault" /></section>
-  <section class="reward-balances"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div></section>
+  return `<section class="reward-vault command-card"><div><span class="label">Project Q Reward Vault</span><strong>${allocation}</strong><em>FAWKQ allocated</em>${statePill(delivery.label, delivery.tone)}</div><img src="/campaign-app/assets/system/q-vault.webp" alt="Project Q reward vault" /></section>
+  <section class="wallet-quickbar"><div><img src="/campaign-app/assets/system/q-wallet.webp" alt="" /><span><small>Verified reward wallet</small><b>${state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected'}</b></span></div><div><small>Current wallet balance</small><b>${walletBalance} FAWKQ</b></div><button class="text-action" id="open-wallet-profile">Open wallet →</button></section>
+  <section class="reward-balances four"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div><div><span>Outstanding</span><b>${outstanding}</b></div></section>
+  ${automaticDeliveryRail(rewards)}
   <div class="section-head compact-head"><div><span class="label">${actualReleases.length ? 'Participant payout record' : 'Payout plan'}</span><h2>Verified campaign rewards</h2></div><span>${actualReleases.length ? `${actualReleases.length} recorded releases` : 'No releases recorded'}</span></div>
   <section class="release-track">${releaseTrack}</section>
   <button class="receipt-action" id="reward-profile"><span>Open reward profile</span><i>→</i></button>
@@ -556,7 +622,7 @@ function missionName(code, source) {
 }
 
 function profileTabs() {
-  const tabs = [['overview', 'Overview'], ['activity', 'Activity'], ['rewards', 'Rewards'], ['referrals', 'Referrals'], ['identity', 'Identity']];
+  const tabs = [['overview', 'Overview'], ['wallet', 'Wallet'], ['rewards', 'Rewards'], ['activity', 'Activity'], ['referrals', 'Referrals'], ['identity', 'Identity']];
   return `<div class="profile-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
 }
 
@@ -591,15 +657,40 @@ function profileRewards() {
   const rewards = p.rewards || {};
   const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : '—';
   const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '—';
+  const outstanding = rewards.recorded
+    ? formatBaseUnits(subtractBaseUnits(rewards.allocatedBaseUnits, rewards.distributedBaseUnits || '0'))
+    : '—';
   const allocationRows = Object.entries(p.allocationByCategory || {});
   return `<section class="command-card profile-reward-card"><div><span class="label">Recorded allocation</span><strong>${allocation}</strong><small>FAWKQ</small></div>${statePill(p.allocation == null ? 'NOT FINALIZED' : 'RECORDED', p.allocation == null ? 'pending' : 'success')}<img src="/campaign-app/assets/system/q-vault.webp" alt="" /></section>
-  <section class="reward-balances profile-reward-balances"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div></section>
+  <section class="reward-balances four profile-reward-balances"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div><div><span>Outstanding</span><b>${outstanding}</b></div></section>
   <section class="profile-overview-grid">
     <article class="command-card profile-card"><div class="panel-title"><span>Reward wallet</span>${statePill(p.walletVerified ? 'VERIFIED' : 'PENDING', p.walletVerified ? 'success' : 'pending')}</div><h3>${state.wallet ? escapeHtml(short(state.wallet)) : 'No verified wallet'}</h3><p>${p.tokenAccountReady ? 'FAWKQ token-account eligibility is recorded.' : 'Token-account eligibility remains pending.'}</p><button class="text-action" data-profile-view="identity">Manage identity →</button></article>
     <article class="command-card profile-card"><div class="panel-title"><span>Buy-to-Earn</span>${statePill(buy?.eligible ? 'ELIGIBLE' : 'PENDING', buy?.eligible ? 'success' : 'pending')}</div><h3>${buy?.tier ? `Tier ${Number(buy.tier)}` : 'No finalized position'}</h3><p>${buy ? `Snapshot value ${buy.snapshot_usd == null ? 'pending' : `$${Number(buy.snapshot_usd).toFixed(2)}`}. Weight ${Number(buy.weight || 0)}.` : 'Verified purchase and snapshot data will appear here once recorded.'}</p></article>
   </section>
   <section class="command-card allocation-panel"><div class="panel-title"><span>Allocation breakdown</span><small>Finalized records only</small></div>${allocationRows.length ? allocationRows.map(([category, amount]) => `<div><span>${escapeHtml(category.replaceAll('_', ' '))}</span><b>${formatBaseUnits(amount)} FAWKQ</b></div>`).join('') : '<div class="profile-empty-line"><span>Campaign rewards</span><b>No participant allocation exists yet</b></div>'}</section>
   <div class="notice-surface"><div><b>Rewards remain evidence-bound</b><p>Allocated, scheduled and distributed totals appear only when Project Q records exist.</p></div><button class="outline-action" data-screen="rewards">Campaign commitments</button></div>`;
+}
+
+function profileWallet() {
+  const p = state.profile;
+  const status = state.walletStatus || {};
+  const wallet = state.wallet && isSolanaAddress(state.wallet) ? state.wallet : null;
+  const tokenAccount = p.tokenAccount && isSolanaAddress(p.tokenAccount) ? p.tokenAccount : null;
+  const balance = status.available ? formatBaseUnits(status.balanceBaseUnits, status.decimals) : '—';
+  const observed = status.observedAt ? formatProfileDate(status.observedAt) : 'Awaiting on-chain sync';
+  const allocationLocked = Boolean(p.rewards?.recorded);
+  const treasuryReady = readinessGate('funding') && readinessGate('registry');
+  return `<section class="wallet-cockpit command-card"><header><div><span class="label">Wallet cockpit</span><h2>${balance}</h2><p>FAWKQ · Solana Mainnet · Token-2022</p></div>${statePill(status.available ? 'ON-CHAIN SYNCED' : wallet ? 'SYNC PENDING' : 'NOT CONNECTED', status.available ? 'success' : 'pending')}</header><div class="wallet-ledger">
+    <article><span>Reward wallet</span><code>${wallet ? escapeHtml(wallet) : 'No verified reward wallet'}</code><button class="text-action" id="copy-wallet" ${wallet ? '' : 'disabled'}>Copy</button></article>
+    <article><span>FAWKQ token account</span><code>${tokenAccount ? escapeHtml(tokenAccount) : (p.tokenAccountReady ? 'Recorded by Project Q' : 'Created at payout if required')}</code><button class="text-action" id="copy-token-account" ${tokenAccount ? '' : 'disabled'}>Copy</button></article>
+    <article><span>Asset contract</span><code>${escapeHtml(status.mint || state.campaign?.earnToBurn?.mint || 'Unavailable')}</code><small>6 decimals · Token-2022</small></article>
+  </div><footer><span>Observed ${escapeHtml(observed)} · ${Number(status.tokenAccountCount || 0)} matching token account${Number(status.tokenAccountCount || 0) === 1 ? '' : 's'}</span><button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh balance</button></footer></section>
+  <section class="wallet-security-grid">
+    <article class="command-card"><span class="label">Ownership</span><h3>${p.walletVerified ? 'Signature verified' : 'Verification pending'}</h3><p>${p.walletVerified ? `Verified ${escapeHtml(formatProfileDate(p.walletVerifiedAt))}. The signature proved ownership only and did not authorize a transaction.` : 'Connect through Project Q and sign the ownership message to activate this reward destination.'}</p><button class="text-action" data-profile-view="identity">Open identity →</button></article>
+    <article class="command-card"><span class="label">Destination protection</span><h3>${allocationLocked ? 'Locked after allocation' : 'Changeable before allocation'}</h3><p>${allocationLocked ? 'Self-service wallet replacement is blocked because an allocation already exists. Any recovery requires founder review.' : 'A newly verified wallet replaces the destination and resets token-account readiness before allocations are recorded.'}</p>${statePill(allocationLocked ? 'PROTECTED' : 'PRE-ALLOCATION', allocationLocked ? 'success' : 'pending')}</article>
+    <article class="command-card"><span class="label">Reward delivery</span><h3>Founder-controlled Squads</h3><p>Project Q calculates and records. Founders approve the exact manifest in Squads. The campaign treasury sends FAWKQ directly to this wallet.</p>${statePill(treasuryReady ? 'TREASURY READY' : 'SETUP PENDING', treasuryReady ? 'success' : 'pending')}</article>
+  </section>
+  <section class="command-card wallet-boundary"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><div><b>Non-custodial by design.</b><p>Project Q cannot withdraw from this wallet, cannot sign for the Squads treasury and never stores a seed phrase or private key.</p></div></section>`;
 }
 
 function profileReferrals() {
@@ -638,7 +729,7 @@ function profileScreen() {
   const p = state.profile;
   const count = verifiedCount();
   const fullyVerified = count === 3;
-  const views = { overview: profileOverview, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
+  const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
   return `<section class="profile-command command-card"><div><span class="label">Project Q participant</span><h2>${escapeHtml(p.name)}</h2><p>Identity, eligibility, verified activity and rewards in one Project Q record.</p>${statePill(`${count}/3 ID`, fullyVerified ? 'success' : 'pending')}</div><img src="/campaign-app/assets/system/q-id.webp" alt="Project Q identity" /></section>
   <section class="profile-summary">${metric('Verified XP', Number(p.xp || 0).toLocaleString())}${metric('Overall rank', escapeHtml(p.rank))}${metric('Missions', Number(p.completedMissions || 0))}${metric('Eligibility', p.tokenAccountReady ? 'Ready' : 'Pending')}</section>
@@ -728,6 +819,7 @@ async function connectWallet() {
     state.profile.walletVerified = true;
     toast('Wallet ownership verified. No transaction was authorized.');
     await authenticateTelegram();
+    await loadWalletStatus();
     render();
   } catch { toast('Wallet connection or ownership verification was cancelled.'); }
 }
@@ -1031,6 +1123,7 @@ function bind() {
   document.querySelector('#identity-refresh')?.addEventListener('click', async () => {
     state.sessionStatus = 'checking';
     await authenticateTelegram();
+    await loadWalletStatus();
     render();
     toast(state.profile.xVerified ? 'Oracle X identity confirmed.' : 'X identity not linked yet.');
   });
@@ -1042,6 +1135,21 @@ function bind() {
   document.querySelector('#oracle-link')?.addEventListener('click', openOracle);
   document.querySelector('#oracle-home-link')?.addEventListener('click', openOracle);
   document.querySelector('#reward-profile')?.addEventListener('click', () => { state.profileView = 'rewards'; go('profile'); });
+  document.querySelector('#open-wallet-profile')?.addEventListener('click', () => { state.profileView = 'wallet'; go('profile'); });
+  document.querySelector('#copy-wallet')?.addEventListener('click', () => copyValue(state.wallet, 'Reward wallet copied.'));
+  document.querySelector('#copy-token-account')?.addEventListener('click', () => copyValue(state.profile.tokenAccount, 'FAWKQ token account copied.'));
+  document.querySelector('#refresh-wallet-balance')?.addEventListener('click', async (event) => {
+    event.currentTarget.disabled = true;
+    await loadWalletStatus();
+    render();
+    toast(state.walletStatus.available ? 'On-chain FAWKQ balance refreshed.' : 'Wallet balance is temporarily unavailable.');
+  });
+}
+
+async function copyValue(value, successMessage) {
+  if (!value) return;
+  try { await navigator.clipboard.writeText(value); toast(successMessage); }
+  catch { toast('Copy unavailable. Press and hold the value instead.'); }
 }
 
 async function loadCampaign() {
@@ -1088,6 +1196,35 @@ async function loadBurnSummary() {
   } catch { state.burns = null; }
 }
 
+async function loadWalletStatus() {
+  const initData = state.telegram?.initData;
+  if (!initData || !state.profile.walletVerified || !state.wallet) {
+    state.walletStatus = {
+      available: false, network: 'mainnet-beta', mint: state.campaign?.earnToBurn?.mint || null,
+      tokenProgramId: state.campaign?.earnToBurn?.tokenProgramId || null,
+      decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, observedAt: null,
+    };
+    return false;
+  }
+  try {
+    const response = await fetch('/campaign-app/api/wallet/status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData }), cache: 'no-store',
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.status?.available) throw new Error('wallet status unavailable');
+    state.walletStatus = payload.status;
+    return true;
+  } catch {
+    state.walletStatus = {
+      available: false, network: 'mainnet-beta', mint: state.campaign?.earnToBurn?.mint || null,
+      tokenProgramId: state.campaign?.earnToBurn?.tokenProgramId || null,
+      decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, observedAt: null,
+    };
+    return false;
+  }
+}
+
 async function authenticateTelegram() {
   const initData = state.telegram?.initData;
   if (!initData) { state.sessionStatus = 'outside'; return false; }
@@ -1103,6 +1240,7 @@ async function authenticateTelegram() {
     state.profile.xVerified = Boolean(session.participant?.xVerified);
     state.profile.walletVerified = Boolean(session.participant?.walletVerified);
     state.profile.tokenAccountReady = Boolean(session.participant?.tokenAccountReady);
+    state.profile.tokenAccount = session.participant?.fawkqTokenAccount || null;
     state.walletVerificationEnabled = Boolean(session.capabilities?.walletVerification);
     state.wallet = session.participant?.rewardWallet || null;
     state.profile.xp = Number(session.participant?.totalXp || 0);
@@ -1149,9 +1287,10 @@ async function boot() {
   state.telegram?.expand();
   state.telegram?.setHeaderColor?.('#050505');
   state.telegram?.setBackgroundColor?.('#050505');
-  state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); render(); });
+  state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); await loadWalletStatus(); render(); });
   state.screen = location.hash.slice(1) in screens ? location.hash.slice(1) : 'home';
   await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
+  await loadWalletStatus();
   restoreWebsiteVoteFlow();
   render();
   setInterval(updateCountdownLabels, 1000);
