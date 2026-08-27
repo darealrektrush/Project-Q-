@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as telegram from './lib/telegram.js';
+import { reconcileTelegramWebhook } from './lib/telegramWebhook.js';
 import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
 import * as admin from './lib/admin.js';
@@ -1196,4 +1197,19 @@ async function handlePostSignalCommand(message) {
 telegram.validateTopicIds();
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`project-q listening on :${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`project-q listening on :${PORT}`);
+  try {
+    const result = await reconcileTelegramWebhook();
+    if (result.configured) {
+      console.log(
+        `[telegram] webhook reconciled for ${result.host}${result.path}; ` +
+          `pending_updates=${result.pendingUpdateCount ?? 'unknown'}`
+      );
+    } else {
+      console.log(`[telegram] webhook reconciliation skipped: ${result.reason}`);
+    }
+  } catch (err) {
+    console.error('[telegram] webhook reconciliation failed:', err.message);
+  }
+});
