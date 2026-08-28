@@ -3,6 +3,7 @@ import { getMenuContent, upsertMenuContent } from './menuContent.js';
 import { supabase } from './supabase.js';
 import { getCampaignReadiness } from '../campaign/service.js';
 import { buildCampaignReadinessText } from '../campaign/ui.js';
+import { buildProductionPreflightText, runProductionPreflight } from './productionPreflight.js';
 import {
   buildSourceCertificationAdminText,
   getVerificationSourceCertificationState,
@@ -143,6 +144,7 @@ export function buildCampaignAdminKeyboard() {
 export function buildBondAdminKeyboard() {
   return {
     inline_keyboard: [
+      [{ text: '🧪 Production Preflight', callback_data: 'admin:preflight' }],
       [{ text: '📋 Readiness', callback_data: 'admin:readiness' }],
       [{ text: '🛡 Source Certifications', callback_data: 'admin:sourcecerts' }],
       [{ text: '🗳 Website Vote Reviews', callback_data: 'admin:votequeue:0' }],
@@ -354,6 +356,37 @@ export async function handleAdminCallback(callbackQuery) {
     } catch (err) {
       console.error('campaign readiness unavailable', err.message);
       return telegram.sendMessage(chatId, 'Campaign readiness is unavailable. No campaign controls were changed.', { threadId });
+    }
+  }
+
+  if (action === 'preflight') {
+    if (callbackQuery.message.chat.type !== 'private') {
+      return telegram.sendMessage(
+        chatId,
+        'Production preflight is available only to an authorized founder in a private Project Q chat.',
+        { threadId }
+      );
+    }
+    try {
+      const preflight = await runProductionPreflight({
+        telegramClient: telegram,
+        campaignClient: supabase,
+      });
+      return telegram.editMessageText(chatId, messageId, buildProductionPreflightText(preflight), {
+        replyMarkup: {
+          inline_keyboard: [
+            [{ text: '🔄 Refresh', callback_data: 'admin:preflight' }],
+            [{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }],
+          ],
+        },
+      });
+    } catch (err) {
+      console.error('production preflight unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'Production preflight is unavailable. No campaign, wallet, reward or deployment setting was changed.',
+        { threadId }
+      );
     }
   }
 
