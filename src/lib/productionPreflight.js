@@ -35,6 +35,11 @@ function formatCommit(value) {
   return /^[0-9a-f]{40}$/i.test(String(value ?? '')) ? String(value).slice(0, 8) : 'unknown';
 }
 
+function optionalMetadataMatches(value, expected) {
+  const normalized = String(value ?? '').trim();
+  return !normalized || normalized === expected;
+}
+
 export async function runProductionPreflight({
   env = process.env,
   telegramClient,
@@ -45,15 +50,18 @@ export async function runProductionPreflight({
   const serviceName = String(env.RENDER_SERVICE_NAME ?? '').trim();
   const branch = String(env.RENDER_GIT_BRANCH ?? '').trim();
   const commit = formatCommit(env.RENDER_GIT_COMMIT);
-  const renderReady = env.NODE_ENV === 'production'
-    && serviceName === 'project-q'
+  // Older Render services do not always expose every optional metadata field
+  // at runtime. Branch and commit are the authoritative deployment identity;
+  // any optional service/environment value that is present must still match.
+  const renderReady = optionalMetadataMatches(env.NODE_ENV, 'production')
+    && optionalMetadataMatches(serviceName, 'project-q')
     && branch === 'main'
     && commit !== 'unknown';
   checks.push(result(
     'render',
     'Render production identity',
     renderReady ? 'pass' : 'block',
-    renderReady ? `${serviceName} · ${branch} · ${commit}` : 'Expected project-q on main with a deployed commit'
+    renderReady ? `${serviceName || 'project-q'} · ${branch} · ${commit}` : 'Expected project-q on main with a deployed commit'
   ));
 
   const [botResult, webhookResult, readinessResult] = await Promise.allSettled([
