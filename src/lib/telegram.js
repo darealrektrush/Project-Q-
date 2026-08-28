@@ -82,6 +82,14 @@ export function getChatMember(chatId, userId) {
   return call('getChatMember', { chat_id: chatId, user_id: userId });
 }
 
+export function getMe() {
+  return call('getMe', {});
+}
+
+export function getWebhookInfo() {
+  return call('getWebhookInfo', {});
+}
+
 export function buildHomeMenu({ privateUrl } = {}) {
   const inlineKeyboard = [
       [
