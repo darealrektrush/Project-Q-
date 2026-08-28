@@ -324,10 +324,15 @@ test('Render waits for checks before deploying managed services', async () => {
 });
 
 test('configured founders can route private admin commands to the authorization layer', async () => {
-  const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
+  const [server, blueprint] = await Promise.all([
+    readFile(new URL('../src/server.js', import.meta.url), 'utf8'),
+    read('render.yaml'),
+  ]);
   assert.match(server, /if \(command === '\/adminf'\)/);
   assert.match(server, /if \(command === '\/admincancel'\)/);
   assert.doesNotMatch(server, /!isPrivate && command === '\/adminf'/);
+  assert.match(blueprint, /- key: TELEGRAM_ADMIN_USER_IDS\n\s+sync: false/);
+  assert.doesNotMatch(blueprint, /- key: TELEGRAM_ADMIN_USER_IDS\n\s+value:/);
 });
 
 test('Phase 1 reconciliation migration contains runtime-critical tables and RLS', async () => {
