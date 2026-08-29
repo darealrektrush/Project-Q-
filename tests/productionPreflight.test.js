@@ -44,6 +44,37 @@ test('healthy production plumbing is safe for a read-only rehearsal', async () =
   assert.equal(result.checks.every(({ status }) => status === 'pass'), true);
 });
 
+test('older Render services may omit optional identity metadata', async () => {
+  const env = { ...ENV };
+  delete env.NODE_ENV;
+  delete env.RENDER_SERVICE_NAME;
+  const result = await runProductionPreflight({
+    env,
+    telegramClient,
+    campaignClient: {},
+    readinessLoader,
+  });
+  assert.equal(result.safeForRehearsal, true);
+  assert.equal(result.checks.find(({ key }) => key === 'render').status, 'pass');
+});
+
+test('explicitly wrong Render metadata, branch or commit still blocks', async () => {
+  for (const patch of [
+    { NODE_ENV: 'development' },
+    { RENDER_SERVICE_NAME: 'project-q-dev' },
+    { RENDER_GIT_BRANCH: 'develop' },
+    { RENDER_GIT_COMMIT: 'unknown' },
+  ]) {
+    const result = await runProductionPreflight({
+      env: { ...ENV, ...patch },
+      telegramClient,
+      campaignClient: {},
+      readinessLoader,
+    });
+    assert.equal(result.checks.find(({ key }) => key === 'render').status, 'block');
+  }
+});
+
 test('wrong bot, webhook and enabled runtime flag fail closed', async () => {
   const result = await runProductionPreflight({
     env: { ...ENV, PROJECT_Q_CAMPAIGN_APP_ENABLED: 'true' },
