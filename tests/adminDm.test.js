@@ -50,13 +50,14 @@ test('campaign administration follows the expected nested Bond the Duck route', 
   assert.equal(buildCampaignAdminKeyboard().inline_keyboard[0][0].callback_data, 'admin:campaign:bond');
   assert.equal(buildBondAdminKeyboard().inline_keyboard[0][0].callback_data, 'admin:preflight');
   assert.equal(buildBondAdminKeyboard().inline_keyboard[1][0].callback_data, 'admin:readiness');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[2][0].callback_data, 'admin:sourcecerts');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[3][0].callback_data, 'admin:votequeue:0');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[4][0].callback_data, 'admin:launchapprovals');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[5][0].callback_data, 'admin:rulesflow');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[6][0].callback_data, 'admin:burn');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[7][0].callback_data, 'admin:burnflow');
-  assert.equal(buildBondAdminKeyboard().inline_keyboard[8][0].callback_data, 'admin:campaign');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[2][0].callback_data, 'admin:treasuryreadiness');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[3][0].callback_data, 'admin:sourcecerts');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[4][0].callback_data, 'admin:votequeue:0');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[5][0].callback_data, 'admin:launchapprovals');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[6][0].callback_data, 'admin:rulesflow');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[7][0].callback_data, 'admin:burn');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[8][0].callback_data, 'admin:burnflow');
+  assert.equal(buildBondAdminKeyboard().inline_keyboard[9][0].callback_data, 'admin:campaign');
 });
 
 test('production preflight remains private and read-only', async () => {
@@ -65,6 +66,14 @@ test('production preflight remains private and read-only', async () => {
   assert.match(source, /callbackQuery\.message\.chat\.type !== 'private'/);
   assert.match(source, /runProductionPreflight/);
   assert.doesNotMatch(source, /action === 'preflight'[\s\S]{0,1800}(?:transitionCampaignState|\.insert\(|\.update\(|\.upsert\(|\.rpc\()/);
+});
+
+test('treasury readiness remains private, finalized-read-only and non-signing', async () => {
+  const source = await readFile(new URL('../src/lib/admin.js', import.meta.url), 'utf8');
+  assert.match(source, /action === 'treasuryreadiness'/);
+  assert.match(source, /callbackQuery\.message\.chat\.type !== 'private'/);
+  assert.match(source, /inspectTreasuryReadiness\(getConnection\(\)\)/);
+  assert.doesNotMatch(source, /action === 'treasuryreadiness'[\s\S]{0,1800}(?:sendTransaction|signTransaction|\.insert\(|\.update\(|\.upsert\(|\.rpc\()/);
 });
 
 test('source certification admin route is read-only', async () => {
