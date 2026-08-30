@@ -305,15 +305,15 @@ begin
     raise exception 'rules hash and ruleset version evidence required';
   end if;
   if p_expected_state = 'READINESS_BLOCKED' and p_next_state = 'FUNDED' then
-    if not (p_evidence ?& array['fundedBaseUnits','expectedFundedBaseUnits','activationVaultBaseUnits',
-      'scheduledVaultBaseUnits','solOperationsLamports','vaultsVerifiedAt']) then
+    if not (p_evidence ?& array['fundedBaseUnits','expectedFundedBaseUnits','treasuryVaultBaseUnits',
+      'treasuryVaultAddress','vaultVerifiedAt']) then
       raise exception 'complete funding evidence required';
     end if;
-    if (p_evidence->>'fundedBaseUnits')::numeric <> (p_evidence->>'expectedFundedBaseUnits')::numeric
-       or (p_evidence->>'fundedBaseUnits')::numeric <>
-          (p_evidence->>'activationVaultBaseUnits')::numeric + (p_evidence->>'scheduledVaultBaseUnits')::numeric
-       or (p_evidence->>'scheduledVaultBaseUnits')::numeric <> 7 * (p_evidence->>'activationVaultBaseUnits')::numeric
-       or (p_evidence->>'solOperationsLamports')::bigint <> 250000000 then
+    if (p_evidence->>'fundedBaseUnits')::numeric <> 15000000000000
+       or (p_evidence->>'expectedFundedBaseUnits')::numeric <> 15000000000000
+       or (p_evidence->>'treasuryVaultBaseUnits')::numeric not in (15000000000000, 17500000000000)
+       or nullif(btrim(p_evidence->>'treasuryVaultAddress'), '') is null
+       or nullif(btrim(p_evidence->>'vaultVerifiedAt'), '') is null then
       raise exception 'funding evidence does not reconcile';
     end if;
   end if;

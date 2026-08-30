@@ -228,6 +228,20 @@ test('Bond the Duck draft provisioning is inert, idempotent and evidence-safe', 
   assert.doesNotMatch(migration, /funded_base_units[^\n]+15000000000000/i);
 });
 
+test('single Bond treasury migration replaces the split-vault funding gate safely', async () => {
+  const migration = await read(
+    'supabase/migrations/20260830130627_single_bond_treasury_funding_gate.sql'
+  );
+  assert.match(migration, /create or replace function public\.transition_campaign_state/);
+  assert.match(migration, /'treasuryVaultBaseUnits'/);
+  assert.match(migration, /'treasuryVaultAddress'/);
+  assert.match(migration, /'vaultVerifiedAt'/);
+  assert.match(migration, /treasuryVaultBaseUnits'\)::numeric not in \(15000000000000, 17500000000000\)/);
+  assert.doesNotMatch(migration, /activationVaultBaseUnits|scheduledVaultBaseUnits|solOperationsLamports/);
+  assert.match(migration, /revoke all on function public\.transition_campaign_state[\s\S]+from public, anon, authenticated/);
+  assert.match(migration, /grant execute on function public\.transition_campaign_state[\s\S]+to service_role/);
+});
+
 test('final campaign rules require exact semantics and two current founder approvals', async () => {
   const migration = await read(
     'supabase/migrations/20260825232000_campaign_ruleset_governance.sql'

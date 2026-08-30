@@ -8,10 +8,9 @@ import {
 } from './walletStatus.js';
 
 export const SOLANA_MAINNET_GENESIS_HASH = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
-export const ACTIVATION_VAULT_BASE_UNITS = 1_875_000_000_000n;
-export const SCHEDULED_VAULT_BASE_UNITS = 13_125_000_000_000n;
 export const CAMPAIGN_FUNDING_BASE_UNITS = 15_000_000_000_000n;
-export const SOL_OPERATIONS_LAMPORTS = 250_000_000;
+export const DIAMOND_DUCK_BASE_UNITS = 2_500_000_000_000n;
+export const FULL_BOND_TREASURY_BASE_UNITS = CAMPAIGN_FUNDING_BASE_UNITS + DIAMOND_DUCK_BASE_UNITS;
 export const SQUADS_V4_PROGRAM_ID = 'SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf';
 
 const SQUADS_MULTISIG_DISCRIMINATOR = Buffer.from([224, 116, 121, 186, 68, 161, 79, 236]);
@@ -21,11 +20,7 @@ const SQUADS_PROGRAM_KEY = new PublicKey(SQUADS_V4_PROGRAM_ID);
 export const TREASURY_ENV_NAMES = Object.freeze([
   'PROJECT_Q_BOND_SQUADS_MULTISIG',
   'PROJECT_Q_BOND_SQUADS_MEMBERS',
-  'PROJECT_Q_BOND_ACTIVATION_VAULT_INDEX',
-  'PROJECT_Q_BOND_SCHEDULED_VAULT_INDEX',
-  'PROJECT_Q_BOND_COMMUNITY_RESERVE_VAULT_INDEX',
-  'PROJECT_Q_BOND_DIAMOND_DUCK_VAULT_INDEX',
-  'PROJECT_Q_BOND_SOL_OPERATIONS_VAULT_INDEX',
+  'PROJECT_Q_BOND_TREASURY_VAULT_INDEX',
 ]);
 
 const INTEGER = /^(0|[1-9]\d*)$/;
@@ -75,25 +70,13 @@ export function loadTreasuryConfiguration(env = process.env) {
     throw new Error('Squads treasury members must be unique');
   }
 
-  const indexes = {
-    activation: vaultIndex(env.PROJECT_Q_BOND_ACTIVATION_VAULT_INDEX, 'Activation vault index'),
-    scheduled: vaultIndex(env.PROJECT_Q_BOND_SCHEDULED_VAULT_INDEX, 'Scheduled vault index'),
-    communityReserve: vaultIndex(env.PROJECT_Q_BOND_COMMUNITY_RESERVE_VAULT_INDEX, 'Community Reserve vault index'),
-    diamondDuck: vaultIndex(env.PROJECT_Q_BOND_DIAMOND_DUCK_VAULT_INDEX, 'Diamond Duck vault index'),
-    solOperations: vaultIndex(env.PROJECT_Q_BOND_SOL_OPERATIONS_VAULT_INDEX, 'SOL operations vault index'),
-  };
-  if (new Set(Object.values(indexes)).size !== Object.keys(indexes).length) {
-    throw new Error('Bond treasury vault indexes must be unique');
-  }
-
-  const vaults = Object.fromEntries(
-    Object.entries(indexes).map(([key, index]) => [key, deriveSquadsVaultPda(multisig, index)])
-  );
+  const vaultIndexValue = vaultIndex(env.PROJECT_Q_BOND_TREASURY_VAULT_INDEX, 'Bond treasury vault index');
+  const vault = deriveSquadsVaultPda(multisig, vaultIndexValue);
   const memberFingerprint = createHash('sha256')
     .update(members.map((member) => member.toBase58()).sort().join(','))
     .digest('hex');
 
-  return { multisig, members, indexes, vaults, memberFingerprint };
+  return { multisig, members, vaultIndex: vaultIndexValue, vault, memberFingerprint };
 }
 
 async function getFawkqBalanceForOwner(connection, owner) {
@@ -182,8 +165,9 @@ export function closedTreasuryReadiness(reason = 'Treasury readiness is unavaila
     network: 'mainnet-beta',
     observedAt: null,
     memberFingerprint: null,
-    vaults: null,
+    vault: null,
     balances: null,
+    diamondDuckFunded: false,
     checks: [check('configuration', 'Public treasury configuration complete', false, reason)],
   };
 }
@@ -234,34 +218,12 @@ export async function inspectTreasuryReadiness(connection, {
       : 'Mint program or decimals mismatch'
   ));
 
-  const [activation, scheduled, communityReserve, diamondDuck, solOperationsLamports] = await Promise.all([
-    getFawkqBalanceForOwner(connection, configuration.vaults.activation),
-    getFawkqBalanceForOwner(connection, configuration.vaults.scheduled),
-    getFawkqBalanceForOwner(connection, configuration.vaults.communityReserve),
-    getFawkqBalanceForOwner(connection, configuration.vaults.diamondDuck),
-    connection.getBalance(configuration.vaults.solOperations, 'finalized'),
-  ]);
-
-  checks.push(check('activation-funding', 'Cycle Activation Vault holds exactly 1,875,000 FAWKQ',
-    activation.balance === ACTIVATION_VAULT_BASE_UNITS,
-    `${activation.balance.toString()} base units observed`
-  ));
-  checks.push(check('scheduled-funding', 'Scheduled Distribution Vault holds exactly 13,125,000 FAWKQ',
-    scheduled.balance === SCHEDULED_VAULT_BASE_UNITS,
-    `${scheduled.balance.toString()} base units observed`
-  ));
-  checks.push(check('funding-reconciliation', 'Campaign vaults reconcile to exactly 15,000,000 FAWKQ at a 1:7 split',
-    activation.balance + scheduled.balance === CAMPAIGN_FUNDING_BASE_UNITS
-      && scheduled.balance === activation.balance * 7n,
-    `${(activation.balance + scheduled.balance).toString()} base units observed`
-  ));
-  checks.push(check('sol-operations', 'SOL Operations Vault holds exactly 0.25 SOL',
-    solOperationsLamports === SOL_OPERATIONS_LAMPORTS,
-    `${solOperationsLamports} lamports observed`
-  ));
-  checks.push(check('reserve-vaults', 'Community Reserve and Diamond Duck vault identities are readable',
-    communityReserve.tokenAccountCount >= 0 && diamondDuck.tokenAccountCount >= 0,
-    'Derived Squads vault owners queried successfully'
+  const treasury = await getFawkqBalanceForOwner(connection, configuration.vault);
+  const recognizedTreasuryBalance = treasury.balance === CAMPAIGN_FUNDING_BASE_UNITS
+    || treasury.balance === FULL_BOND_TREASURY_BASE_UNITS;
+  checks.push(check('treasury-funding', 'Bond treasury holds a recognized campaign funding total',
+    recognizedTreasuryBalance,
+    `${treasury.balance.toString()} base units observed`
   ));
 
   return {
@@ -270,14 +232,11 @@ export async function inspectTreasuryReadiness(connection, {
     network: 'mainnet-beta',
     observedAt: now.toISOString(),
     memberFingerprint: configuration.memberFingerprint,
-    vaults: Object.fromEntries(Object.entries(configuration.vaults).map(([key, value]) => [key, value.toBase58()])),
+    vault: configuration.vault.toBase58(),
     balances: {
-      activationBaseUnits: activation.balance.toString(),
-      scheduledBaseUnits: scheduled.balance.toString(),
-      communityReserveBaseUnits: communityReserve.balance.toString(),
-      diamondDuckBaseUnits: diamondDuck.balance.toString(),
-      solOperationsLamports: String(solOperationsLamports),
+      treasuryBaseUnits: treasury.balance.toString(),
     },
+    diamondDuckFunded: treasury.balance === FULL_BOND_TREASURY_BASE_UNITS,
     checks,
   };
 }
@@ -294,6 +253,11 @@ export function buildTreasuryReadinessText(readiness) {
   }
   if (readiness.memberFingerprint) {
     lines.push('', `Member-set fingerprint: \`${readiness.memberFingerprint.slice(0, 16)}…\``);
+  }
+  if (readiness.available) {
+    lines.push(readiness.diamondDuckFunded
+      ? '💎 Diamond Duck: 2,500,000 FAWKQ funded'
+      : '⏳ Diamond Duck: scheduled after founder Streamflow unlock');
   }
   lines.push(
     '',

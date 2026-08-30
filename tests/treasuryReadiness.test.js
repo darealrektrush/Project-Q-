@@ -3,16 +3,14 @@ import assert from 'node:assert/strict';
 import { PublicKey } from '@solana/web3.js';
 
 import {
-  ACTIVATION_VAULT_BASE_UNITS,
   buildTreasuryReadinessText,
   CAMPAIGN_FUNDING_BASE_UNITS,
   decodeSquadsMultisigAccount,
+  DIAMOND_DUCK_BASE_UNITS,
   deriveSquadsVaultPda,
   inspectTreasuryReadiness,
   loadTreasuryConfiguration,
-  SCHEDULED_VAULT_BASE_UNITS,
   SOLANA_MAINNET_GENESIS_HASH,
-  SOL_OPERATIONS_LAMPORTS,
   SQUADS_V4_PROGRAM_ID,
 } from '../src/campaign/treasuryReadiness.js';
 import { FAWKQ_MINT, TOKEN_2022_PROGRAM_ID } from '../src/campaign/walletStatus.js';
@@ -28,11 +26,7 @@ function env(overrides = {}) {
   return {
     PROJECT_Q_BOND_SQUADS_MULTISIG: ADDRESSES[0],
     PROJECT_Q_BOND_SQUADS_MEMBERS: ADDRESSES.slice(1).join(','),
-    PROJECT_Q_BOND_ACTIVATION_VAULT_INDEX: '0',
-    PROJECT_Q_BOND_SCHEDULED_VAULT_INDEX: '1',
-    PROJECT_Q_BOND_COMMUNITY_RESERVE_VAULT_INDEX: '2',
-    PROJECT_Q_BOND_DIAMOND_DUCK_VAULT_INDEX: '3',
-    PROJECT_Q_BOND_SOL_OPERATIONS_VAULT_INDEX: '4',
+    PROJECT_Q_BOND_TREASURY_VAULT_INDEX: '0',
     ...overrides,
   };
 }
@@ -54,12 +48,6 @@ function parsedTokenAccount(owner, amount) {
 }
 
 function fixtureConnection(configuration, overrides = {}) {
-  const balances = new Map([
-    [configuration.vaults.activation.toBase58(), ACTIVATION_VAULT_BASE_UNITS],
-    [configuration.vaults.scheduled.toBase58(), SCHEDULED_VAULT_BASE_UNITS],
-    [configuration.vaults.communityReserve.toBase58(), 0n],
-    [configuration.vaults.diamondDuck.toBase58(), 0n],
-  ]);
   return {
     getGenesisHash: async () => SOLANA_MAINNET_GENESIS_HASH,
     getParsedAccountInfo: async () => ({
@@ -69,9 +57,10 @@ function fixtureConnection(configuration, overrides = {}) {
       },
     }),
     getParsedTokenAccountsByOwner: async (owner) => ({
-      value: [parsedTokenAccount(owner, balances.get(owner.toBase58()) ?? 0n)],
+      value: [parsedTokenAccount(owner, owner.equals(configuration.vault)
+        ? CAMPAIGN_FUNDING_BASE_UNITS
+        : 0n)],
     }),
-    getBalance: async () => SOL_OPERATIONS_LAMPORTS,
     ...overrides,
   };
 }
@@ -101,10 +90,11 @@ function encodedMultisig({ threshold = 2, members = ADDRESSES.slice(1), permissi
   return Buffer.concat([discriminator, fixedFields, ...memberBytes]);
 }
 
-test('treasury configuration derives five unique Squads vault PDAs', () => {
+test('treasury configuration derives exactly one Squads treasury vault PDA', () => {
   const configuration = loadTreasuryConfiguration(env());
   assert.equal(configuration.members.length, 3);
-  assert.equal(new Set(Object.values(configuration.vaults).map((key) => key.toBase58())).size, 5);
+  assert.equal(configuration.vault.toBase58(), 'HyvBpUqbXi4DEpVknM8Z6tUK3mKUTHaGmQ321rgvdDU6');
+  assert.equal(configuration.vaultIndex, 0);
   assert.match(configuration.memberFingerprint, /^[0-9a-f]{64}$/);
   assert.equal(deriveSquadsVaultPda(configuration.multisig, 0).toBase58(), 'HyvBpUqbXi4DEpVknM8Z6tUK3mKUTHaGmQ321rgvdDU6');
 });
@@ -135,11 +125,10 @@ test('default Squads loader verifies program ownership before decoding', async (
   await assert.rejects(() => inspectTreasuryReadiness(wrongOwner, { env: env() }), /not owned by the Squads v4 program/);
 });
 
-test('treasury configuration fails closed for missing, duplicate, or invalid values', () => {
+test('treasury configuration fails closed for missing or invalid values', () => {
   assert.throws(() => loadTreasuryConfiguration(env({ PROJECT_Q_BOND_SQUADS_MEMBERS: '' })), /Missing treasury configuration/);
-  assert.throws(() => loadTreasuryConfiguration(env({ PROJECT_Q_BOND_SCHEDULED_VAULT_INDEX: '0' })), /must be unique/);
   assert.throws(() => loadTreasuryConfiguration(env({ PROJECT_Q_BOND_SQUADS_MULTISIG: 'invalid' })), /valid Solana public key/);
-  assert.throws(() => loadTreasuryConfiguration(env({ PROJECT_Q_BOND_SOL_OPERATIONS_VAULT_INDEX: '256' })), /supported vault-index range/);
+  assert.throws(() => loadTreasuryConfiguration(env({ PROJECT_Q_BOND_TREASURY_VAULT_INDEX: '256' })), /supported vault-index range/);
 });
 
 test('finalized treasury inspection passes only the exact locked 2-of-3 funding model', async () => {
@@ -150,13 +139,26 @@ test('finalized treasury inspection passes only the exact locked 2-of-3 funding 
     multisigLoader: multisigLoader(configuration),
   });
   assert.equal(readiness.ready, true);
-  assert.equal(readiness.balances.activationBaseUnits, ACTIVATION_VAULT_BASE_UNITS.toString());
-  assert.equal(readiness.balances.scheduledBaseUnits, SCHEDULED_VAULT_BASE_UNITS.toString());
-  assert.equal(BigInt(readiness.balances.activationBaseUnits) + BigInt(readiness.balances.scheduledBaseUnits), CAMPAIGN_FUNDING_BASE_UNITS);
+  assert.equal(readiness.balances.treasuryBaseUnits, CAMPAIGN_FUNDING_BASE_UNITS.toString());
+  assert.equal(readiness.vault, configuration.vault.toBase58());
+  assert.equal(readiness.diamondDuckFunded, false);
+  assert.match(buildTreasuryReadinessText(readiness), /scheduled after founder Streamflow unlock/);
   assert.doesNotMatch(buildTreasuryReadinessText(readiness), new RegExp(ADDRESSES[1]));
 });
 
-test('wrong network, threshold, member set, funding, or SOL balance blocks readiness', async () => {
+test('the same Bond vault recognizes the 2.5M Diamond Duck deposit after Streamflow unlock', async () => {
+  const configuration = loadTreasuryConfiguration(env());
+  const readiness = await inspectTreasuryReadiness(fixtureConnection(configuration, {
+    getParsedTokenAccountsByOwner: async (owner) => ({
+      value: [parsedTokenAccount(owner, CAMPAIGN_FUNDING_BASE_UNITS + DIAMOND_DUCK_BASE_UNITS)],
+    }),
+  }), { env: env(), multisigLoader: multisigLoader(configuration) });
+  assert.equal(readiness.ready, true);
+  assert.equal(readiness.diamondDuckFunded, true);
+  assert.match(buildTreasuryReadinessText(readiness), /Diamond Duck: 2,500,000 FAWKQ funded/);
+});
+
+test('wrong network, threshold, member set, or exact treasury funding blocks readiness', async () => {
   const configuration = loadTreasuryConfiguration(env());
   const wrongNetwork = await inspectTreasuryReadiness(fixtureConnection(configuration, {
     getGenesisHash: async () => 'devnet',
@@ -175,17 +177,17 @@ test('wrong network, threshold, member set, funding, or SOL balance blocks readi
 
   const underfunded = await inspectTreasuryReadiness(fixtureConnection(configuration, {
     getParsedTokenAccountsByOwner: async (owner) => ({
-      value: [parsedTokenAccount(owner, owner.equals(configuration.vaults.activation)
-        ? ACTIVATION_VAULT_BASE_UNITS - 1n
-        : owner.equals(configuration.vaults.scheduled) ? SCHEDULED_VAULT_BASE_UNITS : 0n)],
+      value: [parsedTokenAccount(owner, CAMPAIGN_FUNDING_BASE_UNITS - 1n)],
     }),
   }), { env: env(), multisigLoader: multisigLoader(configuration) });
   assert.equal(underfunded.ready, false);
 
-  const wrongSol = await inspectTreasuryReadiness(fixtureConnection(configuration, {
-    getBalance: async () => SOL_OPERATIONS_LAMPORTS - 1,
+  const overfunded = await inspectTreasuryReadiness(fixtureConnection(configuration, {
+    getParsedTokenAccountsByOwner: async (owner) => ({
+      value: [parsedTokenAccount(owner, CAMPAIGN_FUNDING_BASE_UNITS + 1n)],
+    }),
   }), { env: env(), multisigLoader: multisigLoader(configuration) });
-  assert.equal(wrongSol.ready, false);
+  assert.equal(overfunded.ready, false);
 });
 
 test('missing configuration returns a closed status without performing RPC reads', async () => {

@@ -50,19 +50,27 @@ test('activation evidence binds two approvals to an exact versioned readiness re
   );
 });
 
-test('funding gate reconciles the locked vault split and SOL operations balance', () => {
+test('funding gate reconciles one locked 15,000,000 FAWKQ treasury vault', () => {
   const evidence = {
     expectedFundedBaseUnits: '15000000000000',
     fundedBaseUnits: '15000000000000',
-    activationVaultBaseUnits: '1875000000000',
-    scheduledVaultBaseUnits: '13125000000000',
-    solOperationsLamports: '250000000',
-    vaultsVerifiedAt: '2026-08-14T00:00:00Z',
+    treasuryVaultBaseUnits: '15000000000000',
+    treasuryVaultAddress: 'BondTreasuryAddress',
+    vaultVerifiedAt: '2026-08-14T00:00:00Z',
   };
   assert.equal(assertTransition('READINESS_BLOCKED', 'FUNDED', { evidence }), true);
+  assert.equal(assertTransition('READINESS_BLOCKED', 'FUNDED', {
+    evidence: { ...evidence, treasuryVaultBaseUnits: '17500000000000' },
+  }), true);
   assert.throws(
     () => assertTransition('READINESS_BLOCKED', 'FUNDED', {
-      evidence: { ...evidence, scheduledVaultBaseUnits: '13124999999999' },
+      evidence: { ...evidence, treasuryVaultBaseUnits: '14999999999999' },
+    }),
+    /does not reconcile/
+  );
+  assert.throws(
+    () => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+      evidence: { ...evidence, fundedBaseUnits: '15000000000001', expectedFundedBaseUnits: '15000000000001', treasuryVaultBaseUnits: '17500000000000' },
     }),
     /does not reconcile/
   );
