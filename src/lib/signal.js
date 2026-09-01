@@ -163,8 +163,8 @@ export async function createAndPostSignal() {
 
   // fawkq-announcements is post-only — no buttons here, they'd never work
   // (the topic guard blocks all interaction there). Reveal/hint/ignore only
-  // work on the /signal repost in General Chat (CrabStar Chat), see repostSignalToChat.
-  const announceText = `${content.teaser_text}\n\n💬 Head to General Chat (CrabStar Chat) and type /signal to act on it.`;
+  // work on the /signal repost in General Chat, see repostSignalToChat.
+  const announceText = `${content.teaser_text}\n\n💬 Head to General Chat and type /signal to act on it.`;
   const message = await telegram.sendMessage(chatId, announceText, { threadId });
 
   await supabase.update('signals', `?id=eq.${row.id}`, {
