@@ -102,6 +102,6 @@ Never place values in this document or source control.
 - `GET /version` returns the intended Render commit and branch.
 - Telegram rejects an absent/incorrect webhook secret.
 - Oracle campaign ingress rejects an absent/incorrect shared secret.
-- `/start`, admin authorization, campaign DRAFT UI, wallet/receipt reads, and
+- `/startq` in groups, private `/start` deep links, `/adminq` authorization, campaign DRAFT UI, wallet/receipt reads, and
   error states work from the intended Telegram contexts.
 - Logs contain no secrets, wallet private material, or persistent retry storm.
