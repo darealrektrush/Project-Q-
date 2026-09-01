@@ -553,9 +553,9 @@ async function handleMessage(message) {
   if (isPrivate) {
     await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
     const privateText = message.text.trim();
-    startPayload = privateText.startsWith('/start')
-      ? privateText.split(/\s+/)[1] ?? null
-      : null;
+    const [privateCommandToken, privatePayload] = privateText.split(/\s+/, 2);
+    const privateCommand = privateCommandToken.split('@')[0];
+    startPayload = privateCommand === '/start' ? privatePayload ?? null : null;
 
     if (startPayload === 'bwfeedback') {
       return bagwork.handleFeedbackDeepLink(message);
@@ -566,7 +566,7 @@ async function handleMessage(message) {
   if (!guard.allowed || !guard.interactive) return;
 
   const text = message.text.trim();
-  // Group chats often send commands as /start@BotUsername — strip the suffix.
+  // Group chats often send commands as /startq@BotUsername — strip the suffix.
   const command = text.split(/\s+/)[0].split('@')[0];
 
   await xp.ensureUser(message.from.id, message.from.username ?? message.from.first_name);
@@ -574,7 +574,7 @@ async function handleMessage(message) {
   // Private access is still allowlisted inside handleAdminCommand; group
   // access still requires Telegram administrator status. Do not gate this
   // here or configured founders cannot open the private command centre.
-  if (command === '/adminf') {
+  if (command === '/adminq') {
     return admin.handleAdminCommand(message);
   }
   if (command === '/admincancel') {
@@ -593,8 +593,11 @@ async function handleMessage(message) {
   }
 
   switch (command) {
+    case '/startq':
+      return sendHome(chatId, threadId, { isPrivate });
     case '/start':
-      if (isPrivate && referrals.parseReferralPayload(startPayload)) {
+      if (!isPrivate) return;
+      if (referrals.parseReferralPayload(startPayload)) {
         try {
           await referrals.captureReferral(supabase, startPayload, message.from.id);
           return sendHome(chatId, threadId, { isPrivate, referralCaptured: true });
@@ -869,7 +872,7 @@ function sendHelp(chatId, threadId) {
   const defaultText = [
     '📖 *FawkQ Commands*',
     '',
-    '/start — Home menu',
+    '/startq — Home menu',
     '/market — Price and holder count',
     '/leaderboard — XP leaderboard',
     '/bagworkboard — Bag Workers leaderboard',

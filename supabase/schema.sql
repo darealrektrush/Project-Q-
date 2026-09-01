@@ -139,7 +139,7 @@ create table if not exists distribution_transactions (
   created_at timestamptz not null default now()
 );
 
--- Admin-editable overrides for menu/command bio text + media, set via /adminf.
+-- Admin-editable overrides for menu/command bio text + media, set via /adminq.
 create table if not exists menu_content (
   key text primary key,
   bio_text text,

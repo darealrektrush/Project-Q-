@@ -817,7 +817,7 @@ export async function handleAdminCallback(callbackQuery) {
 
     if (!entry || entry.key !== key || entry.field !== field || entry.stage !== 'confirm' || Date.now() > entry.expires) {
       pending.delete(entryKey);
-      return telegram.sendMessage(chatId, 'This preview expired or was already handled — start again with /adminf.', {
+      return telegram.sendMessage(chatId, 'This preview expired or was already handled — start again with /adminq.', {
         threadId,
       });
     }
