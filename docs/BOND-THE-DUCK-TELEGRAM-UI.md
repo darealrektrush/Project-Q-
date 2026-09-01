@@ -5,7 +5,7 @@ permissions; it does not activate the campaign or authorize treasury actions.
 
 ## Public navigation
 
-`/start` → `🦆 Campaigns` → `🦆 Bond the Duck`
+`/startq` → `🦆 Campaigns` → `🦆 Bond the Duck`
 
 | Screen | Callback | Purpose | Pre-launch behavior |
 |---|---|---|---|
@@ -25,7 +25,7 @@ permissions; it does not activate the campaign or authorize treasury actions.
 | Treasury & Receipts | `menu:campaign:bond:treasury` | Vaults, manifests, proposals and txs | Not activated |
 
 The `/campaign` command opens the Bond the Duck hub directly. Every leaf screen
-returns to the hub. The hub returns to Campaigns. Returning to `/start` sends a
+returns to the hub. The hub returns to Campaigns. Returning to `/startq` sends a
 fresh home message so media-based home menus remain valid in Telegram.
 
 ## Locked campaign schedule
