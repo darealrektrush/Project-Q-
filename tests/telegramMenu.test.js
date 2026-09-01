@@ -48,13 +48,13 @@ test('private chats are interactive while unrelated group topics remain blocked'
   });
 });
 
-test('CrabStar Chat is the canonical interactive community topic', () => {
+test('General Chat is the canonical interactive community topic', () => {
   const previous = process.env.TELEGRAM_TOPIC_IDS;
-  process.env.TELEGRAM_TOPIC_IDS = 'crabstar-chat:39151,fawkq-announcements:22994,fawkq-bagwork:28244';
+  process.env.TELEGRAM_TOPIC_IDS = 'general-chat:39151,fawkq-announcements:22994,fawkq-bagwork:28244';
   try {
     assert.deepEqual(guardInteraction('supergroup', 39151), {
       allowed: true,
-      topic: 'crabstar-chat',
+      topic: 'general-chat',
       interactive: true,
     });
   } finally {
