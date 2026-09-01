@@ -328,9 +328,11 @@ test('configured founders can route private admin commands to the authorization 
     readFile(new URL('../src/server.js', import.meta.url), 'utf8'),
     read('render.yaml'),
   ]);
-  assert.match(server, /if \(command === '\/adminf'\)/);
+  assert.match(server, /if \(command === '\/adminq'\)/);
+  assert.match(server, /case '\/startq':/);
+  assert.match(server, /case '\/start':[\s\S]+if \(!isPrivate\) return;/);
   assert.match(server, /if \(command === '\/admincancel'\)/);
-  assert.doesNotMatch(server, /!isPrivate && command === '\/adminf'/);
+  assert.doesNotMatch(server, /!isPrivate && command === '\/adminq'/);
   assert.match(blueprint, /- key: TELEGRAM_ADMIN_USER_IDS\n\s+sync: false/);
   assert.doesNotMatch(blueprint, /- key: TELEGRAM_ADMIN_USER_IDS\n\s+value:/);
 });
