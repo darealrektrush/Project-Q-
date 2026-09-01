@@ -161,7 +161,7 @@ export function getTopicId(name) {
 }
 
 const REQUIRED_TOPICS = ['crabstar-chat', 'fawkq-announcements', 'fawkq-bagwork'];
-const INTERACTIVE_TOPICS = new Set(['crabstar-chat', 'fawkq-chat', 'fawkq-bagwork']);
+const INTERACTIVE_TOPICS = new Set(['crabstar-chat', 'fawkq-bagwork']);
 
 // Logs loudly at startup if TELEGRAM_TOPIC_IDS is missing/malformed, so a
 // misconfigured env var shows up in Render's logs immediately instead of
@@ -179,10 +179,9 @@ export function validateTopicIds() {
   return true;
 }
 
-// Three forum topics are recognized: crabstar-chat and fawkq-bagwork are
-// interactive, fawkq-announcements is post-only. The legacy fawkq-chat name
-// remains interactive only as a temporary migration alias. Anything else —
-// including threadless updates and DMs — is dropped by the caller.
+// Three forum topics are recognized: crabstar-chat (General Chat) and
+// fawkq-bagwork are interactive; fawkq-announcements is post-only. Anything
+// else — including threadless updates and DMs — is dropped by the caller.
 export function guardTopic(threadId) {
   const topics = parseTopicIds();
   const entry = Object.entries(topics).find(([, id]) => id === threadId);
