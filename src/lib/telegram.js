@@ -160,8 +160,8 @@ export function getTopicId(name) {
   return parseTopicIds()[name];
 }
 
-const REQUIRED_TOPICS = ['fawkq-chat', 'fawkq-announcements', 'fawkq-bagwork'];
-const INTERACTIVE_TOPICS = new Set(['fawkq-chat', 'fawkq-bagwork']);
+const REQUIRED_TOPICS = ['crabstar-chat', 'fawkq-announcements', 'fawkq-bagwork'];
+const INTERACTIVE_TOPICS = new Set(['crabstar-chat', 'fawkq-chat', 'fawkq-bagwork']);
 
 // Logs loudly at startup if TELEGRAM_TOPIC_IDS is missing/malformed, so a
 // misconfigured env var shows up in Render's logs immediately instead of
@@ -172,16 +172,17 @@ export function validateTopicIds() {
   if (missing.length) {
     console.error(
       `[telegram] TELEGRAM_TOPIC_IDS is misconfigured — missing or invalid: ${missing.join(', ')}. ` +
-        `Expected "fawkq-chat:<id>,fawkq-announcements:<id>,fawkq-bagwork:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
+        `Expected "crabstar-chat:<id>,fawkq-announcements:<id>,fawkq-bagwork:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
     );
     return false;
   }
   return true;
 }
 
-// Three forum topics are recognized: fawkq-chat and fawkq-bagwork are
-// interactive, fawkq-announcements is post-only. Anything else — including
-// threadless updates and DMs — is dropped by the caller.
+// Three forum topics are recognized: crabstar-chat and fawkq-bagwork are
+// interactive, fawkq-announcements is post-only. The legacy fawkq-chat name
+// remains interactive only as a temporary migration alias. Anything else —
+// including threadless updates and DMs — is dropped by the caller.
 export function guardTopic(threadId) {
   const topics = parseTopicIds();
   const entry = Object.entries(topics).find(([, id]) => id === threadId);
@@ -191,7 +192,7 @@ export function guardTopic(threadId) {
 }
 
 // Members can use the complete interactive bot in a private chat. Group use
-// remains restricted to the configured interactive FAWKQ topics so Project Q
+// remains restricted to the configured interactive community topics so Project Q
 // never starts responding across unrelated community conversations.
 export function guardInteraction(chatType, threadId) {
   if (chatType === 'private') {
