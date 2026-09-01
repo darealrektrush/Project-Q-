@@ -160,8 +160,9 @@ export function getTopicId(name) {
   return parseTopicIds()[name];
 }
 
-const REQUIRED_TOPICS = ['crabstar-chat', 'fawkq-announcements', 'fawkq-bagwork'];
-const INTERACTIVE_TOPICS = new Set(['crabstar-chat', 'fawkq-bagwork']);
+const REQUIRED_TOPICS = ['fawkq-announcements', 'fawkq-bagwork'];
+const GENERAL_CHAT_TOPICS = ['general-chat', 'crabstar-chat'];
+const INTERACTIVE_TOPICS = new Set([...GENERAL_CHAT_TOPICS, 'fawkq-bagwork']);
 
 // Logs loudly at startup if TELEGRAM_TOPIC_IDS is missing/malformed, so a
 // misconfigured env var shows up in Render's logs immediately instead of
@@ -169,19 +170,21 @@ const INTERACTIVE_TOPICS = new Set(['crabstar-chat', 'fawkq-bagwork']);
 export function validateTopicIds() {
   const topics = parseTopicIds();
   const missing = REQUIRED_TOPICS.filter((name) => !Number.isFinite(topics[name]));
+  if (!GENERAL_CHAT_TOPICS.some((name) => Number.isFinite(topics[name]))) missing.unshift('general-chat');
   if (missing.length) {
     console.error(
       `[telegram] TELEGRAM_TOPIC_IDS is misconfigured — missing or invalid: ${missing.join(', ')}. ` +
-        `Expected "crabstar-chat:<id>,fawkq-announcements:<id>,fawkq-bagwork:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
+        `Expected "general-chat:<id>,fawkq-announcements:<id>,fawkq-bagwork:<id>", got: ${JSON.stringify(process.env.TELEGRAM_TOPIC_IDS ?? '')}`
     );
     return false;
   }
   return true;
 }
 
-// Three forum topics are recognized: crabstar-chat (General Chat) and
-// fawkq-bagwork are interactive; fawkq-announcements is post-only. Anything
-// else — including threadless updates and DMs — is dropped by the caller.
+// General Chat and fawkq-bagwork are interactive; fawkq-announcements is
+// post-only. The old crabstar-chat key remains a temporary deployment alias so
+// the Render rename can roll out without downtime. Anything else — including
+// threadless updates and DMs — is dropped by the caller.
 export function guardTopic(threadId) {
   const topics = parseTopicIds();
   const entry = Object.entries(topics).find(([, id]) => id === threadId);
