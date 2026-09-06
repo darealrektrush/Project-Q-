@@ -1,5 +1,33 @@
 import { secretMatches } from './oracleIngest.js';
 
+// Resolve the deployment's real Telegram bot without copying its token to Oracle.
+export function oracleProfileAppHandler({ secret, botToken, fetchImpl = fetch }) {
+  let appUrl = null;
+  return async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (!secretMatches(req.get('x-oracle-campaign-secret'), secret)) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
+    }
+    try {
+      if (!appUrl) {
+        if (!botToken) throw new Error('missing bot');
+        const response = await fetchImpl(`https://api.telegram.org/bot${botToken}/getMe`, {
+          method: 'POST', signal: AbortSignal.timeout(5000),
+        });
+        const body = await response.json();
+        const username = body?.result?.username;
+        if (!response.ok || body.ok !== true || body.result.is_bot !== true || !/^[A-Za-z0-9_]{5,32}$/.test(username ?? '')) {
+          throw new Error('bot identity unavailable');
+        }
+        appUrl = `https://t.me/${username}?start=campaigns`;
+      }
+      return res.status(200).json({ ok: true, appUrl });
+    } catch {
+      return res.status(503).json({ ok: false, error: 'campaign app unavailable' });
+    }
+  };
+}
+
 // This is a server-to-server route. Never expose the shared secret to the Mini App.
 // The Oracle bot derives the actor from a private Telegram update before calling it.
 export function oracleProfileHandler({ secret, getParticipantStatus, campaignId = 'bond-the-duck-2026', now = () => new Date() }) {

@@ -1,6 +1,8 @@
 # Oracle profile bridge
 
-`POST /oracle/profile` provides a private read-only Profile V2 projection for the Oracle bot. It requires the existing `x-oracle-campaign-secret` / `ORACLE_CAMPAIGN_SECRET` pair. Missing or incorrect credentials return 401 before any participant read. The body must contain only a positive safe-integer `telegram_user_id` derived by Oracle from an authorized private Telegram update.
+`POST /oracle/profile` provides a private read-only Profile V2 projection for the Oracle bot. It requires `x-oracle-campaign-secret` matching `ORACLE_PROFILE_SECRET` (falling back to `ORACLE_CAMPAIGN_SECRET` only when no dedicated profile secret is set). The production rollout isolates this bridge with matching `ORACLE_PROFILE_SECRET` / Oracle `PROJECT_Q_PROFILE_SECRET`, preserving existing campaign integrations. Missing or incorrect credentials return 401 before any participant read. The body must contain only a positive safe-integer `telegram_user_id` derived by Oracle from an authorized private Telegram update.
+
+`POST /oracle/profile-app` requires the same credential and resolves the actual bot's Telegram URL using getMe. It returns no bot token, caches the validated URL for the process lifetime and uses a five-second Telegram timeout. This lets operators configure Oracle's Project Q button without guessing a username.
 
 The response includes the same actor ID, campaign ID, enrollment, wallet/X verification booleans, total campaign XP, recorded mission count, up to three recent release summaries and an observation timestamp. It deliberately excludes reward-wallet addresses, OAuth data and unrelated account fields. Responses use `Cache-Control: no-store`; unavailable data returns 503 without exposing upstream details.
 

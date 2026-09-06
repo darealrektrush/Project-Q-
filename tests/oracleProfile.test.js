@@ -1,6 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { oracleProfileHandler } from '../src/campaign/oracleProfile.js';
+import { oracleProfileHandler, oracleProfileAppHandler } from '../src/campaign/oracleProfile.js';
+
+test('app link resolves the actual bot once, keeps credentials private and requires auth', async () => {
+  let calls = 0;
+  const handler = oracleProfileAppHandler({ secret: 'server-secret', botToken: 'private-token', fetchImpl: async () => {
+    calls++;
+    return { ok: true, json: async () => ({ ok: true, result: { is_bot: true, username: 'ProjectQTestBot' } }) };
+  } });
+  const denied = response();
+  await handler(req({}, 'wrong'), denied);
+  assert.equal(denied.code, 401);
+  assert.equal(calls, 0);
+  for (let i = 0; i < 2; i++) {
+    const res = response();
+    await handler(req({}), res);
+    assert.equal(res.body.appUrl, 'https://t.me/ProjectQTestBot?start=campaigns');
+    assert.doesNotMatch(JSON.stringify(res.body), /private-token/);
+  }
+  assert.equal(calls, 1);
+});
 
 function response() {
   return { headers: {}, set(k, v) { this.headers[k] = v; return this; },
