@@ -21,6 +21,7 @@ import * as referrals from './campaign/referrals.js';
 import * as communityActivity from './campaign/communityActivity.js';
 import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
+import { oracleProfileHandler } from './campaign/oracleProfile.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import * as walletVerification from './campaign/walletVerification.js';
 import * as walletStatus from './campaign/walletStatus.js';
@@ -431,6 +432,12 @@ app.post('/oracle/campaign-raid-event', async (req, res) => {
     });
   }
 });
+
+app.post('/oracle/profile', oracleProfileHandler({
+  secret: ORACLE_CAMPAIGN_SECRET,
+  campaignId: process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID,
+  getParticipantStatus: (userId) => campaignService.getParticipantStatus(supabase, userId),
+}));
 
 app.post('/oracle/campaign-identity', async (req, res) => {
   if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
