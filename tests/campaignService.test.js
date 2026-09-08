@@ -242,3 +242,23 @@ test('campaign readiness stays blocked while dates and launch flags are intentio
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-progress').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-verification').ready, false);
 });
+
+test('campaign readiness fails the date gate when a draft schedule is stale', async () => {
+  const client = {
+    select: async (table) => {
+      if (table === 'campaigns') return [{
+        id: 'bond-the-duck-2026', state: 'DRAFT', rules_hash: 'a'.repeat(64),
+        ruleset_version: 1, funded_base_units: '0',
+      }];
+      if (table === 'cycles') return Array.from({ length: 7 }, (_, index) => ({
+        cycle_id: index + 1,
+        opens_at: new Date(Date.parse('2026-09-01T15:00:00Z') + index * 48 * 60 * 60 * 1000).toISOString(),
+        closes_at: new Date(Date.parse('2026-09-03T15:00:00Z') + index * 48 * 60 * 60 * 1000).toISOString(),
+      }));
+      return [];
+    },
+  };
+
+  const readiness = await getCampaignReadiness(client, {}, { now: new Date('2026-09-08T00:00:00Z') });
+  assert.equal(readiness.checks.find(({ key }) => key === 'dates').ready, false);
+});

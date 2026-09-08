@@ -109,3 +109,9 @@ export function lockedCampaignCyclesMatch(rows) {
       && timestamp(row.closes_at) === timestamp(locked.closesAt);
   });
 }
+
+export function campaignScheduleCanStillLaunch(rows, now = new Date()) {
+  if (!lockedCampaignCyclesMatch(rows)) return false;
+  const ordered = [...rows].sort((a, b) => Number(a.cycle_id) - Number(b.cycle_id));
+  return timestamp(ordered[0]?.opens_at) > requireTimestamp(now);
+}

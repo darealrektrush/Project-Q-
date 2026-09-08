@@ -10,6 +10,7 @@ import {
   EXPECTED_CYCLES,
   LOCKED_CYCLES,
   PHASED_RELEASE_OFFSETS_DAYS,
+  campaignScheduleCanStillLaunch,
   getCampaignRuntimeState,
   getCampaignScheduleState,
   lockedCampaignCyclesMatch,
@@ -58,6 +59,19 @@ test('readiness accepts only the exact locked cycle boundaries', () => {
   assert.equal(lockedCampaignCyclesMatch(rows.map((row) => row.cycle_id === 7
     ? { ...row, closes_at: '2026-09-15T16:00:00.000Z' }
     : row)), false);
+});
+
+test('launch readiness rejects a locked schedule after its opening time', () => {
+  const rows = LOCKED_CYCLES.map(({ cycleId, opensAt, closesAt }) => ({
+    cycle_id: cycleId,
+    opens_at: opensAt,
+    closes_at: closesAt,
+  }));
+
+  assert.equal(campaignScheduleCanStillLaunch(rows, '2026-09-01T14:59:59.999Z'), true);
+  assert.equal(campaignScheduleCanStillLaunch(rows, ACTIVE_OPENS_AT), false);
+  assert.equal(campaignScheduleCanStillLaunch(rows, '2026-09-08T00:00:00.000Z'), false);
+  assert.equal(campaignScheduleCanStillLaunch(rows.slice(1), '2026-08-31T00:00:00.000Z'), false);
 });
 
 test('runtime advances deterministically across every locked schedule boundary', () => {
