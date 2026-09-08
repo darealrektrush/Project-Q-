@@ -46,14 +46,15 @@ The two private Telegram approval identities are bound by immutable numeric IDs,
 
 | Commitment | Amount | Role |
 | --- | ---: | --- |
-| Existing campaign reward pool | 15,000,000 FAWKQ (1.5%) | 7,500,000 from each public founder wallet; fully funded before campaign launch; independent of Streamflow unlocks |
-| Diamond Duck bonus | 2,500,000 FAWKQ (0.25%) | 1,250,000 per founder from their public Streamflow supply after its actual on-chain unlock |
+| Existing campaign reward pool | 15,000,000 FAWKQ (1.5%) | Already held in the Squads community vault under 2-of-3 multisig control |
+| Diamond Duck bonus | 2,500,000 FAWKQ (0.25%) | Already held in the same Squads community vault under 2-of-3 multisig control |
+| Top contributor bonus | 1 SOL | Separate from the FAWKQ vault and paid after final campaign verification |
 | Top contributor prize | 1 SOL | Awarded to the top Bond the Duck contributor |
 | Additional Earn to Burn reserve | 15,000,000 FAWKQ (1.5%) | Sourced separately from the FAWKQ creator wallet and burned only through the approved milestone process |
 
 The total token commitment represented by the campaign is 32,500,000 FAWKQ (3.25% of the original reference supply), but only the additional 15,000,000 FAWKQ creator-wallet reserve is designated for Earn to Burn. The other 17,500,000 FAWKQ remains reward and bonus supply.
 
-The main campaign pool and Diamond Duck bonus must not share a funding gate. The main 15,000,000 FAWKQ pool must be fully funded before launch and does not wait for Streamflow. Diamond Duck funding starts only after the actual on-chain Streamflow unlock; each founder contributes 1,250,000 FAWKQ to the public Squads Diamond Duck Bonus Vault within 48 hours. Project Q must not calculate or pay the bonus until the full 2,500,000 FAWKQ is verified.
+The 15,000,000 FAWKQ campaign pool and 2,500,000 FAWKQ Diamond Duck bonus share one Squads community vault. Project Q must verify the exact 17,500,000 FAWKQ token balance and the 2-of-3 Squads authority before the funding gate can pass. Neither allocation depends on Streamflow or any future unlock. The separate 1 SOL top-contributor prize is paid only after final campaign verification.
 
 The one-billion value is a campaign reference, not a substitute for an on-chain pre-burn observation. If no other supply change occurs, the audited observed supply minus the planned opening amount is exactly `984,999,999.658335` FAWKQ. Every receipt must store the actual verified before/after base-unit values.
 

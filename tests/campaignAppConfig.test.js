@@ -54,13 +54,18 @@ test('campaign registry points to a valid reusable default campaign', async () =
     15_000_000_000_000n
   );
   assert.equal(campaign.campaignCommitments.campaignRewards.amountBaseUnits, '15000000000000');
-  assert.equal(campaign.campaignCommitments.campaignRewards.founderContributionBaseUnits, '7500000000000');
-  assert.equal(campaign.campaignCommitments.campaignRewards.streamflowDependent, false);
+  assert.equal(campaign.campaignCommitments.campaignRewards.fundingSource, 'SQUADS_COMMUNITY_VAULT');
+  assert.equal(campaign.campaignCommitments.campaignRewards.unlockDependent, false);
   assert.equal(campaign.campaignCommitments.campaignRewards.requiresFullFundingBeforeLaunch, true);
   assert.equal(campaign.campaignCommitments.diamondDuckBonus.amountBaseUnits, '2500000000000');
-  assert.equal(campaign.campaignCommitments.diamondDuckBonus.founderContributionBaseUnits, '1250000000000');
-  assert.equal(campaign.campaignCommitments.diamondDuckBonus.founderContributionPercent, 0.125);
-  assert.equal(campaign.campaignCommitments.diamondDuckBonus.fundingWindowHoursAfterUnlock, 48);
+  assert.equal(campaign.campaignCommitments.diamondDuckBonus.fundingSource, 'SQUADS_COMMUNITY_VAULT');
+  assert.equal(campaign.campaignCommitments.diamondDuckBonus.unlockDependent, false);
+  assert.deepEqual(campaign.campaignCommitments.squadsCommunityVault, {
+    amountBaseUnits: '17500000000000', approvalThreshold: 2, memberCount: 3,
+    contains: ['BOND_THE_DUCK_REWARDS', 'DIAMOND_DUCK_BONUS'],
+  });
+  assert.equal(campaign.campaignCommitments.topContributorPrize.amountLamports, '1000000000');
+  assert.equal(campaign.campaignCommitments.topContributorPrize.paidAfterFinalVerification, true);
   assert.equal(campaign.campaignCommitments.diamondDuckBonus.requiresFullFundingBeforeBonusCalculation, true);
   assert.equal(campaign.campaignCommitments.topContributorPrize.amountLamports, '1000000000');
   assert.equal(campaign.campaignCommitments.earnToBurn.amountBaseUnits, '15000000000000');

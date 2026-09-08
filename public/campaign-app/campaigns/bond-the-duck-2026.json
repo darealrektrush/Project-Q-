@@ -113,30 +113,32 @@
       "amountBaseUnits": "15000000000000",
       "percentBps": 150,
       "purpose": "ALL_EXISTING_BOND_THE_DUCK_REWARDS",
-      "fundingSource": "PUBLIC_FOUNDER_WALLETS",
-      "founderContributionBaseUnits": "7500000000000",
-      "founderContributionPercentBps": 75,
-      "founderCount": 2,
-      "fundingDeadline": "BEFORE_CAMPAIGN_LAUNCH",
-      "streamflowDependent": false,
+      "fundingSource": "SQUADS_COMMUNITY_VAULT",
+      "fundingDeadline": "ALREADY_VAULTED_VERIFY_BEFORE_LAUNCH",
+      "unlockDependent": false,
       "requiresFullFundingBeforeLaunch": true
     },
     "diamondDuckBonus": {
       "amountBaseUnits": "2500000000000",
       "percentBps": 25,
       "purpose": "DIAMOND_DUCK_BONUS",
-      "fundingSource": "PUBLIC_FOUNDER_STREAMFLOW_SUPPLY_AFTER_ONCHAIN_UNLOCK",
-      "founderContributionBaseUnits": "1250000000000",
-      "founderContributionPercent": 0.125,
-      "founderCount": 2,
-      "fundingWindowHoursAfterUnlock": 48,
-      "destination": "PUBLIC_SQUADS_DIAMOND_DUCK_BONUS_VAULT",
+      "fundingSource": "SQUADS_COMMUNITY_VAULT",
+      "unlockDependent": false,
+      "destination": "SQUADS_COMMUNITY_VAULT",
       "requiresFullFundingBeforeBonusCalculation": true
+    },
+    "squadsCommunityVault": {
+      "amountBaseUnits": "17500000000000",
+      "approvalThreshold": 2,
+      "memberCount": 3,
+      "contains": ["BOND_THE_DUCK_REWARDS", "DIAMOND_DUCK_BONUS"]
     },
     "topContributorPrize": {
       "amountLamports": "1000000000",
       "amountSol": "1",
-      "purpose": "TOP_BOND_THE_DUCK_CONTRIBUTOR"
+      "purpose": "TOP_BOND_THE_DUCK_CONTRIBUTOR",
+      "fundingSource": "SEPARATE_FROM_TOKEN_VAULT",
+      "paidAfterFinalVerification": true
     },
     "earnToBurn": {
       "amountBaseUnits": "15000000000000",

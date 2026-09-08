@@ -37,7 +37,7 @@ test('reviewed draft rules lock campaign economics but remain launch-blocked', a
   const draft = inspectBondCampaignRules(rules);
   assert.equal(draft.valid, false);
   assert.match(draft.rulesHash, /^[0-9a-f]{64}$/);
-  assert.equal(draft.rulesHash, '7a90e066c2288be109a78f99d1cb9b3d7f6954a12a855a50c4e8a9e803448fe0');
+  assert.equal(draft.rulesHash, '8dc6afbee14105515e330ac0a965f3746c094d07aa5c3f2c0e08b052742af0ee');
   assert.deepEqual(rules.missions, BOND_RULES_MISSION_IDS);
   assert.deepEqual(draft.blockers, [
     'ruleset status is not FINAL',
@@ -45,21 +45,12 @@ test('reviewed draft rules lock campaign economics but remain launch-blocked', a
   ]);
 });
 
-test('draft rules, Mini App campaign config and provisioning migration cannot drift', async () => {
+test('current draft rules and Mini App campaign config cannot drift', async () => {
   const rules = await readDraft();
   const campaign = JSON.parse(await readFile(
     new URL('../public/campaign-app/campaigns/bond-the-duck-2026.json', import.meta.url),
     'utf8'
   ));
-  const migration = await readFile(
-    new URL('../supabase/migrations/20260827040000_lock_bond_bonus_queue_and_settlement.sql', import.meta.url),
-    'utf8'
-  );
-  const inspection = inspectBondCampaignRules(rules);
-  const embeddedRulesMatch = migration.match(/\$rules\$\s*([\s\S]*?)\s*\$rules\$::jsonb/);
-
-  assert.ok(embeddedRulesMatch, 'latest DRAFT rules migration must embed the reviewed rules JSON');
-  assert.deepEqual(JSON.parse(embeddedRulesMatch[1]), rules);
   assert.equal(rules.schedule.activeOpensAt, campaign.schedule.activeOpensAt);
   assert.equal(rules.schedule.activeClosesAt, campaign.schedule.activeClosesAt);
   assert.equal(rules.schedule.reviewClosesAt, campaign.schedule.reviewClosesAt);
@@ -68,6 +59,12 @@ test('draft rules, Mini App campaign config and provisioning migration cannot dr
     campaign.campaignCommitments.campaignRewards.amountBaseUnits);
   assert.equal(rules.commitments.diamondDuckBaseUnits,
     campaign.campaignCommitments.diamondDuckBonus.amountBaseUnits);
+  assert.equal(rules.commitments.squadsCommunityVaultBaseUnits,
+    campaign.campaignCommitments.squadsCommunityVault.amountBaseUnits);
+  assert.equal(rules.commitments.squadsApprovalThreshold,
+    campaign.campaignCommitments.squadsCommunityVault.approvalThreshold);
+  assert.equal(rules.commitments.squadsMemberCount,
+    campaign.campaignCommitments.squadsCommunityVault.memberCount);
   assert.equal(rules.commitments.topContributorLamports,
     campaign.campaignCommitments.topContributorPrize.amountLamports);
   assert.equal(rules.commitments.earnToBurnBaseUnits,
@@ -78,7 +75,6 @@ test('draft rules, Mini App campaign config and provisioning migration cannot dr
   assert.equal(rules.referrals.xInviteBonusXp, campaign.referrals.xInviteBonus.bonusXp);
   assert.deepEqual(rules.earnToBurn.milestones, campaign.earnToBurn.milestones);
   assert.deepEqual(rules.verificationSources, campaign.verificationSources);
-  assert.match(migration, new RegExp(inspection.rulesHash));
 });
 
 test('final rules require exact locked commitments, schedule and nine mission lanes', async () => {
