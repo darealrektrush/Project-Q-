@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { selectCycleWinners } from '../src/campaign/winnerSelection.js';
+import { rehearseBondLifecycle } from '../src/campaign/lifecycleRehearsal.js';
 
 const profiles = Array.from({ length: 25 }, (_, index) => ({
   telegramUserId: String(900000 + index),
@@ -9,41 +8,39 @@ const profiles = Array.from({ length: 25 }, (_, index) => ({
   admin: false,
 }));
 
-const cycles = Array.from({ length: 7 }, (_, index) => {
-  const cycleId = index + 1;
-  const publicSeed = `bond-the-duck-rehearsal-cycle-${cycleId}-public-seed`;
-  const result = selectCycleWinners({
-    campaignId: 'bond-the-duck-2026',
-    cycleId,
-    profiles: profiles.map((profile, profileIndex) => ({
-      ...profile,
-      score: profile.score + ((profileIndex * cycleId) % 17),
-    })),
-    publicSeed,
-  });
-  const replay = selectCycleWinners({
-    campaignId: 'bond-the-duck-2026',
-    cycleId,
-    profiles: profiles.map((profile, profileIndex) => ({
-      ...profile,
-      score: profile.score + ((profileIndex * cycleId) % 17),
-    })).reverse(),
-    publicSeed,
-  });
-  assert.deepEqual(result, replay);
-  assert.equal(result.winners.length, 5);
-  assert.equal(new Set(result.winners.map(({ telegramUserId }) => telegramUserId)).size, 5);
-  assert.deepEqual(result.winners.map(({ selection }) => selection), [
-    'auto_top2', 'auto_top2', 'weighted_draw', 'weighted_draw', 'weighted_draw',
-  ]);
-  return result;
+// Test-only balanced fixture. Production remains blocked until founders explicitly
+// approve the seven cycle pool amounts in the final ruleset.
+const cyclePoolBaseUnits = ['2142857142858', ...Array(6).fill('2142857142857')];
+const publicSeeds = Array.from({ length: 7 }, (_, index) =>
+  `bond-the-duck-rehearsal-cycle-${index + 1}-public-seed`);
+const rehearsal = rehearseBondLifecycle({
+  profiles,
+  cyclePoolBaseUnits,
+  publicSeeds,
+  activeOpensAt: '2026-10-01T15:00:00.000Z',
+  postReviewClearedAt: '2026-10-17T15:00:00.000Z',
+  recoveryObservedAt: '2026-10-17T16:00:00.000Z',
+  retryIntervalsSeconds: [60, 300, 900],
+  maxAttempts: 4,
 });
 
 console.log(JSON.stringify({
-  rehearsal: 'bond-the-duck-25-profile-winner-selection',
-  mode: 'BUILD_ONLY_NO_DATABASE_NO_SIGNING',
-  profileCount: profiles.length,
-  cycleCount: cycles.length,
+  rehearsal: 'bond-the-duck-complete-lifecycle',
+  mode: rehearsal.mode,
+  profileCount: rehearsal.profileCount,
+  cycleCount: rehearsal.cycleCount,
+  winnerCount: rehearsal.winnerCount,
+  releaseCount: rehearsal.releaseCount,
+  allocatedBaseUnits: rehearsal.allocatedBaseUnits,
+  scheduledBaseUnits: rehearsal.scheduledBaseUnits,
   deterministicReplay: true,
-  cycles: cycles.map(({ cycleId, seedHash, winners, audit }) => ({ cycleId, seedHash, winners, audit })),
+  cyclePoolPolicy: 'TEST_ONLY_BALANCED_FIXTURE_NOT_PRODUCTION_RULES',
+  recovery: {
+    complete: rehearsal.recovery.complete,
+    actionable: rehearsal.recovery.actionable,
+    blocked: rehearsal.recovery.blocked,
+  },
+  cycles: rehearsal.cycles.map(({ cycleId, poolBaseUnits, selection }) => ({
+    cycleId, poolBaseUnits, seedHash: selection.seedHash, winners: selection.winners, audit: selection.audit,
+  })),
 }, null, 2));
