@@ -3,7 +3,12 @@ import { createCampaignReadinessReport } from './readinessReport.js';
 import { rulesetRowMatchesCampaign } from './rules.js';
 import { evaluateSourceCertifications } from './sourceCertifications.js';
 import { campaignDayKey, loadDailyXpUsage } from './xpCaps.js';
-import { EXPECTED_CYCLES, getCampaignRuntimeState, lockedCampaignCyclesMatch } from './schedule.js';
+import {
+  EXPECTED_CYCLES,
+  campaignScheduleCanStillLaunch,
+  getCampaignRuntimeState,
+  lockedCampaignCyclesMatch,
+} from './schedule.js';
 
 export const DEFAULT_CAMPAIGN_ID = 'bond-the-duck-2026';
 
@@ -48,7 +53,7 @@ function enabled(value) {
   return value === 'true';
 }
 
-export async function getCampaignReadiness(client, env = process.env) {
+export async function getCampaignReadiness(client, env = process.env, { now = new Date() } = {}) {
   const id = campaignId();
   const [
     campaignRows, rulesetRows, cycleRows, sourceRows, sourceCertificationRows,
@@ -93,7 +98,7 @@ export async function getCampaignReadiness(client, env = process.env) {
     sourceRows,
     sourceCertificationRows
   );
-  const datesReady = lockedCampaignCyclesMatch(cycleRows);
+  const datesReady = campaignScheduleCanStillLaunch(cycleRows, now);
   let registryReady = false;
   let registryHash = null;
   try {
@@ -142,7 +147,7 @@ export async function getCampaignReadiness(client, env = process.env) {
       label: 'Nine voting sites and five Telegram bots currently certified',
       ready: sourceCertificationState.ready,
     },
-    { key: 'dates', label: `${EXPECTED_CYCLES} locked 48-hour cycles scheduled`, ready: datesReady },
+    { key: 'dates', label: `${EXPECTED_CYCLES} locked 48-hour cycles scheduled for launch`, ready: datesReady },
     { key: 'app', label: 'Campaign app enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED) },
     { key: 'wallet', label: 'Wallet verification enabled', ready: enabled(env.PROJECT_Q_WALLET_VERIFICATION_ENABLED) },
     { key: 'settlement', label: 'Campaign XP settlement enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED) },
