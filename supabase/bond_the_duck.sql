@@ -305,15 +305,16 @@ begin
     raise exception 'rules hash and ruleset version evidence required';
   end if;
   if p_expected_state = 'READINESS_BLOCKED' and p_next_state = 'FUNDED' then
-    if not (p_evidence ?& array['fundedBaseUnits','expectedFundedBaseUnits','activationVaultBaseUnits',
-      'scheduledVaultBaseUnits','solOperationsLamports','vaultsVerifiedAt']) then
+    if not (p_evidence ?& array['fundedBaseUnits','expectedFundedBaseUnits','squadsCommunityVaultBaseUnits',
+      'squadsApprovalThreshold','squadsMemberCount','topContributorPrizeLamports','vaultVerifiedAt']) then
       raise exception 'complete funding evidence required';
     end if;
     if (p_evidence->>'fundedBaseUnits')::numeric <> (p_evidence->>'expectedFundedBaseUnits')::numeric
-       or (p_evidence->>'fundedBaseUnits')::numeric <>
-          (p_evidence->>'activationVaultBaseUnits')::numeric + (p_evidence->>'scheduledVaultBaseUnits')::numeric
-       or (p_evidence->>'scheduledVaultBaseUnits')::numeric <> 7 * (p_evidence->>'activationVaultBaseUnits')::numeric
-       or (p_evidence->>'solOperationsLamports')::bigint <> 250000000 then
+       or (p_evidence->>'expectedFundedBaseUnits')::numeric <> 17500000000000
+       or (p_evidence->>'squadsCommunityVaultBaseUnits')::numeric <> 17500000000000
+       or (p_evidence->>'squadsApprovalThreshold')::integer <> 2
+       or (p_evidence->>'squadsMemberCount')::integer <> 3
+       or (p_evidence->>'topContributorPrizeLamports')::bigint <> 1000000000 then
       raise exception 'funding evidence does not reconcile';
     end if;
   end if;

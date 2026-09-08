@@ -2,10 +2,9 @@ import { createHash } from 'node:crypto';
 
 export const REQUIRED_REGISTRY_FIELDS = Object.freeze([
   'registry_version_hash', 'campaign_id_rules_hash', 'campaign_window',
-  'fawkq_mint_decimals', 'founder_funding_wallets', 'squads_multisig',
-  'cycle_activation_vault', 'scheduled_distribution_vault', 'community_reserve',
-  'diamond_duck_vault', 'sol_operations_wallet', 'offline_recovery_public_key',
-  'founder_streamflow_contracts', 'actual_unlock_timestamp', 'pump_fun_market',
+  'fawkq_mint_decimals', 'squads_multisig', 'squads_community_vault',
+  'squads_authority_policy', 'top_contributor_prize_funding',
+  'offline_recovery_public_key', 'pump_fun_market',
   'pump_swap_pool_migration', 'approved_secondary_markets', 'pyth_sol_usd_feed',
   'switchboard_sol_usd_feed', 'jupiter_routing_rules', 'rpc_indexer_webhook',
   'project_q_bot_identity', 'oracle_bot_identity', 'supabase_schema_version',
@@ -49,4 +48,3 @@ export function hashRegistry(entries) {
   const normalized = validateRegistry(entries);
   return createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
 }
-

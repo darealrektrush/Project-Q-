@@ -38,7 +38,7 @@ const TERMINABLE_STATES = new Set([...PAUSABLE_STATES, 'PAUSED']);
 
 const REQUIRED_EXIT_EVIDENCE = Object.freeze({
   'DRAFT->READINESS_BLOCKED': ['rulesHash', 'rulesetVersion'],
-  'READINESS_BLOCKED->FUNDED': ['fundedBaseUnits', 'expectedFundedBaseUnits', 'activationVaultBaseUnits', 'scheduledVaultBaseUnits', 'solOperationsLamports', 'vaultsVerifiedAt'],
+  'READINESS_BLOCKED->FUNDED': ['fundedBaseUnits', 'expectedFundedBaseUnits', 'squadsCommunityVaultBaseUnits', 'squadsApprovalThreshold', 'squadsMemberCount', 'topContributorPrizeLamports', 'vaultVerifiedAt'],
   'FUNDED->SCHEDULED': ['registryHash', 'sourcesCertifiedAt', 'publicTimesPublishedAt'],
   'SCHEDULED->ACTIVE': ['readinessReportVersion', 'readinessReportHash', 'founderApprovals'],
   'ACTIVE->VERIFYING': ['campaignClosedAt', 'cutoffSlot'],
@@ -95,13 +95,15 @@ export function assertTransition(from, to, options = {}) {
   if (to === 'FUNDED') {
     const funded = BigInt(evidence.fundedBaseUnits);
     const expected = BigInt(evidence.expectedFundedBaseUnits);
-    const activation = BigInt(evidence.activationVaultBaseUnits);
-    const scheduled = BigInt(evidence.scheduledVaultBaseUnits);
-    if (funded !== expected || funded !== activation + scheduled || scheduled !== activation * 7n) {
-      throw new Error('FUNDED evidence does not reconcile to the locked 1:7 vault allocation');
+    const vault = BigInt(evidence.squadsCommunityVaultBaseUnits);
+    if (expected !== 17_500_000_000_000n || funded !== expected || vault !== expected) {
+      throw new Error('FUNDED evidence does not reconcile to the locked 17.5M Squads community vault');
     }
-    if (BigInt(evidence.solOperationsLamports) !== 250_000_000n) {
-      throw new Error('FUNDED requires exactly 0.25 SOL in the operations wallet');
+    if (evidence.squadsApprovalThreshold !== 2 || evidence.squadsMemberCount !== 3) {
+      throw new Error('FUNDED requires the locked 2-of-3 Squads authority');
+    }
+    if (BigInt(evidence.topContributorPrizeLamports) !== 1_000_000_000n) {
+      throw new Error('FUNDED requires the separate 1 SOL top-contributor prize');
     }
   }
   if (from !== 'PAUSED' && ['ACTIVE', 'DISTRIBUTING', 'ARCHIVED'].includes(to) && evidence.founderApprovals !== 2) {

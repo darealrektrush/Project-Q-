@@ -50,20 +50,27 @@ test('activation evidence binds two approvals to an exact versioned readiness re
   );
 });
 
-test('funding gate reconciles the locked vault split and SOL operations balance', () => {
+test('funding gate reconciles one 17.5M Squads vault, 2-of-3 authority, and separate 1 SOL prize', () => {
   const evidence = {
-    expectedFundedBaseUnits: '15000000000000',
-    fundedBaseUnits: '15000000000000',
-    activationVaultBaseUnits: '1875000000000',
-    scheduledVaultBaseUnits: '13125000000000',
-    solOperationsLamports: '250000000',
-    vaultsVerifiedAt: '2026-08-14T00:00:00Z',
+    expectedFundedBaseUnits: '17500000000000',
+    fundedBaseUnits: '17500000000000',
+    squadsCommunityVaultBaseUnits: '17500000000000',
+    squadsApprovalThreshold: 2,
+    squadsMemberCount: 3,
+    topContributorPrizeLamports: '1000000000',
+    vaultVerifiedAt: '2026-09-08T00:00:00Z',
   };
   assert.equal(assertTransition('READINESS_BLOCKED', 'FUNDED', { evidence }), true);
   assert.throws(
     () => assertTransition('READINESS_BLOCKED', 'FUNDED', {
-      evidence: { ...evidence, scheduledVaultBaseUnits: '13124999999999' },
+      evidence: { ...evidence, squadsCommunityVaultBaseUnits: '17499999999999' },
     }),
     /does not reconcile/
   );
+  assert.throws(() => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+    evidence: { ...evidence, squadsApprovalThreshold: 1 },
+  }), /2-of-3/);
+  assert.throws(() => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+    evidence: { ...evidence, topContributorPrizeLamports: '999999999' },
+  }), /1 SOL/);
 });

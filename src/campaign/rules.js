@@ -94,15 +94,18 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
 
   const commitments = rules.commitments || {};
   if (commitments.campaignRewardsBaseUnits !== '15000000000000'
-    || commitments.campaignFounderCount !== 2
-    || commitments.campaignPerFounderBaseUnits !== '7500000000000'
     || commitments.diamondDuckBaseUnits !== '2500000000000'
-    || commitments.diamondDuckPerFounderBaseUnits !== '1250000000000'
+    || commitments.squadsCommunityVaultBaseUnits !== '17500000000000'
+    || commitments.campaignRewardsSource !== 'SQUADS_COMMUNITY_VAULT'
+    || commitments.diamondDuckSource !== 'SQUADS_COMMUNITY_VAULT'
+    || commitments.squadsApprovalThreshold !== 2
+    || commitments.squadsMemberCount !== 3
+    || commitments.unlockDependent !== false
     || commitments.topContributorLamports !== '1000000000'
     || commitments.earnToBurnBaseUnits !== '15000000000000'
     || commitments.earnToBurnSource !== 'FAWKQ_CREATOR_WALLET'
     || commitments.totalTokenCommitmentBaseUnits !== '32500000000000') {
-    blockers.push('campaign commitments do not match the locked allocation model');
+    blockers.push('campaign commitments do not match the locked Squads vault model');
   }
 
   const missionIds = Array.isArray(rules.missions) ? [...rules.missions].sort() : [];
