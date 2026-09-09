@@ -81,11 +81,15 @@ Final campaign terms use a separate append-only governance workflow:
 5. After two current approvals, an explicit finalization copies the proposal
    into `ruleset_versions` and updates only the campaign's rules version/hash.
 
-Database validation independently locks the dates, nine mission lanes, daily
-caps, identity requirements, 15,000,000 FAWKQ campaign pool, 2,500,000 FAWKQ
-Diamond Duck bonus, 1 SOL Top Duck prize, separate 15,000,000 FAWKQ creator
-wallet burn reserve, release schedule, referral terms, pinned-post identity and
-an ordered Earn-to-Burn milestone plan totaling exactly 15,000,000 FAWKQ.
+Database validation independently requires five contiguous 48-hour cycles
+across exactly 10 active days, followed by the fixed 48-to-72-hour review
+window. The actual future timestamps are intentionally selected last and then
+bound into the immutable proposal and readiness hash. Validation also locks the
+nine mission lanes, daily caps, identity requirements, 15,000,000 FAWKQ
+campaign pool, 2,500,000 FAWKQ Diamond Duck bonus, 1 SOL Top Duck prize,
+separate 15,000,000 FAWKQ creator-wallet burn reserve, release schedule,
+referral terms, pinned-post identity and an ordered Earn-to-Burn milestone plan
+totaling exactly 15,000,000 FAWKQ.
 
 Finalization does not change campaign state, funding, registry values, feature
 flags, reward balances or treasury state. A later readiness report still needs
