@@ -32,15 +32,15 @@ fresh home message so media-based home menus remain valid in Telegram.
 
 All operational timestamps use `America/Vancouver` for display and UTC in the
 database. The active campaign opens September 1, 2026 at 8:00 AM PT and closes
-September 15, 2026 at 8:00 AM PT: exactly 14 days divided into seven contiguous
-48-hour activity cycles. September 15–16 is the campaign-close handoff before
+September 11, 2026 at 8:00 AM PT: exactly 10 days divided into five contiguous
+48-hour activity cycles. September 11–12 is the campaign-close handoff before
 the final review window.
 
-Final verification and review opens September 16 at 8:00 AM PT. September 18
-at 8:00 AM PT is the 48-hour clearance checkpoint; September 19 at 8:00 AM PT
+Final verification and review opens September 12 at 8:00 AM PT. September 14
+at 8:00 AM PT is the 48-hour clearance checkpoint; September 15 at 8:00 AM PT
 is the 72-hour maximum. The 50% post-review release becomes eligible only when
-final review clears: September 18 when cleared at the checkpoint, otherwise
-immediately upon clearance no later than September 19.
+final review clears: September 14 when cleared at the checkpoint, otherwise
+immediately upon clearance no later than September 15.
 
 The recurring 25% verified-activity release remains attached to each completed
 48-hour cycle. The final 25% remains five 5% installments at 6, 12, 18, 24 and
@@ -50,7 +50,7 @@ The public Mini App runtime uses server time and reports the current calendar
 phase, cycle and next boundary. Calendar time never activates participation by
 itself: the interface shows `LAUNCH BLOCKED` unless the locked schedule is in an
 active cycle, the authoritative campaign database state is `ACTIVE`, and the
-deployment participation gate is explicitly enabled. All seven Supabase cycle
+deployment participation gate is explicitly enabled. All five Supabase cycle
 rows must also match the locked boundaries exactly.
 The client refreshes the authoritative runtime each minute and only animates
 the intervening countdown locally.

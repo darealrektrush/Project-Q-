@@ -91,7 +91,7 @@ export function buildCampaignHomeText(campaign = { state: 'DRAFT' }) {
   return [
     '🦆 *Bond the Duck*',
     '',
-    'A 14-day verified-participation and holder-acquisition campaign powered by Project Q.',
+    'A 10-day verified-participation and holder-acquisition campaign powered by Project Q.',
     '',
     `*Status:* ${state}${state === 'DRAFT' ? ' / pre-launch' : ''}`,
     ...(campaign.displayLabel ? [`*Window:* ${campaign.displayLabel}`] : []),
@@ -128,7 +128,7 @@ export function buildCampaignReadinessText(readiness) {
 const SCREEN_TEXT = Object.freeze({
   overview: [
     '🦆 *Campaign Overview*', '',
-    'September 1–15 · 14 active days · seven 48-hour cycles · 15,000,000 FAWKQ main allocation.',
+    '10 active days · five 48-hour cycles · 15,000,000 FAWKQ main allocation. Final dates publish at launch readiness.',
     '7.5M supports combined verified activity and 7.5M supports buy-to-earn.',
     '', '*Current state:* DRAFT',
   ].join('\n'),

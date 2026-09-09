@@ -1,12 +1,12 @@
 export const CAMPAIGN_TIME_ZONE = 'America/Vancouver';
 export const ACTIVE_OPENS_AT = '2026-09-01T15:00:00.000Z';
-export const ACTIVE_CLOSES_AT = '2026-09-15T15:00:00.000Z';
-export const REVIEW_OPENS_AT = '2026-09-16T15:00:00.000Z';
-export const REVIEW_48_HOUR_CHECKPOINT_AT = '2026-09-18T15:00:00.000Z';
-export const REVIEW_CLOSES_AT = '2026-09-19T15:00:00.000Z';
+export const ACTIVE_CLOSES_AT = '2026-09-11T15:00:00.000Z';
+export const REVIEW_OPENS_AT = '2026-09-12T15:00:00.000Z';
+export const REVIEW_48_HOUR_CHECKPOINT_AT = '2026-09-14T15:00:00.000Z';
+export const REVIEW_CLOSES_AT = '2026-09-15T15:00:00.000Z';
 
 export const CYCLE_HOURS = 48;
-export const EXPECTED_CYCLES = 7;
+export const EXPECTED_CYCLES = 5;
 export const PHASED_RELEASE_OFFSETS_DAYS = Object.freeze([6, 12, 18, 24, 30]);
 
 const CYCLE_MS = CYCLE_HOURS * 60 * 60 * 1000;

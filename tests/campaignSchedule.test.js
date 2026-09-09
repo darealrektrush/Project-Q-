@@ -19,10 +19,10 @@ import {
 const hour = 60 * 60 * 1000;
 const day = 24 * hour;
 
-test('locked campaign schedule is 14 active days across seven contiguous 48-hour cycles', () => {
-  assert.equal(Date.parse(ACTIVE_CLOSES_AT) - Date.parse(ACTIVE_OPENS_AT), 14 * day);
-  assert.equal(EXPECTED_CYCLES, 7);
-  assert.equal(LOCKED_CYCLES.length, 7);
+test('locked campaign schedule is 10 active days across five contiguous 48-hour cycles', () => {
+  assert.equal(Date.parse(ACTIVE_CLOSES_AT) - Date.parse(ACTIVE_OPENS_AT), 10 * day);
+  assert.equal(EXPECTED_CYCLES, 5);
+  assert.equal(LOCKED_CYCLES.length, 5);
   assert.equal(LOCKED_CYCLES[0].opensAt, ACTIVE_OPENS_AT);
   assert.equal(LOCKED_CYCLES.at(-1).closesAt, ACTIVE_CLOSES_AT);
   LOCKED_CYCLES.forEach((cycle, index) => {
@@ -56,8 +56,8 @@ test('readiness accepts only the exact locked cycle boundaries', () => {
   })).reverse();
   assert.equal(lockedCampaignCyclesMatch(rows), true);
   assert.equal(lockedCampaignCyclesMatch(rows.slice(1)), false);
-  assert.equal(lockedCampaignCyclesMatch(rows.map((row) => row.cycle_id === 7
-    ? { ...row, closes_at: '2026-09-15T16:00:00.000Z' }
+  assert.equal(lockedCampaignCyclesMatch(rows.map((row) => row.cycle_id === 5
+    ? { ...row, closes_at: '2026-09-11T16:00:00.000Z' }
     : row)), false);
 });
 
@@ -104,7 +104,7 @@ test('calendar time cannot open operations without authoritative ACTIVE database
   }).operational, false);
 });
 
-test('schedule migration widens cycle constraints safely without activating the campaign', async () => {
+test('historical schedule migration remains immutable and non-activating', async () => {
   const sql = await readFile(new URL('../supabase/migrations/20260825073000_lock_bond_the_duck_schedule.sql', import.meta.url), 'utf8');
   assert.match(sql, /cycle_id between 1 and 7/g);
   assert.match(sql, /refusing to reschedule Bond the Duck after cycle evidence exists/);

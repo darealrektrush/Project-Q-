@@ -161,14 +161,14 @@ test('home renders authoritative campaign phase, cycle rail and fail-closed laun
   });
   assert.match(blocked, /LAUNCH BLOCKED/);
   assert.match(blocked, /operations remain closed until every activation gate passes/);
-  assert.match(blocked, /aria-label="Seven campaign cycles"/);
+  assert.match(blocked, /aria-label="5 campaign cycles"/);
   const live = context.__renderHomeWithRuntime({
     serverNow: '2026-09-04T15:00:00.000Z', databaseState: 'ACTIVE', operational: true,
     displayLabel: 'CYCLE 2 LIVE', tone: 'success',
     schedule: { phase: 'ACTIVE', label: 'Cycle 2 closes', targetAt: '2026-09-05T15:00:00.000Z', currentCycle: 2 },
   });
   assert.match(live, /CYCLE 2 LIVE/);
-  assert.match(live, /Verified activity cycle 2 of 7/);
+  assert.match(live, /Verified activity cycle 2 of 5/);
   assert.match(live, /class="complete" title="Cycle 1"/);
   assert.match(live, /class="current" title="Cycle 2"/);
 });

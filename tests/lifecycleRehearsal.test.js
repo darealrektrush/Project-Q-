@@ -9,8 +9,8 @@ const profiles = Array.from({ length: 25 }, (_, index) => ({
   eligible: true,
   admin: false,
 }));
-const testOnlyBalancedPools = ['2142857142858', ...Array(6).fill('2142857142857')];
-const publicSeeds = Array.from({ length: 7 }, (_, index) => `bond-lifecycle-rehearsal-public-seed-${index + 1}`);
+const testOnlyBalancedPools = Array(5).fill('3000000000000');
+const publicSeeds = Array.from({ length: 5 }, (_, index) => `bond-lifecycle-rehearsal-public-seed-${index + 1}`);
 const base = {
   profiles,
   cyclePoolBaseUnits: testOnlyBalancedPools,
@@ -22,24 +22,24 @@ const base = {
   maxAttempts: 4,
 };
 
-test('requires seven explicit cycle pools totaling exactly 15M FAWKQ', () => {
+test('requires five explicit cycle pools totaling exactly 15M FAWKQ', () => {
   assert.deepEqual(validateCyclePoolPlan(testOnlyBalancedPools), testOnlyBalancedPools);
-  assert.throws(() => validateCyclePoolPlan(testOnlyBalancedPools.slice(0, 6)), /seven explicit/);
-  assert.throws(() => validateCyclePoolPlan([...testOnlyBalancedPools.slice(0, 6), '2142857142856']), /15M/);
-  assert.throws(() => validateCyclePoolPlan([...testOnlyBalancedPools.slice(0, 6), '02']), /canonical/);
+  assert.throws(() => validateCyclePoolPlan(testOnlyBalancedPools.slice(0, 4)), /five explicit/);
+  assert.throws(() => validateCyclePoolPlan([...testOnlyBalancedPools.slice(0, 4), '2999999999999']), /15M/);
+  assert.throws(() => validateCyclePoolPlan([...testOnlyBalancedPools.slice(0, 4), '02']), /canonical/);
 });
 
 test('rehearses the complete 25-profile lifecycle and reconciles all 15M base units', () => {
   const result = rehearseBondLifecycle(base);
   assert.equal(result.mode, 'BUILD_ONLY_NO_DATABASE_NO_SIGNING');
   assert.equal(result.profileCount, 25);
-  assert.equal(result.cycleCount, 7);
-  assert.equal(result.winnerCount, 35);
-  assert.equal(result.releaseCount, 245);
+  assert.equal(result.cycleCount, 5);
+  assert.equal(result.winnerCount, 25);
+  assert.equal(result.releaseCount, 175);
   assert.equal(result.allocatedBaseUnits, '15000000000000');
   assert.equal(result.scheduledBaseUnits, '15000000000000');
-  assert.equal(result.recovery.actionable, 245);
-  assert.equal(new Set(result.recovery.decisions.map(({ paymentKey }) => paymentKey)).size, 245);
+  assert.equal(result.recovery.actionable, 175);
+  assert.equal(new Set(result.recovery.decisions.map(({ paymentKey }) => paymentKey)).size, 175);
 });
 
 test('the full lifecycle is deterministic across reordered profile input', () => {
@@ -59,11 +59,11 @@ test('full lifecycle recovery never resubmits known transaction signatures', () 
   };
   const recovered = rehearseBondLifecycle({ ...base, attemptsByPaymentKey });
   assert.equal(recovered.recovery.decisions.find(({ paymentKey }) => paymentKey === known).action, 'RECONCILE_SIGNATURE');
-  assert.equal(recovered.recovery.actionable, 244);
+  assert.equal(recovered.recovery.actionable, 174);
 });
 
 test('rejects incomplete seeds and invalid rehearsal timing', () => {
-  assert.throws(() => rehearseBondLifecycle({ ...base, publicSeeds: publicSeeds.slice(1) }), /seven public/);
+  assert.throws(() => rehearseBondLifecycle({ ...base, publicSeeds: publicSeeds.slice(1) }), /five public/);
   assert.throws(() => rehearseBondLifecycle({
     ...base, postReviewClearedAt: base.activeOpensAt,
   }), /ordered rehearsal/);

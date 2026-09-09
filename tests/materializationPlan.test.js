@@ -13,8 +13,8 @@ const wallets = Object.fromEntries(profiles.map(({ telegramUserId }) => [
 ]));
 const lifecycle = rehearseBondLifecycle({
   profiles,
-  cyclePoolBaseUnits: ['2142857142858', ...Array(6).fill('2142857142857')],
-  publicSeeds: Array.from({ length: 7 }, (_, index) => `materialization-public-seed-${index + 1}`),
+  cyclePoolBaseUnits: Array(5).fill('3000000000000'),
+  publicSeeds: Array.from({ length: 5 }, (_, index) => `materialization-public-seed-${index + 1}`),
   activeOpensAt: '2026-10-01T15:00:00.000Z',
   postReviewClearedAt: '2026-10-17T15:00:00.000Z',
   recoveryObservedAt: '2026-10-17T16:00:00.000Z',
@@ -25,17 +25,17 @@ function build(overrides = {}) {
   return buildLifecycleMaterializationPlan({ lifecycle, walletsByTelegramUserId: wallets, ...overrides });
 }
 
-test('builds a database-shaped plan for all 35 winners and 245 releases', () => {
+test('builds a database-shaped plan for all 25 winners and 175 releases', () => {
   const plan = build();
   assert.equal(plan.mode, 'BUILD_ONLY_NO_DATABASE_NO_SIGNING');
   assert.equal(plan.expectedCampaignState, 'VERIFYING');
-  assert.equal(plan.winnerRows.length, 35);
-  assert.equal(plan.allocationRows.length, 35);
-  assert.equal(plan.releaseRows.length, 245);
+  assert.equal(plan.winnerRows.length, 25);
+  assert.equal(plan.allocationRows.length, 25);
+  assert.equal(plan.releaseRows.length, 175);
   assert.equal(plan.allocatedBaseUnits, '15000000000000');
   assert.equal(plan.scheduledBaseUnits, plan.allocatedBaseUnits);
   assert.match(plan.planHash, /^[0-9a-f]{64}$/);
-  assert.equal(new Set(plan.releaseRows.map(({ payment_key }) => payment_key)).size, 245);
+  assert.equal(new Set(plan.releaseRows.map(({ payment_key }) => payment_key)).size, 175);
 });
 
 test('materialization is deterministic for identical verified inputs', () => {
@@ -70,6 +70,6 @@ test('rejects incomplete or non-build-only lifecycle input', () => {
     lifecycle: { ...lifecycle, mode: 'LIVE' }, walletsByTelegramUserId: wallets,
   }), /build-only lifecycle/);
   assert.throws(() => buildLifecycleMaterializationPlan({
-    lifecycle: { ...lifecycle, releaseCount: 244 }, walletsByTelegramUserId: wallets,
+    lifecycle: { ...lifecycle, releaseCount: 174 }, walletsByTelegramUserId: wallets,
   }), /complete Bond campaign contract/);
 });

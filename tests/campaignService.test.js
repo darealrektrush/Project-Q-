@@ -30,8 +30,8 @@ test('public runtime uses server time and never treats a draft calendar window a
   assert.equal(runtime.operational, false);
 });
 
-test('public runtime opens only with the feature flag and exact seven-cycle database schedule', async () => {
-  const cycles = Array.from({ length: 7 }, (_, index) => ({
+test('public runtime opens only with the feature flag and exact five-cycle database schedule', async () => {
+  const cycles = Array.from({ length: 5 }, (_, index) => ({
     cycle_id: index + 1,
     opens_at: new Date(Date.parse('2026-09-01T15:00:00Z') + (index * 48 * 60 * 60 * 1000)).toISOString(),
     closes_at: new Date(Date.parse('2026-09-03T15:00:00Z') + (index * 48 * 60 * 60 * 1000)).toISOString(),
@@ -250,7 +250,7 @@ test('campaign readiness fails the date gate when a draft schedule is stale', as
         id: 'bond-the-duck-2026', state: 'DRAFT', rules_hash: 'a'.repeat(64),
         ruleset_version: 1, funded_base_units: '0',
       }];
-      if (table === 'cycles') return Array.from({ length: 7 }, (_, index) => ({
+      if (table === 'cycles') return Array.from({ length: 5 }, (_, index) => ({
         cycle_id: index + 1,
         opens_at: new Date(Date.parse('2026-09-01T15:00:00Z') + index * 48 * 60 * 60 * 1000).toISOString(),
         closes_at: new Date(Date.parse('2026-09-03T15:00:00Z') + index * 48 * 60 * 60 * 1000).toISOString(),

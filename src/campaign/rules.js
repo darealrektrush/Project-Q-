@@ -84,11 +84,11 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
   const schedule = rules.schedule || {};
   if (schedule.timeZone !== 'America/Vancouver'
     || schedule.activeOpensAt !== '2026-09-01T15:00:00.000Z'
-    || schedule.activeClosesAt !== '2026-09-15T15:00:00.000Z'
-    || schedule.activeDays !== 14 || schedule.cycleHours !== 48 || schedule.cycleCount !== 7
-    || schedule.reviewOpensAt !== '2026-09-16T15:00:00.000Z'
-    || schedule.review48HourCheckpointAt !== '2026-09-18T15:00:00.000Z'
-    || schedule.reviewClosesAt !== '2026-09-19T15:00:00.000Z') {
+    || schedule.activeClosesAt !== '2026-09-11T15:00:00.000Z'
+    || schedule.activeDays !== 10 || schedule.cycleHours !== 48 || schedule.cycleCount !== 5
+    || schedule.reviewOpensAt !== '2026-09-12T15:00:00.000Z'
+    || schedule.review48HourCheckpointAt !== '2026-09-14T15:00:00.000Z'
+    || schedule.reviewClosesAt !== '2026-09-15T15:00:00.000Z') {
     blockers.push('campaign and review schedule is not the locked September window');
   }
 
