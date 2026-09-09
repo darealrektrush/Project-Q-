@@ -3,7 +3,7 @@ import { PublicKey } from '@solana/web3.js';
 
 const CAMPAIGN_ID = 'bond-the-duck-2026';
 const CAMPAIGN_REWARD_BASE_UNITS = '15000000000000';
-const EXPECTED_CYCLES = 7;
+const EXPECTED_CYCLES = 5;
 const WINNERS_PER_CYCLE = 5;
 const RELEASES_PER_ALLOCATION = 7;
 

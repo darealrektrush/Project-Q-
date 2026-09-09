@@ -3,6 +3,7 @@ import { reconcileRecoveryBatch } from './distributionRecovery.js';
 import { selectCycleWinners } from './winnerSelection.js';
 
 const CAMPAIGN_REWARD_BASE_UNITS = 15_000_000_000_000n;
+const EXPECTED_CYCLES = 5;
 
 function baseUnits(value, label) {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
@@ -12,8 +13,8 @@ function baseUnits(value, label) {
 }
 
 export function validateCyclePoolPlan(cyclePoolBaseUnits) {
-  if (!Array.isArray(cyclePoolBaseUnits) || cyclePoolBaseUnits.length !== 7) {
-    throw new Error('exactly seven explicit cycle pools are required');
+  if (!Array.isArray(cyclePoolBaseUnits) || cyclePoolBaseUnits.length !== EXPECTED_CYCLES) {
+    throw new Error('exactly five explicit cycle pools are required');
   }
   const pools = cyclePoolBaseUnits.map((value, index) => baseUnits(value, `cycle ${index + 1} pool`));
   const total = pools.reduce((sum, value) => sum + value, 0n);
@@ -28,8 +29,8 @@ export function rehearseBondLifecycle({
   attemptsByPaymentKey = {}, recoveryObservedAt, retryIntervalsSeconds, maxAttempts,
 }) {
   const pools = validateCyclePoolPlan(cyclePoolBaseUnits);
-  if (!Array.isArray(publicSeeds) || publicSeeds.length !== 7) {
-    throw new Error('exactly seven public draw seeds are required');
+  if (!Array.isArray(publicSeeds) || publicSeeds.length !== EXPECTED_CYCLES) {
+    throw new Error('exactly five public draw seeds are required');
   }
   const activeOpen = new Date(activeOpensAt);
   const reviewClear = new Date(postReviewClearedAt);

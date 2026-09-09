@@ -15,7 +15,7 @@ evidence URLs, participant identifiers, service credentials or founder IDs.
 ## Readiness fingerprint
 
 `bond-readiness-v2` hashes the authoritative campaign rules/funding state,
-seven cycle boundaries, source classifications, the latest source
+five cycle boundaries, source classifications, the latest source
 certification evidence hashes and validity windows, registry hash, Earn to
 Burn configuration and deployment-gate state. Arrays and flag keys are
 normalized before hashing, so record ordering does not alter the fingerprint.
@@ -58,7 +58,7 @@ The staged draft-provisioning migration creates only:
 
 - the `bond-the-duck-2026` campaign row in `DRAFT` with zero funding;
 - immutable ruleset version 1 with the reviewed draft hash; and
-- seven zero-allocation, contiguous 48-hour cycle rows for September 1–15.
+- five zero-allocation, contiguous 48-hour cycle rows spanning the locked 10-day campaign window.
 
 It creates no founders, verification sources, registry values, participants,
 XP, rewards, approvals, burn records or state transitions. It also refuses to

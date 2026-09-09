@@ -477,3 +477,44 @@ test('exact queued campaign bonuses are atomic, final-rules gated and service-on
   assert.doesNotMatch(migration, /insert\s+into\s+public\.(earn_to_burn_programs|burn_milestones|burn_proposals)/i);
   assert.doesNotMatch(migration, /insert\s+into\s+public\.campaign_state_transitions/i);
 });
+
+test('Bond lifecycle materialization is atomic, idempotent and service-only', async () => {
+  const migration = await read(
+    'supabase/migrations/20260909010000_materialize_bond_lifecycle_plan.sql'
+  );
+  assert.match(migration, /add column if not exists allocation_key text/);
+  assert.match(migration, /create table if not exists public\.campaign_materializations/);
+  assert.match(migration, /plan_hash text not null unique/);
+  assert.match(migration, /plan_payload jsonb not null/);
+  assert.match(migration, /create trigger campaign_materializations_immutable/);
+  assert.match(migration, /before update or delete on public\.campaign_materializations/);
+  assert.match(migration, /jsonb_typeof\(p_plan\) is distinct from 'object'/);
+  assert.match(migration, /campaign_row\.state <> 'VERIFYING'/);
+  assert.match(migration, /rules_row\.rules_json->>'status' <> 'FINAL'/);
+  assert.match(migration, /rules_row\.rules_json#>>'\{schedule,activeDays\}' <> '10'/);
+  assert.match(migration, /rules_row\.rules_json#>>'\{schedule,cycleCount\}' <> '5'/);
+  assert.match(migration, /jsonb_array_length\(p_plan->'winnerRows'\) <> 25/);
+  assert.match(migration, /jsonb_array_length\(p_plan->'allocationRows'\) <> 25/);
+  assert.match(migration, /jsonb_array_length\(p_plan->'releaseRows'\) <> 175/);
+  assert.match(migration, /allocated_total <> 15000000000000/);
+  assert.match(migration, /scheduled_total <> 15000000000000/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /for update/);
+  assert.match(migration, /conflicting lifecycle materialization already exists/);
+  assert.match(migration, /stored lifecycle materialization is incomplete/);
+  assert.match(migration, /i\.reward_wallet is distinct from a\.reward_wallet/);
+  assert.match(migration, /i\.wallet_verified_at is null or i\.x_verified_at is null/);
+  assert.match(migration, /position between 3 and 5 and draw_index <> position - 2/);
+  assert.match(migration, /payment_key not in/);
+  assert.match(migration, /scheduled_at is null/);
+  assert.match(migration, /having count\(\*\) <> 7 or sum\(r\.pct\) <> 100/);
+  assert.match(migration, /insert into public\.cycle_winners/);
+  assert.match(migration, /insert into public\.allocations/);
+  assert.match(migration, /insert into public\.releases/);
+  assert.match(migration, /insert into public\.campaign_materializations/);
+  assert.match(migration, /revoke all on function public\.materialize_bond_lifecycle_plan\(jsonb,text\)[\s\S]+from public, anon, authenticated/);
+  assert.match(migration, /grant execute on function public\.materialize_bond_lifecycle_plan\(jsonb,text\)[\s\S]+to service_role/);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.campaign_state_transitions/i);
+  assert.doesNotMatch(migration, /set\s+state\s*=\s*'ALLOCATIONS_FROZEN'/i);
+  assert.doesNotMatch(migration, /insert\s+into\s+public\.treasury_transactions/i);
+});

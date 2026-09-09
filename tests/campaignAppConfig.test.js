@@ -87,13 +87,13 @@ test('campaign registry points to a valid reusable default campaign', async () =
 test('campaign reward schedule and mission identifiers are internally consistent', async () => {
   const campaign = await readJson('bond-the-duck-2026.json');
   assert.equal(campaign.releases.reduce((total, release) => total + release.percent, 0), 100);
-  assert.equal(campaign.activeDays, 14);
+  assert.equal(campaign.activeDays, 10);
   assert.deepEqual(campaign.reviewWindowHours, { minimum: 48, maximum: 72 });
-  assert.equal(campaign.lifecycleDays, 18);
+  assert.equal(campaign.lifecycleDays, 14);
   assert.equal(campaign.schedule.timeZone, 'America/Vancouver');
-  assert.equal(campaign.schedule.activeLabel, 'September 1–15, 2026');
-  assert.equal(campaign.schedule.reviewLabel, 'September 16–19, 2026');
-  assert.equal(campaign.schedule.cycles.length, 7);
+  assert.equal(campaign.schedule.activeLabel, 'Final dates pending · 10 active days');
+  assert.equal(campaign.schedule.reviewLabel, '48–72 hours after campaign handoff');
+  assert.equal(campaign.schedule.cycles.length, 5);
   assert.equal(campaign.schedule.postReviewRelease.condition, 'FINAL_REVIEW_CLEARED');
   assert.equal('readinessPercent' in campaign, false);
   assert.deepEqual(campaign.schedule.phasedRelease.offsetDaysAfterPostReviewRelease, [6, 12, 18, 24, 30]);

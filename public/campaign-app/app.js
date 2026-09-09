@@ -21,7 +21,7 @@ const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
 const READINESS_GROUPS = [
   {
     id: 'foundation', label: 'Campaign foundation', number: '01',
-    description: 'Rules, funding, registry evidence, certified sources and the locked seven-cycle schedule.',
+    description: 'Rules, funding, registry evidence, certified sources and the locked five-cycle schedule.',
     keys: ['rules', 'funding', 'registry', 'sources', 'dates'],
   },
   {
@@ -167,26 +167,27 @@ function campaignClockMarkup(campaign) {
     return '<section class="campaign-clock pending"><div><span>Campaign timeline</span><strong>Synchronizing</strong><small>Waiting for authoritative Project Q state</small></div></section>';
   }
   const cycle = Number(schedule.currentCycle || 0);
+  const cycleCount = Number(campaign.schedule?.cycles?.length || 5);
   const completedCycles = schedule.phase === 'ACTIVE' ? Math.max(0, cycle - 1)
-    : ['HANDOFF', 'REVIEW', 'REVIEW_EXTENSION', 'POST_REVIEW'].includes(schedule.phase) ? 7 : 0;
+    : ['HANDOFF', 'REVIEW', 'REVIEW_EXTENSION', 'POST_REVIEW'].includes(schedule.phase) ? cycleCount : 0;
   const countdown = schedule.targetAt ? formatCountdown(schedule.targetAt) : 'Review complete';
   const detail = schedule.phase === 'ACTIVE' && !runtime.operational
     ? 'Calendar window reached · operations remain closed until every activation gate passes'
     : schedule.phase === 'ACTIVE'
-      ? `Verified activity cycle ${cycle} of 7`
+      ? `Verified activity cycle ${cycle} of ${cycleCount}`
       : schedule.phase === 'PRE_LAUNCH'
-        ? `${campaign.schedule?.activeLabel || 'September 1–15, 2026'} · 8:00 AM PT`
+        ? `${campaign.schedule?.activeLabel || 'Final dates pending · 10 active days'} · 8:00 AM PT`
         : schedule.phase === 'HANDOFF'
           ? 'Campaign close reconciliation before final review'
           : ['REVIEW', 'REVIEW_EXTENSION'].includes(schedule.phase)
-            ? `${campaign.schedule?.reviewLabel || 'September 16–19, 2026'} · verification in progress`
+            ? `${campaign.schedule?.reviewLabel || '48–72 hours after campaign handoff'} · verification in progress`
             : 'Post-review release records become the source of truth';
-  const dots = Array.from({ length: 7 }, (_, index) => {
+  const dots = Array.from({ length: cycleCount }, (_, index) => {
     const number = index + 1;
     const status = number <= completedCycles ? 'complete' : number === cycle ? 'current' : '';
     return `<i class="${status}" title="Cycle ${number}">${number}</i>`;
   }).join('');
-  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="Seven campaign cycles">${dots}</div></section>`;
+  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
 }
 
 function updateCountdownLabels() {
@@ -307,12 +308,12 @@ function home() {
     <div class="hero-copy">
       <div class="campaign-line"><span>${escapeHtml(c.sequence)}</span>${runtimePill()}</div>
       <h2 class="sr-only">Bond the Duck</h2>
-      <p class="sr-only">${Number(c.activeDays || 14)}-day verified campaign</p>
+      <p class="sr-only">${Number(c.activeDays || 10)}-day verified campaign</p>
     </div>
     <div class="readiness-block"><div><span>Campaign readiness</span><b>${readinessLabel}</b></div><div class="progress hero-progress" role="progressbar" aria-label="Campaign readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readiness}"`}><span style="width:${readiness ?? 0}%"></span></div></div>
   </section>
   ${campaignClockMarkup(c)}
-  <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'September 1–15, 2026')}</b><small>7 verified 48-hour cycles</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || 'September 16–19, 2026')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
+  <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} verified 48-hour cycles</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
   ${readinessDetailsMarkup()}
   <button class="gold-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${identityReady ? 'Verified campaign operations' : 'Unlock missions and rewards'}</small></span><i>→</i></button>
   <section class="status-panel"><div class="panel-label">Your status</div><div class="status-grid">${metric('ID', `${count}/3`)}${metric('XP', Number(p.xp || 0).toLocaleString())}${metric('Rank', escapeHtml(p.rank))}${metric('Rewards', allocation)}</div></section>
@@ -634,7 +635,7 @@ function profileOverview() {
     ? p.xpByCycle.map(({ cycleId, xp }) => `<div><span>Cycle ${Number(cycleId)}</span><b>${Number(xp).toLocaleString()} XP</b></div>`).join('')
     : '<div class="profile-empty-line"><span>48H cycles</span><b>No settled XP yet</b></div>';
   return `<section class="profile-overview-grid">
-    <article class="command-card profile-card branded-card"><div class="panel-title"><span>Campaign status</span>${statePill(p.campaignState === 'ACTIVE' ? 'LIVE' : p.campaignState, p.campaignState === 'ACTIVE' ? 'success' : 'pending')}</div><h3>${escapeHtml(c.name)}</h3><p>${escapeHtml(c.schedule?.activeLabel || 'September 1–15, 2026')} active · ${escapeHtml(c.schedule?.reviewLabel || 'September 16–19, 2026')} review.</p><div class="profile-detail-list"><div><span>Mission progress</span><b>${Number(p.completedMissions || 0)} verified lanes</b></div><div><span>Next action</span><button class="text-action" ${verifiedCount() === 3 ? 'data-screen="missions"' : 'data-profile-view="identity"'}>${escapeHtml(nextIdentityAction())} →</button></div></div><img class="profile-card-art" src="/campaign-app/assets/system/q-campaigns.webp" alt="" /></article>
+    <article class="command-card profile-card branded-card"><div class="panel-title"><span>Campaign status</span>${statePill(p.campaignState === 'ACTIVE' ? 'LIVE' : p.campaignState, p.campaignState === 'ACTIVE' ? 'success' : 'pending')}</div><h3>${escapeHtml(c.name)}</h3><p>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')} active · ${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')} review.</p><div class="profile-detail-list"><div><span>Mission progress</span><b>${Number(p.completedMissions || 0)} verified lanes</b></div><div><span>Next action</span><button class="text-action" ${verifiedCount() === 3 ? 'data-screen="missions"' : 'data-profile-view="identity"'}>${escapeHtml(nextIdentityAction())} →</button></div></div><img class="profile-card-art" src="/campaign-app/assets/system/q-campaigns.webp" alt="" /></article>
     <article class="command-card profile-card branded-card oracle-card"><div class="panel-title"><span>Community Pulse</span>${statePill(pulse?.eligible ? 'QUALIFIED' : 'PENDING', pulse?.eligible ? 'success' : 'pending')}</div><h3>${pulse ? `${Number(pulse.xp_awarded || 0)} XP today` : 'No daily score yet'}</h3><p>Daily recognition rewards meaningful participation across time—not raw message volume.</p><div class="profile-detail-list"><div><span>Qualifying days</span><b>${state.community?.history?.filter(({ eligible }) => eligible).length || 0}</b></div><div><span>Today rank</span><b>${pulse?.daily_rank ? `#${Number(pulse.daily_rank)}` : '—'}</b></div></div><img class="profile-card-art oracle-profile-art" src="${ORACLE_LOGO}" alt="Oracle" /></article>
   </section>
   <section class="command-card cycle-panel"><div class="panel-title"><span>48H XP cycles</span><small>Settled ledger totals</small></div><div class="cycle-strip">${cycleRows}</div></section>

@@ -60,8 +60,8 @@ test('waits for Squads approval and blocks exhausted unsigned attempts', () => {
   assert.equal(decidePaymentRecovery({ ...base, attempts }).action, 'BLOCK_EXHAUSTED');
 });
 
-test('reconciles a 245-release campaign rehearsal with no duplicate payment decisions', () => {
-  const releases = Array.from({ length: 245 }, (_, index) => ({
+test('reconciles a 175-release campaign rehearsal with no duplicate payment decisions', () => {
+  const releases = Array.from({ length: 175 }, (_, index) => ({
     paymentKey: `bond:release:${index + 1}`, amountBaseUnits: String(1_000_000 + index),
   }));
   const attemptsByPaymentKey = Object.fromEntries(releases.map((release, index) => {
@@ -78,11 +78,11 @@ test('reconciles a 245-release campaign rehearsal with no duplicate payment deci
     releases, attemptsByPaymentKey, now: base.now,
     retryIntervalsSeconds: base.retryIntervalsSeconds, maxAttempts: base.maxAttempts,
   });
-  assert.equal(result.releaseCount, 245);
-  assert.equal(result.complete, 49);
-  assert.equal(result.actionable, 147);
+  assert.equal(result.releaseCount, 175);
+  assert.equal(result.complete, 35);
+  assert.equal(result.actionable, 105);
   assert.equal(result.blocked, 0);
-  assert.equal(new Set(result.decisions.map(({ paymentKey }) => paymentKey)).size, 245);
+  assert.equal(new Set(result.decisions.map(({ paymentKey }) => paymentKey)).size, 175);
 });
 
 test('rejects invalid retry policy and duplicate release keys', () => {

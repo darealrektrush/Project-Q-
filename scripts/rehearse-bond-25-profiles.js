@@ -9,9 +9,9 @@ const profiles = Array.from({ length: 25 }, (_, index) => ({
 }));
 
 // Test-only balanced fixture. Production remains blocked until founders explicitly
-// approve the seven cycle pool amounts in the final ruleset.
-const cyclePoolBaseUnits = ['2142857142858', ...Array(6).fill('2142857142857')];
-const publicSeeds = Array.from({ length: 7 }, (_, index) =>
+// approve the five cycle pool amounts in the final ruleset.
+const cyclePoolBaseUnits = Array(5).fill('3000000000000');
+const publicSeeds = Array.from({ length: 5 }, (_, index) =>
   `bond-the-duck-rehearsal-cycle-${index + 1}-public-seed`);
 const rehearsal = rehearseBondLifecycle({
   profiles,
