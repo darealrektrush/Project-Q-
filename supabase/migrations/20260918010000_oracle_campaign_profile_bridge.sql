@@ -191,10 +191,10 @@ revoke all on function public.link_oracle_identity(text, bigint, text, timestamp
 grant execute on function public.link_oracle_identity(text, bigint, text, timestamptz)
   to service_role;
 
--- Called only after Project Q has verified the exact signed Solana challenge.
--- One operation updates both the campaign payout link and Oracle's canonical
--- payout-wallet fact, so the future Universe reads the same ownership result.
-create or replace function public.link_project_q_verified_wallet(
+-- Oracle is the sole wallet-connection and signature-verification authority.
+-- Project Q records only the payout reference needed for campaign eligibility,
+-- allocations and distributions; it never writes the canonical wallet table.
+create or replace function public.record_oracle_verified_wallet(
   p_campaign_id text,
   p_telegram_user_id bigint,
   p_wallet_address text,
@@ -206,7 +206,6 @@ set search_path = ''
 as $$
 declare
   canonical_profile_id uuid;
-  wallet_owner uuid;
   previous_wallet text;
   result public.identity_links;
 begin
@@ -224,44 +223,23 @@ begin
     and telegram_user_id = p_telegram_user_id
   for update;
 
-  select profile_id into wallet_owner
-  from public.wallet_connections
-  where wallet_address = btrim(p_wallet_address)
-  for update;
-
-  if wallet_owner is not null and wallet_owner <> canonical_profile_id then
-    raise exception 'wallet belongs to another profile';
+  if exists (
+    select 1 from public.identity_links
+    where reward_wallet = btrim(p_wallet_address)
+      and profile_id <> canonical_profile_id
+  ) then
+    raise exception 'wallet is already assigned to another campaign profile';
   end if;
 
   if previous_wallet is not null and previous_wallet <> btrim(p_wallet_address) then
-    update public.wallet_connections
-    set connection_state = 'disconnected',
-        is_payout_wallet = false,
-        disconnected_at = p_verified_at,
-        updated_at = now()
-    where profile_id = canonical_profile_id
-      and wallet_address = previous_wallet;
+    if exists (
+      select 1 from public.allocations
+      where campaign_id = p_campaign_id
+        and (telegram_user_id = p_telegram_user_id or reward_wallet = previous_wallet)
+    ) then
+      raise exception 'campaign payout wallet is locked after allocation';
+    end if;
   end if;
-
-  update public.wallet_connections
-  set is_payout_wallet = false,
-      updated_at = now()
-  where profile_id = canonical_profile_id
-    and is_payout_wallet
-    and wallet_address <> btrim(p_wallet_address);
-
-  insert into public.wallet_connections (
-    profile_id, wallet_address, connection_state, is_payout_wallet, verified_at
-  ) values (
-    canonical_profile_id, btrim(p_wallet_address), 'verified', true, p_verified_at
-  )
-  on conflict (wallet_address) do update
-    set connection_state = 'verified',
-        is_payout_wallet = true,
-        verified_at = greatest(wallet_connections.verified_at, excluded.verified_at),
-        disconnected_at = null,
-        revoked_at = null,
-        updated_at = now();
 
   update public.identity_links
   set reward_wallet = btrim(p_wallet_address),
@@ -278,14 +256,14 @@ begin
 end;
 $$;
 
-revoke all on function public.link_project_q_verified_wallet(text, bigint, text, timestamptz)
+revoke all on function public.record_oracle_verified_wallet(text, bigint, text, timestamptz)
   from public, anon, authenticated;
-grant execute on function public.link_project_q_verified_wallet(text, bigint, text, timestamptz)
+grant execute on function public.record_oracle_verified_wallet(text, bigint, text, timestamptz)
   to service_role;
 
--- Preserve every pre-existing Project Q participant. These rows were created
--- only by the trusted Oracle identity bridge and signed wallet workflow. The
--- replay uses their recorded verification timestamps and remains idempotent.
+-- Preserve every pre-existing Project Q participant and replay only the
+-- Oracle-owned X identity fact. Legacy Project Q wallet records are not
+-- promoted into the canonical profile; members reconnect once through Oracle.
 do $$
 declare
   campaign_identity public.identity_links;
@@ -308,15 +286,6 @@ begin
       );
     end if;
 
-    if campaign_identity.reward_wallet is not null
-       and campaign_identity.wallet_verified_at is not null then
-      perform public.link_project_q_verified_wallet(
-        campaign_identity.campaign_id,
-        campaign_identity.telegram_user_id,
-        campaign_identity.reward_wallet,
-        campaign_identity.wallet_verified_at
-      );
-    end if;
   end loop;
 end;
 $$;
