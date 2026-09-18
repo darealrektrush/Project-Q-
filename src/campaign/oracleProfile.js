@@ -53,6 +53,11 @@ export function oracleProfileHandler({ secret, getParticipantStatus, campaignId 
           scheduledAt: row.scheduledAt,
           transactionSignature: row.transactionSignature,
         }));
+      const missingRequirements = [];
+      if (!participant.profileId) missingRequirements.push('Oracle profile');
+      if (!participant.xVerified) missingRequirements.push('verified X connection');
+      if (!participant.walletVerified) missingRequirements.push('verified Oracle wallet');
+      const campaignIdentityReady = missingRequirements.length === 0;
       return res.status(200).json({ ok: true, profile: {
         telegramUserId: id,
         campaignId,
@@ -60,6 +65,11 @@ export function oracleProfileHandler({ secret, getParticipantStatus, campaignId 
         enrolled: participant.enrolled,
         walletVerified: participant.walletVerified,
         xVerified: participant.xVerified,
+        campaignIdentityReady,
+        campaignReadiness: {
+          state: campaignIdentityReady ? 'identity_ready' : 'action_required',
+          missingRequirements,
+        },
         totalXp: participant.totalXp,
         completedMissionCount: participant.completedMissionCount,
         releases,
