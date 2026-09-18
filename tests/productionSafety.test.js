@@ -47,14 +47,17 @@ test('Project Q campaign sessions bind Telegram actors to permanent Oracle profi
   assert.match(migration, /grant execute on function public\.ensure_project_q_campaign_profile[\s\S]+to service_role/);
   assert.match(migration, /create or replace function public\.link_oracle_identity/);
   assert.match(migration, /insert into public\.x_identity/);
-  assert.match(migration, /create or replace function public\.link_project_q_verified_wallet/);
-  assert.match(migration, /insert into public\.wallet_connections/);
+  assert.match(migration, /create or replace function public\.record_oracle_verified_wallet/);
+  assert.doesNotMatch(migration, /insert into public\.wallet_connections/);
+  assert.match(migration, /campaign payout wallet is locked after allocation/);
   assert.match(migration, /for campaign_identity in[\s\S]+select \* from public\.identity_links/);
   assert.doesNotMatch(migration, /insert\s+into\s+public\.xp_ledger/i);
 
   const server = await read('src/server.js');
   assert.match(server, /validateTelegramInitData[\s\S]+ensureCampaignProfile/);
   assert.match(server, /identity,\n\s+participant/);
+  assert.match(server, /\/oracle\/campaign-wallet/);
+  assert.doesNotMatch(server, /\/campaign-app\/api\/wallet\/challenge|\/campaign-app\/api\/wallet\/verify/);
 });
 
 test('verification source certifications are append-only, private and non-activating', async () => {
