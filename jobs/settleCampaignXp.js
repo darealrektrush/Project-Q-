@@ -6,41 +6,49 @@ import { settleCampaignParticipationXp } from '../src/campaign/participationSett
 import { settleCampaignBonusXp } from '../src/campaign/bonusSettlement.js';
 import { DEFAULT_EARN_TO_BURN_PROGRAM_ID } from '../src/earnToBurn/service.js';
 import { syncXpProgress } from '../src/earnToBurn/workflow.js';
+import { deliverCampaignXpAwards } from '../src/campaign/oracleXpExport.js';
 
 async function main() {
   const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? DEFAULT_CAMPAIGN_ID;
-  if (process.env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED !== 'true') {
+  const settlementEnabled = process.env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED === 'true';
+  if (!settlementEnabled) {
     console.log(`Campaign XP settlement disabled for ${campaignId}.`);
-    return;
+  } else {
+    const raidResult = await settleCampaignRaidXp(supabase, campaignId);
+    const participationResult = await settleCampaignParticipationXp(supabase, campaignId);
+    const bonusResult = await settleCampaignBonusXp(supabase, campaignId);
+    const settled = [...raidResult.settled, ...participationResult.settled, ...bonusResult.settled];
+    const skipReasons = [raidResult.skipped, participationResult.skipped, bonusResult.skipped]
+      .filter(Boolean);
+
+    if (settled.length === 0 && skipReasons.length === 3) {
+      console.log(`Campaign XP settlement skipped for ${campaignId}: ${skipReasons.join('; ')}.`);
+    } else {
+      const credited = settled.filter((row) => row.credited);
+      const capped = settled.filter((row) => !row.credited);
+      const totalXp = credited.reduce((sum, row) => sum + row.amount, 0);
+      console.log(
+        `Campaign XP settlement for ${campaignId}: ${settled.length} pending event(s) reviewed, ` +
+          `${credited.length} credited (${totalXp} XP total), ${capped.length} held for daily-cap reasons.`
+      );
+
+      if (process.env.PROJECT_Q_EARN_TO_BURN_ENABLED === 'true') {
+        const programId = process.env.PROJECT_Q_EARN_TO_BURN_PROGRAM_ID ?? DEFAULT_EARN_TO_BURN_PROGRAM_ID;
+        const progress = await syncXpProgress(supabase, programId);
+        console.log(
+          `Earn to Burn progress for ${programId}: ${progress?.inserted_events ?? 0} XP event(s) added, ` +
+          `${progress?.total_progress_units ?? 0} total unit(s), ` +
+          `${progress?.unlocked_milestones ?? 0} milestone(s) unlocked.`
+        );
+      }
+    }
   }
 
-  const raidResult = await settleCampaignRaidXp(supabase, campaignId);
-  const participationResult = await settleCampaignParticipationXp(supabase, campaignId);
-  const bonusResult = await settleCampaignBonusXp(supabase, campaignId);
-  const settled = [...raidResult.settled, ...participationResult.settled, ...bonusResult.settled];
-  const skipReasons = [raidResult.skipped, participationResult.skipped, bonusResult.skipped]
-    .filter(Boolean);
-
-  if (settled.length === 0 && skipReasons.length === 3) {
-    console.log(`Campaign XP settlement skipped for ${campaignId}: ${skipReasons.join('; ')}.`);
-    return;
-  }
-
-  const credited = settled.filter((row) => row.credited);
-  const capped = settled.filter((row) => !row.credited);
-  const totalXp = credited.reduce((sum, row) => sum + row.amount, 0);
-  console.log(
-    `Campaign XP settlement for ${campaignId}: ${settled.length} pending event(s) reviewed, ` +
-      `${credited.length} credited (${totalXp} XP total), ${capped.length} held for daily-cap reasons.`
-  );
-
-  if (process.env.PROJECT_Q_EARN_TO_BURN_ENABLED === 'true') {
-    const programId = process.env.PROJECT_Q_EARN_TO_BURN_PROGRAM_ID ?? DEFAULT_EARN_TO_BURN_PROGRAM_ID;
-    const progress = await syncXpProgress(supabase, programId);
+  const exported = await deliverCampaignXpAwards(supabase);
+  if (!exported.disabled) {
     console.log(
-      `Earn to Burn progress for ${programId}: ${progress?.inserted_events ?? 0} XP event(s) added, ` +
-      `${progress?.total_progress_units ?? 0} total unit(s), ` +
-      `${progress?.unlocked_milestones ?? 0} milestone(s) unlocked.`
+      `Oracle XP export: ${exported.delivered} delivered, ${exported.retried} queued for retry, ` +
+      `${exported.deadLettered} moved to review.`
     );
   }
 }
