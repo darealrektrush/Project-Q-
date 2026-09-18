@@ -23,8 +23,11 @@ import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { oracleProfileHandler, oracleProfileAppHandler } from './campaign/oracleProfile.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
-import { ensureCampaignProfile } from './campaign/oracleIdentity.js';
-import * as walletVerification from './campaign/walletVerification.js';
+import {
+  ensureCampaignProfile,
+  recordOracleWallet,
+  validateOracleWalletEvent,
+} from './campaign/oracleIdentity.js';
 import * as walletStatus from './campaign/walletStatus.js';
 import {
   WEBSITE_VOTE_PROFILES,
@@ -220,7 +223,7 @@ app.post('/campaign-app/api/session', async (req, res) => {
       websiteVotes,
       telegramTrendingSources,
       capabilities: {
-        walletVerification: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED === 'true',
+        walletManagedByOracle: true,
         websiteVoteReview: process.env.PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED === 'true',
         telegramTrendingReceipts: telegramTrendingReceiptsEnabled(process.env),
       },
@@ -318,44 +321,6 @@ app.post(
     }
   }
 );
-
-app.post('/campaign-app/api/wallet/challenge', async (req, res) => {
-  try {
-    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
-    await campaignService.assertWalletVerificationEnabled(supabase, session.user.id, {
-      verificationFlag: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED,
-      participationFlag: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED,
-    });
-    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
-    const challenge = await walletVerification.createWalletChallenge(supabase, campaignId, session.user.id);
-    return res.status(200).json({ ok: true, ...challenge });
-  } catch (err) {
-    console.error('wallet challenge failed', err.message);
-    return res.status(400).json({ ok: false, error: 'wallet challenge unavailable' });
-  }
-});
-
-app.post('/campaign-app/api/wallet/verify', async (req, res) => {
-  try {
-    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
-    await campaignService.assertWalletVerificationEnabled(supabase, session.user.id, {
-      verificationFlag: process.env.PROJECT_Q_WALLET_VERIFICATION_ENABLED,
-      participationFlag: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED,
-    });
-    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
-    const result = await walletVerification.consumeWalletChallenge(supabase, {
-      campaignId,
-      telegramUserId: session.user.id,
-      nonce: req.body?.nonce,
-      wallet: req.body?.wallet,
-      signature: req.body?.signature,
-    });
-    return res.status(200).json({ ok: true, ...result });
-  } catch (err) {
-    console.error('wallet verification failed', err.message);
-    return res.status(400).json({ ok: false, error: 'wallet verification failed' });
-  }
-});
 
 app.post('/campaign-app/api/wallet/status', async (req, res) => {
   res.set('Cache-Control', 'private, no-store');
@@ -465,6 +430,28 @@ app.post('/oracle/campaign-identity', async (req, res) => {
     return res.status(invalid ? 400 : 409).json({
       ok: false,
       error: invalid ? err.message : 'campaign identity rejected',
+    });
+  }
+});
+
+app.post('/oracle/campaign-wallet', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  if (process.env.PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED !== 'true') {
+    return res.status(503).json({ error: 'Oracle wallet bridge disabled' });
+  }
+  try {
+    const event = validateOracleWalletEvent(req.body);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const identity = await recordOracleWallet(supabase, event, campaignId);
+    return res.status(200).json({ ok: true, identity });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('Oracle campaign wallet ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'campaign wallet rejected',
     });
   }
 });
