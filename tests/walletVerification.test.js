@@ -34,15 +34,16 @@ test('wallet verification consumes the nonce before linking the verified wallet'
   const client = {
     select: async () => [{ id: 7, expires_at: expiresAt }],
     update: async (...args) => { calls.push(['update', ...args]); return [{ id: 7 }]; },
-    upsert: async (...args) => { calls.push(['upsert', ...args]); return [{}]; },
+    rpc: async (...args) => { calls.push(['rpc', ...args]); return [{}]; },
   };
   const result = await consumeWalletChallenge(client, {
     campaignId: 'bond', telegramUserId: 42, nonce: 'nonce', wallet, signature,
   }, now);
   assert.equal(result.wallet, wallet);
   assert.equal(calls[0][0], 'update');
-  assert.equal(calls[1][0], 'upsert');
-  assert.equal(calls[1][2][0].wallet_verified_at, now.toISOString());
+  assert.equal(calls[1][0], 'rpc');
+  assert.equal(calls[1][1], 'link_project_q_verified_wallet');
+  assert.equal(calls[1][2].p_verified_at, now.toISOString());
 });
 
 test('wallet verification blocks self-service destination changes after an allocation exists', async () => {
@@ -63,7 +64,7 @@ test('wallet verification blocks self-service destination changes after an alloc
       return [];
     },
     update: async () => { mutated = true; return []; },
-    upsert: async () => { mutated = true; return []; },
+    rpc: async () => { mutated = true; return []; },
   };
   await assert.rejects(
     () => consumeWalletChallenge(client, {
@@ -92,11 +93,11 @@ test('pre-allocation wallet replacement clears stale token-account readiness', a
       return [];
     },
     update: async () => [{ id: 7 }],
-    upsert: async (_table, rows) => { linked = rows[0]; return [{}]; },
+    rpc: async (_fn, args) => { linked = args; return [{}]; },
   };
   await consumeWalletChallenge(client, {
     campaignId: 'bond', telegramUserId: 42, nonce: 'nonce', wallet: nextAddress, signature,
   }, now);
-  assert.equal(linked.reward_wallet, nextAddress);
-  assert.equal(linked.fawkq_token_account, null);
+  assert.equal(linked.p_wallet_address, nextAddress);
+  assert.equal(linked.p_verified_at, now.toISOString());
 });
