@@ -149,7 +149,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
     },
     { key: 'dates', label: `${EXPECTED_CYCLES} locked 48-hour cycles scheduled for launch`, ready: datesReady },
     { key: 'app', label: 'Campaign app enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED) },
-    { key: 'wallet', label: 'Wallet verification enabled', ready: enabled(env.PROJECT_Q_WALLET_VERIFICATION_ENABLED) },
+    { key: 'wallet', label: 'Oracle wallet events enabled', ready: enabled(env.PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED) },
     { key: 'settlement', label: 'Campaign XP settlement enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED) },
     { key: 'burn-rules', label: 'Earn to Burn rules, founders, source and milestones verified', ready: burnRulesReady },
     { key: 'burn-progress', label: 'Earn to Burn progress enabled', ready: enabled(env.PROJECT_Q_EARN_TO_BURN_ENABLED) },
@@ -158,7 +158,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
 
   const flags = {
     campaignApp: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED),
-    walletVerification: enabled(env.PROJECT_Q_WALLET_VERIFICATION_ENABLED),
+    oracleWalletEvents: enabled(env.PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED),
     campaignXpSettlement: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED),
     earnToBurn: enabled(env.PROJECT_Q_EARN_TO_BURN_ENABLED),
     burnVerification: enabled(env.PROJECT_Q_BURN_VERIFICATION_ENABLED),
@@ -236,21 +236,6 @@ export async function assertCampaignParticipationEnabled(client, enabledFlag) {
   const status = await getCampaignStatus(client);
   if (status.state !== 'ACTIVE') throw new Error('campaign participation disabled');
   return status;
-}
-
-export async function assertWalletVerificationEnabled(
-  client,
-  telegramUserId,
-  { verificationFlag, participationFlag } = {}
-) {
-  if (verificationFlag !== 'true') {
-    await assertCampaignParticipationEnabled(client, participationFlag);
-  }
-  const participant = await getParticipantStatus(client, telegramUserId);
-  if (!participant.xVerified) {
-    throw new Error('verified Telegram and Oracle X identity required');
-  }
-  return participant;
 }
 
 function latestAllocationRows(rows) {
