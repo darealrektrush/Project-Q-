@@ -128,6 +128,7 @@ test('participant status derives verification readiness and sums XP', async () =
     select: async (table, query) => {
       queries.push([table, query]);
       if (table === 'identity_links') return [{
+          profile_id: '11111111-1111-4111-8111-111111111111',
           x_user_id: 'x-1', reward_wallet: 'wallet-1', x_verified_at: '2026-08-14T00:00:00Z',
           wallet_verified_at: '2026-08-15T00:00:00Z', fawkq_token_account: 'ata-1',
           enrolled_at: '2026-08-13T00:00:00Z',
@@ -166,7 +167,9 @@ test('participant status derives verification readiness and sums XP', async () =
   };
   const status = await getParticipantStatus(client, 123, { now: '2026-08-25T18:00:00Z' });
   assert.equal(status.enrolled, true);
+  assert.equal(status.profileId, '11111111-1111-4111-8111-111111111111');
   assert.equal(status.walletVerified, true);
+  assert.equal(status.campaignReady, true);
   assert.equal(status.rewardWallet, 'wallet-1');
   assert.equal(status.tokenAccountReady, true);
   assert.equal(status.totalXp, 19);
