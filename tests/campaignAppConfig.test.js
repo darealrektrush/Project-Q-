@@ -151,10 +151,11 @@ test('Bond the Duck V3 uses the cinematic campaign hero without duplicate visibl
   assert.match(styles, /\.command-hero::before[\s\S]*background-image: var\(--campaign-art\)/);
 });
 
-test('Mini App escapes Telegram display names and keeps wallet controls locked while disabled', async () => {
+test('Mini App escapes Telegram display names and delegates wallet connection to Oracle', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
   assert.match(app, /escapeHtml\(p\.name\)/);
-  assert.match(app, /campaignRecord\?\.enabled/);
+  assert.match(app, /Connect in Oracle/);
+  assert.doesNotMatch(app, /wallet\/challenge|wallet\/verify|provider\.connect|signMessage/);
 });
 
 test('Mini App exposes a guided verified onboarding path without activating participation', async () => {
@@ -165,8 +166,8 @@ test('Mini App exposes a guided verified onboarding path without activating part
   assert.match(app, /Oracle X/);
   assert.match(app, /Reward wallet/);
   assert.match(app, /Campaign identity complete/);
-  assert.match(app, /participationReady && \(state\.walletVerificationEnabled \|\| state\.campaignRecord\?\.enabled\)/);
-  assert.match(app, /walletVerificationEnabled/);
+  assert.match(app, /walletManagedByOracle/);
+  assert.match(app, /Project Q cannot connect, replace or verify wallets/);
   assert.match(app, /onEvent\?\.\('activated'/);
 });
 

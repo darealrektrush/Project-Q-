@@ -95,7 +95,7 @@ const state = {
     achievements: [],
   },
   sessionStatus: 'checking',
-  walletVerificationEnabled: false,
+  walletManagedByOracle: true,
   websiteVoteReviewEnabled: false,
 };
 
@@ -117,12 +117,6 @@ function escapeHtml(value) {
 function short(value) { return `${value.slice(0, 5)}…${value.slice(-5)}`; }
 function isSolanaAddress(value) { return typeof value === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value); }
 function isSolanaSignature(value) { return typeof value === 'string' && /^[1-9A-HJ-NP-Za-km-z]{64,88}$/.test(value); }
-function bytesToBase64(bytes) {
-  let binary = '';
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  return btoa(binary);
-}
-
 function verifiedCount() {
   const p = state.profile;
   return [p.telegramVerified, p.xVerified, p.walletVerified].filter(Boolean).length;
@@ -274,7 +268,7 @@ function nextIdentityAction() {
   const p = state.profile;
   if (!p.telegramVerified) return 'Verify Telegram';
   if (!p.xVerified) return 'Connect Oracle X';
-  if (!p.walletVerified) return 'Connect reward wallet';
+  if (!p.walletVerified) return 'Connect wallet in Oracle';
   return 'Open missions';
 }
 
@@ -287,7 +281,7 @@ function nextStatusCard() {
     return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Connect Oracle X</b><small>Verify your X identity to unlock social missions.</small></div><button class="outline-action" id="oracle-home-link">Connect</button></article>`;
   }
   if (!p.walletVerified) {
-    return `<article class="next-status"><img src="/campaign-app/assets/system/q-wallet.webp" alt="" /><div><span>Next status</span><b>Verify reward wallet</b><small>Sign a message only. No transaction is authorized.</small></div><button class="outline-action" data-screen="profile">Connect</button></article>`;
+    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Verify wallet in Oracle</b><small>Oracle owns the single canonical payout-wallet connection.</small></div><button class="outline-action" data-screen="profile">Open profile</button></article>`;
   }
   return `<article class="next-status"><img src="/campaign-app/assets/system/q-campaigns.webp" alt="" /><div><span>Identity ready</span><b>Choose your next mission</b><small>Every accepted action settles into one Project Q record.</small></div><button class="outline-action" data-screen="missions">Open</button></article>`;
 }
@@ -687,7 +681,7 @@ function profileWallet() {
     <article><span>Asset contract</span><code>${escapeHtml(status.mint || state.campaign?.earnToBurn?.mint || 'Unavailable')}</code><small>6 decimals · Token-2022</small></article>
   </div><footer><span>Observed ${escapeHtml(observed)} · ${Number(status.tokenAccountCount || 0)} matching token account${Number(status.tokenAccountCount || 0) === 1 ? '' : 's'}</span><button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh balance</button></footer></section>
   <section class="wallet-security-grid">
-    <article class="command-card"><span class="label">Ownership</span><h3>${p.walletVerified ? 'Signature verified' : 'Verification pending'}</h3><p>${p.walletVerified ? `Verified ${escapeHtml(formatProfileDate(p.walletVerifiedAt))}. The signature proved ownership only and did not authorize a transaction.` : 'Connect through Project Q and sign the ownership message to activate this reward destination.'}</p><button class="text-action" data-profile-view="identity">Open identity →</button></article>
+    <article class="command-card"><span class="label">Ownership</span><h3>${p.walletVerified ? 'Oracle verified' : 'Verification pending'}</h3><p>${p.walletVerified ? `Verified by Oracle ${escapeHtml(formatProfileDate(p.walletVerifiedAt))}. Project Q holds only the campaign payout reference.` : 'Open Oracle to connect and verify the single wallet used across CrabStar.'}</p><button class="text-action" data-profile-view="identity">Open identity →</button></article>
     <article class="command-card"><span class="label">Destination protection</span><h3>${allocationLocked ? 'Locked after allocation' : 'Changeable before allocation'}</h3><p>${allocationLocked ? 'Self-service wallet replacement is blocked because an allocation already exists. Any recovery requires founder review.' : 'A newly verified wallet replaces the destination and resets token-account readiness before allocations are recorded.'}</p>${statePill(allocationLocked ? 'PROTECTED' : 'PRE-ALLOCATION', allocationLocked ? 'success' : 'pending')}</article>
     <article class="command-card"><span class="label">Reward delivery</span><h3>Founder-controlled Squads</h3><p>Project Q calculates and records. Founders approve the exact manifest in Squads. The campaign treasury sends FAWKQ directly to this wallet.</p>${statePill(treasuryReady ? 'TREASURY READY' : 'SETUP PENDING', treasuryReady ? 'success' : 'pending')}</article>
   </section>
@@ -714,16 +708,16 @@ function profileIdentity() {
   const count = verifiedCount();
   const participationReady = p.telegramVerified && p.xVerified;
   const fullyVerified = participationReady && p.walletVerified;
-  const walletEnabled = Boolean(participationReady && (state.walletVerificationEnabled || state.campaignRecord?.enabled));
+  const walletEnabled = p.telegramVerified;
   const telegramDetail = p.telegramVerified ? 'Signed Mini App session verified' : (state.sessionStatus === 'outside' ? 'Open from Project Q in Telegram' : 'Telegram verification required');
   const xDetail = p.xVerified ? `Oracle verified · ${formatProfileDate(p.xVerifiedAt)}` : 'Required for verified social activity';
-  const walletDetail = p.walletVerified ? `Ownership verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : (walletEnabled ? 'Sign a no-transaction ownership message' : 'Unlocks after X verification');
+  const walletDetail = p.walletVerified ? `Oracle verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : 'Connect and verify your one payout wallet through Oracle';
   return `<section class="command-card onboarding-panel"><div class="panel-title"><span>Complete Project Q ID</span><small>${count}/3 VERIFIED</small></div>${identityStepper()}<div class="onboarding-steps">
     <article class="onboarding-step ${p.telegramVerified ? 'complete' : 'current'}"><span>${p.telegramVerified ? '✓' : '1'}</span><div><b>Telegram</b><p>${telegramDetail}</p></div><strong>${p.telegramVerified ? 'Verified' : 'Required'}</strong></article>
     <article class="onboarding-step oracle-step ${p.xVerified ? 'complete' : (p.telegramVerified ? 'current' : 'locked')}"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><b>Oracle X</b><p>${xDetail}</p></div><button class="outline-action" id="oracle-link">${p.xVerified ? 'Open Oracle' : 'Connect X'}</button></article>
-    <article class="onboarding-step ${p.walletVerified ? 'complete' : (walletEnabled ? 'current' : 'locked')}"><span>${p.walletVerified ? '✓' : '3'}</span><div><b>Reward wallet</b><p>${walletDetail}</p></div><button class="outline-action" id="profile-wallet" ${walletEnabled ? '' : 'disabled'}>${p.walletVerified ? 'Verified' : (walletEnabled ? 'Connect' : 'Locked')}</button></article>
+    <article class="onboarding-step oracle-step ${p.walletVerified ? 'complete' : (walletEnabled ? 'current' : 'locked')}"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><b>Oracle wallet</b><p>${walletDetail}</p></div><button class="outline-action" id="profile-wallet" ${walletEnabled ? '' : 'disabled'}>${p.walletVerified ? 'Open Oracle' : 'Connect in Oracle'}</button></article>
   </div>${p.telegramVerified ? '<button class="text-action centered" id="identity-refresh">Refresh verification status</button>' : ''}${fullyVerified ? `<div class="verified-note"><span>✓</span><div><b>Campaign identity complete</b><p>Enrolled ${escapeHtml(formatProfileDate(p.enrolledAt))}. Reward eligibility still follows published rules and token-account snapshots.</p></div></div>` : ''}</section>
-  <section class="command-card privacy-panel"><span class="label">Privacy & security</span><h3>Verification without custody.</h3><p>Project Q uses signed Telegram session data and wallet ownership messages. Connecting a wallet does not authorize a transaction, transfer tokens or expose a private key.</p></section>`;
+  <section class="command-card privacy-panel"><span class="label">Privacy & security</span><h3>One wallet. Verified by Oracle.</h3><p>Project Q cannot connect, replace or verify wallets. It reads the verified payout-wallet reference supplied by Oracle and never receives a private key or transaction authority.</p></section>`;
 }
 
 function profileScreen() {
@@ -784,45 +778,6 @@ function go(screen) {
   render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
-}
-
-async function connectWallet() {
-  if (!state.walletVerificationEnabled && !state.campaignRecord?.enabled) {
-    toast('Wallet verification is currently disabled.');
-    return;
-  }
-  const provider = window.phantom?.solana || window.solflare || window.backpack;
-  if (!provider) {
-    toast('Open in Phantom, Solflare or Backpack to connect securely.');
-    window.open('https://phantom.app/', '_blank');
-    return;
-  }
-  try {
-    const result = await provider.connect();
-    state.wallet = (result?.publicKey || provider.publicKey)?.toString();
-    state.profile.walletVerified = false;
-    render();
-    const initData = state.telegram?.initData;
-    if (!initData) { toast('Open through Project Q in Telegram to verify this wallet.'); return; }
-    const challengeResponse = await fetch('/campaign-app/api/wallet/challenge', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData }),
-    });
-    if (!challengeResponse.ok) throw new Error('challenge');
-    const challenge = await challengeResponse.json();
-    if (typeof provider.signMessage !== 'function') { toast('This wallet does not support message signing here.'); return; }
-    const signed = await provider.signMessage(new TextEncoder().encode(challenge.message), 'utf8');
-    const signature = bytesToBase64(signed.signature || signed);
-    const verifyResponse = await fetch('/campaign-app/api/wallet/verify', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, nonce: challenge.nonce, wallet: state.wallet, signature }),
-    });
-    if (!verifyResponse.ok) throw new Error('verify');
-    state.profile.walletVerified = true;
-    toast('Wallet ownership verified. No transaction was authorized.');
-    await authenticateTelegram();
-    await loadWalletStatus();
-    render();
-  } catch { toast('Wallet connection or ownership verification was cancelled.'); }
 }
 
 function openOracle() {
@@ -1120,7 +1075,7 @@ function bind() {
   });
   const account = document.querySelector('#account-control');
   if (account) account.onclick = () => go('profile');
-  document.querySelector('#profile-wallet')?.addEventListener('click', connectWallet);
+  document.querySelector('#profile-wallet')?.addEventListener('click', openOracle);
   document.querySelector('#identity-refresh')?.addEventListener('click', async () => {
     state.sessionStatus = 'checking';
     await authenticateTelegram();
@@ -1242,7 +1197,7 @@ async function authenticateTelegram() {
     state.profile.walletVerified = Boolean(session.participant?.walletVerified);
     state.profile.tokenAccountReady = Boolean(session.participant?.tokenAccountReady);
     state.profile.tokenAccount = session.participant?.fawkqTokenAccount || null;
-    state.walletVerificationEnabled = Boolean(session.capabilities?.walletVerification);
+    state.walletManagedByOracle = session.capabilities?.walletManagedByOracle === true;
     state.wallet = session.participant?.rewardWallet || null;
     state.profile.xp = Number(session.participant?.totalXp || 0);
     state.profile.todayXp = Number(session.participant?.todayXp || 0);
