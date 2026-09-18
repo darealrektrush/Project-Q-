@@ -81,12 +81,11 @@ export async function consumeWalletChallenge(client, { campaignId, telegramUserI
     consumed_at: now.toISOString(),
   });
   if (!consumed?.length) throw new Error('wallet challenge already consumed');
-  await client.upsert('identity_links', [{
-    campaign_id: campaignId,
-    telegram_user_id: String(telegramUserId),
-    reward_wallet: wallet,
-    wallet_verified_at: now.toISOString(),
-    ...(walletChanged ? { fawkq_token_account: null } : {}),
-  }], 'campaign_id,telegram_user_id');
+  await client.rpc('link_project_q_verified_wallet', {
+    p_campaign_id: campaignId,
+    p_telegram_user_id: telegramUserId,
+    p_wallet_address: wallet,
+    p_verified_at: now.toISOString(),
+  });
   return { wallet, verifiedAt: now.toISOString() };
 }
