@@ -281,7 +281,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
   const identityRows = await client.select(
     'identity_links',
     `?campaign_id=eq.${encodeURIComponent(id)}&telegram_user_id=eq.${encodeURIComponent(userId)}` +
-      '&select=x_user_id,reward_wallet,x_verified_at,wallet_verified_at,fawkq_token_account,enrolled_at&limit=1'
+      '&select=profile_id,x_user_id,reward_wallet,x_verified_at,wallet_verified_at,fawkq_token_account,enrolled_at&limit=1'
   );
   const identity = identityRows[0] ?? null;
   const walletFilter = identity?.reward_wallet
@@ -366,6 +366,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
   const failedReleases = releaseRows.filter(({ status }) => status === 'failed');
   const completedMissionCodes = [...new Set(xpDetailRows.map((row) => row.mission_code).filter(Boolean))];
   return {
+    profileId: identity?.profile_id ?? null,
     enrolled: Boolean(identity),
     enrolledAt: identity?.enrolled_at ?? null,
     xLinked: Boolean(identity?.x_user_id),
@@ -426,6 +427,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     },
     buyToEarn: positionRows[0] ?? null,
     campaignState: campaignRows[0]?.state ?? 'DRAFT',
+    campaignReady: Boolean(identity?.profile_id && identity?.x_verified_at && identity?.wallet_verified_at),
   };
 }
 
@@ -453,7 +455,7 @@ export function closedCampaignStatus() {
 
 export function closedParticipantStatus() {
   return {
-    enrolled: false, xLinked: false, xVerified: false, walletLinked: false,
+    profileId: null, enrolled: false, xLinked: false, xVerified: false, walletLinked: false,
     enrolledAt: null, xVerifiedAt: null, walletVerifiedAt: null,
     walletVerified: false, rewardWallet: null, tokenAccountReady: false, fawkqTokenAccount: null,
     xpByCycle: [], totalXp: 0,
@@ -463,7 +465,7 @@ export function closedParticipantStatus() {
     allocationByCategory: {}, rewards: { recorded: false, allocatedBaseUnits: null,
       scheduledBaseUnits: null, distributedBaseUnits: null, failedBaseUnits: null,
       releaseCount: 0, receiptCount: 0, releases: [] }, buyToEarn: null, campaignState: 'DRAFT',
-    unavailable: true,
+    campaignReady: false, unavailable: true,
   };
 }
 
