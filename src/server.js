@@ -23,6 +23,7 @@ import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { oracleProfileHandler, oracleProfileAppHandler } from './campaign/oracleProfile.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
+import { ensureCampaignProfile } from './campaign/oracleIdentity.js';
 import * as walletVerification from './campaign/walletVerification.js';
 import * as walletStatus from './campaign/walletStatus.js';
 import {
@@ -140,6 +141,11 @@ app.get('/campaign-app/api/burns/receipts/:receiptCode', async (req, res) => {
 app.post('/campaign-app/api/session', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const identity = await ensureCampaignProfile(supabase, {
+      campaignId,
+      telegramUserId: session.user.id,
+    });
     const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
     let referralProfile;
     let communityProfile;
@@ -204,6 +210,7 @@ app.post('/campaign-app/api/session', async (req, res) => {
     return res.status(200).json({
       ok: true,
       user: session.user,
+      identity,
       participant,
       referrals: referralProfile,
       community: communityProfile,
