@@ -142,6 +142,12 @@ services:
     envVars:
       - key: PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED
         value: "false"
+      - key: PROJECT_Q_ORACLE_XP_EXPORT_ENABLED
+        value: "false"
+      - key: ORACLE_PROJECT_Q_XP_URL
+        sync: false
+      - key: ORACLE_PROJECT_Q_XP_SECRET
+        sync: false
       - key: PROJECT_Q_EARN_TO_BURN_ENABLED
         value: "false"
       - key: PROJECT_Q_EARN_TO_BURN_PROGRAM_ID
