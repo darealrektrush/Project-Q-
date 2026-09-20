@@ -34,6 +34,8 @@ services:
         value: "false"
       - key: PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED
         value: "false"
+      - key: PROJECT_Q_ORACLE_TRADE_EVENTS_ENABLED
+        value: "false"
       - key: PROJECT_Q_EARN_TO_BURN_ENABLED
         value: "false"
       - key: PROJECT_Q_EARN_TO_BURN_PROGRAM_ID
