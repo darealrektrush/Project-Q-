@@ -57,11 +57,11 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
   const id = campaignId();
   const [
     campaignRows, rulesetRows, cycleRows, sourceRows, sourceCertificationRows,
-    registryRows, burnProgramRows,
+    burnProgramRows,
   ] = await Promise.all([
     client.select(
       'campaigns',
-      `?id=eq.${encodeURIComponent(id)}&select=id,state,rules_hash,ruleset_version,funded_base_units&limit=1`
+      `?id=eq.${encodeURIComponent(id)}&select=id,state,rules_hash,ruleset_version,registry_version,funded_base_units&limit=1`
     ),
     client.select(
       'ruleset_versions',
@@ -79,16 +79,18 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
         '&order=checked_at.desc,id.desc&limit=500'
     ),
     client.select(
-      'deployment_registry',
-      `?campaign_id=eq.${encodeURIComponent(id)}&select=field,value,owner,evidence_url&limit=100`
-    ),
-    client.select(
       'earn_to_burn_programs',
       `?campaign_id=eq.${encodeURIComponent(id)}&select=id,state,mint,token_program_id,decimals,rules_hash,hard_cap_base_units,max_single_burn_base_units&limit=1`
     ),
   ]);
 
   const campaign = campaignRows[0] ?? null;
+  const registryRows = Number.isInteger(Number(campaign?.registry_version)) && Number(campaign?.registry_version) > 0
+    ? await client.select(
+      'deployment_registry',
+      `?campaign_id=eq.${encodeURIComponent(id)}&version=eq.${Number(campaign.registry_version)}&select=field,value,owner,evidence_url,registry_hash&order=field.asc&limit=100`
+    )
+    : [];
   const funded = BigInt(campaign?.funded_base_units ?? 0);
   const currentRuleset = rulesetRows.find(
     ({ version }) => Number(version) === Number(campaign?.ruleset_version)
@@ -103,8 +105,13 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
   let registryHash = null;
   try {
     validateRegistry(registryRows, { requireComplete: true });
+    const rowHashes = [...new Set(registryRows.map(({ registry_hash: value }) => value).filter(Boolean))];
+    const computedHash = hashRegistry(registryRows);
+    if (rowHashes.length !== 1 || rowHashes[0] !== computedHash) {
+      throw new Error('registry hash mismatch');
+    }
     registryReady = true;
-    registryHash = hashRegistry(registryRows);
+    registryHash = computedHash;
   } catch {
     registryReady = false;
     try {
