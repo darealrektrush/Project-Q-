@@ -46,3 +46,7 @@ export function websiteVoteReviewEnabled(env = process.env) {
 export function telegramTrendingReceiptsEnabled(env = process.env) {
   return isEnabled(env.PROJECT_Q_TRENDING_RECEIPTS_ENABLED);
 }
+
+export function oracleBuyToEarnTradeEventsEnabled(env = process.env) {
+  return isEnabled(env.PROJECT_Q_ORACLE_TRADE_EVENTS_ENABLED);
+}
