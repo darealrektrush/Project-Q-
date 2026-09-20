@@ -69,14 +69,56 @@ test('missing, expired, unhealthy and registry-mismatched evidence all fail clos
   }
 });
 
-test('aggregate community progress never satisfies the individual verification gate', () => {
+test('source readiness blocks if fewer than three healthy participant-verifiable websites remain', () => {
   const { sources, certifications } = fixture();
-  sources[0].classification = 'COMMUNITY_PROGRESS_ONLY';
-  certifications[0].classification = 'COMMUNITY_PROGRESS_ONLY';
+  for (let index = 2; index < 9; index += 1) {
+    sources[index].classification = 'SOURCE_UNAVAILABLE';
+    certifications[index].classification = 'SOURCE_UNAVAILABLE';
+    certifications[index].health = 'OFFLINE';
+  }
   const state = evaluateSourceCertifications(sources, certifications, { now: NOW });
   assert.equal(state.ready, false);
-  assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'vote-1').registryAccepting, false);
-  assert.match(state.blockers.join(' '), /not individually verifiable/);
+  assert.equal(state.acceptingWebsiteCount, 2);
+  assert.match(state.blockers.join(' '), /at least 3 participant-verifiable website sources/);
+});
+
+test('source readiness blocks if any Telegram bot loses healthy participant attribution', () => {
+  const { sources, certifications } = fixture();
+  certifications[9].health = 'DEGRADED';
+  const state = evaluateSourceCertifications(sources, certifications, { now: NOW });
+  assert.equal(state.ready, false);
+  assert.equal(state.acceptingTelegramBotCount, 4);
+  assert.match(state.blockers.join(' '), /all five Telegram bot sources/);
+});
+
+test('non-attributable sources can be truthfully certified without pretending they award individual XP', () => {
+  const { sources, certifications } = fixture();
+
+  // Keep exactly three participant-verifiable websites, one community-only
+  // website, five intentionally unavailable websites, and all five bots.
+  for (let index = 0; index < 9; index += 1) {
+    if (index < 3) {
+      sources[index].classification = 'PROOF_SUPPORTED';
+      certifications[index].classification = 'PROOF_SUPPORTED';
+      certifications[index].health = 'HEALTHY';
+    } else if (index === 3) {
+      sources[index].classification = 'COMMUNITY_PROGRESS_ONLY';
+      certifications[index].classification = 'COMMUNITY_PROGRESS_ONLY';
+      certifications[index].health = 'HEALTHY';
+    } else {
+      sources[index].classification = 'SOURCE_UNAVAILABLE';
+      certifications[index].classification = 'SOURCE_UNAVAILABLE';
+      certifications[index].health = 'OFFLINE';
+    }
+  }
+
+  const state = evaluateSourceCertifications(sources, certifications, { now: NOW });
+  assert.equal(state.ready, true);
+  assert.equal(state.currentCertificationCount, 14);
+  assert.equal(state.acceptingWebsiteCount, 3);
+  assert.equal(state.acceptingTelegramBotCount, 5);
+  assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'vote-4').registryAccepting, false);
+  assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'vote-5').health, 'OFFLINE');
 });
 
 test('latest certification wins and admin output never reveals evidence URLs or hashes', () => {
@@ -89,7 +131,7 @@ test('latest certification wins and admin output never reveals evidence URLs or 
   assert.equal(state.ready, false);
   assert.equal(state.currentCertificationCount, 13);
   const text = buildSourceCertificationAdminText(state);
-  assert.match(text, /vote-1: OFFLINE/);
+  assert.match(text, /vote-1: MACHINE_VERIFIED \/ OFFLINE/);
   assert.doesNotMatch(text, /evidence\.example|a{64}/);
 });
 
