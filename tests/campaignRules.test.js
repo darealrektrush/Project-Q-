@@ -38,6 +38,15 @@ function finalized(rules) {
       ...rules.earnToBurn,
       milestones: structuredClone(BOND_EARN_TO_BURN_MILESTONES),
     },
+    buyToEarn: {
+      ...rules.buyToEarn,
+      status: 'FINAL',
+      mode: 'WEIGHT_ONLY',
+      poolBaseUnits: '0',
+      fundingSource: null,
+      tier1NetBuySol: 0.07,
+      tier2NetBuySol: 0.20,
+    },
   };
 }
 
@@ -49,6 +58,7 @@ test('reviewed draft rules lock campaign economics but remain launch-blocked', a
   assert.deepEqual(rules.missions, BOND_RULES_MISSION_IDS);
   assert.deepEqual(draft.blockers, [
     'ruleset status is not FINAL',
+    'Buy-to-Earn economic mode is not finalized',
     'official pinned FAWKQ campaign post ID is not finalized',
   ]);
 });
@@ -85,6 +95,11 @@ test('current draft rules and Mini App campaign config cannot drift', async () =
   assert.deepEqual(rules.verificationSources, campaign.verificationSources);
   assert.deepEqual(rules.draw, campaign.draw);
   assert.deepEqual(rules.draw, BOND_DRAW_POLICY);
+  assert.deepEqual(rules.buyToEarn, campaign.buyToEarn);
+  assert.equal(rules.buyToEarn.status, 'PENDING_ECONOMIC_MODE');
+  assert.equal(rules.buyToEarn.mode, null);
+  assert.equal(rules.buyToEarn.tier1NetBuySol, 0.07);
+  assert.equal(rules.buyToEarn.tier2NetBuySol, 0.20);
 });
 
 test('final rules require exact locked commitments, schedule and nine mission lanes', async () => {
@@ -133,6 +148,32 @@ test('final rules require exact locked commitments, schedule and nine mission la
     ...ready,
     draw: { ...ready.draw, priorWinnerCooldownCycles: 0 },
   }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    buyToEarn: { ...ready.buyToEarn, mode: null },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    buyToEarn: { ...ready.buyToEarn, poolBaseUnits: '7500000000000' },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    buyToEarn: {
+      ...ready.buyToEarn,
+      mode: 'SEPARATE_POOL',
+      poolBaseUnits: '7500000000000',
+      fundingSource: '',
+    },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    buyToEarn: {
+      ...ready.buyToEarn,
+      mode: 'SEPARATE_POOL',
+      poolBaseUnits: '7500000000000',
+      fundingSource: 'SEPARATE_VERIFIED_VAULT',
+    },
+  }).valid, true);
 });
 
 test('database rules gate requires matching final JSON, version and hash', async () => {
