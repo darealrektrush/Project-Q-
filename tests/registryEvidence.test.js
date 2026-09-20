@@ -6,6 +6,7 @@ import {
   REGISTRY_EVIDENCE_STATUS,
 } from '../src/campaign/registryEvidence.js';
 import { REQUIRED_REGISTRY_FIELDS, validateRegistry } from '../src/campaign/registry.js';
+import { BOND_DRAW_POLICY } from '../src/campaign/rules.js';
 
 const rules = {
   campaignId: 'bond-the-duck-2026',
@@ -22,6 +23,7 @@ const rules = {
       url: 'https://www.geckoterminal.com/solana/pools/example',
     }],
   },
+  draw: structuredClone(BOND_DRAW_POLICY),
 };
 
 const appConfig = {
@@ -89,6 +91,9 @@ test('registry audit proves immutable public machine facts only when stable HTTP
   assert.equal(byField.get('fawkq_mint_decimals').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
   assert.equal(byField.get('supabase_schema_version').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
   assert.equal(byField.get('winner_position_percentages').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.equal(byField.get('draw_reveal_fallback').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.match(byField.get('draw_reveal_fallback').value, /bond-draw-v1/);
+  assert.match(byField.get('draw_reveal_fallback').value, /RANKS_3_TO_15/);
   assert.match(byField.get('fawkq_mint_decimals').value, /Token-2022/);
 });
 
@@ -134,8 +139,6 @@ test('a complete evidence report produces rows accepted by registry validation a
     BOND_REVIEWER_OPERATOR_EVIDENCE_URL: 'https://example.com/reviewers',
     BOND_SOURCE_CERTIFICATION_EVIDENCE_URL: 'https://example.com/certs',
     BOND_DEXSCREENER_URL: 'https://dexscreener.com/solana/example',
-    BOND_DRAW_REVEAL_FALLBACK: 'locked fallback',
-    BOND_DRAW_REVEAL_EVIDENCE_URL: 'https://example.com/draw',
     BOND_PAYMENT_RETRY_INTERVALS: '10m,30m,2h',
     BOND_PAYMENT_RETRY_EVIDENCE_URL: 'https://example.com/retry',
     BOND_PRIORITY_FEE_CEILING: '100000 lamports',
