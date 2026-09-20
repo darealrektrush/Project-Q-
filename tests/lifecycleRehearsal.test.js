@@ -42,6 +42,17 @@ test('rehearses the complete 25-profile lifecycle and reconciles all 15M base un
   assert.equal(new Set(result.recovery.decisions.map(({ paymentKey }) => paymentKey)).size, 175);
 });
 
+test('adjacent cycles enforce the one-cycle winner cooldown', () => {
+  const result = rehearseBondLifecycle(base);
+  for (let index = 1; index < result.cycles.length; index += 1) {
+    const previous = new Set(
+      result.cycles[index - 1].selection.winners.map(({ telegramUserId }) => telegramUserId)
+    );
+    const current = result.cycles[index].selection.winners.map(({ telegramUserId }) => telegramUserId);
+    assert.ok(current.every((telegramUserId) => !previous.has(telegramUserId)));
+  }
+});
+
 test('the full lifecycle is deterministic across reordered profile input', () => {
   const first = rehearseBondLifecycle(base);
   const replay = rehearseBondLifecycle({ ...base, profiles: [...profiles].reverse() });
