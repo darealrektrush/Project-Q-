@@ -21,7 +21,9 @@
     "check": "npm test",
     "audit:bond-registry": "node scripts/audit-bond-registry.js",
     "audit:bond-sources": "node scripts/audit-bond-source-certifications.js",
-    "audit:bond-rules": "node scripts/audit-bond-rules.js"
+    "audit:bond-rules": "node scripts/audit-bond-rules.js",
+    "prepare:bond-draw": "node scripts/prepare-bond-draw-commitments.js",
+    "audit:bond-cutoff": "node scripts/audit-bond-draw-cutoff.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.3",
