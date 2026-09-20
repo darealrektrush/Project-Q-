@@ -24,6 +24,14 @@ async function finalRules() {
     ...draft,
     rulesetVersion: 2,
     status: 'FINAL',
+    schedule: {
+      ...draft.schedule,
+      activeOpensAt: '2026-10-01T15:00:00.000Z',
+      activeClosesAt: '2026-10-11T15:00:00.000Z',
+      reviewOpensAt: '2026-10-12T15:00:00.000Z',
+      review48HourCheckpointAt: '2026-10-14T15:00:00.000Z',
+      reviewClosesAt: '2026-10-15T15:00:00.000Z',
+    },
     referrals: {
       ...draft.referrals,
       bonusXp: 10,
