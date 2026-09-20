@@ -48,7 +48,7 @@ function drawTicket(seedHash, drawIndex, totalWeight) {
   }
 }
 
-export function selectCycleWinners({ campaignId, cycleId, profiles, publicSeed }) {
+export function selectCycleWinners({ campaignId, cycleId, profiles, publicSeed, priorCycleWinnerIds = [] }) {
   if (!campaignId || !Number.isInteger(cycleId) || cycleId < 1) {
     throw new Error('invalid campaign cycle');
   }
@@ -56,16 +56,24 @@ export function selectCycleWinners({ campaignId, cycleId, profiles, publicSeed }
     throw new Error('public draw seed is required');
   }
 
-  const eligible = normalizedCandidates(profiles).filter(({ eligible }) => eligible);
+  if (!Array.isArray(priorCycleWinnerIds)) throw new Error('prior cycle winner ids must be an array');
+  const cooldownIds = new Set(priorCycleWinnerIds.map((value) => String(value)));
+  if ([...cooldownIds].some((value) => !/^\d+$/.test(value))) {
+    throw new Error('invalid prior cycle winner id');
+  }
+
+  const eligible = normalizedCandidates(profiles)
+    .filter(({ eligible, telegramUserId }) => eligible && !cooldownIds.has(telegramUserId));
   if (eligible.length < TOP_WINNERS + DRAW_WINNERS) {
-    throw new Error('at least five eligible profiles are required');
+    throw new Error('at least five eligible profiles are required after cooldown');
   }
 
   const ranked = [...eligible].sort((a, b) =>
     b.score - a.score || compareIds(a.telegramUserId, b.telegramUserId)
   );
-  const top = ranked.slice(0, TOP_WINNERS);
-  let pool = ranked
+  const top15 = ranked.slice(0, 15);
+  const top = top15.slice(0, TOP_WINNERS);
+  let pool = top15
     .slice(TOP_WINNERS)
     .filter(({ weight }) => weight > 0)
     .sort((a, b) => compareIds(a.telegramUserId, b.telegramUserId));
@@ -99,6 +107,10 @@ export function selectCycleWinners({ campaignId, cycleId, profiles, publicSeed }
     campaignId,
     cycleId,
     seedHash,
+    candidateCount: eligible.length,
+    top15Count: top15.length,
+    cooldownExcludedCount: normalizedCandidates(profiles)
+      .filter(({ eligible, telegramUserId }) => eligible && cooldownIds.has(telegramUserId)).length,
     winners: [
       ...top.map((profile, index) => ({
         position: index + 1,
