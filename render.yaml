@@ -38,7 +38,7 @@ services:
         sync: false
       - key: PROJECT_Q_CAMPAIGN_APP_ENABLED
         value: "false"
-      - key: PROJECT_Q_WALLET_VERIFICATION_ENABLED
+      - key: PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED
         value: "false"
       - key: PROJECT_Q_EARN_TO_BURN_ENABLED
         value: "false"
