@@ -20,6 +20,7 @@ import { closedMissionEvidence, getParticipantMissionEvidence } from './campaign
 import * as referrals from './campaign/referrals.js';
 import * as communityActivity from './campaign/communityActivity.js';
 import * as xInvite from './campaign/xInvite.js';
+import * as buyToEarn from './campaign/buyToEarn.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { scheduleOraclePlatformOutbox } from './campaign/oraclePlatformOutbox.js';
 import { oracleProfileHandler, oracleProfileAppHandler } from './campaign/oracleProfile.js';
@@ -46,7 +47,7 @@ import {
   isTelegramTrendingReceiptCandidate,
   publicTelegramTrendingSource,
 } from './campaign/telegramTrendingReceipts.js';
-import { telegramTrendingReceiptsEnabled } from './lib/featureFlags.js';
+import { oracleBuyToEarnTradeEventsEnabled, telegramTrendingReceiptsEnabled } from './lib/featureFlags.js';
 import * as earnToBurnService from './earnToBurn/service.js';
 
 const app = express();
@@ -453,6 +454,28 @@ app.post('/oracle/campaign-wallet', async (req, res) => {
     return res.status(invalid ? 400 : 409).json({
       ok: false,
       error: invalid ? err.message : 'campaign wallet rejected',
+    });
+  }
+});
+
+app.post('/oracle/campaign-trade-event', async (req, res) => {
+  if (!oracleIngest.secretMatches(req.get('x-oracle-campaign-secret'), ORACLE_CAMPAIGN_SECRET)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  if (!oracleBuyToEarnTradeEventsEnabled(process.env)) {
+    return res.status(503).json({ error: 'Oracle Buy-to-Earn trade bridge disabled' });
+  }
+  try {
+    const event = buyToEarn.validateOracleBuyToEarnTradeEvent(req.body);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const position = await buyToEarn.ingestOracleBuyToEarnTrade(supabase, event, campaignId);
+    return res.status(200).json({ ok: true, position });
+  } catch (err) {
+    const invalid = String(err.message).startsWith('invalid ');
+    console.error('Oracle Buy-to-Earn trade ingest failed', err.message);
+    return res.status(invalid ? 400 : 409).json({
+      ok: false,
+      error: invalid ? err.message : 'Buy-to-Earn trade rejected',
     });
   }
 });
