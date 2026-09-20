@@ -28,6 +28,7 @@ function latestByTelegram(rows = []) {
 export function buildCycleWinnerCandidateSnapshot({
   campaignId = DEFAULT_CAMPAIGN_ID,
   cycleId,
+  cycle = null,
   xpRows = [],
   identityRows = [],
   holderRows = [],
@@ -94,9 +95,22 @@ export function buildCycleWinnerCandidateSnapshot({
   const top15 = rankedEligible.slice(0, 15);
   const weightedTop15 = top15.slice(2).filter(({ buyToEarnWeight }) => buyToEarnWeight > 0);
 
+  const cycleClosed = Boolean(cycle?.closes_at && Date.parse(cycle.closes_at) <= Date.now());
+  const cutoffReady = Boolean(
+    Number(cycle?.cutoff_slot || 0) > 0
+    && String(cycle?.cutoff_blockhash || '').trim()
+    && (
+      String(cycle?.reveal_value || '').trim()
+      || cycle?.fallback_used === true
+    )
+  );
+
   return {
     campaignId,
     cycleId,
+    cycleClosed,
+    cutoffReady,
+    selectionEvidenceReady: cycleClosed && cutoffReady,
     candidateCount: candidates.length,
     eligibleCount: rankedEligible.length,
     top15Count: top15.length,
@@ -118,6 +132,9 @@ export function planWeightOnlyCycleSelection(snapshot, {
   if (!snapshot || typeof snapshot !== 'object') throw new Error('candidate snapshot is required');
   if (buyToEarnMode !== 'WEIGHT_ONLY') {
     throw new Error('winner selection requires finalized WEIGHT_ONLY Buy-to-Earn policy');
+  }
+  if (!snapshot.selectionEvidenceReady) {
+    throw new Error('cycle cutoff and public draw evidence are not ready');
   }
   if (!snapshot.selectionPreconditions?.fiveEligibleProfiles
     || !snapshot.selectionPreconditions?.threeWeightedProfilesInRanks3To15) {
@@ -143,6 +160,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
   campaignId = DEFAULT_CAMPAIGN_ID,
   cycleId,
   env = process.env,
+  now = new Date(),
 } = {}) {
   if (!Number.isInteger(cycleId) || cycleId < 1 || cycleId > 5) {
     throw new Error('invalid campaign cycle');
@@ -150,7 +168,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
 
   const [campaignRows, cycleRows, xpRows, founderRows, priorWinnerRows] = await Promise.all([
     client.select('campaigns', `?id=eq.${encodeURIComponent(campaignId)}&select=id,state&limit=1`),
-    client.select('cycles', `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId}&select=cycle_id,opens_at,closes_at,cutoff_slot,cutoff_blockhash,commit_hash,reveal_value,finalized_at&limit=1`),
+    client.select('cycles', `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId}&select=cycle_id,opens_at,closes_at,cutoff_slot,cutoff_blockhash,commit_hash,reveal_value,fallback_used,finalized_at&limit=1`),
     client.select('campaign_xp_totals', `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId}&select=telegram_user_id,xp&order=xp.desc`),
     client.select('campaign_founders', `?campaign_id=eq.${encodeURIComponent(campaignId)}&enabled=eq.true&select=founder_user_id`),
     cycleId > 1
@@ -164,12 +182,17 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
     throw new Error('campaign is not in a winner-snapshot state');
   }
   if (!cycle) throw new Error('campaign cycle not found');
+  const nowMs = now instanceof Date ? now.getTime() : Date.parse(now);
+  const closesAtMs = Date.parse(cycle.closes_at || '');
+  if (!Number.isFinite(nowMs) || !Number.isFinite(closesAtMs) || nowMs < closesAtMs) {
+    throw new Error('campaign cycle is not closed');
+  }
 
   const userIds = [...new Set(xpRows.map((row) => String(row.telegram_user_id)).filter((id) => /^\d+$/.test(id)))];
   if (!userIds.length) {
     return {
       ...buildCycleWinnerCandidateSnapshot({
-        campaignId, cycleId, xpRows, founderRows, priorWinnerRows,
+        campaignId, cycleId, cycle, xpRows, founderRows, priorWinnerRows,
         excludedTelegramIds: [],
       }),
       cycle,
@@ -205,6 +228,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
     ...buildCycleWinnerCandidateSnapshot({
       campaignId,
       cycleId,
+      cycle,
       xpRows,
       identityRows,
       holderRows,
