@@ -74,6 +74,8 @@ test('cutoff resolver fails before cycle close is finalized', async () => {
   const connection = {
     async getSlot() { return 100; },
     async getBlockTime() { return 1000; },
+    async getBlocks() { return []; },
+    async getBlock() { return null; },
   };
   await assert.rejects(
     resolveFirstFinalizedBlockAtOrAfter(
