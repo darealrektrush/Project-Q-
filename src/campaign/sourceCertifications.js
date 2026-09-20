@@ -33,6 +33,14 @@ const SOURCE_KINDS = new Set(Object.keys(EXPECTED_SOURCE_COUNTS));
 const HEALTH_STATES = new Set(['HEALTHY', 'DEGRADED', 'OFFLINE', 'REMOVED']);
 const HASH = /^[0-9a-f]{64}$/;
 
+export function certificationHealthMatchesClassification(classification, health) {
+  if (['MACHINE_VERIFIED', 'PROOF_SUPPORTED'].includes(classification)) return health === 'HEALTHY';
+  if (classification === 'COMMUNITY_PROGRESS_ONLY') return ['HEALTHY', 'DEGRADED'].includes(health);
+  if (classification === 'SOURCE_UNAVAILABLE') return ['DEGRADED', 'OFFLINE'].includes(health);
+  if (classification === 'REMOVED_FOR_INTEGRITY') return health === 'REMOVED';
+  return false;
+}
+
 function kindForRegistrySource(source) {
   if (source === 'vote') return 'WEBSITE_VOTE';
   if (source === 'event') return 'TELEGRAM_BOT';
@@ -108,12 +116,7 @@ export function evaluateSourceCertifications(
       && HASH.test(String(certification.evidence_hash || ''))
       && validEvidenceUrl(certification.evidence_url));
     const health = String(certification?.health || 'UNCERTIFIED');
-    const healthMatchesClassification = (
-      (registryAccepting && health === 'HEALTHY')
-      || (classification === 'COMMUNITY_PROGRESS_ONLY' && ['HEALTHY', 'DEGRADED'].includes(health))
-      || (classification === 'SOURCE_UNAVAILABLE' && ['DEGRADED', 'OFFLINE'].includes(health))
-      || (classification === 'REMOVED_FOR_INTEGRITY' && health === 'REMOVED')
-    );
+    const healthMatchesClassification = certificationHealthMatchesClassification(classification, health);
     const current = evidenceCurrent && healthMatchesClassification;
     sourceStatuses.push({
       sourceKey,
@@ -220,7 +223,8 @@ export async function recordVerificationSourceCertification(client, {
   const expiresAtMs = timestamp(expiresAt);
   if (!String(campaignId || '').trim() || !String(sourceKey || '').trim()
     || !SOURCE_KINDS.has(sourceKind) || !ALL_CLASSIFICATIONS.has(classification)
-    || !HEALTH_STATES.has(health) || !validEvidenceUrl(evidenceUrl)
+    || !HEALTH_STATES.has(health) || !certificationHealthMatchesClassification(classification, health)
+    || !validEvidenceUrl(evidenceUrl)
     || !HASH.test(String(evidenceHash || '')) || !/^\d+$/.test(String(founderUserId || ''))
     || !HASH.test(String(idempotencyKey || '')) || checkedAtMs === null || expiresAtMs === null
     || expiresAtMs <= checkedAtMs || expiresAtMs - checkedAtMs > SOURCE_CERTIFICATION_MAX_AGE_MS) {
