@@ -29,6 +29,7 @@ export function buildCycleWinnerCandidateSnapshot({
   campaignId = DEFAULT_CAMPAIGN_ID,
   cycleId,
   cycle = null,
+  drawFinalization = null,
   snapshotAt = new Date(),
   xpRows = [],
   identityRows = [],
@@ -105,18 +106,20 @@ export function buildCycleWinnerCandidateSnapshot({
   const cutoffReady = Boolean(
     Number(cycle?.cutoff_slot || 0) > 0
     && String(cycle?.cutoff_blockhash || '').trim()
-    && (
-      String(cycle?.reveal_value || '').trim()
-      || cycle?.fallback_used === true
-    )
   );
+  const publicSeed = /^[0-9a-f]{64}$/.test(String(drawFinalization?.public_seed || ''))
+    ? String(drawFinalization.public_seed)
+    : null;
 
   return {
     campaignId,
     cycleId,
     cycleClosed,
     cutoffReady,
-    selectionEvidenceReady: cycleClosed && cutoffReady,
+    publicSeed,
+    fallbackUsed: drawFinalization?.fallback_used === true,
+    drawFinalizedAt: drawFinalization?.finalized_at || null,
+    selectionEvidenceReady: cycleClosed && cutoffReady && Boolean(publicSeed),
     candidateCount: candidates.length,
     eligibleCount: rankedEligible.length,
     top15Count: top15.length,
@@ -132,7 +135,7 @@ export function buildCycleWinnerCandidateSnapshot({
 }
 
 export function planWeightOnlyCycleSelection(snapshot, {
-  publicSeed,
+  publicSeed = snapshot?.publicSeed,
   buyToEarnMode,
 } = {}) {
   if (!snapshot || typeof snapshot !== 'object') throw new Error('candidate snapshot is required');
@@ -140,7 +143,10 @@ export function planWeightOnlyCycleSelection(snapshot, {
     throw new Error('winner selection requires finalized WEIGHT_ONLY Buy-to-Earn policy');
   }
   if (!snapshot.selectionEvidenceReady) {
-    throw new Error('cycle cutoff and public draw evidence are not ready');
+    throw new Error('cycle cutoff and finalized public draw evidence are not ready');
+  }
+  if (!/^[0-9a-f]{64}$/.test(String(publicSeed || '')) || publicSeed !== snapshot.publicSeed) {
+    throw new Error('winner selection seed must match finalized draw evidence');
   }
   if (!snapshot.selectionPreconditions?.fiveEligibleProfiles
     || !snapshot.selectionPreconditions?.threeWeightedProfilesInRanks3To15) {
@@ -172,7 +178,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
     throw new Error('invalid campaign cycle');
   }
 
-  const [campaignRows, cycleRows, xpRows, founderRows, priorWinnerRows] = await Promise.all([
+  const [campaignRows, cycleRows, xpRows, founderRows, priorWinnerRows, drawFinalizationRows] = await Promise.all([
     client.select('campaigns', `?id=eq.${encodeURIComponent(campaignId)}&select=id,state&limit=1`),
     client.select('cycles', `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId}&select=cycle_id,opens_at,closes_at,cutoff_slot,cutoff_blockhash,commit_hash,reveal_value,fallback_used,finalized_at&limit=1`),
     client.select('campaign_xp_totals', `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId}&select=telegram_user_id,xp&order=xp.desc`),
@@ -180,10 +186,16 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
     cycleId > 1
       ? client.select('cycle_winners', `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId - 1}&select=telegram_user_id`)
       : Promise.resolve([]),
+    client.select(
+      'campaign_cycle_draw_finalizations',
+      `?campaign_id=eq.${encodeURIComponent(campaignId)}&cycle_id=eq.${cycleId}` +
+        '&select=public_seed,fallback_used,finalized_at&limit=1'
+    ),
   ]);
 
   const campaign = campaignRows[0] || null;
   const cycle = cycleRows[0] || null;
+  const drawFinalization = drawFinalizationRows[0] || null;
   if (!campaign || !['ACTIVE', 'VERIFYING'].includes(campaign.state)) {
     throw new Error('campaign is not in a winner-snapshot state');
   }
@@ -198,7 +210,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
   if (!userIds.length) {
     return {
       ...buildCycleWinnerCandidateSnapshot({
-        campaignId, cycleId, cycle, snapshotAt: now, xpRows, founderRows, priorWinnerRows,
+        campaignId, cycleId, cycle, drawFinalization, snapshotAt: now, xpRows, founderRows, priorWinnerRows,
         excludedTelegramIds: [],
       }),
       cycle,
@@ -235,6 +247,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
       campaignId,
       cycleId,
       cycle,
+      drawFinalization,
       snapshotAt: now,
       xpRows,
       identityRows,
