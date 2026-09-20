@@ -71,6 +71,50 @@ export const BOND_RULES_WEBSITE_VOTING = Object.freeze([
 const POSITIVE_INTEGER = (value) => Number.isInteger(value) && value > 0;
 const POSITIVE_XP = (value) => POSITIVE_INTEGER(value) && value <= 75;
 
+function validFinalSchedule(schedule = {}) {
+  if (schedule.timeZone !== 'America/Vancouver'
+    || schedule.activeDays !== 10
+    || schedule.cycleHours !== 48
+    || schedule.cycleCount !== 5) return false;
+
+  const fields = [
+    schedule.activeOpensAt,
+    schedule.activeClosesAt,
+    schedule.reviewOpensAt,
+    schedule.review48HourCheckpointAt,
+    schedule.reviewClosesAt,
+  ];
+  if (fields.some((value) => typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) {
+    return false;
+  }
+
+  const activeOpens = Date.parse(schedule.activeOpensAt);
+  const activeCloses = Date.parse(schedule.activeClosesAt);
+  const reviewOpens = Date.parse(schedule.reviewOpensAt);
+  const reviewCheckpoint = Date.parse(schedule.review48HourCheckpointAt);
+  const reviewCloses = Date.parse(schedule.reviewClosesAt);
+
+  return activeCloses - activeOpens === 10 * 24 * 60 * 60 * 1000
+    && reviewOpens - activeCloses === 24 * 60 * 60 * 1000
+    && reviewCheckpoint - reviewOpens === 48 * 60 * 60 * 1000
+    && reviewCloses - reviewOpens === 72 * 60 * 60 * 1000;
+}
+
+function validDraftSchedule(schedule = {}) {
+  if (schedule.timeZone !== 'America/Vancouver'
+    || schedule.activeDays !== 10
+    || schedule.cycleHours !== 48
+    || schedule.cycleCount !== 5) return false;
+  const fields = [
+    schedule.activeOpensAt,
+    schedule.activeClosesAt,
+    schedule.reviewOpensAt,
+    schedule.review48HourCheckpointAt,
+    schedule.reviewClosesAt,
+  ];
+  return fields.every((value) => value === null) || validFinalSchedule(schedule);
+}
+
 export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
   const blockers = [];
   if (!rules || typeof rules !== 'object' || Array.isArray(rules)) {
@@ -82,14 +126,11 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
   if (requireFinal && rules.status !== 'FINAL') blockers.push('ruleset status is not FINAL');
 
   const schedule = rules.schedule || {};
-  if (schedule.timeZone !== 'America/Vancouver'
-    || schedule.activeOpensAt !== '2026-09-01T15:00:00.000Z'
-    || schedule.activeClosesAt !== '2026-09-11T15:00:00.000Z'
-    || schedule.activeDays !== 10 || schedule.cycleHours !== 48 || schedule.cycleCount !== 5
-    || schedule.reviewOpensAt !== '2026-09-12T15:00:00.000Z'
-    || schedule.review48HourCheckpointAt !== '2026-09-14T15:00:00.000Z'
-    || schedule.reviewClosesAt !== '2026-09-15T15:00:00.000Z') {
-    blockers.push('campaign and review schedule is not the locked September window');
+  const scheduleValid = rules.status === 'FINAL'
+    ? validFinalSchedule(schedule)
+    : validDraftSchedule(schedule);
+  if (!scheduleValid) {
+    blockers.push('campaign schedule must be five contiguous 48-hour cycles with the locked review timing');
   }
 
   const commitments = rules.commitments || {};
