@@ -69,7 +69,8 @@ test('Bagwork campaign migration is capped, idempotent and service-role only', a
   assert.match(sql, /'bagwork-payout:' \|\| p_submission_id/);
   assert.match(sql, /75 - overall_used/);
   assert.match(sql, /20 - mission_used/);
-  assert.match(sql, /mission_code, 'bagwork'/);
+  assert.match(sql, /mission_code, idempotency_key, awarded_at/);
+  assert.match(sql, /award, 'bagwork', 'bagwork-payout:' \|\| p_submission_id/);
   assert.match(sql, /grant execute on function public\.settle_campaign_bagwork_payout/);
   assert.doesNotMatch(sql, /grant\s+.*\s+to\s+(anon|authenticated)/i);
 });
