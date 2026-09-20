@@ -34,6 +34,10 @@ function clientFixture({
         squads_approval_threshold: 2,
         squads_member_count: 3,
         top_contributor_prize_lamports: '1000000000',
+        conservation_vault_address: '22222222222222222222222222222222',
+        conservation_contribution_lamports: '100000000',
+        total_sol_commitment_lamports: '1100000000',
+        conservation_attribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
         evidence_hash: 'a'.repeat(64),
         verified_at: verifiedAt,
         created_at: verifiedAt,
@@ -99,6 +103,11 @@ test('funding governance text redacts full vault and evidence hash and exposes n
   assert.doesNotMatch(text, /11111111111111111111111111111111/);
   assert.doesNotMatch(text, /a{64}/);
   assert.doesNotMatch(text, /https?:\/\//);
+  assert.match(text, /1 SOL/);
+  assert.match(text, /0\.10 SOL/);
+  assert.match(text, /1\.10 SOL total/);
+  assert.match(text, /TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY/);
+  assert.match(text, /222222…222222/);
   assert.match(text, /No token movement or treasury signing/);
 });
 
