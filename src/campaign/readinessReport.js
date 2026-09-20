@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-export const CAMPAIGN_READINESS_REPORT_VERSION = 'bond-readiness-v2';
+export const CAMPAIGN_READINESS_REPORT_VERSION = 'bond-readiness-v3';
 
 function byFields(fields) {
   return (left, right) => fields
@@ -13,6 +13,16 @@ function normalizeCycles(rows = []) {
     cycleId: Number(row.cycle_id),
     opensAt: String(row.opens_at || ''),
     closesAt: String(row.closes_at || ''),
+  })).sort(byFields(['cycleId']));
+}
+
+function normalizeDrawCommitments(rows = []) {
+  return rows.map((row) => ({
+    campaignId: String(row.campaign_id || ''),
+    cycleId: Number(row.cycle_id),
+    protocolVersion: String(row.protocol_version || ''),
+    commitHash: String(row.commit_hash || ''),
+    committedAt: String(row.committed_at || ''),
   })).sort(byFields(['cycleId']));
 }
 
@@ -61,6 +71,7 @@ export function createCampaignReadinessReport({
   campaign,
   checks = [],
   cycles = [],
+  drawCommitments = [],
   sources = [],
   sourceCertifications = [],
   registryHash = null,
@@ -80,6 +91,7 @@ export function createCampaignReadinessReport({
       fundedBaseUnits: String(campaign?.funded_base_units || '0'),
     },
     cycles: normalizeCycles(cycles),
+    drawCommitments: normalizeDrawCommitments(drawCommitments),
     sources: normalizeSources(sources),
     sourceCertifications: normalizeSourceCertifications(sourceCertifications),
     registryHash: registryHash && /^[0-9a-f]{64}$/.test(registryHash) ? registryHash : null,
