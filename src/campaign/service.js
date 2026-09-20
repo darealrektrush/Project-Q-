@@ -43,7 +43,7 @@ export async function getCampaignRuntime(client, {
   };
 }
 
-const EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS = 15_000_000_000_000n;
+const EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS = 17_500_000_000_000n;
 const PUBLIC_READINESS_KEYS = new Set([
   'rules', 'funding', 'registry', 'sources', 'dates', 'app', 'wallet', 'settlement',
   'burn-rules', 'burn-progress', 'burn-verification',
@@ -140,7 +140,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
 
   const checks = [
     { key: 'rules', label: 'Final rules complete and hash-matched', ready: rulesReady },
-    { key: 'funding', label: '15,000,000 FAWKQ funding verified', ready: funded === EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS },
+    { key: 'funding', label: '17,500,000 FAWKQ Squads vault funding verified', ready: funded === EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS },
     { key: 'registry', label: 'Deployment and vault registry complete', ready: registryReady },
     {
       key: 'sources',
