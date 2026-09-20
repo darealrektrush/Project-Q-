@@ -318,6 +318,15 @@ begin
     or p_amount_lamports <> expected_amount
   then raise exception 'impact receipt does not match locked recipient and amount'; end if;
 
+  if p_proof->>'recipient' is distinct from p_recipient_address
+    or p_proof->>'amountLamports' is distinct from p_amount_lamports::text
+    or p_proof->>'signature' is distinct from p_transaction_signature
+    or p_proof->>'slot' is distinct from p_slot::text
+    or p_proof->>'blockTime' is distinct from p_block_time::text
+    or p_proof->>'instructionType' is distinct from 'system-transfer'
+    or p_proof->>'finalized' is distinct from 'true'
+  then raise exception 'impact receipt proof does not reconcile'; end if;
+
   insert into public.campaign_impact_receipts(
     campaign_id, receipt_type, telegram_user_id, profile_id,
     recipient_address, amount_lamports, transaction_signature,
