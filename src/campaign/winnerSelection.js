@@ -62,7 +62,8 @@ export function selectCycleWinners({ campaignId, cycleId, profiles, publicSeed, 
     throw new Error('invalid prior cycle winner id');
   }
 
-  const eligible = normalizedCandidates(profiles)
+  const normalized = normalizedCandidates(profiles);
+  const eligible = normalized
     .filter(({ eligible, telegramUserId }) => eligible && !cooldownIds.has(telegramUserId));
   if (eligible.length < TOP_WINNERS + DRAW_WINNERS) {
     throw new Error('at least five eligible profiles are required after cooldown');
@@ -109,7 +110,7 @@ export function selectCycleWinners({ campaignId, cycleId, profiles, publicSeed, 
     seedHash,
     candidateCount: eligible.length,
     top15Count: top15.length,
-    cooldownExcludedCount: normalizedCandidates(profiles)
+    cooldownExcludedCount: normalized
       .filter(({ eligible, telegramUserId }) => eligible && cooldownIds.has(telegramUserId)).length,
     winners: [
       ...top.map((profile, index) => ({
