@@ -157,3 +157,10 @@ test('funding mutations are disabled by default and call only audited RPCs when 
   assert.equal(calls[1].fn, 'finalize_campaign_funding');
   assert.equal(calls.length, 2);
 });
+
+
+test('Render keeps funding governance mutations disabled by default', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const yaml = await readFile(new URL('../render.yaml', import.meta.url), 'utf8');
+  assert.match(yaml, /PROJECT_Q_FUNDING_GOVERNANCE_ENABLED[\s\S]*value: "false"/);
+});
