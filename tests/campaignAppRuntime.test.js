@@ -204,7 +204,8 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
     assert.match(detail, /Requirements/);
     assert.match(detail, /Only verified Project Q records count/);
   }
-  assert.match(context.__missionDetails['website-voting'], /Up to 11 XP/);
+  assert.match(context.__missionDetails['website-voting'], /1 XP per accepted source/);
+  assert.match(context.__missionDetails['website-voting'], /available-source completion/);
   assert.match(context.__missionDetails['website-voting'], /Registered sources/);
   assert.match(context.__missionDetails['website-voting'], /GeckoTerminal/);
   assert.match(context.__missionDetails['website-voting'], /CoinScope/);
