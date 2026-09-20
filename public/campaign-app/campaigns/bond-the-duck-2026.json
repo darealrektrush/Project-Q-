@@ -619,5 +619,29 @@
       "actionLabel": "View public ledger",
       "readOnlyAction": true
     }
-  ]
+  ],
+  "draw": {
+    "protocolVersion": "bond-draw-v1",
+    "commitmentHash": "SHA-256",
+    "commitmentDomain": "bond-draw-commit-v1",
+    "commitmentCount": 5,
+    "commitBeforeCycleOpen": true,
+    "allCommitmentsBeforeActivation": true,
+    "cutoffRule": "FIRST_FINALIZED_SOLANA_BLOCK_AT_OR_AFTER_CYCLE_CLOSE",
+    "previousFinalizedBlockRequired": true,
+    "revealWindowMinutes": 30,
+    "revealAffectsSeed": false,
+    "fallbackPolicy": "SAME_SEED_MARK_FALLBACK_IF_REVEAL_MISSING_OR_LATE",
+    "seedHash": "SHA-256",
+    "seedDomain": "bond-draw-seed-v1",
+    "seedInputs": [
+      "campaignId",
+      "cycleId",
+      "commitHash",
+      "cutoffSlot",
+      "cutoffBlockhash"
+    ],
+    "weightedDrawPool": "RANKS_3_TO_15",
+    "priorWinnerCooldownCycles": 1
+  }
 }
