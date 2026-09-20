@@ -45,7 +45,15 @@ export async function settleCampaignBagworkXp(client, campaignId, { limit = 500 
         p_submission_id: payout.submission_id,
       });
       const row = Array.isArray(result) ? result[0] ?? null : result;
-      if (row) settled.push({ submissionId: payout.submission_id, ...row });
+      if (row) {
+        const amount = Number(row.creditedXp ?? row.credited_xp ?? 0);
+        settled.push({
+          submissionId: payout.submission_id,
+          ...row,
+          credited: row.status === 'CREDITED' && amount > 0,
+          amount,
+        });
+      }
     } catch (error) {
       pending.push({ submissionId: payout.submission_id, reason: String(error?.message || 'settlement failed') });
     }
