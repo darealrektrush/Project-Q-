@@ -1,5 +1,6 @@
 import { hashRegistry, validateRegistry } from './registry.js';
 import { createCampaignReadinessReport } from './readinessReport.js';
+import { evaluateBondDrawCommitments } from './drawReadiness.js';
 import { rulesetRowMatchesCampaign } from './rules.js';
 import { evaluateSourceCertifications } from './sourceCertifications.js';
 import { campaignDayKey, loadDailyXpUsage } from './xpCaps.js';
@@ -45,7 +46,7 @@ export async function getCampaignRuntime(client, {
 
 const EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS = 17_500_000_000_000n;
 const PUBLIC_READINESS_KEYS = new Set([
-  'rules', 'funding', 'registry', 'sources', 'dates', 'app', 'wallet', 'settlement',
+  'rules', 'funding', 'registry', 'sources', 'dates', 'draw-commitments', 'app', 'wallet', 'settlement',
   'burn-rules', 'burn-progress', 'burn-verification',
 ]);
 
@@ -57,7 +58,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
   const id = campaignId();
   const [
     campaignRows, rulesetRows, cycleRows, sourceRows, sourceCertificationRows,
-    burnProgramRows,
+    drawCommitmentRows, burnProgramRows,
   ] = await Promise.all([
     client.select(
       'campaigns',
@@ -77,6 +78,10 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
       `?campaign_id=eq.${encodeURIComponent(id)}` +
         '&select=id,campaign_id,source_key,source_kind,classification,health,evidence_url,evidence_hash,checked_at,expires_at' +
         '&order=checked_at.desc,id.desc&limit=500'
+    ),
+    client.select(
+      'campaign_cycle_draw_commitments',
+      `?campaign_id=eq.${encodeURIComponent(id)}&select=campaign_id,cycle_id,protocol_version,commit_hash,committed_at&order=cycle_id.asc&limit=5`
     ),
     client.select(
       'earn_to_burn_programs',
@@ -101,6 +106,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
     sourceCertificationRows
   );
   const datesReady = campaignScheduleCanStillLaunch(cycleRows, now);
+  const drawCommitmentState = evaluateBondDrawCommitments(cycleRows, drawCommitmentRows, id);
   let registryReady = false;
   let registryHash = null;
   try {
@@ -155,6 +161,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
       ready: sourceCertificationState.ready,
     },
     { key: 'dates', label: `${EXPECTED_CYCLES} locked 48-hour cycles scheduled for launch`, ready: datesReady },
+    { key: 'draw-commitments', label: 'Five pre-open draw commitments recorded', ready: drawCommitmentState.ready },
     { key: 'app', label: 'Campaign app enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_APP_ENABLED) },
     { key: 'wallet', label: 'Oracle wallet events enabled', ready: enabled(env.PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED) },
     { key: 'settlement', label: 'Campaign XP settlement enabled', ready: enabled(env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED) },
@@ -175,6 +182,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
     campaign,
     checks,
     cycles: cycleRows,
+    drawCommitments: drawCommitmentState.commitments,
     sources: sourceRows,
     sourceCertifications: sourceCertificationState.latestCertifications,
     registryHash,
