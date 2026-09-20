@@ -71,6 +71,10 @@ const state = {
     telegramVerified: false,
     xVerified: false,
     walletVerified: false,
+    campaignReady: false,
+    holderEligible: false,
+    rewardEligible: false,
+    holderEligibility: null,
     tokenAccountReady: false,
     tokenAccount: null,
     xp: 0,
@@ -727,7 +731,7 @@ function profileScreen() {
   const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
   return `<section class="profile-command command-card"><div><span class="label">Project Q participant</span><h2>${escapeHtml(p.name)}</h2><p>Identity, eligibility, verified activity and rewards in one Project Q record.</p>${statePill(`${count}/3 ID`, fullyVerified ? 'success' : 'pending')}</div><img src="/campaign-app/assets/system/q-id.webp" alt="Project Q identity" /></section>
-  <section class="profile-summary">${metric('Verified XP', Number(p.xp || 0).toLocaleString())}${metric('Overall rank', escapeHtml(p.rank))}${metric('Missions', Number(p.completedMissions || 0))}${metric('Eligibility', p.tokenAccountReady ? 'Ready' : 'Pending')}</section>
+  <section class="profile-summary">${metric('Verified XP', Number(p.xp || 0).toLocaleString())}${metric('Overall rank', escapeHtml(p.rank))}${metric('Missions', Number(p.completedMissions || 0))}${metric('Eligibility', p.rewardEligible ? 'Reward ready' : p.campaignReady ? 'Holder gate' : 'Identity pending')}</section>
   ${profileTabs()}${content}`;
 }
 
@@ -1158,7 +1162,7 @@ async function loadWalletStatus() {
     state.walletStatus = {
       available: false, network: 'mainnet-beta', mint: state.campaign?.earnToBurn?.mint || null,
       tokenProgramId: state.campaign?.earnToBurn?.tokenProgramId || null,
-      decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, observedAt: null,
+      decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, primaryTokenAccount: null, holderEligible: false, observedAt: null,
     };
     return false;
   }
@@ -1170,6 +1174,12 @@ async function loadWalletStatus() {
     const payload = await response.json();
     if (!response.ok || !payload.status?.available) throw new Error('wallet status unavailable');
     state.walletStatus = payload.status;
+    state.profile.holderEligible = Boolean(payload.status.holderEligible);
+    state.profile.rewardEligible = Boolean(state.profile.campaignReady && payload.status.holderEligible);
+    if (payload.status.primaryTokenAccount) {
+      state.profile.tokenAccountReady = true;
+      state.profile.tokenAccount = payload.status.primaryTokenAccount;
+    }
     return true;
   } catch {
     state.walletStatus = {
@@ -1195,6 +1205,10 @@ async function authenticateTelegram() {
     state.profile.telegramVerified = true;
     state.profile.xVerified = Boolean(session.participant?.xVerified);
     state.profile.walletVerified = Boolean(session.participant?.walletVerified);
+    state.profile.campaignReady = Boolean(session.participant?.campaignReady);
+    state.profile.holderEligible = Boolean(session.participant?.holderEligible);
+    state.profile.rewardEligible = Boolean(session.participant?.rewardEligible);
+    state.profile.holderEligibility = session.participant?.holderEligibility || null;
     state.profile.tokenAccountReady = Boolean(session.participant?.tokenAccountReady);
     state.profile.tokenAccount = session.participant?.fawkqTokenAccount || null;
     state.walletManagedByOracle = session.capabilities?.walletManagedByOracle === true;

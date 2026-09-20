@@ -282,7 +282,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
   const allocationOwnerFilter = identity?.reward_wallet
     ? `&or=(telegram_user_id.eq.${encodeURIComponent(userId)},reward_wallet.eq.${encodeURIComponent(identity.reward_wallet)})`
     : `&telegram_user_id=eq.${encodeURIComponent(userId)}`;
-  const [xpRows, ledgerRows, xpDetailRows, rawAllocationRows, positionRows, dailyXp, campaignRows] = await Promise.all([
+  const [xpRows, ledgerRows, xpDetailRows, rawAllocationRows, positionRows, holderRows, dailyXp, campaignRows] = await Promise.all([
     client.select(
       'campaign_xp_totals',
       `?campaign_id=eq.${encodeURIComponent(id)}&telegram_user_id=eq.${encodeURIComponent(userId)}` +
@@ -308,6 +308,12 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
       'positions',
       `?campaign_id=eq.${encodeURIComponent(id)}${walletFilter}` +
         '&select=eligible_bought_base_units,eligible_sold_base_units,net_buy_lamports,tier,weight,snapshot_usd,eligible&limit=1'
+    ),
+    client.select(
+      'campaign_holder_eligibility_events',
+      `?campaign_id=eq.${encodeURIComponent(id)}&telegram_user_id=eq.${encodeURIComponent(userId)}` +
+        '&select=eligible,balance_base_units,price_usd_scaled,price_scale,minimum_usd_cents,token_account,observed_at' +
+        '&order=observed_at.desc,id.desc&limit=1'
     ),
     loadDailyXpUsage(client, id, userId, campaignDayKey(now)),
     client.select('campaigns', `?id=eq.${encodeURIComponent(id)}&select=state&limit=1`),
@@ -357,6 +363,9 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
   const distributedReleases = releaseRows.filter(({ status }) => ['paid', 'recovered'].includes(status));
   const failedReleases = releaseRows.filter(({ status }) => status === 'failed');
   const completedMissionCodes = [...new Set(xpDetailRows.map((row) => row.mission_code).filter(Boolean))];
+  const holderEligibility = holderRows[0] ?? null;
+  const identityReady = Boolean(identity?.profile_id && identity?.x_verified_at && identity?.wallet_verified_at);
+  const holderEligible = Boolean(holderEligibility?.eligible);
   return {
     profileId: identity?.profile_id ?? null,
     enrolled: Boolean(identity),
@@ -419,7 +428,17 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     },
     buyToEarn: positionRows[0] ?? null,
     campaignState: campaignRows[0]?.state ?? 'DRAFT',
-    campaignReady: Boolean(identity?.profile_id && identity?.x_verified_at && identity?.wallet_verified_at),
+    campaignReady: identityReady,
+    holderEligible,
+    rewardEligible: identityReady && holderEligible,
+    holderEligibility: holderEligibility ? {
+      balanceBaseUnits: String(holderEligibility.balance_base_units ?? '0'),
+      priceUsdScaled: String(holderEligibility.price_usd_scaled ?? '0'),
+      priceScale: Number(holderEligibility.price_scale ?? 0),
+      minimumUsdCents: Number(holderEligibility.minimum_usd_cents ?? 200),
+      tokenAccount: holderEligibility.token_account ?? null,
+      observedAt: holderEligibility.observed_at ?? null,
+    } : null,
   };
 }
 
@@ -457,7 +476,7 @@ export function closedParticipantStatus() {
     allocationByCategory: {}, rewards: { recorded: false, allocatedBaseUnits: null,
       scheduledBaseUnits: null, distributedBaseUnits: null, failedBaseUnits: null,
       releaseCount: 0, receiptCount: 0, releases: [] }, buyToEarn: null, campaignState: 'DRAFT',
-    campaignReady: false, unavailable: true,
+    campaignReady: false, holderEligible: false, rewardEligible: false, holderEligibility: null, unavailable: true,
   };
 }
 

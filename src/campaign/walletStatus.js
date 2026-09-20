@@ -16,6 +16,7 @@ export function closedFawkqWalletStatus() {
     decimals: FAWKQ_DECIMALS,
     balanceBaseUnits: null,
     tokenAccountCount: 0,
+    primaryTokenAccount: null,
     observedAt: null,
   };
 }
@@ -37,6 +38,7 @@ export async function getFawkqWalletStatus(connection, wallet, { now = new Date(
 
   let balance = 0n;
   let tokenAccountCount = 0;
+  const tokenAccounts = [];
   for (const account of response?.value ?? []) {
     const info = account?.account?.data?.parsed?.info;
     if (!info || info.mint !== FAWKQ_MINT || info.owner !== owner.toBase58()) continue;
@@ -44,6 +46,8 @@ export async function getFawkqWalletStatus(connection, wallet, { now = new Date(
     if (!BASE_UNITS.test(amount)) throw new Error('invalid token balance');
     balance += BigInt(amount);
     tokenAccountCount += 1;
+    const accountAddress = account?.pubkey?.toBase58?.() ?? String(account?.pubkey ?? '');
+    if (accountAddress) tokenAccounts.push(accountAddress);
   }
 
   return {
@@ -54,6 +58,7 @@ export async function getFawkqWalletStatus(connection, wallet, { now = new Date(
     decimals: FAWKQ_DECIMALS,
     balanceBaseUnits: balance.toString(),
     tokenAccountCount,
+    primaryTokenAccount: tokenAccounts.sort()[0] ?? null,
     observedAt: now.toISOString(),
   };
 }
