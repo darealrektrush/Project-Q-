@@ -18,14 +18,15 @@ test('missing campaign row remains safely in DRAFT', async () => {
   assert.equal((await getCampaignStatus(client)).state, 'DRAFT');
 });
 
-test('public runtime uses server time and never treats a draft calendar window as operational', async () => {
+test('public runtime stays pre-launch until authoritative cycle rows exist', async () => {
   const client = { select: async (table) => table === 'campaigns'
     ? [{ id: 'bond-the-duck-2026', state: 'DRAFT' }]
     : [] };
-  const runtime = await getCampaignRuntime(client, { now: new Date('2026-09-02T15:00:00Z') });
-  assert.equal(runtime.serverNow, '2026-09-02T15:00:00.000Z');
-  assert.equal(runtime.schedule.currentCycle, 1);
-  assert.equal(runtime.displayLabel, 'LAUNCH BLOCKED');
+  const runtime = await getCampaignRuntime(client, { now: new Date('2026-09-19T23:00:00Z') });
+  assert.equal(runtime.serverNow, '2026-09-19T23:00:00.000Z');
+  assert.equal(runtime.schedule.currentCycle, null);
+  assert.equal(runtime.displayLabel, 'PRE-LAUNCH');
+  assert.equal(runtime.scheduleReady, false);
   assert.equal(runtime.operational, false);
 });
 

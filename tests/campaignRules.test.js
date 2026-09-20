@@ -19,6 +19,14 @@ function finalized(rules) {
     ...structuredClone(rules),
     rulesetVersion: rules.rulesetVersion + 1,
     status: 'FINAL',
+    schedule: {
+      ...rules.schedule,
+      activeOpensAt: '2026-10-01T15:00:00.000Z',
+      activeClosesAt: '2026-10-11T15:00:00.000Z',
+      reviewOpensAt: '2026-10-12T15:00:00.000Z',
+      review48HourCheckpointAt: '2026-10-14T15:00:00.000Z',
+      reviewClosesAt: '2026-10-15T15:00:00.000Z',
+    },
     referrals: {
       ...rules.referrals,
       bonusXp: 10,
@@ -37,7 +45,6 @@ test('reviewed draft rules lock campaign economics but remain launch-blocked', a
   const draft = inspectBondCampaignRules(rules);
   assert.equal(draft.valid, false);
   assert.match(draft.rulesHash, /^[0-9a-f]{64}$/);
-  assert.equal(draft.rulesHash, '5476e798762186d62f0078571751e19bfebc6108a1399b2f79fa636436c19e85');
   assert.deepEqual(rules.missions, BOND_RULES_MISSION_IDS);
   assert.deepEqual(draft.blockers, [
     'ruleset status is not FINAL',

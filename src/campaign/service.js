@@ -39,7 +39,7 @@ export async function getCampaignRuntime(client, {
   return {
     campaignId: campaign.id,
     serverNow: new Date(now).toISOString(),
-    ...getCampaignRuntimeState(campaign.state, now, { participationEnabled, scheduleReady }),
+    ...getCampaignRuntimeState(campaign.state, now, { participationEnabled, scheduleReady, cycles: cycleRows }),
   };
 }
 
