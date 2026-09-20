@@ -90,6 +90,18 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.equal(campaign.activeDays, 10);
   assert.deepEqual(campaign.reviewWindowHours, { minimum: 48, maximum: 72 });
   assert.equal(campaign.lifecycleDays, 14);
+  assert.equal(campaign.draw.protocolVersion, 'bond-draw-v1');
+  assert.equal(campaign.draw.commitmentCount, 5);
+  assert.equal(campaign.draw.commitBeforeCycleOpen, true);
+  assert.equal(campaign.draw.allCommitmentsBeforeActivation, true);
+  assert.equal(campaign.draw.cutoffRule, 'FIRST_FINALIZED_SOLANA_BLOCK_AT_OR_AFTER_CYCLE_CLOSE');
+  assert.equal(campaign.draw.previousFinalizedBlockRequired, true);
+  assert.equal(campaign.draw.revealWindowMinutes, 30);
+  assert.equal(campaign.draw.revealAffectsSeed, false);
+  assert.equal(campaign.draw.fallbackPolicy, 'SAME_SEED_MARK_FALLBACK_IF_REVEAL_MISSING_OR_LATE');
+  assert.deepEqual(campaign.draw.seedInputs, ['campaignId','cycleId','commitHash','cutoffSlot','cutoffBlockhash']);
+  assert.equal(campaign.draw.weightedDrawPool, 'RANKS_3_TO_15');
+  assert.equal(campaign.draw.priorWinnerCooldownCycles, 1);
   assert.equal(campaign.schedule.timeZone, 'America/Vancouver');
   assert.equal(campaign.schedule.activeLabel, 'Final dates pending · 10 active days');
   assert.equal(campaign.schedule.reviewLabel, '48–72 hours after campaign handoff');
