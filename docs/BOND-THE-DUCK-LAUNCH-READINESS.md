@@ -16,9 +16,9 @@ service and moves no funds. It is a release prerequisite, not evidence that the 
 bridges are enabled. A controlled production canary is still required before campaign
 activation.
 
-Project Q evaluates eleven public launch gates across three controlled layers:
+Project Q evaluates twelve public launch gates across three controlled layers:
 
-1. Campaign foundation: rules, funding, deployment registry, certified sources and the locked schedule.
+1. Campaign foundation: rules, funding, deployment registry, certified sources, the locked schedule and five pre-open draw commitments.
 2. Participation rails: Mini App access, wallet verification and campaign XP settlement.
 3. Earn to Burn: approved rules/source/founders/milestones, progress accounting and on-chain verification.
 
@@ -28,8 +28,8 @@ evidence URLs, participant identifiers, service credentials or founder IDs.
 
 ## Readiness fingerprint
 
-`bond-readiness-v2` hashes the authoritative campaign rules/funding state,
-five cycle boundaries, source classifications, the latest source
+`bond-readiness-v3` hashes the authoritative campaign rules/funding state,
+five cycle boundaries, the five pre-open draw commitments, source classifications, the latest source
 certification evidence hashes and validity windows, registry hash, Earn to
 Burn configuration and deployment-gate state. Arrays and flag keys are
 normalized before hashing, so record ordering does not alter the fingerprint.
@@ -37,6 +37,10 @@ normalized before hashing, so record ordering does not alter the fingerprint.
 Any material evidence or gate change produces a different fingerprint. The
 authorized Telegram admin view shows the complete fingerprint so two founder
 decisions can reference the exact reviewed state.
+
+## Draw-commitment readiness
+
+The launch fingerprint includes the exact five `bond-draw-v1` commitment hashes. Each commitment must be recorded before its cycle opens and all five must exist before activation. Commitment rows are normalized by cycle ID and included in the readiness SHA-256 fingerprint, so changing any commitment hash or timestamp changes the reviewed state and requires fresh founder approvals.
 
 ## Two-founder approval ledger
 
@@ -46,7 +50,7 @@ and an append-only `APPROVE` / `HOLD` ledger. Decisions are accepted only when:
 - the dedicated Render feature flag is explicitly enabled;
 - the request comes from an authorized founder in a private Telegram chat;
 - the campaign is `SCHEDULED`;
-- all eleven readiness gates pass; and
+- all twelve readiness gates pass; and
 - the decision names the current report version and complete SHA-256 hash.
 
 The latest decision by each enabled founder controls the result. A later
