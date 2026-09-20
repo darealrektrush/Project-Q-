@@ -200,10 +200,10 @@ test('a complete evidence report produces rows accepted by registry validation a
   assert.equal(report.complete, false);
   assert.equal(report.registryHash, null);
   assert.equal(report.entries.length, 0);
-  assert.equal(
-    report.fields.filter(({ status }) => status === REGISTRY_EVIDENCE_STATUS.BLOCKED).length >= 3,
-    true
-  );
+  const blockedFields = report.fields
+    .filter(({ status }) => status === REGISTRY_EVIDENCE_STATUS.BLOCKED)
+    .map(({ field }) => field);
+  assert.ok(blockedFields.includes('approved_secondary_markets'));
 
   // The subset already proven is individually registry-safe.
   const proven = report.fields
