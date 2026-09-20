@@ -190,8 +190,16 @@ security invoker
 set search_path = '' as $$
 declare
   result public.campaigns;
+  campaign_row public.campaigns;
   commitment_count integer;
+  cycle_count integer;
 begin
+
+  select * into campaign_row
+  from public.campaigns
+  where id = p_campaign_id
+  for update;
+  if not found then raise exception 'campaign missing'; end if;
   if p_evidence is null or p_evidence = '{}'::jsonb then
     raise exception 'exit evidence required';
   end if;
@@ -207,7 +215,9 @@ begin
     ]) then
       raise exception 'complete funding evidence required';
     end if;
-    if (p_evidence->>'fundedBaseUnits')::numeric <> 17500000000000
+    if campaign_row.funded_base_units <> 17500000000000
+      or (p_evidence->>'fundedBaseUnits')::numeric <> campaign_row.funded_base_units
+      or (p_evidence->>'fundedBaseUnits')::numeric <> 17500000000000
       or (p_evidence->>'expectedFundedBaseUnits')::numeric <> 17500000000000
       or (p_evidence->>'squadsCommunityVaultBaseUnits')::numeric <> 17500000000000
       or (p_evidence->>'squadsApprovalThreshold')::integer <> 2
@@ -216,9 +226,20 @@ begin
     then raise exception 'funding evidence does not reconcile'; end if;
   end if;
 
-  if p_expected_state = 'FUNDED' and p_next_state = 'SCHEDULED'
-    and not (p_evidence ?& array['registryHash','sourcesCertifiedAt','publicTimesPublishedAt'])
-  then raise exception 'registry, source certification and public schedule evidence required'; end if;
+  if p_expected_state = 'FUNDED' and p_next_state = 'SCHEDULED' then
+    if not (p_evidence ?& array['registryHash','sourcesCertifiedAt','publicTimesPublishedAt']) then
+      raise exception 'registry, source certification and public schedule evidence required';
+    end if;
+    if campaign_row.registry_version is null then
+      raise exception 'selected deployment registry version is required before scheduling';
+    end if;
+    select count(*) into cycle_count
+    from public.cycles
+    where campaign_id = p_campaign_id;
+    if p_campaign_id = 'bond-the-duck-2026' and cycle_count <> 5 then
+      raise exception 'Bond scheduling requires exactly five campaign cycles';
+    end if;
+  end if;
 
   if p_expected_state = 'SCHEDULED' and p_next_state = 'ACTIVE' then
     if not (p_evidence ?& array['readinessReportVersion','readinessReportHash','founderApprovals'])
