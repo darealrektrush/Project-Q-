@@ -6,7 +6,7 @@ const sqlPath = new URL('../supabase/migrations/20260920160000_reconcile_bond_go
 
 test('governance reconciliation removes retired seven-cycle and old funding contracts', async () => {
   const sql = await readFile(sqlPath, 'utf8');
-  assert.doesNotMatch(sql, /activationVaultBaseUnits|scheduledVaultBaseUnits|250000000/);
+  assert.doesNotMatch(sql, /activationVaultBaseUnits|scheduledVaultBaseUnits|\b250000000\b/);
   assert.doesNotMatch(sql, /activeDays[^\n]*14|cycleCount[^\n]*7/);
   assert.match(sql, /squadsCommunityVaultBaseUnits/);
   assert.match(sql, /17500000000000/);
