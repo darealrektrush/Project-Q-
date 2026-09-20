@@ -18,7 +18,8 @@
     "rehearse:bond-25": "node scripts/rehearse-bond-25-profiles.js",
     "test": "node --test tests/*.test.js",
     "check": "npm test",
-    "audit:bond-registry": "node scripts/audit-bond-registry.js"
+    "audit:bond-registry": "node scripts/audit-bond-registry.js",
+    "audit:bond-sources": "node scripts/audit-bond-source-certifications.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.3",
