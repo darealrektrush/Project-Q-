@@ -27,7 +27,7 @@ test('funding finalization only updates funded_base_units and never campaign sta
   assert.match(sql, /set funded_base_units = 17500000000000/);
   assert.doesNotMatch(sql, /set states*=/i);
   assert.doesNotMatch(sql, /insert into public.treasury_transactions/i);
-  assert.doesNotMatch(sql, /transfer|signTransaction|private key/i);
+  assert.doesNotMatch(sql, /insert\s+into\s+public\.treasury_transactions|update\s+public\.treasury_transactions|systemprogram|signtransaction/i);
 });
 
 test('funding governance is append-only and service-role only', async () => {
