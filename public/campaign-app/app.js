@@ -21,8 +21,8 @@ const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
 const READINESS_GROUPS = [
   {
     id: 'foundation', label: 'Campaign foundation', number: '01',
-    description: 'Rules, funding, registry evidence, certified sources and the locked five-cycle schedule.',
-    keys: ['rules', 'funding', 'registry', 'sources', 'dates'],
+    description: 'Rules, funding, registry evidence, certified sources, the locked five-cycle schedule and pre-open draw commitments.',
+    keys: ['rules', 'funding', 'registry', 'sources', 'dates', 'draw-commitments'],
   },
   {
     id: 'operations', label: 'Participation rails', number: '02',

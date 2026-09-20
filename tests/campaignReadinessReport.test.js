@@ -21,6 +21,16 @@ function fixture() {
       { cycle_id: 2, opens_at: '2026-09-03T15:00:00Z', closes_at: '2026-09-05T15:00:00Z' },
       { cycle_id: 1, opens_at: '2026-09-01T15:00:00Z', closes_at: '2026-09-03T15:00:00Z' },
     ],
+    drawCommitments: [
+      {
+        campaign_id: 'bond-the-duck-2026', cycle_id: 2, protocol_version: 'bond-draw-v1',
+        commit_hash: 'e'.repeat(64), committed_at: '2026-08-31T12:00:00Z',
+      },
+      {
+        campaign_id: 'bond-the-duck-2026', cycle_id: 1, protocol_version: 'bond-draw-v1',
+        commit_hash: 'f'.repeat(64), committed_at: '2026-08-31T12:00:00Z',
+      },
+    ],
     sources: [
       { source_key: 'vote-b', source: 'vote', classification: 'MACHINE_VERIFIED' },
       { source_key: 'vote-a', source: 'vote', classification: 'MACHINE_VERIFIED' },
@@ -47,6 +57,7 @@ test('readiness report hash is deterministic across evidence ordering', () => {
   const second = fixture();
   second.checks.reverse();
   second.cycles.reverse();
+  second.drawCommitments.reverse();
   second.sources.reverse();
   second.sourceCertifications.reverse();
   second.flags = { campaignApp: false, walletVerification: false };
@@ -70,4 +81,8 @@ test('readiness report hash changes when an evidence-bound gate changes', () => 
   const changedCertification = fixture();
   changedCertification.sourceCertifications[0].health = 'OFFLINE';
   assert.notEqual(createCampaignReadinessReport(changedCertification).reportHash, baseline);
+
+  const changedDraw = fixture();
+  changedDraw.drawCommitments[0].commit_hash = '1'.repeat(64);
+  assert.notEqual(createCampaignReadinessReport(changedDraw).reportHash, baseline);
 });

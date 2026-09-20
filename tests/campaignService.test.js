@@ -213,6 +213,7 @@ test('campaign readiness stays blocked while dates and launch flags are intentio
   assert.equal(readiness.readyCount, 2);
   assert.equal(readiness.checks.find(({ key }) => key === 'rules').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'dates').ready, false);
+  assert.equal(readiness.checks.find(({ key }) => key === 'draw-commitments').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-rules').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-progress').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-verification').ready, false);
@@ -240,6 +241,7 @@ test('campaign readiness uses only the selected deployment registry version and 
       }];
       if (table === 'ruleset_versions' || table === 'cycles'
         || table === 'verification_sources' || table === 'verification_source_certifications'
+        || table === 'campaign_cycle_draw_commitments'
         || table === 'earn_to_burn_programs') return [];
       if (table === 'deployment_registry') {
         assert.match(query, /version=eq\.2/);
