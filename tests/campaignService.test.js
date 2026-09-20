@@ -183,7 +183,7 @@ test('campaign readiness stays blocked while dates and launch flags are intentio
     select: async (table) => {
       if (table === 'campaigns') return [{
         id: 'bond-the-duck-2026', state: 'DRAFT', rules_hash: 'a'.repeat(64),
-        ruleset_version: 1, funded_base_units: '15000000000000',
+        ruleset_version: 1, funded_base_units: '17500000000000',
       }];
       if (table === 'ruleset_versions') return [];
       if (table === 'cycles') return [];
