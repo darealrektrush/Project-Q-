@@ -138,7 +138,7 @@ test('selection remains blocked until cycle close and cutoff evidence are presen
       buyToEarnMode: 'WEIGHT_ONLY',
       publicSeed: drawFinalization.public_seed,
     }),
-    /cutoff and public draw evidence/
+    /cutoff and finalized public draw evidence/
   );
 
   const noCutoff = snapshot({
@@ -187,7 +187,7 @@ test('selection preconditions fail when fewer than three weighted profiles remai
   assert.throws(
     () => planWeightOnlyCycleSelection(result, {
       buyToEarnMode: 'WEIGHT_ONLY',
-      publicSeed: 'verified-public-draw-seed-12345',
+      publicSeed: drawFinalization.public_seed,
     }),
     /preconditions/
   );
