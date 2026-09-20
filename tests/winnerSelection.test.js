@@ -31,6 +31,31 @@ test('selects top two plus exactly three unique weighted-draw winners', () => {
   assert.equal(result.audit.length, 3);
 });
 
+test('weighted draw is limited to ranks 3 through 15 only', () => {
+  const candidates = profiles.map((profile, index) => ({
+    ...profile,
+    // Ranks 16+ get huge weights; they must still never enter the draw pool.
+    weight: index >= 15 ? 1000 : 1,
+  }));
+  const result = select({ profiles: candidates });
+  const allowed = new Set(candidates.slice(2, 15).map(({ telegramUserId }) => telegramUserId));
+  const weighted = result.winners.filter(({ selection }) => selection === 'weighted_draw');
+  assert.equal(weighted.length, 3);
+  assert.ok(weighted.every(({ telegramUserId }) => allowed.has(telegramUserId)));
+  assert.equal(result.top15Count, 15);
+});
+
+test('one-cycle cooldown excludes every prior-cycle winner before ranking and draw', () => {
+  const priorCycleWinnerIds = ['1000', '1001', '1005', '1006', '1007'];
+  const result = select({ priorCycleWinnerIds });
+  assert.equal(result.cooldownExcludedCount, priorCycleWinnerIds.length);
+  assert.ok(!result.winners.some(({ telegramUserId }) => priorCycleWinnerIds.includes(telegramUserId)));
+  assert.deepEqual(
+    result.winners.slice(0, 2).map(({ telegramUserId }) => telegramUserId),
+    ['1002', '1003']
+  );
+});
+
 test('selection is reproducible and independent of input order', () => {
   assert.deepEqual(select(), select({ profiles: [...profiles].reverse() }));
   assert.notDeepEqual(
@@ -58,6 +83,7 @@ test('ties use stable Telegram identity ordering', () => {
 test('fails closed on duplicates, too few candidates, or insufficient weighted profiles', () => {
   assert.throws(() => select({ profiles: [...profiles, profiles[0]] }), /duplicate/);
   assert.throws(() => select({ profiles: profiles.slice(0, 4) }), /five eligible/);
+  assert.throws(() => select({ priorCycleWinnerIds: ['bad-id'] }), /invalid prior cycle winner/);
   assert.throws(() => select({ profiles: profiles.map((profile, index) => ({
     ...profile,
     weight: index < 4 ? 1 : 0,
