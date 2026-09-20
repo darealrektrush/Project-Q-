@@ -2,6 +2,20 @@
 
 Status: pre-launch, fail-closed implementation. All mutation flags remain off.
 
+## Oracle → Project Q integration canary
+
+`npm run rehearse:oracle-project-q` exercises the production identity, Oracle-wallet
+and campaign-XP export modules together with deterministic in-memory adapters. It
+proves that one Telegram actor keeps the same permanent `profile_id`, Project Q
+accepts only Oracle's bounded verified-wallet fact, the XP payload remains bounded,
+Oracle's receipt is recorded, and replaying the same idempotency key resolves to the
+original receipt without creating a second permanent XP event.
+
+The canary performs no Supabase writes, changes no feature flags, calls no production
+service and moves no funds. It is a release prerequisite, not evidence that the live
+bridges are enabled. A controlled production canary is still required before campaign
+activation.
+
 Project Q evaluates eleven public launch gates across three controlled layers:
 
 1. Campaign foundation: rules, funding, deployment registry, certified sources and the locked schedule.
