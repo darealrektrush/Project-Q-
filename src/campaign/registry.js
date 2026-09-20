@@ -48,3 +48,31 @@ export function hashRegistry(entries) {
   const normalized = validateRegistry(entries);
   return createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
 }
+
+
+export async function commitDeploymentRegistry(client, {
+  campaignId = 'bond-the-duck-2026',
+  version,
+  entries,
+} = {}) {
+  const id = String(campaignId || '').trim();
+  const numericVersion = Number(version);
+  if (!id || !Number.isSafeInteger(numericVersion) || numericVersion <= 0) {
+    throw new Error('invalid deployment registry commit identity');
+  }
+  const normalized = validateRegistry(entries, { requireComplete: true });
+  const registryHash = hashRegistry(normalized);
+  const result = await client.rpc('commit_campaign_deployment_registry', {
+    p_campaign_id: id,
+    p_version: numericVersion,
+    p_entries: normalized,
+    p_registry_hash: registryHash,
+  });
+  const row = Array.isArray(result) ? result[0] ?? null : result;
+  if (!row || Number(row.version) !== numericVersion
+    || String(row.registryHash || row.registry_hash || '') !== registryHash
+    || Number(row.fieldCount || row.field_count || 0) !== REQUIRED_REGISTRY_FIELDS.length) {
+    throw new Error('deployment registry commit did not reconcile');
+  }
+  return { ...row, registryHash };
+}
