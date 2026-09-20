@@ -119,7 +119,10 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.ok(campaign.missions.every(({ requirements }) => Array.isArray(requirements) && requirements.length === 3));
   assert.ok(campaign.missions.every(({ actionLabel, frequency }) => actionLabel && frequency));
   assert.equal(campaign.missions.filter(({ kind }) => kind === 'INDIVIDUAL').length, 8);
-  assert.equal(campaign.missions.find(({ id }) => id === 'website-voting').reward, 'Up to 11 XP');
+  const websiteVoting = campaign.missions.find(({ id }) => id === 'website-voting');
+  assert.equal(websiteVoting.status, '0 verified');
+  assert.equal(websiteVoting.reward, '1 XP per accepted source · +2 XP available-source completion');
+  assert.doesNotMatch(websiteVoting.reward, /11 XP/);
   const trendingBots = campaign.missions.find(({ id }) => id === 'trending-bots');
   assert.equal(campaign.xpCaps.trendingBotsDaily, 20);
   assert.equal(campaign.verificationSources.telegramBotFirstDailyXp, 2);
