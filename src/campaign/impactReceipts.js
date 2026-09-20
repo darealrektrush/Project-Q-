@@ -1,22 +1,8 @@
-import { createHash } from 'node:crypto';
-
 import { isEnabled } from '../lib/featureFlags.js';
 import { fetchAndVerifyNativeSolTransfer } from './impactSolanaProof.js';
 
 function firstRow(result) {
   return Array.isArray(result) ? result[0] ?? null : result;
-}
-
-function canonical(value) {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
-  }
-  return value;
-}
-
-function proofHash(proof) {
-  return createHash('sha256').update(JSON.stringify(canonical(proof))).digest('hex');
 }
 
 export function impactReceiptsEnabled(env = process.env) {
@@ -57,7 +43,6 @@ export async function verifyAndRecordImpactReceipt(
     recipient,
     amountLamports,
   });
-  const hash = proofHash(proof);
   const row = firstRow(await client.rpc('record_verified_campaign_impact_receipt', {
     p_campaign_id: campaignId,
     p_receipt_type: receiptType,
@@ -67,10 +52,9 @@ export async function verifyAndRecordImpactReceipt(
     p_slot: Number(proof.slot),
     p_block_time: proof.blockTime,
     p_proof: proof,
-    p_proof_hash: hash,
     p_recorded_by: Number(founderUserId),
   }));
-  return { receipt: row, proof, proofHash: hash };
+  return { receipt: row, proof, proofHash: row?.proof_hash ?? null };
 }
 
 export async function getImpactReceiptState(client, campaignId = 'bond-the-duck-2026') {
