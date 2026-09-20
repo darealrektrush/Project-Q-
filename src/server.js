@@ -21,6 +21,7 @@ import * as referrals from './campaign/referrals.js';
 import * as communityActivity from './campaign/communityActivity.js';
 import * as xInvite from './campaign/xInvite.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
+import { scheduleOraclePlatformOutbox } from './campaign/oraclePlatformOutbox.js';
 import { oracleProfileHandler, oracleProfileAppHandler } from './campaign/oracleProfile.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import {
@@ -1208,6 +1209,10 @@ telegram.validateTopicIds();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`project-q listening on :${PORT}`);
+  const outbox = scheduleOraclePlatformOutbox(supabase);
+  if (outbox.scheduled) {
+    console.log('[oracle-platform] durable event outbox publisher scheduled');
+  }
   try {
     const result = await reconcileTelegramWebhook();
     if (result.configured) {
