@@ -22,6 +22,12 @@ test('Bond draw timing is database-authoritative and direct inserts are revoked'
   assert.match(sql, /record_campaign_cycle_draw_cutoff\(text,integer,bigint,text,timestamptz,bigint,text,timestamptz\)/);
   assert.match(sql, /record_campaign_cycle_draw_reveal\(text,integer,text\)/);
 
-  assert.doesNotMatch(sql, /record_campaign_cycle_draw_commitment\(text,integer,text,timestamptz\).*grant execute/is);
-  assert.doesNotMatch(sql, /record_campaign_cycle_draw_reveal\(text,integer,text,timestamptz\).*grant execute/is);
+  assert.doesNotMatch(
+    sql,
+    /grant execute on function public\.record_campaign_cycle_draw_commitment\(text,integer,text,timestamptz\)/i
+  );
+  assert.doesNotMatch(
+    sql,
+    /grant execute on function public\.record_campaign_cycle_draw_reveal\(text,integer,text,timestamptz\)/i
+  );
 });
