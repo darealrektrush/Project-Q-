@@ -16,6 +16,7 @@
     "settle-community-activity": "node jobs/settleCommunityActivity.js",
     "rehearse:bond-provisioning": "node scripts/rehearse-bond-provisioning.js",
     "rehearse:bond-25": "node scripts/rehearse-bond-25-profiles.js",
+    "rehearse:oracle-project-q": "node scripts/rehearse-oracle-project-q-canary.js",
     "test": "node --test tests/*.test.js",
     "check": "npm test",
     "audit:bond-registry": "node scripts/audit-bond-registry.js",
