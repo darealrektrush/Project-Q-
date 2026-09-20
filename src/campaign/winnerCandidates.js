@@ -29,6 +29,7 @@ export function buildCycleWinnerCandidateSnapshot({
   campaignId = DEFAULT_CAMPAIGN_ID,
   cycleId,
   cycle = null,
+  snapshotAt = new Date(),
   xpRows = [],
   identityRows = [],
   holderRows = [],
@@ -95,7 +96,12 @@ export function buildCycleWinnerCandidateSnapshot({
   const top15 = rankedEligible.slice(0, 15);
   const weightedTop15 = top15.slice(2).filter(({ buyToEarnWeight }) => buyToEarnWeight > 0);
 
-  const cycleClosed = Boolean(cycle?.closes_at && Date.parse(cycle.closes_at) <= Date.now());
+  const snapshotMs = snapshotAt instanceof Date ? snapshotAt.getTime() : Date.parse(snapshotAt);
+  const cycleClosed = Boolean(
+    Number.isFinite(snapshotMs)
+    && cycle?.closes_at
+    && Date.parse(cycle.closes_at) <= snapshotMs
+  );
   const cutoffReady = Boolean(
     Number(cycle?.cutoff_slot || 0) > 0
     && String(cycle?.cutoff_blockhash || '').trim()
@@ -192,7 +198,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
   if (!userIds.length) {
     return {
       ...buildCycleWinnerCandidateSnapshot({
-        campaignId, cycleId, cycle, xpRows, founderRows, priorWinnerRows,
+        campaignId, cycleId, cycle, snapshotAt: now, xpRows, founderRows, priorWinnerRows,
         excludedTelegramIds: [],
       }),
       cycle,
@@ -229,6 +235,7 @@ export async function loadCycleWinnerCandidateSnapshot(client, {
       campaignId,
       cycleId,
       cycle,
+      snapshotAt: now,
       xpRows,
       identityRows,
       holderRows,
