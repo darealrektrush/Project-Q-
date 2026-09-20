@@ -138,9 +138,19 @@ export function buildBondRegistryEvidence({
   candidates.set('squads_authority_policy', envEvidence(
     env, 'squads_authority_policy', 'BOND_SQUADS_AUTHORITY_POLICY', 'BOND_SQUADS_AUTHORITY_EVIDENCE_URL', 'treasury'
   ));
-  candidates.set('top_contributor_prize_funding', envEvidence(
-    env, 'top_contributor_prize_funding', 'BOND_TOP_CONTRIBUTOR_FUNDING_REF', 'BOND_TOP_CONTRIBUTOR_EVIDENCE_URL', 'treasury'
-  ));
+  const impactFundingLocked = rules?.commitments?.topContributorLamports === '1000000000'
+    && rules?.commitments?.topContributorConservationLamports === '100000000'
+    && rules?.commitments?.totalSolCommitmentLamports === '1100000000'
+    && rules?.commitments?.topContributorConservationDestination === 'OCEAN_CONSERVATION_VAULT'
+    && rules?.commitments?.topContributorConservationAttribution === 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY';
+  candidates.set('top_contributor_prize_funding', impactFundingLocked
+    ? proven(
+      'top_contributor_prize_funding',
+      '1.0 SOL winner prize + 0.1 SOL Ocean Conservation contribution; total=1.1 SOL; separate receipts',
+      'treasury',
+      env?.BOND_TOP_CONTRIBUTOR_EVIDENCE_URL || commitUrl
+    )
+    : blocked('top_contributor_prize_funding', 'top-contributor prize and conservation impact commitment are not locked'));
   candidates.set('offline_recovery_public_key', envEvidence(
     env, 'offline_recovery_public_key', 'BOND_OFFLINE_RECOVERY_PUBLIC_KEY', 'BOND_OFFLINE_RECOVERY_EVIDENCE_URL', 'security'
   ));
@@ -230,15 +240,32 @@ export function buildBondRegistryEvidence({
     commitUrl
   ));
 
-  candidates.set('buy_to_earn_wallet_cap', blocked(
-    'buy_to_earn_wallet_cap',
-    'the historical 7.5M Buy-to-Earn pool is not reconciled with the final 15M five-cycle allocation'
-  ));
-  candidates.set('buy_to_earn_schedule', blocked(
-    'buy_to_earn_schedule',
-    'tracking tiers are 0.07/0.20 SOL, but reward economics and approved markets are not finalized',
-    'tier1=0.07SOL;tier2=0.20SOL'
-  ));
+  const buyToEarnLocked = rules?.buyToEarn?.mode === 'WEIGHT_ONLY'
+    && rules?.buyToEarn?.separateTokenPool === false
+    && String(rules?.buyToEarn?.poolBaseUnits) === '0'
+    && rules?.buyToEarn?.fundingSource === 'SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS'
+    && String(rules?.buyToEarn?.includedInCampaignRewardsBaseUnits) === '15000000000000'
+    && Number(rules?.buyToEarn?.tier1NetBuySol) === 0.07
+    && Number(rules?.buyToEarn?.tier1Weight) === 1
+    && Number(rules?.buyToEarn?.tier2NetBuySol) === 0.20
+    && Number(rules?.buyToEarn?.tier2Weight) === 3
+    && rules?.buyToEarn?.weightedDrawPool === 'RANKS_3_TO_15';
+  candidates.set('buy_to_earn_wallet_cap', buyToEarnLocked && commitUrl
+    ? proven(
+      'buy_to_earn_wallet_cap',
+      'WEIGHT_ONLY;separatePool=0;includedIn15M=15000000000000',
+      'campaign-governance',
+      commitUrl
+    )
+    : blocked('buy_to_earn_wallet_cap', 'Buy-to-Earn weight-only economics are not locked or deployed'));
+  candidates.set('buy_to_earn_schedule', buyToEarnLocked && commitUrl
+    ? proven(
+      'buy_to_earn_schedule',
+      'tier1=0.07SOL:weight1;tier2=0.20SOL:weight3;pool=RANKS_3_TO_15',
+      'campaign-governance',
+      commitUrl
+    )
+    : blocked('buy_to_earn_schedule', 'Buy-to-Earn tier and weight policy is not locked or deployed'));
 
   const drawPolicyLocked = JSON.stringify(rules?.draw || {}) === JSON.stringify(BOND_DRAW_POLICY);
   candidates.set('draw_reveal_fallback', drawPolicyLocked && commitUrl

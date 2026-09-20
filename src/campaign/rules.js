@@ -171,10 +171,15 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
     || commitments.squadsMemberCount !== 3
     || commitments.unlockDependent !== false
     || commitments.topContributorLamports !== '1000000000'
+    || commitments.topContributorConservationLamports !== '100000000'
+    || commitments.topContributorConservationFundingSource !== 'PROJECT_FUNDED_SEPARATE_SOL'
+    || commitments.topContributorConservationDestination !== 'OCEAN_CONSERVATION_VAULT'
+    || commitments.topContributorConservationAttribution !== 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY'
+    || commitments.totalSolCommitmentLamports !== '1100000000'
     || commitments.earnToBurnBaseUnits !== '15000000000000'
     || commitments.earnToBurnSource !== 'FAWKQ_CREATOR_WALLET'
     || commitments.totalTokenCommitmentBaseUnits !== '32500000000000') {
-    blockers.push('campaign commitments do not match the locked Squads vault model');
+    blockers.push('campaign commitments do not match the locked Squads, creator-wallet and SOL impact model');
   }
 
   const missionIds = Array.isArray(rules.missions) ? [...rules.missions].sort() : [];
@@ -228,6 +233,20 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
   }
   if (referrals.xInviteRequiredDistinctMentions !== 3) blockers.push('X invite requirement is not exactly three friends');
   if (!POSITIVE_XP(referrals.xInviteBonusXp)) blockers.push('X invite bonus XP is not finalized');
+
+  const buyToEarn = rules.buyToEarn || {};
+  if (buyToEarn.mode !== 'WEIGHT_ONLY'
+    || buyToEarn.separateTokenPool !== false
+    || String(buyToEarn.poolBaseUnits) !== '0'
+    || buyToEarn.fundingSource !== 'SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS'
+    || String(buyToEarn.includedInCampaignRewardsBaseUnits) !== '15000000000000'
+    || Number(buyToEarn.tier1NetBuySol) !== 0.07
+    || Number(buyToEarn.tier1Weight) !== 1
+    || Number(buyToEarn.tier2NetBuySol) !== 0.20
+    || Number(buyToEarn.tier2Weight) !== 3
+    || buyToEarn.weightedDrawPool !== 'RANKS_3_TO_15') {
+    blockers.push('Buy-to-Earn must be weight-only inside the existing 15M FAWKQ campaign reward pool');
+  }
 
   const burn = rules.earnToBurn || {};
   if (burn.programId !== 'fawkq-earn-to-burn'

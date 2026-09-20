@@ -251,9 +251,10 @@
     "topContributorPrize": {
       "amountLamports": "1000000000",
       "amountSol": "1",
-      "purpose": "TOP_BOND_THE_DUCK_CONTRIBUTOR",
-      "fundingSource": "SEPARATE_FROM_TOKEN_VAULT",
-      "paidAfterFinalVerification": true
+      "purpose": "TOP_BOND_THE_DUCKER_WINNER_PRIZE",
+      "fundingSource": "SEPARATE_PROJECT_SOL",
+      "paidAfterFinalVerification": true,
+      "separateFromImpactContribution": true
     },
     "earnToBurn": {
       "amountBaseUnits": "15000000000000",
@@ -262,7 +263,22 @@
       "purpose": "ADDITIONAL_EARN_TO_BURN_RESERVE"
     },
     "totalTokenCommitmentBaseUnits": "32500000000000",
-    "totalTokenCommitmentPercentBps": 325
+    "totalTokenCommitmentPercentBps": 325,
+    "topContributorConservationImpact": {
+      "amountLamports": "100000000",
+      "amountSol": "0.1",
+      "purpose": "OCEAN_CONSERVATION_IMPACT_IN_RECOGNITION_OF_TOP_BOND_THE_DUCKER",
+      "destination": "OCEAN_CONSERVATION_VAULT",
+      "fundingSource": "SEPARATE_PROJECT_SOL",
+      "attributionModel": "TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY",
+      "executedAfterFinalVerification": true,
+      "separateFromWinnerPrize": true,
+      "affectsWinnerPrize": false,
+      "affectsXp": false,
+      "affectsRanking": false
+    },
+    "totalSolCommitmentLamports": "1100000000",
+    "totalSolCommitmentSol": "1.1"
   },
   "eligibility": {
     "telegramRequired": true,
@@ -527,12 +543,12 @@
       "title": "Buy-to-Earn",
       "description": "Track finalized net buys through approved markets.",
       "status": "Locked",
-      "reward": "Tier rewards",
+      "reward": "Weighted draw advantage inside the 15M FAWKQ reward pool",
       "frequency": "Campaign snapshot",
       "enabled": false,
-      "verification": "Project Q calculates finalized eligible buys minus eligible sells through approved markets. Tier 1 starts at 0.07 SOL net buy; Tier 2 starts at 0.20 SOL.",
+      "verification": "Project Q calculates finalized eligible buys minus eligible sells through approved markets. Tier 1 starts at 0.07 SOL net buy and carries weight 1; Tier 2 starts at 0.20 SOL and carries weight 3. Buy-to-Earn creates no separate token pool and only affects the weighted winner draw for ranks 3–15.",
       "requirements": [
-        "Verified reward wallet and FAWKQ token account",
+        "Verified reward wallet, FAWKQ token account and $2 holder eligibility",
         "Finalized activity through approved markets",
         "Transfers, OTC activity, rewards and manipulation are excluded"
       ],
@@ -643,5 +659,18 @@
     ],
     "weightedDrawPool": "RANKS_3_TO_15",
     "priorWinnerCooldownCycles": 1
+  },
+  "buyToEarn": {
+    "mode": "WEIGHT_ONLY",
+    "separateTokenPool": false,
+    "poolBaseUnits": "0",
+    "fundingSource": "SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS",
+    "includedInCampaignRewardsBaseUnits": "15000000000000",
+    "tier1NetBuySol": 0.07,
+    "tier1Weight": 1,
+    "tier2NetBuySol": 0.2,
+    "tier2Weight": 3,
+    "weightedDrawPool": "RANKS_3_TO_15",
+    "description": "Buy-to-Earn does not create a separate FAWKQ payout pool. Verified net-buy tiers increase weighted-draw odds for ranks 3–15 inside the existing 15M FAWKQ Bond campaign reward allocation."
   }
 }

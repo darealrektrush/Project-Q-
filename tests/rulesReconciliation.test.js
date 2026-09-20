@@ -69,6 +69,11 @@ function baseRepoRules() {
       squadsMemberCount: 3,
       unlockDependent: false,
       topContributorLamports: '1000000000',
+      topContributorConservationLamports: '100000000',
+      topContributorConservationFundingSource: 'PROJECT_FUNDED_SEPARATE_SOL',
+      topContributorConservationDestination: 'OCEAN_CONSERVATION_VAULT',
+      topContributorConservationAttribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
+      totalSolCommitmentLamports: '1100000000',
       earnToBurnBaseUnits: '15000000000000',
       earnToBurnSource: 'FAWKQ_CREATOR_WALLET',
       totalTokenCommitmentBaseUnits: '32500000000000',
@@ -127,9 +132,15 @@ test('weight-only Buy-to-Earn explicitly reserves no separate token pool', () =>
   const rules = baseRepoRules();
   rules.buyToEarn = {
     mode: 'WEIGHT_ONLY',
+    separateTokenPool: false,
     poolBaseUnits: '0',
+    fundingSource: 'SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS',
+    includedInCampaignRewardsBaseUnits: '15000000000000',
     tier1NetBuySol: 0.07,
+    tier1Weight: 1,
     tier2NetBuySol: 0.20,
+    tier2Weight: 3,
+    weightedDrawPool: 'RANKS_3_TO_15',
   };
   const report = buildBondRulesReconciliation({
     campaign: liveCampaign,
@@ -140,21 +151,25 @@ test('weight-only Buy-to-Earn explicitly reserves no separate token pool', () =>
   assert.doesNotMatch(report.blockers.join(' | '), /weight-only Buy-to-Earn cannot reserve/);
 });
 
-test('separate Buy-to-Earn pool requires exact amount and funding source', () => {
+test('separate Buy-to-Earn pool is rejected because BTE is locked inside the 15M campaign allocation', () => {
   const rules = baseRepoRules();
   rules.buyToEarn = {
     mode: 'SEPARATE_POOL',
+    separateTokenPool: true,
     poolBaseUnits: '7500000000000',
-    fundingSource: '',
+    fundingSource: 'SOME_OTHER_POOL',
     tier1NetBuySol: 0.07,
+    tier1Weight: 1,
     tier2NetBuySol: 0.20,
+    tier2Weight: 3,
+    weightedDrawPool: 'RANKS_3_TO_15',
   };
   const report = buildBondRulesReconciliation({
     campaign: liveCampaign,
     liveRulesets,
     repoRules: rules,
   });
-  assert.match(report.blockers.join(' | '), /exact amount and funding source/);
+  assert.match(report.blockers.join(' | '), /weight-only inside the existing 15M/);
 });
 
 test('repository rules must advance append-only beyond live rules', () => {

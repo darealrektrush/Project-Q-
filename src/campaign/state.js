@@ -38,7 +38,13 @@ const TERMINABLE_STATES = new Set([...PAUSABLE_STATES, 'PAUSED']);
 
 const REQUIRED_EXIT_EVIDENCE = Object.freeze({
   'DRAFT->READINESS_BLOCKED': ['rulesHash', 'rulesetVersion'],
-  'READINESS_BLOCKED->FUNDED': ['fundedBaseUnits', 'expectedFundedBaseUnits', 'squadsCommunityVaultBaseUnits', 'squadsApprovalThreshold', 'squadsMemberCount', 'topContributorPrizeLamports', 'vaultVerifiedAt'],
+  'READINESS_BLOCKED->FUNDED': [
+    'fundedBaseUnits', 'expectedFundedBaseUnits', 'squadsCommunityVaultBaseUnits',
+    'squadsApprovalThreshold', 'squadsMemberCount',
+    'topContributorPrizeLamports', 'oceanConservationContributionLamports',
+    'totalSolCommitmentLamports', 'conservationVaultAddress',
+    'conservationAttribution', 'vaultVerifiedAt'
+  ],
   'FUNDED->SCHEDULED': ['registryHash', 'sourcesCertifiedAt', 'publicTimesPublishedAt'],
   'SCHEDULED->ACTIVE': ['readinessReportVersion', 'readinessReportHash', 'founderApprovals'],
   'ACTIVE->VERIFYING': ['campaignClosedAt', 'cutoffSlot'],
@@ -104,6 +110,18 @@ export function assertTransition(from, to, options = {}) {
     }
     if (BigInt(evidence.topContributorPrizeLamports) !== 1_000_000_000n) {
       throw new Error('FUNDED requires the separate 1 SOL top-contributor prize');
+    }
+    if (BigInt(evidence.oceanConservationContributionLamports) !== 100_000_000n) {
+      throw new Error('FUNDED requires the separate 0.10 SOL Ocean Conservation contribution');
+    }
+    if (BigInt(evidence.totalSolCommitmentLamports) !== 1_100_000_000n) {
+      throw new Error('FUNDED requires the exact 1.10 SOL combined project-funded commitment');
+    }
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(evidence.conservationVaultAddress || ''))) {
+      throw new Error('FUNDED requires a valid Ocean Conservation vault address');
+    }
+    if (evidence.conservationAttribution !== 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY') {
+      throw new Error('FUNDED requires public campaign identity attribution for the conservation impact');
     }
   }
   if (from !== 'PAUSED' && ['ACTIVE', 'DISTRIBUTING', 'ARCHIVED'].includes(to) && evidence.founderApprovals !== 2) {

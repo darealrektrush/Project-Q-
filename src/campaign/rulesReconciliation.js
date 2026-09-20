@@ -68,24 +68,19 @@ export function buildBondRulesReconciliation({
     const buyToEarn = repoRules.buyToEarn;
     if (!buyToEarn || typeof buyToEarn !== 'object') {
       blockers.push('Buy-to-Earn economic treatment is not defined in final rules');
-    } else {
-      const mode = String(buyToEarn.mode || '');
-      if (!['WEIGHT_ONLY','SEPARATE_POOL'].includes(mode)) {
-        blockers.push('Buy-to-Earn mode must be WEIGHT_ONLY or SEPARATE_POOL');
-      }
-      if (mode === 'SEPARATE_POOL') {
-        const pool = String(buyToEarn.poolBaseUnits || '');
-        const source = String(buyToEarn.fundingSource || '');
-        if (!/^\d+$/.test(pool) || BigInt(pool) <= 0n || !source) {
-          blockers.push('separate Buy-to-Earn pool requires exact amount and funding source');
-        }
-      }
-      if (mode === 'WEIGHT_ONLY' && buyToEarn.poolBaseUnits != null && String(buyToEarn.poolBaseUnits) !== '0') {
-        blockers.push('weight-only Buy-to-Earn cannot reserve a token payout pool');
-      }
-      if (Number(buyToEarn.tier1NetBuySol) !== 0.07 || Number(buyToEarn.tier2NetBuySol) !== 0.20) {
-        blockers.push('Buy-to-Earn thresholds must remain 0.07 SOL and 0.20 SOL');
-      }
+    } else if (
+      buyToEarn.mode !== 'WEIGHT_ONLY'
+      || buyToEarn.separateTokenPool !== false
+      || String(buyToEarn.poolBaseUnits) !== '0'
+      || buyToEarn.fundingSource !== 'SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS'
+      || String(buyToEarn.includedInCampaignRewardsBaseUnits) !== '15000000000000'
+      || Number(buyToEarn.tier1NetBuySol) !== 0.07
+      || Number(buyToEarn.tier1Weight) !== 1
+      || Number(buyToEarn.tier2NetBuySol) !== 0.20
+      || Number(buyToEarn.tier2Weight) !== 3
+      || buyToEarn.weightedDrawPool !== 'RANKS_3_TO_15'
+    ) {
+      blockers.push('Buy-to-Earn must remain weight-only inside the existing 15M FAWKQ campaign reward pool');
     }
 
     const inspection = inspectBondCampaignRules(repoRules);

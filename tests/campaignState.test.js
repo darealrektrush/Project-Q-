@@ -50,7 +50,7 @@ test('activation evidence binds two approvals to an exact versioned readiness re
   );
 });
 
-test('funding gate reconciles one 17.5M Squads vault, 2-of-3 authority, and separate 1 SOL prize', () => {
+test('funding gate reconciles 17.5M Squads plus 1 SOL prize and 0.10 SOL conservation impact', () => {
   const evidence = {
     expectedFundedBaseUnits: '17500000000000',
     fundedBaseUnits: '17500000000000',
@@ -58,6 +58,10 @@ test('funding gate reconciles one 17.5M Squads vault, 2-of-3 authority, and sepa
     squadsApprovalThreshold: 2,
     squadsMemberCount: 3,
     topContributorPrizeLamports: '1000000000',
+    oceanConservationContributionLamports: '100000000',
+    totalSolCommitmentLamports: '1100000000',
+    conservationVaultAddress: '22222222222222222222222222222222',
+    conservationAttribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
     vaultVerifiedAt: '2026-09-08T00:00:00Z',
   };
   assert.equal(assertTransition('READINESS_BLOCKED', 'FUNDED', { evidence }), true);
@@ -73,4 +77,13 @@ test('funding gate reconciles one 17.5M Squads vault, 2-of-3 authority, and sepa
   assert.throws(() => assertTransition('READINESS_BLOCKED', 'FUNDED', {
     evidence: { ...evidence, topContributorPrizeLamports: '999999999' },
   }), /1 SOL/);
+  assert.throws(() => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+    evidence: { ...evidence, oceanConservationContributionLamports: '99999999' },
+  }), /0\.10 SOL/);
+  assert.throws(() => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+    evidence: { ...evidence, totalSolCommitmentLamports: '1000000000' },
+  }), /1\.10 SOL/);
+  assert.throws(() => assertTransition('READINESS_BLOCKED', 'FUNDED', {
+    evidence: { ...evidence, conservationVaultAddress: 'bad' },
+  }), /Conservation vault/);
 });
