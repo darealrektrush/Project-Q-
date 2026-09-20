@@ -16,7 +16,7 @@ test('funding proposal locks exact Bond treasury facts', async () => {
 
 test('funding finalization requires fresh evidence and two current founder approvals', async () => {
   const sql = await readFile(sqlPath, 'utf8');
-  assert.match(sql, /verified_at < now() - interval '72 hours'/);
+  assert.match(sql, /proposal\.verified_at < now\(\) - interval '72 hours'/);
   assert.match(sql, /latest where decision = 'APPROVE'/);
   assert.match(sql, /approval_count <> 2/);
   assert.match(sql, /campaign requires exactly two enabled founders/);
@@ -25,7 +25,7 @@ test('funding finalization requires fresh evidence and two current founder appro
 test('funding finalization only updates funded_base_units and never campaign state or treasury', async () => {
   const sql = await readFile(sqlPath, 'utf8');
   assert.match(sql, /set funded_base_units = 17500000000000/);
-  assert.doesNotMatch(sql, /set states*=/i);
+  assert.doesNotMatch(sql, /set\s+state\s*=/i);
   assert.doesNotMatch(sql, /insert into public.treasury_transactions/i);
   assert.doesNotMatch(sql, /insert\s+into\s+public\.treasury_transactions|update\s+public\.treasury_transactions|systemprogram|signtransaction/i);
 });
