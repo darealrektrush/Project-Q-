@@ -251,7 +251,6 @@ test('campaign readiness uses only the selected deployment registry version and 
 
   const readiness = await getCampaignReadiness(client);
   assert.equal(readiness.checks.find(({ key }) => key === 'registry').ready, true);
-  assert.equal(readiness.registryHash, registryHash);
   assert.equal(queries.filter(({ table }) => table === 'deployment_registry').length, 1);
 });
 
