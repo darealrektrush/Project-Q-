@@ -24,6 +24,12 @@ import {
   rulesGovernanceIdempotencyKey,
 } from '../campaign/rulesGovernance.js';
 import {
+  buildFundingGovernanceText,
+  finalizeFunding,
+  getFundingGovernanceState,
+  recordFundingDecision,
+} from '../campaign/fundingGovernance.js';
+import {
   decideWebsiteVoteReview,
   getWebsiteVoteReviewEvidence,
   getWebsiteVoteReviewQueue,
@@ -43,6 +49,7 @@ import {
   recordFounderDecision,
 } from '../earnToBurn/workflow.js';
 import {
+  campaignFundingGovernanceEnabled,
   campaignReadinessApprovalsEnabled,
   campaignRulesGovernanceEnabled,
   earnToBurnEnabled,
@@ -146,6 +153,7 @@ export function buildBondAdminKeyboard() {
     inline_keyboard: [
       [{ text: '🧪 Production Preflight', callback_data: 'admin:preflight' }],
       [{ text: '📋 Readiness', callback_data: 'admin:readiness' }],
+      [{ text: '💰 Funding Verification', callback_data: 'admin:funding' }],
       [{ text: '🛡 Source Certifications', callback_data: 'admin:sourcecerts' }],
       [{ text: '🗳 Website Vote Reviews', callback_data: 'admin:votequeue:0' }],
       [{ text: '🔐 Launch Approvals', callback_data: 'admin:launchapprovals' }],
@@ -244,6 +252,20 @@ async function getLaunchApprovalPanel(userId, chatType) {
     && campaignReadinessApprovalsEnabled()
     && status.founders.some(({ founderUserId }) => String(founderUserId) === String(userId));
   return { readiness, status, controlsEnabled };
+}
+
+async function getFundingGovernancePanel(userId, chatType) {
+  const state = await getFundingGovernanceState(
+    supabase,
+    process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026'
+  );
+  const viewerIsFounder = state.founders.some(
+    ({ founderUserId }) => String(founderUserId) === String(userId)
+  );
+  const controlsEnabled = chatType === 'private'
+    && campaignFundingGovernanceEnabled()
+    && viewerIsFounder;
+  return { state, controlsEnabled, viewerIsFounder };
 }
 
 async function getRulesGovernancePanel(userId, chatType) {
@@ -385,6 +407,103 @@ export async function handleAdminCallback(callbackQuery) {
       return telegram.sendMessage(
         chatId,
         'Production preflight is unavailable. No campaign, wallet, reward or deployment setting was changed.',
+        { threadId }
+      );
+    }
+  }
+
+  if (action === 'funding') {
+    try {
+      const { state, controlsEnabled, viewerIsFounder } = await getFundingGovernancePanel(
+        userId,
+        callbackQuery.message.chat.type
+      );
+      const rows = [
+        [{ text: '🔄 Refresh', callback_data: 'admin:funding' }],
+      ];
+      if (controlsEnabled && viewerIsFounder && state.proposal && !state.finalized) {
+        rows.unshift([
+          { text: '✅ Approve', callback_data: `admin:funddecision:${state.proposal.id}:APPROVE` },
+          { text: '⛔ Hold', callback_data: `admin:funddecision:${state.proposal.id}:HOLD` },
+        ]);
+        if (state.finalizable) {
+          rows.unshift([
+            { text: '🔒 Finalize funding ledger', callback_data: `admin:fundfinalize:${state.proposal.id}` },
+          ]);
+        }
+      }
+      rows.push([{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }]);
+      return telegram.editMessageText(
+        chatId,
+        messageId,
+        buildFundingGovernanceText(state),
+        { replyMarkup: { inline_keyboard: rows } }
+      );
+    } catch (err) {
+      console.error('campaign funding governance unavailable', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'Funding verification is unavailable. No funding ledger, campaign state or treasury setting was changed.',
+        { threadId }
+      );
+    }
+  }
+
+  if (['funddecision', 'fundfinalize'].includes(action)) {
+    if (callbackQuery.message.chat.type !== 'private') {
+      return telegram.sendMessage(
+        chatId,
+        'Funding decisions are available only in an authorized private Project Q chat.',
+        { threadId }
+      );
+    }
+    if (!campaignFundingGovernanceEnabled()) {
+      return telegram.sendMessage(
+        chatId,
+        'Funding governance is disabled. No decision or funding ledger value was changed.',
+        { threadId }
+      );
+    }
+    try {
+      const { state, controlsEnabled, viewerIsFounder } = await getFundingGovernancePanel(userId, 'private');
+      const proposal = state.proposal;
+      if (!controlsEnabled || !viewerIsFounder || !proposal || String(proposal.id) !== String(arg1) || state.finalized) {
+        throw new Error('funding proposal is stale or unauthorized');
+      }
+      if (action === 'funddecision') {
+        await recordFundingDecision(supabase, {
+          proposalId: proposal.id,
+          founderUserId: userId,
+          decision: arg2,
+          callbackQueryId: callbackQuery.id,
+        });
+      } else {
+        if (!state.finalizable) throw new Error('funding proposal is not finalizable');
+        await finalizeFunding(supabase, {
+          proposalId: proposal.id,
+          founderUserId: userId,
+        });
+      }
+      const refreshed = await getFundingGovernancePanel(userId, 'private');
+      const rows = [[{ text: '🔄 Refresh', callback_data: 'admin:funding' }]];
+      if (refreshed.controlsEnabled && refreshed.state.proposal && !refreshed.state.finalized) {
+        rows.unshift([
+          { text: '✅ Approve', callback_data: `admin:funddecision:${refreshed.state.proposal.id}:APPROVE` },
+          { text: '⛔ Hold', callback_data: `admin:funddecision:${refreshed.state.proposal.id}:HOLD` },
+        ]);
+        if (refreshed.state.finalizable) {
+          rows.unshift([{ text: '🔒 Finalize funding ledger', callback_data: `admin:fundfinalize:${refreshed.state.proposal.id}` }]);
+        }
+      }
+      rows.push([{ text: '⬅️ Back to Bond the Duck', callback_data: 'admin:campaign:bond' }]);
+      return telegram.editMessageText(chatId, messageId, buildFundingGovernanceText(refreshed.state), {
+        replyMarkup: { inline_keyboard: rows },
+      });
+    } catch (err) {
+      console.error('campaign funding governance action failed', err.message);
+      return telegram.sendMessage(
+        chatId,
+        'This funding proposal is stale, blocked, unauthorized or no longer actionable. No funding ledger value was changed.',
         { threadId }
       );
     }

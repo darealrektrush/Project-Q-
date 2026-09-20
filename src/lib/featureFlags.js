@@ -50,3 +50,8 @@ export function telegramTrendingReceiptsEnabled(env = process.env) {
 export function oracleBuyToEarnTradeEventsEnabled(env = process.env) {
   return isEnabled(env.PROJECT_Q_ORACLE_TRADE_EVENTS_ENABLED);
 }
+
+
+export function campaignFundingGovernanceEnabled(env = process.env) {
+  return isEnabled(env.PROJECT_Q_FUNDING_GOVERNANCE_ENABLED);
+}
