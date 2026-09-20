@@ -1,6 +1,16 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+export function supabaseTargetLabel(value) {
+  if (!String(value || '').trim()) return 'unconfigured';
+  try {
+    const hostname = new URL(String(value || '')).hostname;
+    return hostname || 'unconfigured';
+  } catch {
+    return 'invalid-supabase-url';
+  }
+}
+
 export function buildHeaders(key, extra = {}) {
   const normalized = String(key ?? '').trim();
   if (!normalized) {
@@ -45,7 +55,9 @@ async function request(path, { method = 'GET', body, prefer } = {}) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Supabase ${method} ${path} failed: ${res.status} ${text}`);
+    throw new Error(
+      `Supabase ${method} ${path} failed against ${supabaseTargetLabel(SUPABASE_URL)}: ${res.status} ${text}`
+    );
   }
 
   if (res.status === 204) return null;
