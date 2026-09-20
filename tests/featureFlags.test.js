@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   burnVerificationEnabled,
+  campaignFundingGovernanceEnabled,
   campaignReadinessApprovalsEnabled,
   campaignRulesGovernanceEnabled,
   distributionEnabled,
@@ -20,11 +21,21 @@ test('feature flags default to disabled', () => {
   assert.equal(signalsEnabled({}), false);
   assert.equal(earnToBurnEnabled({}), false);
   assert.equal(burnVerificationEnabled({}), false);
+  assert.equal(campaignFundingGovernanceEnabled({}), false);
   assert.equal(campaignReadinessApprovalsEnabled({}), false);
   assert.equal(campaignRulesGovernanceEnabled({}), false);
   assert.equal(sourceCertificationEnabled({}), false);
   assert.equal(websiteVoteReviewEnabled({}), false);
   assert.equal(telegramTrendingReceiptsEnabled({}), false);
+});
+
+test('campaign funding governance requires its dedicated flag', () => {
+  assert.equal(campaignFundingGovernanceEnabled({
+    PROJECT_Q_FUNDING_GOVERNANCE_ENABLED: 'true',
+  }), true);
+  assert.equal(campaignFundingGovernanceEnabled({
+    PROJECT_Q_CAMPAIGN_RULES_GOVERNANCE_ENABLED: 'true',
+  }), false);
 });
 
 test('campaign readiness approvals require their dedicated flag', () => {
