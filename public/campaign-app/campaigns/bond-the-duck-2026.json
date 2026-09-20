@@ -643,5 +643,13 @@
     ],
     "weightedDrawPool": "RANKS_3_TO_15",
     "priorWinnerCooldownCycles": 1
+  },
+  "buyToEarn": {
+    "status": "PENDING_ECONOMIC_MODE",
+    "mode": null,
+    "poolBaseUnits": null,
+    "fundingSource": null,
+    "tier1NetBuySol": 0.07,
+    "tier2NetBuySol": 0.2
   }
 }
