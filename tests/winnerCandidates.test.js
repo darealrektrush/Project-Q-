@@ -24,6 +24,17 @@ const holderRows = xpRows.map(({ telegram_user_id }, index) => ({
   eligible: true,
   observed_at: '2026-10-02T00:00:00Z',
 }));
+const closedCycle = {
+  cycle_id: 2,
+  opens_at: '2026-10-03T15:00:00Z',
+  closes_at: '2026-10-05T15:00:00Z',
+  cutoff_slot: 123456789,
+  cutoff_blockhash: 'blockhash-verified-public',
+  commit_hash: 'a'.repeat(64),
+  reveal_value: 'revealed-public-randomness',
+  fallback_used: false,
+};
+
 const positionRows = xpRows.map(({ telegram_user_id }, index) => ({
   reward_wallet: `wallet-${telegram_user_id}`,
   tier: index % 2 ? 1 : 2,
@@ -36,6 +47,8 @@ function snapshot(overrides = {}) {
   return buildCycleWinnerCandidateSnapshot({
     campaignId: 'bond-the-duck-2026',
     cycleId: 2,
+    cycle: closedCycle,
+    snapshotAt: '2026-10-06T00:00:00Z',
     xpRows,
     identityRows,
     holderRows,
@@ -108,6 +121,23 @@ test('weight-only selection uses Buy-to-Earn position weights and corrected Top 
   assert.deepEqual(selection.winners.slice(0,2).map(({ telegramUserId }) => telegramUserId), ['1000','1001']);
   const top15Ids = new Set(result.top15.slice(2).map(({ telegramUserId }) => telegramUserId));
   assert.ok(selection.winners.slice(2).every(({ telegramUserId }) => top15Ids.has(telegramUserId)));
+});
+
+test('selection remains blocked until cycle close and cutoff evidence are present', () => {
+  const beforeClose = snapshot({ snapshotAt: '2026-10-05T14:59:59Z' });
+  assert.equal(beforeClose.selectionEvidenceReady, false);
+  assert.throws(
+    () => planWeightOnlyCycleSelection(beforeClose, {
+      buyToEarnMode: 'WEIGHT_ONLY',
+      publicSeed: 'verified-public-draw-seed-12345',
+    }),
+    /cutoff and public draw evidence/
+  );
+
+  const noCutoff = snapshot({
+    cycle: { ...closedCycle, cutoff_slot: null, cutoff_blockhash: null, reveal_value: null },
+  });
+  assert.equal(noCutoff.selectionEvidenceReady, false);
 });
 
 test('selection remains blocked until final rules explicitly choose weight-only mode', () => {
