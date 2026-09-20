@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildSourceCertificationAdminText,
+  certificationHealthMatchesClassification,
   evaluateSourceCertifications,
   recordVerificationSourceCertification,
   sourceCertificationIdempotencyKey,
@@ -158,6 +159,51 @@ test('source certification mutations are flag-gated and call the exact server RP
   assert.equal(calls[0].fn, 'record_verification_source_certification');
   assert.equal(calls[0].args.p_source_kind, 'WEBSITE_VOTE');
   assert.equal(calls[0].args.p_founder_user_id, '101');
+});
+
+test('classification and health combinations are fail-closed and truthful', () => {
+  assert.equal(certificationHealthMatchesClassification('MACHINE_VERIFIED', 'HEALTHY'), true);
+  assert.equal(certificationHealthMatchesClassification('PROOF_SUPPORTED', 'HEALTHY'), true);
+  assert.equal(certificationHealthMatchesClassification('COMMUNITY_PROGRESS_ONLY', 'DEGRADED'), true);
+  assert.equal(certificationHealthMatchesClassification('SOURCE_UNAVAILABLE', 'OFFLINE'), true);
+  assert.equal(certificationHealthMatchesClassification('REMOVED_FOR_INTEGRITY', 'REMOVED'), true);
+
+  assert.equal(certificationHealthMatchesClassification('PROOF_SUPPORTED', 'DEGRADED'), false);
+  assert.equal(certificationHealthMatchesClassification('SOURCE_UNAVAILABLE', 'HEALTHY'), false);
+  assert.equal(certificationHealthMatchesClassification('COMMUNITY_PROGRESS_ONLY', 'OFFLINE'), false);
+  assert.equal(certificationHealthMatchesClassification('REMOVED_FOR_INTEGRITY', 'HEALTHY'), false);
+});
+
+test('source certification mutation rejects inconsistent health before RPC', async () => {
+  let called = false;
+  const client = { rpc: async () => { called = true; } };
+  const input = {
+    campaignId: CAMPAIGN_ID,
+    sourceKey: 'vote-1',
+    sourceKind: 'WEBSITE_VOTE',
+    classification: 'SOURCE_UNAVAILABLE',
+    health: 'HEALTHY',
+    evidenceUrl: 'https://evidence.example/vote-1',
+    evidenceHash: 'b'.repeat(64),
+    checkedAt: '2026-08-25T11:00:00.000Z',
+    expiresAt: '2026-08-27T11:00:00.000Z',
+    founderUserId: 101,
+    idempotencyKey: 'c'.repeat(64),
+    env: { PROJECT_Q_SOURCE_CERTIFICATION_ENABLED: 'true' },
+  };
+  await assert.rejects(recordVerificationSourceCertification(client, input), /invalid verification source certification/);
+  assert.equal(called, false);
+});
+
+test('source certification health invariant is enforced in SQL', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(
+    new URL('../supabase/migrations/20260920090000_source_certification_health_invariants.sql', import.meta.url),
+    'utf8'
+  );
+  assert.match(sql, /SOURCE_UNAVAILABLE' and health in \('DEGRADED','OFFLINE'\)/);
+  assert.match(sql, /PROOF_SUPPORTED'\) and health = 'HEALTHY'/);
+  assert.doesNotMatch(sql, /grant\s+/i);
 });
 
 test('source certification idempotency binds source, founder, time and evidence', () => {
