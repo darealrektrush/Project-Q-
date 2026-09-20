@@ -38,10 +38,15 @@ export function rehearseBondLifecycle({
     throw new Error('valid ordered rehearsal timestamps are required');
   }
 
+  let priorCycleWinnerIds = [];
   const cycles = pools.map((poolBaseUnits, index) => {
     const cycleId = index + 1;
     const selection = selectCycleWinners({
-      campaignId: 'bond-the-duck-2026', cycleId, profiles, publicSeed: publicSeeds[index],
+      campaignId: 'bond-the-duck-2026',
+      cycleId,
+      profiles,
+      publicSeed: publicSeeds[index],
+      priorCycleWinnerIds,
     });
     const allocation = allocateCyclePool({
       campaignId: selection.campaignId, cycleId, poolBaseUnits,
@@ -56,7 +61,9 @@ export function rehearseBondLifecycle({
       verifiedAt: cycleVerifiedAt,
       postReviewClearedAt: reviewClear.toISOString(),
     }));
-    return { cycleId, poolBaseUnits, selection, allocation, releasePlans };
+    const cycle = { cycleId, poolBaseUnits, selection, allocation, releasePlans };
+    priorCycleWinnerIds = selection.winners.map(({ telegramUserId }) => telegramUserId);
+    return cycle;
   });
 
   const releases = cycles.flatMap(({ releasePlans }) => releasePlans.flatMap(({ releases: rows }) => rows));
