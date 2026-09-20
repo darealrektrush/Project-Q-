@@ -1,5 +1,6 @@
 import { resolveCampaignAppUrl } from '../campaign/ui.js';
 import { getCampaignReadiness } from '../campaign/service.js';
+import { getFundingGovernanceState } from '../campaign/fundingGovernance.js';
 import { isEnabled } from './featureFlags.js';
 import { resolveTelegramWebhookUrl, TELEGRAM_WEBHOOK_ALLOWED_UPDATES } from './telegramWebhook.js';
 
@@ -40,6 +41,7 @@ export async function runProductionPreflight({
   telegramClient,
   campaignClient,
   readinessLoader = getCampaignReadiness,
+  fundingLoader = getFundingGovernanceState,
 } = {}) {
   const checks = [];
   const branch = String(env.RENDER_GIT_BRANCH ?? '').trim();
@@ -56,10 +58,11 @@ export async function runProductionPreflight({
     renderReady ? `project-q · ${branch} · ${commit}` : 'Expected project-q on main with a deployed commit'
   ));
 
-  const [botResult, webhookResult, readinessResult] = await Promise.allSettled([
+  const [botResult, webhookResult, readinessResult, fundingResult] = await Promise.allSettled([
     telegramClient.getMe(),
     telegramClient.getWebhookInfo(),
     readinessLoader(campaignClient, env),
+    fundingLoader(campaignClient, env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026'),
   ]);
 
   if (botResult.status === 'fulfilled') {
@@ -126,6 +129,43 @@ export async function runProductionPreflight({
   } else {
     checks.push(result('supabase', 'Supabase campaign read', 'block', 'Database readiness unavailable'));
     checks.push(result('campaign-state', 'Campaign rehearsal lock', 'block', 'Campaign state unavailable'));
+  }
+
+  if (fundingResult.status === 'fulfilled') {
+    const funding = fundingResult.value ?? {};
+    const ledger = String(funding.fundedBaseUnits ?? '0');
+    const finalized = funding.finalized === true;
+    const proposal = funding.proposal ?? null;
+    let status = 'warn';
+    let detail = 'No funding evidence proposal recorded';
+
+    if (finalized && ledger === '17500000000000') {
+      status = 'pass';
+      detail = '17.5M FAWKQ funding ledger finalized through two-founder evidence review';
+    } else if (finalized || ledger !== '0') {
+      status = 'block';
+      detail = 'Funding ledger and audited finalization state do not reconcile';
+    } else if (proposal?.stale) {
+      detail = 'Funding evidence exists but is stale and must be refreshed';
+    } else if (proposal && Number(funding.approvalCount || 0) === 2 && Number(funding.holdCount || 0) === 0) {
+      detail = 'Funding evidence has two approvals and is awaiting ledger finalization';
+    } else if (proposal) {
+      detail = `Funding evidence current · ${Number(funding.approvalCount || 0)}/2 founder approvals`;
+    }
+
+    checks.push(result(
+      'funding-governance',
+      'Funding evidence governance',
+      status,
+      detail
+    ));
+  } else {
+    checks.push(result(
+      'funding-governance',
+      'Funding evidence governance',
+      'warn',
+      'Funding governance state unavailable'
+    ));
   }
 
   try {
