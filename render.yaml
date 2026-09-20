@@ -68,6 +68,8 @@ services:
         value: "false"
       - key: PROJECT_Q_SOURCE_CERTIFICATION_ENABLED
         value: "false"
+      - key: PROJECT_Q_SOURCE_CERTIFICATION_PACKET_ENABLED
+        value: "false"
       - key: PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED
         value: "false"
       - key: PROJECT_Q_TRENDING_RECEIPTS_ENABLED
