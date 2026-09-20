@@ -158,7 +158,12 @@
     "topContributorLamports": "1000000000",
     "earnToBurnBaseUnits": "15000000000000",
     "earnToBurnSource": "FAWKQ_CREATOR_WALLET",
-    "totalTokenCommitmentBaseUnits": "32500000000000"
+    "totalTokenCommitmentBaseUnits": "32500000000000",
+    "topContributorConservationLamports": "100000000",
+    "topContributorConservationFundingSource": "PROJECT_FUNDED_SEPARATE_SOL",
+    "topContributorConservationDestination": "OCEAN_CONSERVATION_VAULT",
+    "topContributorConservationAttribution": "TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY",
+    "totalSolCommitmentLamports": "1100000000"
   },
   "releases": {
     "verifiedActivityPercent": 25,
@@ -263,5 +268,17 @@
     ],
     "weightedDrawPool": "RANKS_3_TO_15",
     "priorWinnerCooldownCycles": 1
+  },
+  "buyToEarn": {
+    "mode": "WEIGHT_ONLY",
+    "separateTokenPool": false,
+    "poolBaseUnits": "0",
+    "fundingSource": "SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS",
+    "includedInCampaignRewardsBaseUnits": "15000000000000",
+    "tier1NetBuySol": 0.07,
+    "tier1Weight": 1,
+    "tier2NetBuySol": 0.2,
+    "tier2Weight": 3,
+    "weightedDrawPool": "RANKS_3_TO_15"
   }
 }
