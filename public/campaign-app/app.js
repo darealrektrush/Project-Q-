@@ -1162,7 +1162,7 @@ async function loadWalletStatus() {
     state.walletStatus = {
       available: false, network: 'mainnet-beta', mint: state.campaign?.earnToBurn?.mint || null,
       tokenProgramId: state.campaign?.earnToBurn?.tokenProgramId || null,
-      decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, observedAt: null,
+      decimals: 6, balanceBaseUnits: null, tokenAccountCount: 0, primaryTokenAccount: null, holderEligible: false, observedAt: null,
     };
     return false;
   }
@@ -1174,6 +1174,12 @@ async function loadWalletStatus() {
     const payload = await response.json();
     if (!response.ok || !payload.status?.available) throw new Error('wallet status unavailable');
     state.walletStatus = payload.status;
+    state.profile.holderEligible = Boolean(payload.status.holderEligible);
+    state.profile.rewardEligible = Boolean(state.profile.campaignReady && payload.status.holderEligible);
+    if (payload.status.primaryTokenAccount) {
+      state.profile.tokenAccountReady = true;
+      state.profile.tokenAccount = payload.status.primaryTokenAccount;
+    }
     return true;
   } catch {
     state.walletStatus = {
