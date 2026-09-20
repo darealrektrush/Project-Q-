@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { isEnabled } from '../lib/featureFlags.js';
+
 import {
   SOURCE_CERTIFICATION_MAX_AGE_MS,
   certificationHealthMatchesClassification,
@@ -103,4 +105,57 @@ export function summarizeSourceCertificationPackets(packets = []) {
     }))
   )).digest('hex');
   return { complete, counts, fingerprint };
+}
+
+
+export function sourceCertificationPacketSubmissionEnabled(env = process.env) {
+  return isEnabled(env.PROJECT_Q_SOURCE_CERTIFICATION_PACKET_ENABLED);
+}
+
+export async function submitSourceCertificationPacket(client, {
+  sourceRows,
+  evidenceRows,
+  campaignId = 'bond-the-duck-2026',
+  founderUserId,
+  checkedAt = new Date(),
+  env = process.env,
+} = {}) {
+  if (!sourceCertificationPacketSubmissionEnabled(env)) {
+    throw new Error('source certification packet submission disabled');
+  }
+  const packets = buildSourceCertificationPackets(sourceRows, evidenceRows, {
+    campaignId,
+    founderUserId,
+    checkedAt,
+  });
+  const summary = summarizeSourceCertificationPackets(packets);
+  if (!summary.complete) {
+    throw new Error(
+      `source certification packet is incomplete: ${summary.counts.READY}/14 ready, ` +
+      `${summary.counts.MISSING} missing, ${summary.counts.INVALID} invalid`
+    );
+  }
+
+  const rpcPackets = packets.map((packet) => ({
+    sourceKey: packet.sourceKey,
+    sourceKind: packet.sourceKind,
+    classification: packet.classification,
+    health: packet.health,
+    evidenceUrl: packet.evidenceUrl,
+    evidenceHash: packet.evidenceHash,
+    checkedAt: packet.checkedAt,
+    expiresAt: packet.expiresAt,
+    idempotencyKey: packet.idempotencyKey,
+  }));
+  const result = await client.rpc('record_bond_source_certification_packet', {
+    p_campaign_id: campaignId,
+    p_founder_user_id: Number(founderUserId),
+    p_packets: rpcPackets,
+  });
+  const row = Array.isArray(result) ? result[0] ?? null : result;
+  if (!row || Number(row.certificationCount ?? row.certification_count ?? 0) !== 14
+    || (row.complete !== true && row.complete !== 'true')) {
+    throw new Error('source certification packet did not reconcile');
+  }
+  return { result: row, packetFingerprint: summary.fingerprint };
 }
