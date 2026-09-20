@@ -23,18 +23,68 @@
     "fullHero": "/campaign-app/assets/identity/fully-verified-hero.webp"
   },
   "xpBadges": [
-    { "id": "xp-earned", "label": "XP Earned", "description": "Complete your first verified action", "image": "/campaign-app/assets/progression/xp-earned.webp" },
-    { "id": "xp-master", "label": "XP Master", "description": "Reach the published campaign XP threshold", "image": "/campaign-app/assets/progression/xp-master.webp" },
-    { "id": "level-up", "label": "Level Up", "description": "Advance through verified participation", "image": "/campaign-app/assets/progression/level-up.webp" },
-    { "id": "rank-up", "label": "Rank Up", "description": "Enter a published ranking tier", "image": "/campaign-app/assets/progression/rank-up.webp" }
+    {
+      "id": "xp-earned",
+      "label": "XP Earned",
+      "description": "Complete your first verified action",
+      "image": "/campaign-app/assets/progression/xp-earned.webp"
+    },
+    {
+      "id": "xp-master",
+      "label": "XP Master",
+      "description": "Reach the published campaign XP threshold",
+      "image": "/campaign-app/assets/progression/xp-master.webp"
+    },
+    {
+      "id": "level-up",
+      "label": "Level Up",
+      "description": "Advance through verified participation",
+      "image": "/campaign-app/assets/progression/level-up.webp"
+    },
+    {
+      "id": "rank-up",
+      "label": "Rank Up",
+      "description": "Enter a published ranking tier",
+      "image": "/campaign-app/assets/progression/rank-up.webp"
+    }
   ],
   "leaderboardBadges": [
-    { "id": "top-10-percent", "label": "Top 10%", "description": "Finish inside the top ten percent", "image": "/campaign-app/assets/progression/top-10-percent.webp" },
-    { "id": "top-5-percent", "label": "Top 5%", "description": "Finish inside the top five percent", "image": "/campaign-app/assets/progression/top-5-percent.webp" },
-    { "id": "top-1-percent", "label": "Top 1%", "description": "Finish inside the top one percent", "image": "/campaign-app/assets/progression/top-1-percent.webp" },
-    { "id": "top-100", "label": "Elite 100", "description": "Finish among the top 100", "image": "/campaign-app/assets/progression/top-100.webp" },
-    { "id": "top-10", "label": "Top 10", "description": "Finish among the top ten", "image": "/campaign-app/assets/progression/top-10.webp" },
-    { "id": "champion", "label": "Champion", "description": "Finish first in finalized standings", "image": "/campaign-app/assets/progression/champion.webp" }
+    {
+      "id": "top-10-percent",
+      "label": "Top 10%",
+      "description": "Finish inside the top ten percent",
+      "image": "/campaign-app/assets/progression/top-10-percent.webp"
+    },
+    {
+      "id": "top-5-percent",
+      "label": "Top 5%",
+      "description": "Finish inside the top five percent",
+      "image": "/campaign-app/assets/progression/top-5-percent.webp"
+    },
+    {
+      "id": "top-1-percent",
+      "label": "Top 1%",
+      "description": "Finish inside the top one percent",
+      "image": "/campaign-app/assets/progression/top-1-percent.webp"
+    },
+    {
+      "id": "top-100",
+      "label": "Elite 100",
+      "description": "Finish among the top 100",
+      "image": "/campaign-app/assets/progression/top-100.webp"
+    },
+    {
+      "id": "top-10",
+      "label": "Top 10",
+      "description": "Finish among the top ten",
+      "image": "/campaign-app/assets/progression/top-10.webp"
+    },
+    {
+      "id": "champion",
+      "label": "Champion",
+      "description": "Finish first in finalized standings",
+      "image": "/campaign-app/assets/progression/champion.webp"
+    }
   ],
   "status": "DRAFT",
   "statusLabel": "PRE-LAUNCH / READINESS MODE",
@@ -42,35 +92,64 @@
   "description": "A 10-day verified participation and holder-acquisition campaign powered by Project Q and the CrabStar Oracle.",
   "activeDays": 10,
   "cycleHours": 48,
-  "reviewWindowHours": { "minimum": 48, "maximum": 72 },
+  "reviewWindowHours": {
+    "minimum": 48,
+    "maximum": 72
+  },
   "lifecycleDays": 14,
   "schedule": {
     "timeZone": "America/Vancouver",
     "activeLabel": "Final dates pending · 10 active days",
-    "activeOpensAt": "2026-09-01T15:00:00.000Z",
-    "activeClosesAt": "2026-09-11T15:00:00.000Z",
+    "activeOpensAt": null,
+    "activeClosesAt": null,
     "reviewLabel": "48–72 hours after campaign handoff",
-    "reviewOpensAt": "2026-09-12T15:00:00.000Z",
-    "review48HourCheckpointAt": "2026-09-14T15:00:00.000Z",
-    "reviewClosesAt": "2026-09-15T15:00:00.000Z",
+    "reviewOpensAt": null,
+    "review48HourCheckpointAt": null,
+    "reviewClosesAt": null,
     "cycles": [
-      { "cycleId": 1, "opensAt": "2026-09-01T15:00:00.000Z", "closesAt": "2026-09-03T15:00:00.000Z" },
-      { "cycleId": 2, "opensAt": "2026-09-03T15:00:00.000Z", "closesAt": "2026-09-05T15:00:00.000Z" },
-      { "cycleId": 3, "opensAt": "2026-09-05T15:00:00.000Z", "closesAt": "2026-09-07T15:00:00.000Z" },
-      { "cycleId": 4, "opensAt": "2026-09-07T15:00:00.000Z", "closesAt": "2026-09-09T15:00:00.000Z" },
-      { "cycleId": 5, "opensAt": "2026-09-09T15:00:00.000Z", "closesAt": "2026-09-11T15:00:00.000Z" }
+      {
+        "cycleId": 1,
+        "opensAt": null,
+        "closesAt": null
+      },
+      {
+        "cycleId": 2,
+        "opensAt": null,
+        "closesAt": null
+      },
+      {
+        "cycleId": 3,
+        "opensAt": null,
+        "closesAt": null
+      },
+      {
+        "cycleId": 4,
+        "opensAt": null,
+        "closesAt": null
+      },
+      {
+        "cycleId": 5,
+        "opensAt": null,
+        "closesAt": null
+      }
     ],
     "postReviewRelease": {
       "percent": 50,
-      "earliestAt": "2026-09-14T15:00:00.000Z",
-      "noLaterThan": "2026-09-15T15:00:00.000Z",
+      "earliestAt": null,
+      "noLaterThan": null,
       "condition": "FINAL_REVIEW_CLEARED"
     },
     "phasedRelease": {
       "percent": 25,
       "installments": 5,
       "installmentPercent": 5,
-      "offsetDaysAfterPostReviewRelease": [6, 12, 18, 24, 30]
+      "offsetDaysAfterPostReviewRelease": [
+        6,
+        12,
+        18,
+        24,
+        30
+      ]
     }
   },
   "xpCaps": {
@@ -98,11 +177,46 @@
     "approvalModel": "TWO_FOUNDER_PROJECT_Q_APPROVALS",
     "executionModel": "CREATOR_WALLET_FOUNDER_SIGNATURE",
     "milestones": [
-      { "id": "bond-burn-1", "sequence": 1, "label": "Burn Milestone 1", "progressTargetUnits": "2000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-2", "sequence": 2, "label": "Burn Milestone 2", "progressTargetUnits": "5000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-3", "sequence": 3, "label": "Burn Milestone 3", "progressTargetUnits": "9000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-4", "sequence": 4, "label": "Burn Milestone 4", "progressTargetUnits": "14000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-5", "sequence": 5, "label": "Burn Milestone 5", "progressTargetUnits": "20000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" }
+      {
+        "id": "bond-burn-1",
+        "sequence": 1,
+        "label": "Burn Milestone 1",
+        "progressTargetUnits": "2000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-2",
+        "sequence": 2,
+        "label": "Burn Milestone 2",
+        "progressTargetUnits": "5000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-3",
+        "sequence": 3,
+        "label": "Burn Milestone 3",
+        "progressTargetUnits": "9000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-4",
+        "sequence": 4,
+        "label": "Burn Milestone 4",
+        "progressTargetUnits": "14000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-5",
+        "sequence": 5,
+        "label": "Burn Milestone 5",
+        "progressTargetUnits": "20000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      }
     ],
     "tagline": "Individual activity earns rewards. Collective activity advances transparent burn milestones."
   },
@@ -129,7 +243,10 @@
       "amountBaseUnits": "17500000000000",
       "approvalThreshold": 2,
       "memberCount": 3,
-      "contains": ["BOND_THE_DUCK_REWARDS", "DIAMOND_DUCK_BONUS"]
+      "contains": [
+        "BOND_THE_DUCK_REWARDS",
+        "DIAMOND_DUCK_BONUS"
+      ]
     },
     "topContributorPrize": {
       "amountLamports": "1000000000",
@@ -179,21 +296,108 @@
     "minimumSpanMinutes": 120,
     "minimumReplies": 2,
     "baseXp": 2,
-    "rankBonuses": [6, 5, 4, 3, 2],
+    "rankBonuses": [
+      6,
+      5,
+      4,
+      3,
+      2
+    ],
     "maximumDailyXp": 8
   },
   "verificationSources": {
     "websiteVotingCount": 9,
     "websiteVoting": [
-      { "sourceKey": "web:geckoterminal", "name": "GeckoTerminal", "url": "https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM", "verificationMode": "AGGREGATE_ONLY", "classification": "COMMUNITY_PROGRESS_ONLY", "certificationStatus": "OBSERVED_NO_USER_RECEIPT", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:top100token", "name": "Top100Token", "url": "https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinmooner", "name": "CoinMooner", "url": "https://coinmooner.com/coins/fawk-q-fawkq", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
-      { "sourceKey": "web:gemfinder", "name": "GemFinder", "url": "https://gemfinder.cc/gem/29742", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
-      { "sourceKey": "web:coinsniper", "name": "CoinSniper", "url": "https://coinsniper.net/coin/92949", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinmun", "name": "CoinMun", "url": "https://coinmun.com/coins/fawk-q", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
-      { "sourceKey": "web:coinboom", "name": "CoinBoom", "url": "https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "NO_FREE_VOTE_OBSERVED", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinbuzzer", "name": "CoinBuzzer", "url": "https://coinbuzzer.me/coin/860", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinscope", "name": "CoinScope", "url": "https://www.coinscope.co/coin/fawkq", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false }
+      {
+        "sourceKey": "web:geckoterminal",
+        "name": "GeckoTerminal",
+        "url": "https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM",
+        "verificationMode": "AGGREGATE_ONLY",
+        "classification": "COMMUNITY_PROGRESS_ONLY",
+        "certificationStatus": "OBSERVED_NO_USER_RECEIPT",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:top100token",
+        "name": "Top100Token",
+        "url": "https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump",
+        "verificationMode": "PENDING_LIVE_TEST",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "CLOUDFLARE_BLOCKED",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinmooner",
+        "name": "CoinMooner",
+        "url": "https://coinmooner.com/coins/fawk-q-fawkq",
+        "verificationMode": "SCREENSHOT_REVIEW",
+        "classification": "PROOF_SUPPORTED",
+        "certificationStatus": "OBSERVED_24H",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": true
+      },
+      {
+        "sourceKey": "web:gemfinder",
+        "name": "GemFinder",
+        "url": "https://gemfinder.cc/gem/29742",
+        "verificationMode": "SCREENSHOT_REVIEW",
+        "classification": "PROOF_SUPPORTED",
+        "certificationStatus": "OBSERVED_24H",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": true
+      },
+      {
+        "sourceKey": "web:coinsniper",
+        "name": "CoinSniper",
+        "url": "https://coinsniper.net/coin/92949",
+        "verificationMode": "PENDING_LIVE_TEST",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "CLOUDFLARE_BLOCKED",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinmun",
+        "name": "CoinMun",
+        "url": "https://coinmun.com/coins/fawk-q",
+        "verificationMode": "SCREENSHOT_REVIEW",
+        "classification": "PROOF_SUPPORTED",
+        "certificationStatus": "OBSERVED_24H",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": true
+      },
+      {
+        "sourceKey": "web:coinboom",
+        "name": "CoinBoom",
+        "url": "https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump",
+        "verificationMode": "SOURCE_UNAVAILABLE",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "NO_FREE_VOTE_OBSERVED",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinbuzzer",
+        "name": "CoinBuzzer",
+        "url": "https://coinbuzzer.me/coin/860",
+        "verificationMode": "SOURCE_UNAVAILABLE",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "OFFLINE",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinscope",
+        "name": "CoinScope",
+        "url": "https://www.coinscope.co/coin/fawkq",
+        "verificationMode": "SOURCE_UNAVAILABLE",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "OFFLINE",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      }
     ],
     "telegramBotFirstDailyXp": 2,
     "telegramBotRepeatXp": 1,
@@ -222,73 +426,198 @@
     ]
   },
   "releases": [
-    { "label": "Verified activity", "percent": 25, "detail": "Recurring release after each 48-hour cycle is verified" },
-    { "label": "Post-review", "percent": 50, "detail": "September 18 if cleared at 48 hours; otherwise immediately upon clearance by September 19" },
-    { "label": "Phased", "percent": 25, "detail": "Five 5% releases at 6-day intervals across 30 days after post-review release" }
+    {
+      "label": "Verified activity",
+      "percent": 25,
+      "detail": "Recurring release after each 48-hour cycle is verified"
+    },
+    {
+      "label": "Post-review",
+      "percent": 50,
+      "detail": "50% releases after final review clearance within the 48–72 hour review window"
+    },
+    {
+      "label": "Phased",
+      "percent": 25,
+      "detail": "Five 5% releases at 6-day intervals across 30 days after post-review release"
+    }
   ],
   "missions": [
     {
-      "id": "oracle-raids", "kind": "INDIVIDUAL", "icon": "⚔️", "image": "/campaign-app/assets/missions/v3-oracle-x-raids.webp",
-      "title": "Oracle X Raids", "description": "Verified likes, reposts, replies, quote posts and bookmarks.", "status": "0 / 5", "reward": "Up to 20 XP", "frequency": "Daily", "enabled": false,
+      "id": "oracle-raids",
+      "kind": "INDIVIDUAL",
+      "icon": "⚔️",
+      "image": "/campaign-app/assets/missions/v3-oracle-x-raids.webp",
+      "title": "Oracle X Raids",
+      "description": "Verified likes, reposts, replies, quote posts and bookmarks.",
+      "status": "0 / 5",
+      "reward": "Up to 20 XP",
+      "frequency": "Daily",
+      "enabled": false,
       "verification": "Oracle verifies each accepted X action. Project Q settles 4 XP per action inside the 20 XP mission cap and 75 XP overall daily cap.",
-      "requirements": ["Verified Telegram and Oracle X identity", "Enter through the official Oracle raid flow", "Pass action, timing and replay verification"],
+      "requirements": [
+        "Verified Telegram and Oracle X identity",
+        "Enter through the official Oracle raid flow",
+        "Pass action, timing and replay verification"
+      ],
       "actionLabel": "Open Oracle"
     },
     {
-      "id": "website-voting", "kind": "INDIVIDUAL", "icon": "🗳", "image": "/campaign-app/assets/missions/v3-website-voting.webp",
-      "title": "Website Voting", "description": "Certified listing votes with cooldown tracking.", "status": "0 / 9", "reward": "Up to 11 XP", "frequency": "Per certified source", "enabled": false,
+      "id": "website-voting",
+      "kind": "INDIVIDUAL",
+      "icon": "🗳",
+      "image": "/campaign-app/assets/missions/v3-website-voting.webp",
+      "title": "Website Voting",
+      "description": "Certified listing votes with cooldown tracking.",
+      "status": "0 / 9",
+      "reward": "Up to 11 XP",
+      "frequency": "Per certified source",
+      "enabled": false,
       "verification": "Each accepted voting source awards 1 XP. Completing every currently available source adds a one-time 2 XP bonus, subject to the shared participation and overall caps.",
-      "requirements": ["Use a source registered by Project Q", "Complete the source-specific cooldown and evidence check", "Duplicate or unavailable-source submissions do not count"],
+      "requirements": [
+        "Use a source registered by Project Q",
+        "Complete the source-specific cooldown and evidence check",
+        "Duplicate or unavailable-source submissions do not count"
+      ],
       "actionLabel": "View certified sources"
     },
     {
-      "id": "trending-bots", "kind": "INDIVIDUAL", "icon": "🤖", "image": "/campaign-app/assets/missions/v3-trending-bots.webp",
-      "title": "Trending Bots", "description": "Repeat verified pushes whenever each bot cooldown resets.", "status": "0 pushes", "reward": "2 XP first · 1 XP repeats · 20 XP daily", "frequency": "Every certified cooldown", "enabled": false,
+      "id": "trending-bots",
+      "kind": "INDIVIDUAL",
+      "icon": "🤖",
+      "image": "/campaign-app/assets/missions/v3-trending-bots.webp",
+      "title": "Trending Bots",
+      "description": "Repeat verified pushes whenever each bot cooldown resets.",
+      "status": "0 pushes",
+      "reward": "2 XP first · 1 XP repeats · 20 XP daily",
+      "frequency": "Every certified cooldown",
+      "enabled": false,
       "verification": "Open a registered bot, vote for FAWKQ, then privately forward the original completion message to Project Q within 10 minutes. Project Q verifies the permanent numeric bot ID, success text, FAWKQ context, timestamp, certified cooldown and global replay hash. Every accepted receipt adds one uncapped Trending Push.",
-      "requirements": ["Direct-receipt bots: forward the original FAWKQ success message to Project Q", "WTF Trending: first forward the FAWKQ vote-context message, then its matching generic success message", "The first accepted vote per bot each Vancouver campaign day earns 2 XP; certified repeats earn 1 XP up to 20 daily, while every accepted receipt adds one Trending Push"],
+      "requirements": [
+        "Direct-receipt bots: forward the original FAWKQ success message to Project Q",
+        "WTF Trending: first forward the FAWKQ vote-context message, then its matching generic success message",
+        "The first accepted vote per bot each Vancouver campaign day earns 2 XP; certified repeats earn 1 XP up to 20 daily, while every accepted receipt adds one Trending Push"
+      ],
       "actionLabel": "Choose a verified bot"
     },
     {
-      "id": "bagwork", "kind": "INDIVIDUAL", "icon": "💼", "image": "/campaign-app/assets/missions/v3-bagwork.webp",
-      "title": "Bagwork", "description": "Complete approved platform tasks and earn SOL.", "status": "Open", "reward": "SOL + approved campaign credit", "frequency": "Per approved task", "enabled": true,
+      "id": "bagwork",
+      "kind": "INDIVIDUAL",
+      "icon": "💼",
+      "image": "/campaign-app/assets/missions/v3-bagwork.webp",
+      "title": "Bagwork",
+      "description": "Complete approved platform tasks and earn SOL.",
+      "status": "Open",
+      "reward": "SOL + approved campaign credit",
+      "frequency": "Per approved task",
+      "enabled": true,
       "verification": "The Bagwork backend records creator clearance, approved submissions, the applicable measurement window and confirmed payouts.",
-      "requirements": ["Apply for clearance before creating the content", "Follow the live task brief and platform requirements", "Only confirmed Bagwork records receive payout or campaign credit"],
+      "requirements": [
+        "Apply for clearance before creating the content",
+        "Follow the live task brief and platform requirements",
+        "Only confirmed Bagwork records receive payout or campaign credit"
+      ],
       "actionLabel": "Open Bagwork"
     },
     {
-      "id": "buy-to-earn", "kind": "INDIVIDUAL", "icon": "📊", "image": "/campaign-app/assets/missions/v3-buy-to-earn.webp",
-      "title": "Buy-to-Earn", "description": "Track finalized net buys through approved markets.", "status": "Locked", "reward": "Tier rewards", "frequency": "Campaign snapshot", "enabled": false,
+      "id": "buy-to-earn",
+      "kind": "INDIVIDUAL",
+      "icon": "📊",
+      "image": "/campaign-app/assets/missions/v3-buy-to-earn.webp",
+      "title": "Buy-to-Earn",
+      "description": "Track finalized net buys through approved markets.",
+      "status": "Locked",
+      "reward": "Tier rewards",
+      "frequency": "Campaign snapshot",
+      "enabled": false,
       "verification": "Project Q calculates finalized eligible buys minus eligible sells through approved markets. Tier 1 starts at 0.07 SOL net buy; Tier 2 starts at 0.20 SOL.",
-      "requirements": ["Verified reward wallet and FAWKQ token account", "Finalized activity through approved markets", "Transfers, OTC activity, rewards and manipulation are excluded"],
-      "actionLabel": "View my position", "readOnlyAction": true
+      "requirements": [
+        "Verified reward wallet and FAWKQ token account",
+        "Finalized activity through approved markets",
+        "Transfers, OTC activity, rewards and manipulation are excluded"
+      ],
+      "actionLabel": "View my position",
+      "readOnlyAction": true
     },
     {
-      "id": "participation-xp", "kind": "INDIVIDUAL", "icon": "Q", "image": "/campaign-app/assets/missions/v3-participation-xp.webp",
-      "title": "Participation XP", "description": "Settle verified campaign participation into your auditable Project Q XP record.", "status": "0 / 75", "reward": "Up to daily caps", "frequency": "Daily ledger", "enabled": false,
+      "id": "participation-xp",
+      "kind": "INDIVIDUAL",
+      "icon": "Q",
+      "image": "/campaign-app/assets/missions/v3-participation-xp.webp",
+      "title": "Participation XP",
+      "description": "Settle verified campaign participation into your auditable Project Q XP record.",
+      "status": "0 / 75",
+      "reward": "Up to daily caps",
+      "frequency": "Daily ledger",
+      "enabled": false,
       "verification": "This is the combined Project Q record—not a separate submission. Accepted missions settle into an append-only XP ledger with 15 participation, 20 mission and 75 overall XP daily caps.",
-      "requirements": ["Complete an eligible mission through its official flow", "Wait for source verification and Project Q settlement", "Pending or rejected evidence awards no XP"],
-      "actionLabel": "View XP ledger", "readOnlyAction": true
+      "requirements": [
+        "Complete an eligible mission through its official flow",
+        "Wait for source verification and Project Q settlement",
+        "Pending or rejected evidence awards no XP"
+      ],
+      "actionLabel": "View XP ledger",
+      "readOnlyAction": true
     },
     {
-      "id": "community-pulse", "kind": "INDIVIDUAL", "icon": "◉", "image": "/campaign-app/assets/missions/v3-community-pulse.webp",
-      "title": "Community Pulse", "description": "Earn daily XP through sustained, meaningful participation in the official FAWKQ community.", "status": "Daily", "reward": "Up to 8 XP", "frequency": "Daily", "enabled": false,
+      "id": "community-pulse",
+      "kind": "INDIVIDUAL",
+      "icon": "◉",
+      "image": "/campaign-app/assets/missions/v3-community-pulse.webp",
+      "title": "Community Pulse",
+      "description": "Earn daily XP through sustained, meaningful participation in the official FAWKQ community.",
+      "status": "Daily",
+      "reward": "Up to 8 XP",
+      "frequency": "Daily",
+      "enabled": false,
       "verification": "Qualify with 5 useful messages across 3 separate 30-minute windows, 2 genuine replies and at least a 2-hour activity span. Daily Top 5 bonuses can raise the award from 2 XP to 8 XP.",
-      "requirements": ["Participate in the configured official FAWKQ community", "Commands, bots, repeated text and low-content messages do not count", "Project Q stores a content fingerprint rather than raw message text"],
-      "actionLabel": "View Community Pulse", "readOnlyAction": true
+      "requirements": [
+        "Participate in the configured official FAWKQ community",
+        "Commands, bots, repeated text and low-content messages do not count",
+        "Project Q stores a content fingerprint rather than raw message text"
+      ],
+      "actionLabel": "View Community Pulse",
+      "readOnlyAction": true
     },
     {
-      "id": "verified-referrals", "kind": "INDIVIDUAL", "icon": "↗", "image": "/campaign-app/assets/missions/v3-verified-referrals.webp",
-      "title": "Verified Referrals", "description": "Invite a new participant who verifies, buys at least $2 of FAWKQ and earns verified XP.", "status": "Reward locked", "reward": "10 XP per qualified referral", "frequency": "Per qualified new participant", "enabled": false,
+      "id": "verified-referrals",
+      "kind": "INDIVIDUAL",
+      "icon": "↗",
+      "image": "/campaign-app/assets/missions/v3-verified-referrals.webp",
+      "title": "Verified Referrals",
+      "description": "Invite a new participant who verifies, buys at least $2 of FAWKQ and earns verified XP.",
+      "status": "Reward locked",
+      "reward": "10 XP per qualified referral",
+      "frequency": "Per qualified new participant",
+      "enabled": false,
       "verification": "First-touch attribution records the referral. Qualification requires a new participant, verified Telegram/X/wallet identity, a verified post-referral FAWKQ purchase of at least $2 and later positive campaign XP. Exact bonuses queue when the participant lacks room under the 75 XP daily cap.",
-      "requirements": ["Share your personal opaque Project Q referral link", "The referred participant must complete every qualification stage", "Self-referrals, duplicate identities and recycled wallets do not qualify"],
-      "actionLabel": "My referral link", "readOnlyAction": true
+      "requirements": [
+        "Share your personal opaque Project Q referral link",
+        "The referred participant must complete every qualification stage",
+        "Self-referrals, duplicate identities and recycled wallets do not qualify"
+      ],
+      "actionLabel": "My referral link",
+      "readOnlyAction": true
     },
     {
-      "id": "earn-to-burn", "kind": "COLLECTIVE", "icon": "🔥", "image": "/campaign-app/assets/missions/v3-earn-to-burn.webp",
-      "title": "Earn to Burn", "description": "Every verified campaign XP advances five shared burn milestones and public receipts.", "status": "Plan locked", "reward": "5 × 3M FAWKQ burns", "frequency": "Campaign-wide", "enabled": false,
+      "id": "earn-to-burn",
+      "kind": "COLLECTIVE",
+      "icon": "🔥",
+      "image": "/campaign-app/assets/missions/v3-earn-to-burn.webp",
+      "title": "Earn to Burn",
+      "description": "Every verified campaign XP advances five shared burn milestones and public receipts.",
+      "status": "Plan locked",
+      "reward": "5 × 3M FAWKQ burns",
+      "frequency": "Campaign-wide",
+      "enabled": false,
       "verification": "One settled campaign XP advances one append-only collective progress unit. Milestones unlock at 2,000, 5,000, 9,000, 14,000 and 20,000 verified XP, with 3,000,000 FAWKQ assigned to each burn.",
-      "requirements": ["Only finalized, deduplicated campaign XP advances progress", "Two founders independently approve the same immutable proposal", "The creator wallet signs once before Project Q verifies and publishes the burn receipt"],
-      "actionLabel": "View public ledger", "readOnlyAction": true
+      "requirements": [
+        "Only finalized, deduplicated campaign XP advances progress",
+        "Two founders independently approve the same immutable proposal",
+        "The creator wallet signs once before Project Q verifies and publishes the burn receipt"
+      ],
+      "actionLabel": "View public ledger",
+      "readOnlyAction": true
     }
   ]
 }
