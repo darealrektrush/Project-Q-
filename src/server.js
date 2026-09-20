@@ -31,6 +31,7 @@ import {
   validateOracleWalletEvent,
 } from './campaign/oracleIdentity.js';
 import * as walletStatus from './campaign/walletStatus.js';
+import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
   WEBSITE_VOTE_PROFILES,
   buildWebsiteVoteChallenge,
@@ -333,14 +334,31 @@ app.post('/campaign-app/api/wallet/status', async (req, res) => {
       'identity_links',
       `?campaign_id=eq.${encodeURIComponent(campaignId)}` +
         `&telegram_user_id=eq.${encodeURIComponent(String(session.user.id))}` +
-        '&select=reward_wallet,wallet_verified_at&limit=1'
+        '&select=profile_id,reward_wallet,wallet_verified_at,x_verified_at&limit=1'
     );
     const identity = identityRows[0];
-    if (!identity?.reward_wallet || !identity.wallet_verified_at) {
-      return res.status(409).json({ ok: false, error: 'verified reward wallet required' });
+    if (!identity?.profile_id || !identity?.reward_wallet || !identity.wallet_verified_at || !identity.x_verified_at) {
+      return res.status(409).json({ ok: false, error: 'verified campaign identity and reward wallet required' });
     }
-    const status = await walletStatus.getFawkqWalletStatus(solana.getConnection(), identity.reward_wallet);
-    return res.status(200).json({ ok: true, status });
+    const status = await verifyFawkqHolderEligibility(
+      solana.getConnection(),
+      identity.reward_wallet
+    );
+    const eligibility = await recordHolderEligibility(supabase, {
+      campaignId,
+      telegramUserId: session.user.id,
+      profileId: identity.profile_id,
+      rewardWallet: identity.reward_wallet,
+      verification: status,
+    });
+    return res.status(200).json({
+      ok: true,
+      status: {
+        ...status,
+        holderEligible: Boolean(eligibility.eligible),
+        minimumUsdCents: Number(eligibility.minimum_usd_cents ?? status.minimumUsdCents),
+      },
+    });
   } catch (err) {
     console.error('campaign wallet status unavailable', err.message);
     return res.status(503).json({
