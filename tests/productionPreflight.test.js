@@ -26,8 +26,27 @@ const telegramClient = {
 const readinessLoader = async () => ({
   state: 'DRAFT',
   readyCount: 2,
-  totalCount: 11,
+  totalCount: 12,
   reportHash: 'a'.repeat(64),
+});
+
+const fundingLoader = async () => ({
+  campaignState: 'DRAFT',
+  fundedBaseUnits: '17500000000000',
+  proposal: {
+    id: 7,
+    stale: false,
+    vaultBaseUnits: '17500000000000',
+    topContributorPrizeLamports: '1000000000',
+    conservationContributionLamports: '100000000',
+    totalSolCommitmentLamports: '1100000000',
+    conservationVaultAddress: '22222222222222222222222222222222',
+    conservationAttribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
+  },
+  approvalCount: 2,
+  holdCount: 0,
+  finalized: true,
+  finalizedAt: '2026-10-01T13:00:00Z',
 });
 
 test('healthy production plumbing is safe for a read-only rehearsal', async () => {
@@ -36,6 +55,7 @@ test('healthy production plumbing is safe for a read-only rehearsal', async () =
     telegramClient,
     campaignClient: {},
     readinessLoader,
+    fundingLoader,
   });
   assert.equal(result.safeForRehearsal, true);
   assert.equal(result.readOnly, true);
@@ -55,6 +75,7 @@ test('Render identity uses the stable deployed branch and commit metadata', asyn
     telegramClient,
     campaignClient: {},
     readinessLoader,
+    fundingLoader,
   });
   assert.equal(result.safeForRehearsal, true);
   assert.equal(result.checks.find(({ key }) => key === 'render').status, 'pass');
@@ -70,6 +91,7 @@ test('wrong Render branch or commit still blocks', async () => {
       telegramClient,
       campaignClient: {},
       readinessLoader,
+      fundingLoader,
     });
     assert.equal(result.checks.find(({ key }) => key === 'render').status, 'block');
   }
@@ -88,6 +110,7 @@ test('wrong bot, webhook and enabled runtime flag fail closed', async () => {
     },
     campaignClient: {},
     readinessLoader,
+    fundingLoader,
   });
   assert.equal(result.safeForRehearsal, false);
   assert.equal(result.warnings, 1);
@@ -102,6 +125,7 @@ test('Supabase failure and non-DRAFT state block without exposing an error', asy
     telegramClient,
     campaignClient: {},
     readinessLoader: async () => { throw new Error('secret database response'); },
+    fundingLoader,
   });
   assert.equal(unavailable.safeForRehearsal, false);
   assert.equal(buildProductionPreflightText(unavailable).includes('secret database response'), false);
@@ -111,8 +135,65 @@ test('Supabase failure and non-DRAFT state block without exposing an error', asy
     telegramClient,
     campaignClient: {},
     readinessLoader: async () => ({ ...(await readinessLoader()), state: 'ACTIVE' }),
+    fundingLoader,
   });
   assert.equal(active.checks.find(({ key }) => key === 'campaign-state').status, 'block');
+});
+
+test('impact funding preflight distinguishes pending, finalized and conflicting states', async () => {
+  const cases = [
+    {
+      funding: { fundedBaseUnits: '0', proposal: null, approvalCount: 0, holdCount: 0, finalized: false },
+      status: 'warn',
+    },
+    {
+      funding: {
+        fundedBaseUnits: '0',
+        proposal: {
+          stale: false, vaultBaseUnits: '17500000000000', topContributorPrizeLamports: '1000000000',
+          conservationContributionLamports: '100000000', totalSolCommitmentLamports: '1100000000',
+          conservationVaultAddress: '22222222222222222222222222222222',
+          conservationAttribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
+        },
+        approvalCount: 2, holdCount: 0, finalized: false,
+      },
+      status: 'warn',
+    },
+    {
+      funding: {
+        fundedBaseUnits: '17500000000000',
+        proposal: {
+          stale: false, vaultBaseUnits: '17500000000000', topContributorPrizeLamports: '1000000000',
+          conservationContributionLamports: '100000000', totalSolCommitmentLamports: '1100000000',
+          conservationVaultAddress: '22222222222222222222222222222222',
+          conservationAttribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
+        },
+        approvalCount: 2, holdCount: 0, finalized: true,
+      },
+      status: 'pass',
+    },
+    {
+      funding: {
+        fundedBaseUnits: '17500000000000',
+        proposal: {
+          stale: false, vaultBaseUnits: '17500000000000', topContributorPrizeLamports: '1000000000',
+          conservationContributionLamports: '0', totalSolCommitmentLamports: '1000000000',
+          conservationVaultAddress: null,
+          conservationAttribution: null,
+        },
+        approvalCount: 2, holdCount: 0, finalized: true,
+      },
+      status: 'block',
+    },
+  ];
+
+  for (const entry of cases) {
+    const result = await runProductionPreflight({
+      env: ENV, telegramClient, campaignClient: {}, readinessLoader,
+      fundingLoader: async () => entry.funding,
+    });
+    assert.equal(result.checks.find(({ key }) => key === 'funding-governance').status, entry.status);
+  }
 });
 
 test('preflight text contains no configured credentials or wallet addresses', async () => {
@@ -123,7 +204,7 @@ test('preflight text contains no configured credentials or wallet addresses', as
     SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_hidden',
     CREATOR_WALLET_PUBLIC: '7kGJBag2VcjR4JB7qLStgizLa2eDQuGtiysZKzEetRMT',
   };
-  const result = await runProductionPreflight({ env, telegramClient, campaignClient: {}, readinessLoader });
+  const result = await runProductionPreflight({ env, telegramClient, campaignClient: {}, readinessLoader, fundingLoader });
   const text = buildProductionPreflightText(result);
   for (const secret of [
     env.TELEGRAM_BOT_TOKEN,
