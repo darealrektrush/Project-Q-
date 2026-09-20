@@ -240,6 +240,7 @@ test('campaign readiness uses only the selected deployment registry version and 
       }];
       if (table === 'ruleset_versions' || table === 'cycles'
         || table === 'verification_sources' || table === 'verification_source_certifications'
+        || table === 'campaign_cycle_draw_commitments'
         || table === 'earn_to_burn_programs') return [];
       if (table === 'deployment_registry') {
         assert.match(query, /version=eq\.2/);

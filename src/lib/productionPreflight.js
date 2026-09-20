@@ -1,5 +1,6 @@
 import { resolveCampaignAppUrl } from '../campaign/ui.js';
 import { getCampaignReadiness } from '../campaign/service.js';
+import { getFundingGovernanceState } from '../campaign/fundingGovernance.js';
 import { isEnabled } from './featureFlags.js';
 import { resolveTelegramWebhookUrl, TELEGRAM_WEBHOOK_ALLOWED_UPDATES } from './telegramWebhook.js';
 
@@ -40,6 +41,7 @@ export async function runProductionPreflight({
   telegramClient,
   campaignClient,
   readinessLoader = getCampaignReadiness,
+  fundingLoader = getFundingGovernanceState,
 } = {}) {
   const checks = [];
   const branch = String(env.RENDER_GIT_BRANCH ?? '').trim();
@@ -56,10 +58,11 @@ export async function runProductionPreflight({
     renderReady ? `project-q · ${branch} · ${commit}` : 'Expected project-q on main with a deployed commit'
   ));
 
-  const [botResult, webhookResult, readinessResult] = await Promise.allSettled([
+  const [botResult, webhookResult, readinessResult, fundingResult] = await Promise.allSettled([
     telegramClient.getMe(),
     telegramClient.getWebhookInfo(),
     readinessLoader(campaignClient, env),
+    fundingLoader(campaignClient, env.BOND_THE_DUCK_CAMPAIGN_ID ?? 'bond-the-duck-2026'),
   ]);
 
   if (botResult.status === 'fulfilled') {
@@ -126,6 +129,49 @@ export async function runProductionPreflight({
   } else {
     checks.push(result('supabase', 'Supabase campaign read', 'block', 'Database readiness unavailable'));
     checks.push(result('campaign-state', 'Campaign rehearsal lock', 'block', 'Campaign state unavailable'));
+  }
+
+  if (fundingResult.status === 'fulfilled') {
+    const funding = fundingResult.value ?? {};
+    const ledger = String(funding.fundedBaseUnits ?? '0');
+    const proposal = funding.proposal ?? null;
+    const impactLocked = Boolean(
+      proposal
+      && String(proposal.vaultBaseUnits) === '17500000000000'
+      && String(proposal.topContributorPrizeLamports) === '1000000000'
+      && String(proposal.conservationContributionLamports) === '100000000'
+      && String(proposal.totalSolCommitmentLamports) === '1100000000'
+      && proposal.conservationVaultAddress
+      && proposal.conservationAttribution === 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY'
+    );
+
+    let status = 'warn';
+    let detail = 'No funding evidence proposal recorded';
+    if (funding.finalized === true && ledger === '17500000000000' && impactLocked) {
+      status = 'pass';
+      detail = '17.5M FAWKQ + 1 SOL prize + 0.10 SOL conservation impact finalized';
+    } else if (funding.finalized === true || ledger !== '0') {
+      status = 'block';
+      detail = 'Funding ledger and audited impact finalization do not reconcile';
+    } else if (proposal?.stale) {
+      detail = 'Funding evidence exists but is stale and must be refreshed';
+    } else if (proposal && !impactLocked) {
+      status = 'block';
+      detail = 'Funding proposal does not match the locked 17.5M + 1.10 SOL impact model';
+    } else if (proposal && Number(funding.approvalCount || 0) === 2 && Number(funding.holdCount || 0) === 0) {
+      detail = 'Funding evidence has two approvals and is awaiting ledger finalization';
+    } else if (proposal) {
+      detail = `Funding evidence current · ${Number(funding.approvalCount || 0)}/2 founder approvals`;
+    }
+
+    checks.push(result('funding-governance', 'Funding + impact governance', status, detail));
+  } else {
+    checks.push(result(
+      'funding-governance',
+      'Funding + impact governance',
+      'warn',
+      'Funding governance state unavailable'
+    ));
   }
 
   try {
