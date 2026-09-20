@@ -57,7 +57,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
   const id = campaignId();
   const [
     campaignRows, rulesetRows, cycleRows, sourceRows, sourceCertificationRows,
-    registryRows, burnProgramRows,
+    burnProgramRows,
   ] = await Promise.all([
     client.select(
       'campaigns',
@@ -78,7 +78,6 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
         '&select=id,campaign_id,source_key,source_kind,classification,health,evidence_url,evidence_hash,checked_at,expires_at' +
         '&order=checked_at.desc,id.desc&limit=500'
     ),
-    Promise.resolve([]),
     client.select(
       'earn_to_burn_programs',
       `?campaign_id=eq.${encodeURIComponent(id)}&select=id,state,mint,token_program_id,decimals,rules_hash,hard_cap_base_units,max_single_burn_base_units&limit=1`
