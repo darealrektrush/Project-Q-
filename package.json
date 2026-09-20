@@ -19,7 +19,8 @@
     "test": "node --test tests/*.test.js",
     "check": "npm test",
     "audit:bond-registry": "node scripts/audit-bond-registry.js",
-    "audit:bond-sources": "node scripts/audit-bond-source-certifications.js"
+    "audit:bond-sources": "node scripts/audit-bond-source-certifications.js",
+    "audit:bond-rules": "node scripts/audit-bond-rules.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.3",
