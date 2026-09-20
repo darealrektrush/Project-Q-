@@ -217,6 +217,24 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
     blockers.push('reward release schedule is incomplete');
   }
 
+  const buyToEarn = rules.buyToEarn || {};
+  const buyToEarnMode = String(buyToEarn.mode || '');
+  if (!['WEIGHT_ONLY', 'SEPARATE_POOL'].includes(buyToEarnMode)
+    || Number(buyToEarn.tier1NetBuySol) !== 0.07
+    || Number(buyToEarn.tier2NetBuySol) !== 0.20) {
+    blockers.push('Buy-to-Earn economic mode is not finalized');
+  } else if (buyToEarnMode === 'WEIGHT_ONLY') {
+    if (String(buyToEarn.poolBaseUnits ?? '0') !== '0') {
+      blockers.push('weight-only Buy-to-Earn cannot reserve a separate token pool');
+    }
+  } else {
+    const pool = String(buyToEarn.poolBaseUnits ?? '');
+    const source = String(buyToEarn.fundingSource ?? '').trim();
+    if (!/^[1-9]\d*$/.test(pool) || !source) {
+      blockers.push('separate Buy-to-Earn pool requires exact amount and funding source');
+    }
+  }
+
   const referrals = rules.referrals || {};
   if (referrals.minimumPurchaseUsd !== 2) blockers.push('referral purchase minimum is not USD $2');
   if (!POSITIVE_XP(referrals.bonusXp)) blockers.push('verified referral bonus XP is not finalized');
