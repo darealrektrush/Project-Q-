@@ -4,6 +4,8 @@ export const BOND_FUNDING_BASE_UNITS = '17500000000000';
 export const BOND_SQUADS_APPROVAL_THRESHOLD = 2;
 export const BOND_SQUADS_MEMBER_COUNT = 3;
 export const BOND_TOP_CONTRIBUTOR_LAMPORTS = '1000000000';
+export const BOND_CONSERVATION_CONTRIBUTION_LAMPORTS = '100000000';
+export const BOND_TOTAL_SOL_COMMITMENT_LAMPORTS = '1100000000';
 export const BOND_FUNDING_MAX_AGE_MS = 72 * 60 * 60 * 1000;
 
 const WALLET = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -22,13 +24,14 @@ export function fundingProposalIdempotencyKey({
   campaignId,
   founderUserId,
   vaultAddress,
+  conservationVaultAddress,
   evidenceHash,
   verifiedAt,
 } = {}) {
-  const values = [campaignId, founderUserId, vaultAddress, evidenceHash, verifiedAt]
+  const values = [campaignId, founderUserId, vaultAddress, conservationVaultAddress, evidenceHash, verifiedAt]
     .map((value) => String(value ?? '').trim());
   if (!values[0] || !/^\d+$/.test(values[1]) || !WALLET.test(values[2])
-    || !HASH.test(values[3]) || !Number.isFinite(Date.parse(values[4]))) {
+    || !WALLET.test(values[3]) || !HASH.test(values[4]) || !Number.isFinite(Date.parse(values[5]))) {
     throw new Error('invalid funding evidence identity');
   }
   return createHash('sha256').update(values.join(':')).digest('hex');
@@ -42,6 +45,10 @@ export function buildFundingEvidencePacket({
   squadsApprovalThreshold = BOND_SQUADS_APPROVAL_THRESHOLD,
   squadsMemberCount = BOND_SQUADS_MEMBER_COUNT,
   topContributorPrizeLamports = BOND_TOP_CONTRIBUTOR_LAMPORTS,
+  conservationContributionLamports = BOND_CONSERVATION_CONTRIBUTION_LAMPORTS,
+  totalSolCommitmentLamports = BOND_TOTAL_SOL_COMMITMENT_LAMPORTS,
+  conservationVaultAddress,
+  conservationAttribution = 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
   evidenceUrl,
   evidenceHash,
   verifiedAt,
@@ -53,6 +60,10 @@ export function buildFundingEvidencePacket({
   const vault = String(vaultAddress || '').trim();
   const amount = String(vaultBaseUnits ?? '').trim();
   const prize = String(topContributorPrizeLamports ?? '').trim();
+  const conservation = String(conservationContributionLamports ?? '').trim();
+  const totalSol = String(totalSolCommitmentLamports ?? '').trim();
+  const conservationVault = String(conservationVaultAddress || '').trim();
+  const attribution = String(conservationAttribution || '').trim();
   const evidence = httpsUrl(evidenceUrl);
   const hash = String(evidenceHash || '').trim();
   const verified = new Date(verifiedAt);
@@ -65,7 +76,11 @@ export function buildFundingEvidencePacket({
   if (amount !== BOND_FUNDING_BASE_UNITS) reasons.push('vault balance must be exactly 17,500,000 FAWKQ');
   if (Number(squadsApprovalThreshold) !== BOND_SQUADS_APPROVAL_THRESHOLD) reasons.push('Squads approval threshold must be 2');
   if (Number(squadsMemberCount) !== BOND_SQUADS_MEMBER_COUNT) reasons.push('Squads member count must be 3');
-  if (prize !== BOND_TOP_CONTRIBUTOR_LAMPORTS) reasons.push('top contributor funding must be exactly 1 SOL');
+  if (prize !== BOND_TOP_CONTRIBUTOR_LAMPORTS) reasons.push('top contributor prize must be exactly 1 SOL');
+  if (conservation !== BOND_CONSERVATION_CONTRIBUTION_LAMPORTS) reasons.push('conservation contribution must be exactly 0.10 SOL');
+  if (totalSol !== BOND_TOTAL_SOL_COMMITMENT_LAMPORTS) reasons.push('total SOL impact commitment must be exactly 1.10 SOL');
+  if (!WALLET.test(conservationVault)) reasons.push('valid Ocean Conservation vault address is required');
+  if (attribution !== 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY') reasons.push('conservation attribution must use the public campaign identity');
   if (!evidence) reasons.push('HTTPS funding evidence URL is required');
   if (!HASH.test(hash)) reasons.push('funding evidence SHA-256 is required');
   if (!Number.isFinite(verifiedMs)) reasons.push('valid funding verification timestamp is required');
@@ -81,6 +96,7 @@ export function buildFundingEvidencePacket({
     p_campaign_id: normalizedCampaignId,
     p_founder_user_id: Number(founder),
     p_vault_address: vault,
+    p_conservation_vault_address: conservationVault,
     p_evidence_url: evidence,
     p_evidence_hash: hash,
     p_verified_at: verifiedIso,
@@ -88,6 +104,7 @@ export function buildFundingEvidencePacket({
       campaignId: normalizedCampaignId,
       founderUserId: founder,
       vaultAddress: vault,
+      conservationVaultAddress: conservationVault,
       evidenceHash: hash,
       verifiedAt: verifiedIso,
     }),
@@ -101,6 +118,10 @@ export function buildFundingEvidencePacket({
     squadsApprovalThreshold: Number(squadsApprovalThreshold),
     squadsMemberCount: Number(squadsMemberCount),
     topContributorPrizeLamports: prize || null,
+    conservationContributionLamports: conservation || null,
+    totalSolCommitmentLamports: totalSol || null,
+    conservationVaultAddress: conservationVault || null,
+    conservationAttribution: attribution || null,
     evidenceUrl: evidence,
     evidenceHash: HASH.test(hash) ? hash : null,
     verifiedAt: verifiedIso,
@@ -123,6 +144,10 @@ export function buildFundingEvidencePacket({
       squadsApprovalThreshold: Number(squadsApprovalThreshold),
       squadsMemberCount: Number(squadsMemberCount),
       topContributorPrizeLamports: prize || null,
+      conservationContributionLamports: conservation || null,
+      totalSolCommitmentLamports: totalSol || null,
+      conservationVaultAddress: conservationVault || null,
+      conservationAttribution: attribution || null,
       evidenceUrl: evidence,
       evidenceHash: HASH.test(hash) ? hash : null,
       verifiedAt: verifiedIso,
