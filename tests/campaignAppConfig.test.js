@@ -66,10 +66,40 @@ test('campaign registry points to a valid reusable default campaign', async () =
   });
   assert.equal(campaign.campaignCommitments.topContributorPrize.amountLamports, '1000000000');
   assert.equal(campaign.campaignCommitments.topContributorPrize.paidAfterFinalVerification, true);
+  assert.equal(campaign.campaignCommitments.topContributorPrize.separateFromImpactContribution, true);
+  assert.deepEqual(campaign.campaignCommitments.topContributorConservationImpact, {
+    amountLamports: '100000000',
+    amountSol: '0.1',
+    purpose: 'OCEAN_CONSERVATION_IMPACT_IN_RECOGNITION_OF_TOP_BOND_THE_DUCKER',
+    destination: 'OCEAN_CONSERVATION_VAULT',
+    fundingSource: 'SEPARATE_PROJECT_SOL',
+    attributionModel: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
+    executedAfterFinalVerification: true,
+    separateFromWinnerPrize: true,
+    affectsWinnerPrize: false,
+    affectsXp: false,
+    affectsRanking: false,
+  });
+  assert.equal(campaign.campaignCommitments.totalSolCommitmentLamports, '1100000000');
+  assert.equal(campaign.campaignCommitments.totalSolCommitmentSol, '1.1');
   assert.equal(campaign.campaignCommitments.diamondDuckBonus.requiresFullFundingBeforeBonusCalculation, true);
   assert.equal(campaign.campaignCommitments.topContributorPrize.amountLamports, '1000000000');
   assert.equal(campaign.campaignCommitments.earnToBurn.amountBaseUnits, '15000000000000');
+  assert.equal(campaign.campaignCommitments.earnToBurn.source, 'FAWKQ_CREATOR_WALLET');
   assert.equal(campaign.campaignCommitments.totalTokenCommitmentBaseUnits, '32500000000000');
+  assert.deepEqual(campaign.buyToEarn, {
+    mode: 'WEIGHT_ONLY',
+    separateTokenPool: false,
+    poolBaseUnits: '0',
+    fundingSource: 'SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS',
+    includedInCampaignRewardsBaseUnits: '15000000000000',
+    tier1NetBuySol: 0.07,
+    tier1Weight: 1,
+    tier2NetBuySol: 0.2,
+    tier2Weight: 3,
+    weightedDrawPool: 'RANKS_3_TO_15',
+    description: 'Buy-to-Earn does not create a separate FAWKQ payout pool. Verified net-buy tiers increase weighted-draw odds for ranks 3–15 inside the existing 15M FAWKQ Bond campaign reward allocation.'
+  });
   assert.equal(campaign.referrals.minimumPurchaseUsd, 2);
   assert.equal(campaign.referrals.status, 'REWARD_LOCKED');
   assert.equal(campaign.referrals.bonusXp, 10);
