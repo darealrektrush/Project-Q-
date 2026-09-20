@@ -24,6 +24,26 @@ const rules = {
     }],
   },
   draw: structuredClone(BOND_DRAW_POLICY),
+  commitments: {
+    topContributorLamports: '1000000000',
+    topContributorConservationLamports: '100000000',
+    topContributorConservationFundingSource: 'PROJECT_FUNDED_SEPARATE_SOL',
+    topContributorConservationDestination: 'OCEAN_CONSERVATION_VAULT',
+    topContributorConservationAttribution: 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY',
+    totalSolCommitmentLamports: '1100000000',
+  },
+  buyToEarn: {
+    mode: 'WEIGHT_ONLY',
+    separateTokenPool: false,
+    poolBaseUnits: '0',
+    fundingSource: 'SQUADS_COMMUNITY_VAULT_CAMPAIGN_REWARDS',
+    includedInCampaignRewardsBaseUnits: '15000000000000',
+    tier1NetBuySol: 0.07,
+    tier1Weight: 1,
+    tier2NetBuySol: 0.20,
+    tier2Weight: 3,
+    weightedDrawPool: 'RANKS_3_TO_15',
+  },
 };
 
 const appConfig = {
@@ -64,17 +84,22 @@ test('registry audit keeps final-rule and launch-window evidence explicitly bloc
   assert.equal(byField.get('readiness_report').status, REGISTRY_EVIDENCE_STATUS.BLOCKED);
 });
 
-test('registry audit never hides unresolved Buy-to-Earn economics', () => {
+test('registry audit treats Buy-to-Earn as weight-only inside 15M once deployed evidence exists', () => {
   const report = buildBondRegistryEvidence({
     campaign: { id: 'bond-the-duck-2026', rules_hash: 'a'.repeat(64), ruleset_version: 4 },
     rules,
     appConfig,
-    latestMigration: '20260920080000_bond_holder_eligibility',
+    latestMigration: '20260920180000_lock_bond_buytoearn_conservation_economics',
+    deployedCommitSha: 'a'.repeat(40),
   });
   const byField = new Map(report.fields.map((row) => [row.field, row]));
   assert.equal(byField.get('approved_secondary_markets').status, REGISTRY_EVIDENCE_STATUS.BLOCKED);
-  assert.match(byField.get('buy_to_earn_wallet_cap').reason, /7\.5M/);
-  assert.match(byField.get('buy_to_earn_schedule').reason, /reward economics/);
+  assert.equal(byField.get('buy_to_earn_wallet_cap').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.equal(byField.get('buy_to_earn_schedule').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.match(byField.get('buy_to_earn_wallet_cap').value, /separatePool=0/);
+  assert.match(byField.get('buy_to_earn_schedule').value, /weight3/);
+  assert.equal(byField.get('top_contributor_prize_funding').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.match(byField.get('top_contributor_prize_funding').value, /0\.1 SOL Ocean Conservation/);
 });
 
 test('registry audit proves immutable public machine facts only when stable HTTPS evidence exists', () => {
@@ -113,7 +138,7 @@ test('a complete evidence report produces rows accepted by registry validation a
     BOND_SQUADS_VAULT_EVIDENCE_URL: 'https://example.com/vault',
     BOND_SQUADS_AUTHORITY_POLICY: '2-of-3',
     BOND_SQUADS_AUTHORITY_EVIDENCE_URL: 'https://example.com/policy',
-    BOND_TOP_CONTRIBUTOR_FUNDING_REF: '1-SOL-funded',
+    BOND_TOP_CONTRIBUTOR_FUNDING_REF: '1.1-SOL-impact-funded',
     BOND_TOP_CONTRIBUTOR_EVIDENCE_URL: 'https://example.com/top',
     BOND_OFFLINE_RECOVERY_PUBLIC_KEY: 'recovery-public',
     BOND_OFFLINE_RECOVERY_EVIDENCE_URL: 'https://example.com/recovery',
@@ -148,7 +173,7 @@ test('a complete evidence report produces rows accepted by registry validation a
     BOND_READINESS_REPORT_EVIDENCE_URL: 'https://example.com/readiness',
   };
 
-  // Intentionally unresolved Buy-to-Earn fields still keep this report blocked.
+  // Launch-window and approved-market evidence still keep this report incomplete.
   const report = buildBondRegistryEvidence({
     campaign: {
       id: 'bond-the-duck-2026',
