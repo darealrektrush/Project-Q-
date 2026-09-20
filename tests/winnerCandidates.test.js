@@ -35,6 +35,12 @@ const closedCycle = {
   fallback_used: false,
 };
 
+const drawFinalization = {
+  public_seed: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  fallback_used: false,
+  finalized_at: '2026-10-05T15:10:00Z',
+};
+
 const positionRows = xpRows.map(({ telegram_user_id }, index) => ({
   reward_wallet: `wallet-${telegram_user_id}`,
   tier: index % 2 ? 1 : 2,
@@ -48,6 +54,7 @@ function snapshot(overrides = {}) {
     campaignId: 'bond-the-duck-2026',
     cycleId: 2,
     cycle: closedCycle,
+    drawFinalization,
     snapshotAt: '2026-10-06T00:00:00Z',
     xpRows,
     identityRows,
@@ -115,7 +122,7 @@ test('weight-only selection uses Buy-to-Earn position weights and corrected Top 
   const result = snapshot();
   const selection = planWeightOnlyCycleSelection(result, {
     buyToEarnMode: 'WEIGHT_ONLY',
-    publicSeed: 'verified-public-draw-seed-12345',
+    publicSeed: drawFinalization.public_seed,
   });
   assert.equal(selection.winners.length, 5);
   assert.deepEqual(selection.winners.slice(0,2).map(({ telegramUserId }) => telegramUserId), ['1000','1001']);
@@ -129,15 +136,27 @@ test('selection remains blocked until cycle close and cutoff evidence are presen
   assert.throws(
     () => planWeightOnlyCycleSelection(beforeClose, {
       buyToEarnMode: 'WEIGHT_ONLY',
-      publicSeed: 'verified-public-draw-seed-12345',
+      publicSeed: drawFinalization.public_seed,
     }),
     /cutoff and public draw evidence/
   );
 
   const noCutoff = snapshot({
-    cycle: { ...closedCycle, cutoff_slot: null, cutoff_blockhash: null, reveal_value: null },
+    cycle: { ...closedCycle, cutoff_slot: null, cutoff_blockhash: null },
   });
   assert.equal(noCutoff.selectionEvidenceReady, false);
+});
+
+test('selection seed must match the append-only finalized draw seed', () => {
+  const result = snapshot();
+  assert.equal(result.publicSeed, drawFinalization.public_seed);
+  assert.throws(
+    () => planWeightOnlyCycleSelection(result, {
+      buyToEarnMode: 'WEIGHT_ONLY',
+      publicSeed: 'a'.repeat(64),
+    }),
+    /must match finalized draw evidence/
+  );
 });
 
 test('selection remains blocked until final rules explicitly choose weight-only mode', () => {
@@ -145,7 +164,7 @@ test('selection remains blocked until final rules explicitly choose weight-only 
   assert.throws(
     () => planWeightOnlyCycleSelection(result, {
       buyToEarnMode: 'SEPARATE_POOL',
-      publicSeed: 'verified-public-draw-seed-12345',
+      publicSeed: drawFinalization.public_seed,
     }),
     /finalized WEIGHT_ONLY/
   );
