@@ -11,7 +11,7 @@ import {
   toPublicCampaignReadiness,
   closedPublicCampaignReadiness,
 } from '../src/campaign/service.js';
-import { REQUIRED_REGISTRY_FIELDS } from '../src/campaign/registry.js';
+import { REQUIRED_REGISTRY_FIELDS, hashRegistry } from '../src/campaign/registry.js';
 
 test('missing campaign row remains safely in DRAFT', async () => {
   const client = { select: async () => [] };
@@ -210,12 +210,75 @@ test('campaign readiness stays blocked while dates and launch flags are intentio
     PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED: 'false',
   });
   assert.equal(readiness.ready, false);
-  assert.equal(readiness.readyCount, 3);
+  assert.equal(readiness.readyCount, 2);
   assert.equal(readiness.checks.find(({ key }) => key === 'rules').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'dates').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-rules').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-progress').ready, false);
   assert.equal(readiness.checks.find(({ key }) => key === 'burn-verification').ready, false);
+});
+
+test('campaign readiness uses only the selected deployment registry version and verifies its hash', async () => {
+  const registryRows = REQUIRED_REGISTRY_FIELDS.map((field) => ({
+    field,
+    value: `verified-${field}`,
+    owner: 'operations',
+    evidence_url: `https://example.com/${field}`,
+  }));
+  const registryHash = hashRegistry(registryRows);
+  const queries = [];
+  const client = {
+    select: async (table, query) => {
+      queries.push({ table, query });
+      if (table === 'campaigns') return [{
+        id: 'bond-the-duck-2026',
+        state: 'DRAFT',
+        rules_hash: 'a'.repeat(64),
+        ruleset_version: 1,
+        registry_version: 2,
+        funded_base_units: '0',
+      }];
+      if (table === 'ruleset_versions' || table === 'cycles'
+        || table === 'verification_sources' || table === 'verification_source_certifications'
+        || table === 'earn_to_burn_programs') return [];
+      if (table === 'deployment_registry') {
+        assert.match(query, /version=eq\.2/);
+        return registryRows.map((row) => ({ ...row, registry_hash: registryHash }));
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  };
+
+  const readiness = await getCampaignReadiness(client);
+  assert.equal(readiness.checks.find(({ key }) => key === 'registry').ready, true);
+  assert.equal(readiness.registryHash, registryHash);
+  assert.equal(queries.filter(({ table }) => table === 'deployment_registry').length, 1);
+});
+
+test('campaign readiness rejects a selected registry version with mismatched row hash', async () => {
+  const registryRows = REQUIRED_REGISTRY_FIELDS.map((field) => ({
+    field,
+    value: `verified-${field}`,
+    owner: 'operations',
+    evidence_url: `https://example.com/${field}`,
+    registry_hash: 'f'.repeat(64),
+  }));
+  const client = {
+    select: async (table) => {
+      if (table === 'campaigns') return [{
+        id: 'bond-the-duck-2026',
+        state: 'DRAFT',
+        rules_hash: 'a'.repeat(64),
+        ruleset_version: 1,
+        registry_version: 1,
+        funded_base_units: '0',
+      }];
+      if (table === 'deployment_registry') return registryRows;
+      return [];
+    },
+  };
+  const readiness = await getCampaignReadiness(client);
+  assert.equal(readiness.checks.find(({ key }) => key === 'registry').ready, false);
 });
 
 test('campaign readiness fails the date gate when a draft schedule is stale', async () => {
