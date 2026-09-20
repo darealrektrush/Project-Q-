@@ -8,6 +8,10 @@ export const EXPECTED_SOURCE_COUNTS = Object.freeze({
 });
 export const EXPECTED_TOTAL_SOURCE_COUNT = Object.values(EXPECTED_SOURCE_COUNTS)
   .reduce((total, count) => total + count, 0);
+export const MIN_ACCEPTING_SOURCE_COUNTS = Object.freeze({
+  WEBSITE_VOTE: 3,
+  TELEGRAM_BOT: 5,
+});
 export const BOND_TELEGRAM_BOTS = Object.freeze([
   '@majorbuybot',
   '@wtftrending',
@@ -89,12 +93,12 @@ export function evaluateSourceCertifications(
     const checkedAt = timestamp(certification?.checked_at);
     const expiresAt = timestamp(certification?.expires_at);
     const durationMs = checkedAt === null || expiresAt === null ? null : expiresAt - checkedAt;
-    const registryAccepting = ACCEPTING_CLASSIFICATIONS.has(String(source.classification || ''));
-    const current = Boolean(certification
+    const classification = String(source.classification || '');
+    const registryAccepting = ACCEPTING_CLASSIFICATIONS.has(classification);
+    const evidenceCurrent = Boolean(certification
       && certification.campaign_id === source.campaign_id
       && certification.source_kind === sourceKind
       && certification.classification === source.classification
-      && certification.health === 'HEALTHY'
       && checkedAt !== null
       && checkedAt <= nowMs + 5 * 60 * 1000
       && expiresAt !== null
@@ -103,12 +107,20 @@ export function evaluateSourceCertifications(
       && durationMs <= SOURCE_CERTIFICATION_MAX_AGE_MS
       && HASH.test(String(certification.evidence_hash || ''))
       && validEvidenceUrl(certification.evidence_url));
+    const health = String(certification?.health || 'UNCERTIFIED');
+    const healthMatchesClassification = (
+      (registryAccepting && health === 'HEALTHY')
+      || (classification === 'COMMUNITY_PROGRESS_ONLY' && ['HEALTHY', 'DEGRADED'].includes(health))
+      || (classification === 'SOURCE_UNAVAILABLE' && ['DEGRADED', 'OFFLINE'].includes(health))
+      || (classification === 'REMOVED_FOR_INTEGRITY' && health === 'REMOVED')
+    );
+    const current = evidenceCurrent && healthMatchesClassification;
     sourceStatuses.push({
       sourceKey,
       sourceKind,
-      classification: String(source.classification || ''),
+      classification,
       registryAccepting,
-      health: String(certification?.health || 'UNCERTIFIED'),
+      health,
       checkedAt: certification?.checked_at || null,
       expiresAt: certification?.expires_at || null,
       current,
@@ -119,23 +131,35 @@ export function evaluateSourceCertifications(
     && duplicateSourceKeys.size === 0
     && counts.WEBSITE_VOTE === EXPECTED_SOURCE_COUNTS.WEBSITE_VOTE
     && counts.TELEGRAM_BOT === EXPECTED_SOURCE_COUNTS.TELEGRAM_BOT;
-  const allAccepting = sourceStatuses.length === EXPECTED_TOTAL_SOURCE_COUNT
-    && sourceStatuses.every(({ registryAccepting }) => registryAccepting);
   const currentCount = sourceStatuses.filter(({ current }) => current).length;
+  const acceptingCounts = sourceStatuses.reduce((totals, source) => {
+    if (source.registryAccepting && source.current) totals[source.sourceKind] += 1;
+    return totals;
+  }, { WEBSITE_VOTE: 0, TELEGRAM_BOT: 0 });
+  const acceptingMinimumsReady =
+    acceptingCounts.WEBSITE_VOTE >= MIN_ACCEPTING_SOURCE_COUNTS.WEBSITE_VOTE
+    && acceptingCounts.TELEGRAM_BOT >= MIN_ACCEPTING_SOURCE_COUNTS.TELEGRAM_BOT;
   const blockers = [];
   if (!exactComposition) blockers.push('exact 9 website / 5 Telegram bot composition is not registered');
-  if (!allAccepting) blockers.push('one or more registered sources are not individually verifiable');
   if (currentCount !== EXPECTED_TOTAL_SOURCE_COUNT) {
-    blockers.push(`${EXPECTED_TOTAL_SOURCE_COUNT - currentCount} source certification(s) are missing, stale or unhealthy`);
+    blockers.push(`${EXPECTED_TOTAL_SOURCE_COUNT - currentCount} source certification(s) are missing, stale or inconsistent with their registry classification`);
+  }
+  if (acceptingCounts.WEBSITE_VOTE < MIN_ACCEPTING_SOURCE_COUNTS.WEBSITE_VOTE) {
+    blockers.push(`at least ${MIN_ACCEPTING_SOURCE_COUNTS.WEBSITE_VOTE} participant-verifiable website sources must be current and healthy`);
+  }
+  if (acceptingCounts.TELEGRAM_BOT < MIN_ACCEPTING_SOURCE_COUNTS.TELEGRAM_BOT) {
+    blockers.push('all five Telegram bot sources must be current and healthy');
   }
 
   return {
-    ready: exactComposition && allAccepting && currentCount === EXPECTED_TOTAL_SOURCE_COUNT,
+    ready: exactComposition && currentCount === EXPECTED_TOTAL_SOURCE_COUNT && acceptingMinimumsReady,
     exactComposition,
     registeredCount: registry.size,
     websiteCount: counts.WEBSITE_VOTE,
     telegramBotCount: counts.TELEGRAM_BOT,
     currentCertificationCount: currentCount,
+    acceptingWebsiteCount: acceptingCounts.WEBSITE_VOTE,
+    acceptingTelegramBotCount: acceptingCounts.TELEGRAM_BOT,
     blockers,
     sources: sourceStatuses.sort((left, right) => left.sourceKey.localeCompare(right.sourceKey)),
     latestCertifications: [...latest.values()].sort((left, right) =>
@@ -218,7 +242,7 @@ export async function recordVerificationSourceCertification(client, {
 }
 
 export function buildSourceCertificationAdminText(state) {
-  const blocked = state.sources.filter(({ current, registryAccepting }) => !current || !registryAccepting);
+  const blocked = state.sources.filter(({ current }) => !current);
   return [
     '🛡 *BOND THE DUCK // SOURCE CERTIFICATIONS*',
     '',
@@ -226,11 +250,13 @@ export function buildSourceCertificationAdminText(state) {
     `*Registered:* ${state.registeredCount}/${EXPECTED_TOTAL_SOURCE_COUNT}`,
     `*Website voting:* ${state.websiteCount}/9`,
     `*Telegram bots:* ${state.telegramBotCount}/${EXPECTED_SOURCE_COUNTS.TELEGRAM_BOT}`,
-    `*Current + healthy:* ${state.currentCertificationCount}/${EXPECTED_TOTAL_SOURCE_COUNT}`,
+    `*Operational certifications:* ${state.currentCertificationCount}/${EXPECTED_TOTAL_SOURCE_COUNT}`,
+    `*Participant website sources:* ${state.acceptingWebsiteCount}/${MIN_ACCEPTING_SOURCE_COUNTS.WEBSITE_VOTE} minimum`,
+    `*Participant Telegram bots:* ${state.acceptingTelegramBotCount}/${MIN_ACCEPTING_SOURCE_COUNTS.TELEGRAM_BOT}`,
     '',
-    ...(state.blockers.length ? state.blockers.map((blocker) => `⛔ ${blocker}`) : ['✅ Exact composition and current certifications verified.']),
-    ...(blocked.length ? ['', '*Needs attention:*', ...blocked.slice(0, 13).map(({ sourceKey, health, registryAccepting }) =>
-      `• ${sourceKey}: ${registryAccepting ? health : 'NOT INDIVIDUALLY VERIFIABLE'}`
+    ...(state.blockers.length ? state.blockers.map((blocker) => `⛔ ${blocker}`) : ['✅ Exact composition and truthful operational certifications verified.']),
+    ...(blocked.length ? ['', '*Needs attention:*', ...blocked.slice(0, 13).map(({ sourceKey, health, classification }) =>
+      `• ${sourceKey}: ${classification} / ${health}`
     )] : []),
     '',
     'Certifications expire within 72 hours and are bound into the exact launch-readiness hash.',
