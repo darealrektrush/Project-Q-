@@ -62,6 +62,8 @@ services:
         value: "false"
       - key: PROJECT_Q_FUNDING_GOVERNANCE_ENABLED
         value: "false"
+      - key: PROJECT_Q_FUNDING_PROPOSAL_SUBMISSION_ENABLED
+        value: "false"
       - key: PROJECT_Q_IMPACT_RECEIPTS_ENABLED
         value: "false"
       - key: PROJECT_Q_SOURCE_CERTIFICATION_ENABLED
