@@ -21,6 +21,16 @@ test('complete mode fails closed until Appendix B is fully evidenced', () => {
   assert.throws(() => validateRegistry(entries, { requireComplete: true }), /Registry incomplete/);
 });
 
+test('registry allows legitimate public token metadata such as Token-2022', () => {
+  const rows = validateRegistry([{
+    field: 'fawkq_mint_decimals',
+    value: 'GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump:6:Token-2022',
+    owner: 'development',
+    evidence_url: 'https://example.com/token-metadata',
+  }]);
+  assert.equal(rows[0].value.includes('Token-2022'), true);
+});
+
 
 
 function completeRegistry() {
