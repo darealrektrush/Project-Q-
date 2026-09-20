@@ -26,7 +26,6 @@ import {
 import {
   buildFundingGovernanceText,
   finalizeFunding,
-  fundingDecisionIdempotencyKey,
   getFundingGovernanceState,
   recordFundingDecision,
 } from '../campaign/fundingGovernance.js';
