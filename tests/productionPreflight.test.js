@@ -30,12 +30,23 @@ const readinessLoader = async () => ({
   reportHash: 'a'.repeat(64),
 });
 
+const fundingLoader = async () => ({
+  campaignState: 'DRAFT',
+  fundedBaseUnits: '17500000000000',
+  proposal: { id: 7, stale: false },
+  approvalCount: 2,
+  holdCount: 0,
+  finalized: true,
+  finalizedAt: '2026-10-01T13:00:00Z',
+});
+
 test('healthy production plumbing is safe for a read-only rehearsal', async () => {
   const result = await runProductionPreflight({
     env: ENV,
     telegramClient,
     campaignClient: {},
     readinessLoader,
+    fundingLoader,
   });
   assert.equal(result.safeForRehearsal, true);
   assert.equal(result.readOnly, true);
@@ -55,6 +66,7 @@ test('Render identity uses the stable deployed branch and commit metadata', asyn
     telegramClient,
     campaignClient: {},
     readinessLoader,
+    fundingLoader,
   });
   assert.equal(result.safeForRehearsal, true);
   assert.equal(result.checks.find(({ key }) => key === 'render').status, 'pass');
@@ -70,6 +82,7 @@ test('wrong Render branch or commit still blocks', async () => {
       telegramClient,
       campaignClient: {},
       readinessLoader,
+    fundingLoader,
     });
     assert.equal(result.checks.find(({ key }) => key === 'render').status, 'block');
   }
@@ -88,6 +101,7 @@ test('wrong bot, webhook and enabled runtime flag fail closed', async () => {
     },
     campaignClient: {},
     readinessLoader,
+    fundingLoader,
   });
   assert.equal(result.safeForRehearsal, false);
   assert.equal(result.warnings, 1);
@@ -102,6 +116,7 @@ test('Supabase failure and non-DRAFT state block without exposing an error', asy
     telegramClient,
     campaignClient: {},
     readinessLoader: async () => { throw new Error('secret database response'); },
+    fundingLoader,
   });
   assert.equal(unavailable.safeForRehearsal, false);
   assert.equal(buildProductionPreflightText(unavailable).includes('secret database response'), false);
@@ -111,8 +126,71 @@ test('Supabase failure and non-DRAFT state block without exposing an error', asy
     telegramClient,
     campaignClient: {},
     readinessLoader: async () => ({ ...(await readinessLoader()), state: 'ACTIVE' }),
+    fundingLoader,
   });
   assert.equal(active.checks.find(({ key }) => key === 'campaign-state').status, 'block');
+});
+
+test('funding preflight distinguishes missing, pending, stale and conflicting states', async () => {
+  const cases = [
+    {
+      name: 'missing',
+      funding: { fundedBaseUnits: '0', proposal: null, approvalCount: 0, holdCount: 0, finalized: false },
+      status: 'warn',
+      detail: /No funding evidence proposal/,
+    },
+    {
+      name: 'pending',
+      funding: { fundedBaseUnits: '0', proposal: { id: 1, stale: false }, approvalCount: 1, holdCount: 0, finalized: false },
+      status: 'warn',
+      detail: /1\/2 founder approvals/,
+    },
+    {
+      name: 'approved',
+      funding: { fundedBaseUnits: '0', proposal: { id: 1, stale: false }, approvalCount: 2, holdCount: 0, finalized: false },
+      status: 'warn',
+      detail: /awaiting ledger finalization/,
+    },
+    {
+      name: 'stale',
+      funding: { fundedBaseUnits: '0', proposal: { id: 1, stale: true }, approvalCount: 2, holdCount: 0, finalized: false },
+      status: 'warn',
+      detail: /stale/,
+    },
+    {
+      name: 'conflict',
+      funding: { fundedBaseUnits: '17500000000000', proposal: null, approvalCount: 0, holdCount: 0, finalized: false },
+      status: 'block',
+      detail: /do not reconcile/,
+    },
+  ];
+
+  for (const entry of cases) {
+    const result = await runProductionPreflight({
+      env: ENV,
+      telegramClient,
+      campaignClient: {},
+      readinessLoader,
+      fundingLoader: async () => entry.funding,
+    });
+    const check = result.checks.find(({ key }) => key === 'funding-governance');
+    assert.equal(check.status, entry.status, entry.name);
+    assert.match(check.detail, entry.detail, entry.name);
+    assert.equal(result.safeForRehearsal, entry.status !== 'block', entry.name);
+  }
+});
+
+test('funding governance lookup failure is a warning and never exposes its error', async () => {
+  const result = await runProductionPreflight({
+    env: ENV,
+    telegramClient,
+    campaignClient: {},
+    readinessLoader,
+    fundingLoader: async () => { throw new Error('private funding evidence path'); },
+  });
+  const check = result.checks.find(({ key }) => key === 'funding-governance');
+  assert.equal(check.status, 'warn');
+  assert.equal(buildProductionPreflightText(result).includes('private funding evidence path'), false);
 });
 
 test('preflight text contains no configured credentials or wallet addresses', async () => {
@@ -123,7 +201,7 @@ test('preflight text contains no configured credentials or wallet addresses', as
     SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_hidden',
     CREATOR_WALLET_PUBLIC: '7kGJBag2VcjR4JB7qLStgizLa2eDQuGtiysZKzEetRMT',
   };
-  const result = await runProductionPreflight({ env, telegramClient, campaignClient: {}, readinessLoader });
+  const result = await runProductionPreflight({ env, telegramClient, campaignClient: {}, readinessLoader, fundingLoader });
   const text = buildProductionPreflightText(result);
   for (const secret of [
     env.TELEGRAM_BOT_TOKEN,
