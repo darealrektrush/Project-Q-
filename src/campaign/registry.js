@@ -15,7 +15,8 @@ export const REQUIRED_REGISTRY_FIELDS = Object.freeze([
   'payment_retry_intervals', 'priority_fee_ceiling', 'legal_review', 'readiness_report',
 ]);
 
-const SECRET_FIELD = /(secret|private|seed|mnemonic|service[_ -]?role|api[_ -]?key|token)/i;
+const SECRET_FIELD = /(secret|private[_ -]?key|seed|mnemonic|service[_ -]?role|api[_ -]?key|access[_ -]?token|bot[_ -]?token|bearer[_ -]?token)/i;
+const SECRET_VALUE = /(seed phrase|mnemonic|private key|service[_ -]?role|api[_ -]?key|access[_ -]?token|bot[_ -]?token|bearer[_ -]?token)/i;
 
 function normalizedEntries(entries) {
   if (!Array.isArray(entries)) throw new TypeError('Registry entries must be an array');
@@ -31,7 +32,7 @@ export function validateRegistry(entries, { requireComplete = false } = {}) {
     if (!REQUIRED_REGISTRY_FIELDS.includes(entry.field)) throw new Error(`Unknown registry field: ${entry.field}`);
     if (seen.has(entry.field)) throw new Error(`Duplicate registry field: ${entry.field}`);
     if (SECRET_FIELD.test(entry.field)) throw new Error(`Secret-like registry field rejected: ${entry.field}`);
-    if (entry.value != null && SECRET_FIELD.test(String(entry.value))) {
+    if (entry.value != null && SECRET_VALUE.test(String(entry.value))) {
       throw new Error(`Secret-like registry value rejected for: ${entry.field}`);
     }
     seen.add(entry.field);
