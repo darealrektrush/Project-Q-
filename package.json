@@ -24,7 +24,8 @@
     "audit:bond-rules": "node scripts/audit-bond-rules.js",
     "prepare:bond-draw": "node scripts/prepare-bond-draw-commitments.js",
     "audit:bond-cutoff": "node scripts/audit-bond-draw-cutoff.js",
-    "audit:bond-funding": "node scripts/audit-bond-funding.js"
+    "audit:bond-funding": "node scripts/audit-bond-funding.js",
+    "audit:bond-burn-provisioning": "node scripts/audit-bond-burn-provisioning.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.3",
