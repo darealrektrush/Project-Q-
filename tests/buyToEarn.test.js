@@ -22,6 +22,8 @@ const VALID = {
   sol_lamports: '70000000',
   token_base_units: '1234567890',
   venue_key: 'pump_swap',
+  token_mint: 'GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump',
+  market_address: '22222222222222222222222222222222',
   route: 'PumpSwap direct',
 };
 
@@ -37,6 +39,8 @@ test('Oracle Buy-to-Earn trade validation preserves integer financial values', (
   assert.equal(event.solLamports, '70000000');
   assert.equal(event.tokenBaseUnits, '1234567890');
   assert.equal(event.venueKey, 'pump_swap');
+  assert.equal(event.tokenMint, VALID.token_mint);
+  assert.equal(event.marketAddress, VALID.market_address);
   assert.equal(event.blockTime, '2026-10-02T15:00:00.000Z');
 });
 
@@ -53,6 +57,8 @@ test('Oracle Buy-to-Earn trade validation fails closed on malformed identity and
     { sol_lamports: '0' },
     { token_base_units: '-1' },
     { venue_key: 'INVALID VENUE' },
+    { token_mint: '11111111111111111111111111111111' },
+    { market_address: 'bad' },
     { route: 'x'.repeat(241) },
   ]) {
     assert.throws(
@@ -88,6 +94,8 @@ test('Buy-to-Earn ingestion delegates one normalized fact to the atomic service-
       p_sol_lamports: '70000000',
       p_token_base_units: '1234567890',
       p_venue_key: 'pump_swap',
+      p_token_mint: VALID.token_mint,
+      p_market_address: VALID.market_address,
       p_route: 'PumpSwap direct',
     },
   }]);
@@ -121,4 +129,29 @@ test('Buy-to-Earn migration is append-only, identity-bound, market-gated and doe
 test('Render blueprint keeps Buy-to-Earn trade mutations off by default', async () => {
   const yaml = await readFile(new URL('../render.yaml', import.meta.url), 'utf8');
   assert.match(yaml, /PROJECT_Q_ORACLE_TRADE_EVENTS_ENABLED[\s\S]*value: "false"/);
+});
+
+
+test('BTE market hardening binds FAWKQ to one exact approved market identity', async () => {
+  const sql = await readFile(
+    new URL('../supabase/migrations/20260920190000_harden_bond_buytoearn_market_identity.sql', import.meta.url),
+    'utf8'
+  );
+  assert.match(sql, /token_mint = 'GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump'/);
+  assert.match(sql, /market_address <> p_market_address/);
+  assert.match(sql, /Buy-to-Earn market identity is not approved/);
+  assert.match(sql, /revoke insert, update, delete on public\.campaign_buy_to_earn_markets from service_role/);
+  assert.match(sql, /register_campaign_buy_to_earn_market/);
+  assert.match(sql, /enable_campaign_buy_to_earn_market/);
+});
+
+test('correct venue key with wrong mint or wrong pool cannot pass Oracle event validation', () => {
+  assert.throws(
+    () => validateOracleBuyToEarnTradeEvent({ ...VALID, token_mint: '11111111111111111111111111111111' }),
+    /invalid Oracle Buy-to-Earn trade event/
+  );
+  assert.throws(
+    () => validateOracleBuyToEarnTradeEvent({ ...VALID, market_address: 'bad' }),
+    /invalid Oracle Buy-to-Earn trade event/
+  );
 });
