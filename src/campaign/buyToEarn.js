@@ -3,6 +3,8 @@ const SIGNATURE_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/;
 const SOURCE_EVENT_PATTERN = /^[A-Za-z0-9:_-]{8,160}$/;
 const VENUE_PATTERN = /^[a-z0-9][a-z0-9:_-]{1,63}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MARKET_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+export const FAWKQ_MINT = 'GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump';
 const DIGITS_PATTERN = /^[0-9]+$/;
 
 export const BUY_TO_EARN_TIER_1_LAMPORTS = 70_000_000n;
@@ -28,6 +30,8 @@ export function validateOracleBuyToEarnTradeEvent(body) {
   const blockTime = new Date(body?.block_time);
   const direction = String(body?.direction ?? '').trim().toUpperCase();
   const venueKey = String(body?.venue_key ?? '').trim().toLowerCase();
+  const tokenMint = String(body?.token_mint ?? '').trim();
+  const marketAddress = String(body?.market_address ?? '').trim();
   const route = body?.route == null ? null : String(body.route).trim();
 
   if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0
@@ -39,6 +43,8 @@ export function validateOracleBuyToEarnTradeEvent(body) {
     || !Number.isFinite(blockTime.getTime())
     || !['BUY', 'SELL'].includes(direction)
     || !VENUE_PATTERN.test(venueKey)
+    || tokenMint !== FAWKQ_MINT
+    || !MARKET_PATTERN.test(marketAddress)
     || (route !== null && (!route || route.length > 240))) {
     throw new Error('invalid Oracle Buy-to-Earn trade event');
   }
@@ -55,6 +61,8 @@ export function validateOracleBuyToEarnTradeEvent(body) {
     solLamports: requiredDigits(body?.sol_lamports, 'Buy-to-Earn SOL amount'),
     tokenBaseUnits: requiredDigits(body?.token_base_units, 'Buy-to-Earn token amount'),
     venueKey,
+    tokenMint,
+    marketAddress,
     route,
   };
 }
@@ -73,6 +81,8 @@ export async function ingestOracleBuyToEarnTrade(client, event, campaignId = 'bo
     p_sol_lamports: event.solLamports,
     p_token_base_units: event.tokenBaseUnits,
     p_venue_key: event.venueKey,
+    p_token_mint: event.tokenMint,
+    p_market_address: event.marketAddress,
     p_route: event.route,
   });
   return Array.isArray(result) ? result[0] ?? null : result;
