@@ -236,7 +236,6 @@ create or replace function public.record_verified_campaign_impact_receipt(
   p_slot bigint,
   p_block_time timestamptz,
   p_proof jsonb,
-  p_proof_hash text,
   p_recorded_by bigint
 ) returns public.campaign_impact_receipts
 language plpgsql
@@ -249,6 +248,7 @@ declare
   expected_recipient text;
   expected_amount bigint;
   result public.campaign_impact_receipts;
+  computed_proof_hash text;
 begin
   if p_campaign_id is null or btrim(p_campaign_id) = ''
     or p_receipt_type not in ('WINNER_PRIZE','CONSERVATION_IMPACT')
@@ -260,7 +260,6 @@ begin
     or p_slot is null or p_slot <= 0
     or p_block_time is null
     or p_proof is null or jsonb_typeof(p_proof) <> 'object'
-    or p_proof_hash is null or p_proof_hash !~ '^[0-9a-f]{64}$'
     or p_recorded_by is null or p_recorded_by <= 0
   then raise exception 'invalid impact receipt'; end if;
 
@@ -274,7 +273,6 @@ begin
       or result.transaction_signature is distinct from p_transaction_signature
       or result.slot is distinct from p_slot
       or result.block_time is distinct from p_block_time
-      or result.proof_hash is distinct from p_proof_hash
     then raise exception 'impact receipt terms changed'; end if;
     return result;
   end if;
@@ -322,10 +320,12 @@ begin
     or p_proof->>'amountLamports' is distinct from p_amount_lamports::text
     or p_proof->>'signature' is distinct from p_transaction_signature
     or p_proof->>'slot' is distinct from p_slot::text
-    or p_proof->>'blockTime' is distinct from p_block_time::text
+    or (p_proof->>'blockTime')::timestamptz is distinct from p_block_time
     or p_proof->>'instructionType' is distinct from 'system-transfer'
     or p_proof->>'finalized' is distinct from 'true'
   then raise exception 'impact receipt proof does not reconcile'; end if;
+
+  computed_proof_hash := encode(extensions.digest(p_proof::text, 'sha256'), 'hex');
 
   insert into public.campaign_impact_receipts(
     campaign_id, receipt_type, telegram_user_id, profile_id,
@@ -334,7 +334,7 @@ begin
   ) values (
     p_campaign_id, p_receipt_type, contributor.telegram_user_id, contributor.profile_id,
     p_recipient_address, p_amount_lamports, p_transaction_signature,
-    p_slot, p_block_time, p_proof, p_proof_hash, p_recorded_by
+    p_slot, p_block_time, p_proof, computed_proof_hash, p_recorded_by
   )
   returning * into result;
 
@@ -345,11 +345,11 @@ $$;
 revoke all on function public.finalize_campaign_top_contributor(text,bigint)
   from public, anon, authenticated;
 revoke all on function public.record_verified_campaign_impact_receipt(
-  text,text,text,bigint,text,bigint,timestamptz,jsonb,text,bigint
+  text,text,text,bigint,text,bigint,timestamptz,jsonb,bigint
 ) from public, anon, authenticated;
 
 grant execute on function public.finalize_campaign_top_contributor(text,bigint)
   to service_role;
 grant execute on function public.record_verified_campaign_impact_receipt(
-  text,text,text,bigint,text,bigint,timestamptz,jsonb,text,bigint
+  text,text,text,bigint,text,bigint,timestamptz,jsonb,bigint
 ) to service_role;
