@@ -10,6 +10,7 @@ import {
 const good = {
   founderUserId: 101,
   vaultAddress: '11111111111111111111111111111111',
+  conservationVaultAddress: '22222222222222222222222222222222',
   evidenceUrl: 'https://evidence.example/squads-vault',
   evidenceHash: 'a'.repeat(64),
   verifiedAt: '2026-10-01T12:00:00Z',
@@ -24,6 +25,10 @@ test('funding evidence packet is ready only for the exact locked funding facts',
   assert.equal(packet.evidence.squadsApprovalThreshold, 2);
   assert.equal(packet.evidence.squadsMemberCount, 3);
   assert.equal(packet.evidence.topContributorPrizeLamports, '1000000000');
+  assert.equal(packet.evidence.conservationContributionLamports, '100000000');
+  assert.equal(packet.evidence.totalSolCommitmentLamports, '1100000000');
+  assert.equal(packet.evidence.conservationVaultAddress, good.conservationVaultAddress);
+  assert.equal(packet.evidence.conservationAttribution, 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY');
   assert.match(packet.fingerprint, /^[0-9a-f]{64}$/);
   assert.match(packet.proposal.p_idempotency_key, /^[0-9a-f]{64}$/);
   assert.equal(packet.mutationsPerformed, false);
@@ -35,6 +40,10 @@ test('funding evidence packet fails closed on stale, wrong amount, wrong authori
     { squadsApprovalThreshold: 1 },
     { squadsMemberCount: 4 },
     { topContributorPrizeLamports: '999999999' },
+    { conservationContributionLamports: '99999999' },
+    { totalSolCommitmentLamports: '1000000000' },
+    { conservationVaultAddress: 'bad' },
+    { conservationAttribution: 'LEGAL_NAME' },
     { evidenceUrl: 'http://evidence.example/vault' },
     { evidenceHash: 'bad' },
     { verifiedAt: '2026-09-20T00:00:00Z' },
@@ -52,6 +61,7 @@ test('funding proposal idempotency binds founder, vault, proof and verification 
     campaignId: 'bond-the-duck-2026',
     founderUserId: 101,
     vaultAddress: good.vaultAddress,
+    conservationVaultAddress: good.conservationVaultAddress,
     evidenceHash: good.evidenceHash,
     verifiedAt: '2026-10-01T12:00:00.000Z',
   };
