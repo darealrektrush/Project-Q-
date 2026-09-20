@@ -60,6 +60,23 @@ test('Project Q campaign sessions bind Telegram actors to permanent Oracle profi
   assert.doesNotMatch(server, /\/campaign-app\/api\/wallet\/challenge|\/campaign-app\/api\/wallet\/verify/);
 });
 
+test('campaign XP is profile-keyed and exported through a private retry-safe outbox', async () => {
+  const migration = await read(
+    'supabase/migrations/20260918082555_oracle_campaign_xp_outbox.sql'
+  );
+  assert.match(migration, /alter table public\.xp_ledger[\s\S]+add column if not exists profile_id uuid/);
+  assert.match(migration, /alter column profile_id set not null/);
+  assert.match(migration, /create table if not exists public\.campaign_xp_exports/);
+  assert.match(migration, /campaign participant has no permanent Oracle profile/);
+  assert.match(migration, /project-q:xp-ledger:/);
+  assert.match(migration, /status in \('pending', 'delivered', 'dead_letter'\)/);
+  assert.match(migration, /alter table public\.campaign_xp_exports enable row level security/);
+  assert.match(migration, /revoke all on public\.campaign_xp_exports from public, anon, authenticated/);
+
+  const blueprint = await read('render.yaml');
+  assert.match(blueprint, /PROJECT_Q_ORACLE_XP_EXPORT_ENABLED\n\s+value: "false"/);
+});
+
 test('verification source certifications are append-only, private and non-activating', async () => {
   const migration = await read(
     'supabase/migrations/20260825233000_verification_source_certifications.sql'

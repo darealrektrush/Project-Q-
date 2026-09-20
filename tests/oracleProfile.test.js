@@ -49,7 +49,7 @@ test('projects bounded records and does not expose wallet or unrelated identity 
   let actor;
   const handler = oracleProfileHandler({ secret: 'server-secret', getParticipantStatus: async id => {
     actor = id;
-    return { enrolled: true, walletVerified: true, xVerified: true, campaignState: 'ACTIVE', totalXp: 40,
+    return { profileId: '4def29fe-41a9-4c6a-9371-1a27c652588f', enrolled: true, walletVerified: true, xVerified: true, campaignState: 'ACTIVE', totalXp: 40,
       completedMissionCount: 2, rewardWallet: 'private-wallet', x_user_id: 'private-X',
       rewards: { releases: Array.from({ length: 8 }, (_, i) => ({ status: 'scheduled', amountBaseUnits: '1000000',
         scheduledAt: `2026-09-${10 + i}`, transactionSignature: null, privateNote: 'never-export' })) } };
@@ -59,10 +59,29 @@ test('projects bounded records and does not expose wallet or unrelated identity 
   assert.equal(actor, 7);
   assert.equal(res.code, 200);
   assert.equal(res.body.profile.telegramUserId, 7);
+  assert.equal(res.body.profile.campaignIdentityReady, true);
+  assert.deepEqual(res.body.profile.campaignReadiness, {
+    state: 'identity_ready', missingRequirements: [],
+  });
   assert.equal(res.body.profile.releases.length, 3);
   assert.equal(res.body.profile.releases[0].scheduledAt, '2026-09-17');
   assert.equal(res.body.profile.observedAt, '2026-09-06T00:00:00.000Z');
   assert.doesNotMatch(JSON.stringify(res.body), /private|never-export/);
+});
+test('campaign profile reports only bounded missing identity requirements', async () => {
+  const handler = oracleProfileHandler({ secret: 'server-secret', getParticipantStatus: async () => ({
+    profileId: null, enrolled: false, walletVerified: false, xVerified: false,
+    campaignState: 'DRAFT', totalXp: 0, completedMissionCount: 0, rewards: { releases: [] },
+  }) });
+  const res = response();
+  await handler(req({ telegram_user_id: 7 }), res);
+  assert.equal(res.code, 200);
+  assert.equal(res.body.profile.campaignIdentityReady, false);
+  assert.deepEqual(res.body.profile.campaignReadiness, {
+    state: 'action_required',
+    missingRequirements: ['Oracle profile', 'verified X connection', 'verified Oracle wallet'],
+  });
+  assert.doesNotMatch(JSON.stringify(res.body), /wallet_address|signature|private/i);
 });
 test('outages never become an empty or ineligible member record', async () => {
   for (const getParticipantStatus of [async () => { throw Error('sensitive database error'); }, async () => ({ unavailable: true })]) {
