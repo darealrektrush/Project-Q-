@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { isEnabled } from '../lib/featureFlags.js';
+
 export const BOND_FUNDING_BASE_UNITS = '17500000000000';
 export const BOND_SQUADS_APPROVAL_THRESHOLD = 2;
 export const BOND_SQUADS_MEMBER_COUNT = 3;
@@ -155,4 +157,24 @@ export function buildFundingEvidencePacket({
     proposal,
     mutationsPerformed: false,
   };
+}
+
+
+export function fundingProposalSubmissionEnabled(env = process.env) {
+  return isEnabled(env.PROJECT_Q_FUNDING_PROPOSAL_SUBMISSION_ENABLED);
+}
+
+export async function submitFundingEvidenceProposal(client, input = {}) {
+  const env = input.env ?? process.env;
+  if (!fundingProposalSubmissionEnabled(env)) {
+    throw new Error('campaign funding proposal submission disabled');
+  }
+  const packet = buildFundingEvidencePacket(input);
+  if (!packet.ready || !packet.proposal) {
+    throw new Error(`funding evidence packet is not ready: ${packet.reasons.join('; ')}`);
+  }
+  const result = await client.rpc('submit_campaign_funding_proposal', packet.proposal);
+  const row = Array.isArray(result) ? result[0] ?? null : result;
+  if (!row) throw new Error('funding proposal was not recorded');
+  return { proposal: row, packetFingerprint: packet.fingerprint };
 }
