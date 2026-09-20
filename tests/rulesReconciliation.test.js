@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildBondRulesReconciliation } from '../src/campaign/rulesReconciliation.js';
+import { BOND_DRAW_POLICY } from '../src/campaign/rules.js';
 
 const liveCampaign = {
   id: 'bond-the-duck-2026',
@@ -40,6 +41,7 @@ function baseRepoRules() {
       walletRequiredForRewards: true,
       minimumFawkqUsd: 2,
     },
+    draw: structuredClone(BOND_DRAW_POLICY),
     xpCaps: {
       overallDaily: 75,
       participationDaily: 15,

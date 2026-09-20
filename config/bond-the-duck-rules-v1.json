@@ -29,15 +29,96 @@
   "verificationSources": {
     "websiteVotingCount": 9,
     "websiteVoting": [
-      { "sourceKey": "web:geckoterminal", "name": "GeckoTerminal", "url": "https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM", "verificationMode": "AGGREGATE_ONLY", "classification": "COMMUNITY_PROGRESS_ONLY", "certificationStatus": "OBSERVED_NO_USER_RECEIPT", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:top100token", "name": "Top100Token", "url": "https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinmooner", "name": "CoinMooner", "url": "https://coinmooner.com/coins/fawk-q-fawkq", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
-      { "sourceKey": "web:gemfinder", "name": "GemFinder", "url": "https://gemfinder.cc/gem/29742", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
-      { "sourceKey": "web:coinsniper", "name": "CoinSniper", "url": "https://coinsniper.net/coin/92949", "verificationMode": "PENDING_LIVE_TEST", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "CLOUDFLARE_BLOCKED", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinmun", "name": "CoinMun", "url": "https://coinmun.com/coins/fawk-q", "verificationMode": "SCREENSHOT_REVIEW", "classification": "PROOF_SUPPORTED", "certificationStatus": "OBSERVED_24H", "cooldownSeconds": 86400, "individualXpEligible": true },
-      { "sourceKey": "web:coinboom", "name": "CoinBoom", "url": "https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "NO_FREE_VOTE_OBSERVED", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinbuzzer", "name": "CoinBuzzer", "url": "https://coinbuzzer.me/coin/860", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false },
-      { "sourceKey": "web:coinscope", "name": "CoinScope", "url": "https://www.coinscope.co/coin/fawkq", "verificationMode": "SOURCE_UNAVAILABLE", "classification": "SOURCE_UNAVAILABLE", "certificationStatus": "OFFLINE", "cooldownSeconds": 86400, "individualXpEligible": false }
+      {
+        "sourceKey": "web:geckoterminal",
+        "name": "GeckoTerminal",
+        "url": "https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM",
+        "verificationMode": "AGGREGATE_ONLY",
+        "classification": "COMMUNITY_PROGRESS_ONLY",
+        "certificationStatus": "OBSERVED_NO_USER_RECEIPT",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:top100token",
+        "name": "Top100Token",
+        "url": "https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump",
+        "verificationMode": "PENDING_LIVE_TEST",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "CLOUDFLARE_BLOCKED",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinmooner",
+        "name": "CoinMooner",
+        "url": "https://coinmooner.com/coins/fawk-q-fawkq",
+        "verificationMode": "SCREENSHOT_REVIEW",
+        "classification": "PROOF_SUPPORTED",
+        "certificationStatus": "OBSERVED_24H",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": true
+      },
+      {
+        "sourceKey": "web:gemfinder",
+        "name": "GemFinder",
+        "url": "https://gemfinder.cc/gem/29742",
+        "verificationMode": "SCREENSHOT_REVIEW",
+        "classification": "PROOF_SUPPORTED",
+        "certificationStatus": "OBSERVED_24H",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": true
+      },
+      {
+        "sourceKey": "web:coinsniper",
+        "name": "CoinSniper",
+        "url": "https://coinsniper.net/coin/92949",
+        "verificationMode": "PENDING_LIVE_TEST",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "CLOUDFLARE_BLOCKED",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinmun",
+        "name": "CoinMun",
+        "url": "https://coinmun.com/coins/fawk-q",
+        "verificationMode": "SCREENSHOT_REVIEW",
+        "classification": "PROOF_SUPPORTED",
+        "certificationStatus": "OBSERVED_24H",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": true
+      },
+      {
+        "sourceKey": "web:coinboom",
+        "name": "CoinBoom",
+        "url": "https://coinboom.net/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump",
+        "verificationMode": "SOURCE_UNAVAILABLE",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "NO_FREE_VOTE_OBSERVED",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinbuzzer",
+        "name": "CoinBuzzer",
+        "url": "https://coinbuzzer.me/coin/860",
+        "verificationMode": "SOURCE_UNAVAILABLE",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "OFFLINE",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      },
+      {
+        "sourceKey": "web:coinscope",
+        "name": "CoinScope",
+        "url": "https://www.coinscope.co/coin/fawkq",
+        "verificationMode": "SOURCE_UNAVAILABLE",
+        "classification": "SOURCE_UNAVAILABLE",
+        "certificationStatus": "OFFLINE",
+        "cooldownSeconds": 86400,
+        "individualXpEligible": false
+      }
     ],
     "telegramBotFirstDailyXp": 2,
     "telegramBotRepeatXp": 1,
@@ -85,7 +166,13 @@
     "phasedPercent": 25,
     "phasedInstallments": 5,
     "phasedInstallmentPercent": 5,
-    "phasedOffsetDays": [6, 12, 18, 24, 30]
+    "phasedOffsetDays": [
+      6,
+      12,
+      18,
+      24,
+      30
+    ]
   },
   "missions": [
     "oracle-raids",
@@ -111,11 +198,70 @@
     "openingBurnBaseUnits": "15000000000000",
     "openingBurnType": "CREATOR_WALLET_RESERVE",
     "milestones": [
-      { "id": "bond-burn-1", "sequence": 1, "label": "Burn Milestone 1", "progressTargetUnits": "2000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-2", "sequence": 2, "label": "Burn Milestone 2", "progressTargetUnits": "5000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-3", "sequence": 3, "label": "Burn Milestone 3", "progressTargetUnits": "9000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-4", "sequence": 4, "label": "Burn Milestone 4", "progressTargetUnits": "14000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" },
-      { "id": "bond-burn-5", "sequence": 5, "label": "Burn Milestone 5", "progressTargetUnits": "20000", "burnAmountBaseUnits": "3000000000000", "burnType": "RESERVE_BURN" }
+      {
+        "id": "bond-burn-1",
+        "sequence": 1,
+        "label": "Burn Milestone 1",
+        "progressTargetUnits": "2000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-2",
+        "sequence": 2,
+        "label": "Burn Milestone 2",
+        "progressTargetUnits": "5000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-3",
+        "sequence": 3,
+        "label": "Burn Milestone 3",
+        "progressTargetUnits": "9000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-4",
+        "sequence": 4,
+        "label": "Burn Milestone 4",
+        "progressTargetUnits": "14000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      },
+      {
+        "id": "bond-burn-5",
+        "sequence": 5,
+        "label": "Burn Milestone 5",
+        "progressTargetUnits": "20000",
+        "burnAmountBaseUnits": "3000000000000",
+        "burnType": "RESERVE_BURN"
+      }
     ]
+  },
+  "draw": {
+    "protocolVersion": "bond-draw-v1",
+    "commitmentHash": "SHA-256",
+    "commitmentDomain": "bond-draw-commit-v1",
+    "commitmentCount": 5,
+    "commitBeforeCycleOpen": true,
+    "allCommitmentsBeforeActivation": true,
+    "cutoffRule": "FIRST_FINALIZED_SOLANA_BLOCK_AT_OR_AFTER_CYCLE_CLOSE",
+    "previousFinalizedBlockRequired": true,
+    "revealWindowMinutes": 30,
+    "revealAffectsSeed": false,
+    "fallbackPolicy": "SAME_SEED_MARK_FALLBACK_IF_REVEAL_MISSING_OR_LATE",
+    "seedHash": "SHA-256",
+    "seedDomain": "bond-draw-seed-v1",
+    "seedInputs": [
+      "campaignId",
+      "cycleId",
+      "commitHash",
+      "cutoffSlot",
+      "cutoffBlockhash"
+    ],
+    "weightedDrawPool": "RANKS_3_TO_15",
+    "priorWinnerCooldownCycles": 1
   }
 }

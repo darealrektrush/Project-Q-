@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { REQUIRED_REGISTRY_FIELDS, hashRegistry } from './registry.js';
+import { BOND_DRAW_POLICY } from './rules.js';
 
 export const REGISTRY_EVIDENCE_STATUS = Object.freeze({
   PROVEN: 'PROVEN',
@@ -239,9 +240,28 @@ export function buildBondRegistryEvidence({
     'tier1=0.07SOL;tier2=0.20SOL'
   ));
 
-  candidates.set('draw_reveal_fallback', envEvidence(
-    env, 'draw_reveal_fallback', 'BOND_DRAW_REVEAL_FALLBACK', 'BOND_DRAW_REVEAL_EVIDENCE_URL', 'campaign-governance'
-  ));
+  const drawPolicyLocked = JSON.stringify(rules?.draw || {}) === JSON.stringify(BOND_DRAW_POLICY);
+  candidates.set('draw_reveal_fallback', drawPolicyLocked && commitUrl
+    ? proven(
+      'draw_reveal_fallback',
+      [
+        BOND_DRAW_POLICY.protocolVersion,
+        BOND_DRAW_POLICY.cutoffRule,
+        `revealWindow=${BOND_DRAW_POLICY.revealWindowMinutes}m`,
+        `revealAffectsSeed=${BOND_DRAW_POLICY.revealAffectsSeed}`,
+        BOND_DRAW_POLICY.fallbackPolicy,
+        BOND_DRAW_POLICY.weightedDrawPool,
+        `cooldown=${BOND_DRAW_POLICY.priorWinnerCooldownCycles}`,
+      ].join(';'),
+      'campaign-governance',
+      commitUrl
+    )
+    : blocked(
+      'draw_reveal_fallback',
+      drawPolicyLocked
+        ? 'draw protocol is locked but deployed immutable code evidence is unavailable'
+        : 'campaign rules do not contain the locked deterministic draw protocol'
+    ));
   candidates.set('payment_retry_intervals', envEvidence(
     env, 'payment_retry_intervals', 'BOND_PAYMENT_RETRY_INTERVALS', 'BOND_PAYMENT_RETRY_EVIDENCE_URL', 'treasury'
   ));

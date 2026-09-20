@@ -56,6 +56,25 @@ export const BOND_RULES_TELEGRAM_BOT_COOLDOWN_CERTIFICATION = Object.freeze({
   '@BBtrendingbot': 'OBSERVED',
   '@drokiatrendsbot': 'OBSERVED',
 });
+export const BOND_DRAW_POLICY = Object.freeze({
+  protocolVersion: 'bond-draw-v1',
+  commitmentHash: 'SHA-256',
+  commitmentDomain: 'bond-draw-commit-v1',
+  commitmentCount: 5,
+  commitBeforeCycleOpen: true,
+  allCommitmentsBeforeActivation: true,
+  cutoffRule: 'FIRST_FINALIZED_SOLANA_BLOCK_AT_OR_AFTER_CYCLE_CLOSE',
+  previousFinalizedBlockRequired: true,
+  revealWindowMinutes: 30,
+  revealAffectsSeed: false,
+  fallbackPolicy: 'SAME_SEED_MARK_FALLBACK_IF_REVEAL_MISSING_OR_LATE',
+  seedHash: 'SHA-256',
+  seedDomain: 'bond-draw-seed-v1',
+  seedInputs: Object.freeze(['campaignId', 'cycleId', 'commitHash', 'cutoffSlot', 'cutoffBlockhash']),
+  weightedDrawPool: 'RANKS_3_TO_15',
+  priorWinnerCooldownCycles: 1,
+});
+
 export const BOND_RULES_WEBSITE_VOTING = Object.freeze([
   { sourceKey: 'web:geckoterminal', name: 'GeckoTerminal', url: 'https://www.geckoterminal.com/solana/pools/5DmR2TCRz8jJZTr5DaDpfvQHZ4z7YzU2sNX1kqzaM7sM', verificationMode: 'AGGREGATE_ONLY', classification: 'COMMUNITY_PROGRESS_ONLY', certificationStatus: 'OBSERVED_NO_USER_RECEIPT', cooldownSeconds: 86400, individualXpEligible: false },
   { sourceKey: 'web:top100token', name: 'Top100Token', url: 'https://top100token.com/solana/GKnhgBgyYs8zPvteBoMXjt1Ew962tQYVU8gQztFdpump', verificationMode: 'PENDING_LIVE_TEST', classification: 'SOURCE_UNAVAILABLE', certificationStatus: 'CLOUDFLARE_BLOCKED', cooldownSeconds: 86400, individualXpEligible: false },
@@ -131,6 +150,15 @@ export function inspectBondCampaignRules(rules, { requireFinal = true } = {}) {
     : validDraftSchedule(schedule);
   if (!scheduleValid) {
     blockers.push('campaign schedule must be five contiguous 48-hour cycles with the locked review timing');
+  }
+
+  const draw = rules.draw || {};
+  const normalizedDraw = {
+    ...draw,
+    seedInputs: Array.isArray(draw.seedInputs) ? [...draw.seedInputs] : draw.seedInputs,
+  };
+  if (JSON.stringify(normalizedDraw) !== JSON.stringify(BOND_DRAW_POLICY)) {
+    blockers.push('cycle draw protocol does not match the locked deterministic commitment/cutoff policy');
   }
 
   const commitments = rules.commitments || {};

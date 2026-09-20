@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import {
+  BOND_DRAW_POLICY,
   BOND_EARN_TO_BURN_MILESTONES,
   BOND_RULES_MISSION_IDS,
   inspectBondCampaignRules,
@@ -82,6 +83,8 @@ test('current draft rules and Mini App campaign config cannot drift', async () =
   assert.equal(rules.referrals.xInviteBonusXp, campaign.referrals.xInviteBonus.bonusXp);
   assert.deepEqual(rules.earnToBurn.milestones, campaign.earnToBurn.milestones);
   assert.deepEqual(rules.verificationSources, campaign.verificationSources);
+  assert.deepEqual(rules.draw, campaign.draw);
+  assert.deepEqual(rules.draw, BOND_DRAW_POLICY);
 });
 
 test('final rules require exact locked commitments, schedule and nine mission lanes', async () => {
@@ -117,6 +120,18 @@ test('final rules require exact locked commitments, schedule and nine mission la
       ...ready.verificationSources,
       telegramBots: ready.verificationSources.telegramBots.slice(0, 4),
     },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    draw: { ...ready.draw, revealAffectsSeed: true },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    draw: { ...ready.draw, weightedDrawPool: 'ALL_ELIGIBLE' },
+  }).valid, false);
+  assert.equal(inspectBondCampaignRules({
+    ...ready,
+    draw: { ...ready.draw, priorWinnerCooldownCycles: 0 },
   }).valid, false);
 });
 
