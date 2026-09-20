@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildHeaders, buildStorageHeaders } from '../src/lib/supabase.js';
+import { buildHeaders, buildStorageHeaders, supabaseTargetLabel } from '../src/lib/supabase.js';
+
+test('Supabase diagnostics expose only the project hostname', () => {
+  assert.equal(
+    supabaseTargetLabel('https://nspqztseiovkkdmqindu.supabase.co'),
+    'nspqztseiovkkdmqindu.supabase.co'
+  );
+  assert.equal(supabaseTargetLabel('not-a-url'), 'invalid-supabase-url');
+  assert.equal(supabaseTargetLabel(''), 'unconfigured');
+});
 
 test('new Supabase secret keys are sent only as apikey', () => {
   const headers = buildHeaders('sb_secret_example');
