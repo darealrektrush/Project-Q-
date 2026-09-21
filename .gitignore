@@ -5,3 +5,4 @@ node_modules/
 *.swp
 .DS_Store
 .devnet-test-wallet.json
+.bond-devnet-payer.json
