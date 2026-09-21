@@ -30,6 +30,10 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.117.0
+      - name: Build CI-only historical baseline
+        run: |
+          cp supabase/schema.sql supabase/migrations/20260819000000_ci_base_schema.sql
+          cp supabase/bond_the_duck.sql supabase/migrations/20260822000000_ci_bond_base.sql
       - name: Start disposable Supabase database
         run: >-
           supabase start
