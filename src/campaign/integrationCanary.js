@@ -11,21 +11,11 @@ const IDEMPOTENCY_KEY = 'project-q:canary:xp-ledger:1';
 
 function xpRow() {
   return {
-    export_id: 1,
-    profile_id: PROFILE_ID,
-    telegram_user_id: TELEGRAM_USER_ID,
-    campaign_id: CAMPAIGN_ID,
-    cycle_id: 1,
-    source: 'raid',
-    mission_code: 'oracle-raids',
-    campaign_score: 4,
-    base_xp: 4,
-    verification_state: 'verified',
-    occurred_at: '2026-09-20T00:00:00.000Z',
-    finalized_at: '2026-09-20T00:01:00.000Z',
-    idempotency_key: IDEMPOTENCY_KEY,
-    attempt_count: 0,
-    status: 'pending',
+    export_id: 1, profile_id: PROFILE_ID, telegram_user_id: TELEGRAM_USER_ID,
+    campaign_id: CAMPAIGN_ID, cycle_id: 1, source: 'raid', mission_code: 'oracle-raids',
+    campaign_score: 4, base_xp: 4, verification_state: 'verified',
+    occurred_at: '2026-09-20T00:00:00.000Z', finalized_at: '2026-09-20T00:01:00.000Z',
+    idempotency_key: IDEMPOTENCY_KEY, attempt_count: 0, status: 'pending',
   };
 }
 
@@ -33,13 +23,13 @@ export async function rehearseOracleProjectQCanary() {
   const state = { identity: null, export: xpRow(), receipts: new Map(), payloads: [] };
   const client = {
     rpc: async (name, args) => {
-      if (name === 'ensure_project_q_campaign_profile') {
+      if (name === 'record_project_q_campaign_profile') {
         assert.deepEqual(args, {
-          p_campaign_id: CAMPAIGN_ID,
-          p_telegram_user_id: TELEGRAM_USER_ID,
+          p_campaign_id: CAMPAIGN_ID, p_telegram_user_id: TELEGRAM_USER_ID,
+          p_profile_id: PROFILE_ID, p_profile_state: 'active',
         });
         state.identity = { telegramUserId: TELEGRAM_USER_ID, profileId: PROFILE_ID };
-        return [{ profile_id: PROFILE_ID, profile_state: 'active', telegram_verified: true }];
+        return [{ profile_id: PROFILE_ID }];
       }
       if (name === 'record_oracle_verified_wallet') {
         assert.equal(args.p_campaign_id, CAMPAIGN_ID);
@@ -63,12 +53,18 @@ export async function rehearseOracleProjectQCanary() {
   };
 
   const identity = await ensureCampaignProfile(client, {
-    campaignId: CAMPAIGN_ID,
-    telegramUserId: TELEGRAM_USER_ID,
+    campaignId: CAMPAIGN_ID, telegramUserId: TELEGRAM_USER_ID,
+  }, {
+    env: {
+      ORACLE_PROJECT_Q_IDENTITY_URL: 'https://oracle.example/platform/integrations/project-q/identity/resolve',
+      ORACLE_PROJECT_Q_EVENT_SECRET: 'i'.repeat(32),
+    },
+    fetchImpl: async () => ({ ok: true, text: async () => JSON.stringify({
+      profile_id: PROFILE_ID, profile_state: 'active', telegram_verified: true,
+    }) }),
   });
   const walletEvent = validateOracleWalletEvent({
-    telegram_user_id: TELEGRAM_USER_ID,
-    wallet_address: WALLET,
+    telegram_user_id: TELEGRAM_USER_ID, wallet_address: WALLET,
     verified_at: '2026-09-20T00:00:30.000Z',
   });
   const wallet = await recordOracleWallet(client, walletEvent, CAMPAIGN_ID);
@@ -86,14 +82,9 @@ export async function rehearseOracleProjectQCanary() {
     ].sort());
     const duplicate = state.receipts.has(payload.idempotency_key);
     state.receipts.set(payload.idempotency_key, RECEIPT_ID);
-    return {
-      ok: true,
-      text: async () => JSON.stringify({
-        ok: true,
-        status: duplicate ? 'duplicate' : 'accepted',
-        receipt_id: RECEIPT_ID,
-      }),
-    };
+    return { ok: true, text: async () => JSON.stringify({
+      ok: true, status: duplicate ? 'duplicate' : 'accepted', receipt_id: RECEIPT_ID,
+    }) };
   };
   const env = {
     PROJECT_Q_ORACLE_XP_EXPORT_ENABLED: 'true',
@@ -112,21 +103,15 @@ export async function rehearseOracleProjectQCanary() {
   assert.equal(wallet.reward_wallet, WALLET);
 
   return {
-    canary: 'oracle-project-q-campaign-loop',
-    mode: 'IN_MEMORY_NO_WRITES_NO_FUNDS',
-    campaignId: CAMPAIGN_ID,
-    profileId: PROFILE_ID,
+    canary: 'oracle-project-q-campaign-loop', mode: 'IN_MEMORY_NO_WRITES_NO_FUNDS',
+    campaignId: CAMPAIGN_ID, profileId: PROFILE_ID,
     checks: {
-      canonicalProfileResolved: true,
-      oracleWalletFactAccepted: true,
-      boundedXpPayloadDelivered: true,
-      oracleReceiptRecorded: true,
+      canonicalProfileResolved: true, oracleWalletFactAccepted: true,
+      boundedXpPayloadDelivered: true, oracleReceiptRecorded: true,
       replayReturnedOriginalReceipt: true,
       duplicatePermanentXpPrevented: state.receipts.size === 1,
     },
-    payloadCount: state.payloads.length,
-    permanentReceiptCount: state.receipts.size,
-    fundsMoved: false,
-    featureFlagsChanged: false,
+    payloadCount: state.payloads.length, permanentReceiptCount: state.receipts.size,
+    fundsMoved: false, featureFlagsChanged: false,
   };
 }
