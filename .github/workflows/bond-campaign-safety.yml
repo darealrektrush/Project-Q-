@@ -34,6 +34,10 @@ jobs:
         run: |
           cp supabase/schema.sql supabase/migrations/20260819000000_ci_base_schema.sql
           cp supabase/bond_the_duck.sql supabase/migrations/20260822000000_ci_bond_base.sql
+          # This historical hardening migration belongs to Oracle's database.
+          # Project Q never owned the underlying table, so exclude it from the
+          # isolated Project Q rebuild instead of fabricating a cross-DB table.
+          mv supabase/migrations/20260908011500_secure_raid_thread_context.sql /tmp/
       - name: Start disposable Supabase database
         run: >-
           supabase start
