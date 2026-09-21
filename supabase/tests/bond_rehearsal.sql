@@ -4,8 +4,8 @@ select plan(12);
 
 select has_table('public', 'campaigns', 'campaign registry exists');
 select has_table('public', 'cycles', 'campaign cycles exist');
-select has_table('public', 'campaign_allocations', 'campaign allocations exist');
-select has_table('public', 'campaign_release_schedule', 'release schedule exists');
+select has_table('public', 'allocations', 'campaign allocations exist');
+select has_table('public', 'releases', 'release schedule exists');
 select has_table('public', 'campaign_cycle_draw_commitments', 'draw commitments exist');
 select has_table('public', 'campaign_funding_finalizations', 'funding finalizations exist');
 select has_table('public', 'campaign_impact_receipts', 'impact receipts exist');
