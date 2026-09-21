@@ -34,18 +34,14 @@ The full mode creates a disposable six-decimal Token-2022 mint and a fresh Squad
 
 ## Team beta
 
-Use at least six trusted testers in an isolated staging deployment. Copy `config/bond-team-beta-template.json` outside the repository and record only pass/fail status—never wallet secrets, access tokens, private evidence, or personal identifiers.
+Use at least three trusted testers for one focused 60–90 minute session in an isolated staging deployment. Copy `config/bond-team-beta-template.json` outside the repository and record only pass/fail status—never wallet secrets, access tokens, private evidence, or personal identifiers. Automated tests own campaign math, eligibility, caps, selection, releases, idempotency and recovery; this session only verifies real external-client behavior and usability.
 
 Required roles and scenarios:
 
-1. Eligible member: onboarding, identity, missions, XP, rank and rewards.
-2. Ineligible member: below-$2 holder gate.
-3. Duplicate identity: reused X, Telegram or wallet identity.
-4. Founder/admin: exclusion from XP and ranking.
-5. Evidence reviewer: approval, rejection and stale proof.
-6. High-activity member: source cooldown and daily caps.
-7. Referrer: qualified referral and three-person X invite.
-8. Operations reviewer: outage, replay and payout recovery.
+1. Telegram navigation: `/startq`, Mini App launch, menus, back navigation and receipts on real mobile clients.
+2. X OAuth link: redirect, consent, return path, linked-account display and understandable failure copy.
+3. Wallet session: connect, reconnect, rejected signature, network mismatch and safe recovery without exposing secrets.
+4. Comprehension and recovery: a tester can identify eligibility, next action, result and recovery path without coaching.
 
 Any critical or high-severity issue resets the affected scenario to `PENDING` until the fix is deployed and retested. Evidence expires after 48 hours.
 
