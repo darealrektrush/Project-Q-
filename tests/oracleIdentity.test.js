@@ -13,8 +13,6 @@ test('resolves the permanent Oracle profile for a verified Telegram actor', asyn
       calls.push([fn, args]);
       return [{
         profile_id: '11111111-1111-4111-8111-111111111111',
-        profile_state: 'provisional',
-        telegram_verified: true,
       }];
     },
   };
@@ -22,11 +20,21 @@ test('resolves the permanent Oracle profile for a verified Telegram actor', asyn
   const identity = await ensureCampaignProfile(client, {
     campaignId: 'bond-the-duck-2026',
     telegramUserId: 42,
+  }, {
+    env: {
+      ORACLE_PROJECT_Q_IDENTITY_URL: 'https://oracle.example/platform/integrations/project-q/identity/resolve',
+      ORACLE_PROJECT_Q_EVENT_SECRET: 'x'.repeat(32),
+    },
+    fetchImpl: async () => ({ ok: true, text: async () => JSON.stringify({
+      profile_id: '11111111-1111-4111-8111-111111111111',
+      profile_state: 'provisional', telegram_verified: true,
+    }) }),
   });
 
   assert.deepEqual(calls, [[
-    'ensure_project_q_campaign_profile',
-    { p_campaign_id: 'bond-the-duck-2026', p_telegram_user_id: 42 },
+    'record_project_q_campaign_profile',
+    { p_campaign_id: 'bond-the-duck-2026', p_telegram_user_id: 42,
+      p_profile_id: '11111111-1111-4111-8111-111111111111', p_profile_state: 'provisional' },
   ]]);
   assert.deepEqual(identity, {
     profileId: '11111111-1111-4111-8111-111111111111',
@@ -75,8 +83,12 @@ test('rejects wallet events with extra fields or invalid ownership facts', () =>
 
 test('fails closed on invalid or incomplete Oracle identity responses', async () => {
   const client = { rpc: async () => [] };
+  const options = { env: {
+    ORACLE_PROJECT_Q_IDENTITY_URL: 'https://oracle.example/platform/integrations/project-q/identity/resolve',
+    ORACLE_PROJECT_Q_EVENT_SECRET: 'x'.repeat(32),
+  }, fetchImpl: async () => ({ ok: true, text: async () => '{}' }) };
   await assert.rejects(
-    () => ensureCampaignProfile(client, { campaignId: 'bond-the-duck-2026', telegramUserId: 42 }),
+    () => ensureCampaignProfile(client, { campaignId: 'bond-the-duck-2026', telegramUserId: 42 }, options),
     /unavailable/
   );
   await assert.rejects(
