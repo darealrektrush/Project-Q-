@@ -4,7 +4,7 @@ const WALLET_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export async function ensureCampaignProfile(client, {
   campaignId,
   telegramUserId,
-}) {
+}, { env = process.env, fetchImpl = fetch } = {}) {
   if (typeof campaignId !== 'string' || !campaignId.trim()) {
     throw new Error('invalid campaign identity request');
   }
@@ -12,18 +12,46 @@ export async function ensureCampaignProfile(client, {
     throw new Error('invalid campaign identity request');
   }
 
-  const result = await client.rpc('ensure_project_q_campaign_profile', {
-    p_campaign_id: campaignId,
-    p_telegram_user_id: telegramUserId,
-  });
-  const row = Array.isArray(result) ? result[0] : result;
-  if (!row || !UUID_PATTERN.test(row.profile_id ?? '') || row.telegram_verified !== true) {
+  let url;
+  try {
+    url = new URL(env.ORACLE_PROJECT_Q_IDENTITY_URL ?? '');
+  } catch {
     throw new Error('Oracle campaign identity unavailable');
   }
+  const secret = String(env.ORACLE_PROJECT_Q_EVENT_SECRET ?? '');
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash ||
+      !url.pathname.endsWith('/platform/integrations/project-q/identity/resolve') ||
+      secret.length < 32 || secret.trim() !== secret) {
+    throw new Error('Oracle campaign identity unavailable');
+  }
+  const response = await fetchImpl(url, {
+    method: 'POST',
+    redirect: 'error',
+    headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ campaign_id: campaignId, telegram_user_id: telegramUserId }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error('Oracle campaign identity unavailable');
+  const raw = await response.text();
+  if (raw.length > 16_384) throw new Error('Oracle campaign identity unavailable');
+  let oracle;
+  try { oracle = JSON.parse(raw); } catch { throw new Error('Oracle campaign identity unavailable'); }
+  if (!UUID_PATTERN.test(oracle?.profile_id ?? '') || oracle?.telegram_verified !== true ||
+      !['provisional', 'active'].includes(oracle?.profile_state)) {
+    throw new Error('Oracle campaign identity unavailable');
+  }
+  const result = await client.rpc('record_project_q_campaign_profile', {
+    p_campaign_id: campaignId,
+    p_telegram_user_id: telegramUserId,
+    p_profile_id: oracle.profile_id,
+    p_profile_state: oracle.profile_state,
+  });
+  const row = Array.isArray(result) ? result[0] : result;
+  if (!row || row.profile_id !== oracle.profile_id) throw new Error('Oracle campaign identity unavailable');
 
   return {
-    profileId: row.profile_id,
-    profileState: row.profile_state,
+    profileId: oracle.profile_id,
+    profileState: oracle.profile_state,
     telegramVerified: true,
   };
 }
