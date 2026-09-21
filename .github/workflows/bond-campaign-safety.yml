@@ -21,3 +21,37 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run rehearse:bond-automated
+
+  disposable-supabase-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+      - name: Build CI-only historical baseline
+        run: |
+          cp supabase/schema.sql supabase/migrations/20260819000000_ci_base_schema.sql
+          cp supabase/bond_the_duck.sql supabase/migrations/20260822000000_ci_bond_base.sql
+          # This historical hardening migration belongs to Oracle's database.
+          # Project Q never owned the underlying table, so exclude it from the
+          # isolated Project Q rebuild instead of fabricating a cross-DB table.
+          mv supabase/migrations/20260908011500_secure_raid_thread_context.sql /tmp/
+      - name: Start disposable Supabase database
+        run: >-
+          supabase start
+          --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Rebuild from committed schema and migrations
+        run: supabase db reset --local --no-seed
+      - name: Run Bond database rehearsal assertions
+        run: supabase test db --local supabase/tests/bond_rehearsal.sql
+      - name: Lint public database objects
+        run: |
+          supabase db lint --local --schema public --level error --fail-on none > /tmp/db-lint.json
+          cat /tmp/db-lint.json
+          unexpected="$(jq '[.[] as $function | $function.issues[] | select(
+            ($function.function == "public.materialize_bond_lifecycle_plan"
+              and .message == "relation \"bond_winners\" does not exist") | not
+          )] | length' /tmp/db-lint.json)"
+          test "$unexpected" -eq 0
