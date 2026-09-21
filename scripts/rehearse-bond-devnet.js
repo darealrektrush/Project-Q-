@@ -25,16 +25,14 @@ import { buildBondLifecycleFixture } from '../src/campaign/automatedRehearsal.js
 import { buildBondOnchainRehearsalPlan } from '../src/campaign/bondOnchainRehearsal.js';
 import { loadOrCreateDevnetRehearsalPayer } from '../src/campaign/devnetRehearsalPayer.js';
 import { validateBondRehearsalEnvironment } from '../src/campaign/rehearsalIsolation.js';
+import { confirmSolanaSignature } from '../src/campaign/solanaConfirmation.js';
 
 const { Permission, Permissions } = multisig.types;
 const FULL_LEDGER = String(process.env.BOND_REHEARSAL_FULL_LEDGER || '').toLowerCase() === 'true';
 const PAYER_FILE = path.resolve(process.env.BOND_REHEARSAL_PAYER_FILE || '.bond-devnet-payer.json');
 
 async function confirm(connection, signature) {
-  const latest = await connection.getLatestBlockhash('confirmed');
-  const result = await connection.confirmTransaction({ signature, ...latest }, 'confirmed');
-  if (result.value.err) throw new Error(`transaction failed: ${JSON.stringify(result.value.err)}`);
-  return signature;
+  return confirmSolanaSignature(connection, signature);
 }
 
 async function ensureFunding(connection, payer) {
@@ -69,9 +67,7 @@ async function sendInstructions(connection, payer, instructions) {
   }).compileToV0Message());
   transaction.sign([payer]);
   const signature = await connection.sendTransaction(transaction, { maxRetries: 3 });
-  const result = await connection.confirmTransaction({ signature, ...latest }, 'confirmed');
-  if (result.value.err) throw new Error(`setup transaction failed: ${JSON.stringify(result.value.err)}`);
-  return signature;
+  return confirm(connection, signature);
 }
 
 async function executeSquadsInstructions({
