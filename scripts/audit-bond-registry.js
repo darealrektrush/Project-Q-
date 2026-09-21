@@ -20,7 +20,7 @@ async function latestLocalMigration() {
 }
 
 async function main() {
-  const [campaignRows, rules, appConfig, sourceState, readiness, migration] = await Promise.all([
+  const [campaignRows, rules, appConfig, sourceState, readiness, approvedMarkets, migration] = await Promise.all([
     supabase.select(
       'campaigns',
       `?id=eq.${encodeURIComponent(CAMPAIGN_ID)}&select=id,state,rules_hash,ruleset_version,registry_version,funded_base_units&limit=1`
@@ -29,6 +29,10 @@ async function main() {
     loadJson('../public/campaign-app/campaigns/bond-the-duck-2026.json'),
     getVerificationSourceCertificationState(supabase, CAMPAIGN_ID),
     getCampaignReadiness(supabase),
+    supabase.select(
+      'campaign_buy_to_earn_markets',
+      `?campaign_id=eq.${encodeURIComponent(CAMPAIGN_ID)}&enabled=is.true&select=venue_key,enabled,evidence_url,verified_at&order=venue_key.asc`
+    ),
     latestLocalMigration(),
   ]);
 
@@ -38,6 +42,7 @@ async function main() {
     rules,
     appConfig,
     sourceState,
+    approvedMarkets,
     latestMigration: migration,
     readiness,
     deployedCommitSha: process.env.PROJECT_Q_DEPLOYED_COMMIT_SHA || process.env.RENDER_GIT_COMMIT || null,

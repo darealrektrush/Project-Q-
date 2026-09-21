@@ -2,8 +2,21 @@
 -- Oracle uses an outbox so a network failure can never roll back campaign
 -- settlement or silently lose the cross-ecosystem XP event.
 
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.identity_links'::regclass
+      and conname = 'identity_links_campaign_profile_key'
+  ) then
+    alter table public.identity_links
+      add constraint identity_links_campaign_profile_key unique (campaign_id, profile_id);
+  end if;
+end;
+$$;
+
 alter table public.xp_ledger
-  add column if not exists profile_id uuid references public.crabstar_profiles(profile_id);
+  add column if not exists profile_id uuid;
 
 update public.xp_ledger ledger
 set profile_id = identity.profile_id
@@ -28,7 +41,7 @@ create index if not exists xp_ledger_profile_awarded_idx
 create table if not exists public.campaign_xp_exports (
   export_id bigint generated always as identity primary key,
   xp_ledger_id bigint not null unique references public.xp_ledger(id),
-  profile_id uuid not null references public.crabstar_profiles(profile_id),
+  profile_id uuid not null,
   telegram_user_id bigint not null,
   campaign_id text not null references public.campaigns(id),
   cycle_id integer not null,
@@ -53,6 +66,8 @@ create table if not exists public.campaign_xp_exports (
   oracle_receipt_id uuid,
   delivered_at timestamptz,
   created_at timestamptz not null default now(),
+  foreign key (campaign_id, profile_id)
+    references public.identity_links(campaign_id, profile_id),
   check (
     (status = 'delivered' and delivered_at is not null and oracle_receipt_id is not null)
     or (status <> 'delivered' and delivered_at is null and oracle_receipt_id is null)

@@ -76,6 +76,7 @@ export function buildBondRegistryEvidence({
   rules = null,
   appConfig = null,
   sourceState = null,
+  approvedMarkets = [],
   latestMigration = null,
   readiness = null,
   deployedCommitSha = null,
@@ -101,7 +102,23 @@ export function buildBondRegistryEvidence({
     && rules.schedule?.reviewClosesAt
   );
   const sourcesCertified = Boolean(sourceState?.ready);
-  const readinessReady = Boolean(readiness?.ready && /^[0-9a-f]{64}$/.test(readiness?.reportHash || ''));
+  const readinessContractProven = Boolean(
+    readiness?.reportVersion
+    && /^[a-z0-9][a-z0-9._-]{2,63}$/i.test(readiness.reportVersion)
+    && commitUrl
+  );
+  const verifiedMarkets = Array.isArray(approvedMarkets)
+    ? approvedMarkets.filter((market) => (
+      market?.enabled === true
+      && typeof market?.venue_key === 'string'
+      && /^[a-z0-9][a-z0-9:_-]{1,63}$/.test(market.venue_key)
+      && httpsUrl(market?.evidence_url)
+      && market?.verified_at
+      && !Number.isNaN(Date.parse(market.verified_at))
+    ))
+    : [];
+  const approvedMarketSetComplete = verifiedMarkets.length > 0
+    && verifiedMarkets.length === approvedMarkets.length;
 
   const candidates = new Map();
 
@@ -162,10 +179,18 @@ export function buildBondRegistryEvidence({
     env, 'pump_swap_pool_migration', 'BOND_PUMP_SWAP_MIGRATION_REF', 'BOND_PUMP_SWAP_MIGRATION_EVIDENCE_URL', 'market-data'
   ));
 
-  candidates.set('approved_secondary_markets', blocked(
-    'approved_secondary_markets',
-    'Buy-to-Earn approved market policy has not been finalized'
-  ));
+  candidates.set('approved_secondary_markets', approvedMarketSetComplete
+    ? proven(
+      'approved_secondary_markets',
+      verifiedMarkets.map(({ venue_key: venueKey }) => venueKey).sort().join(','),
+      'market-data',
+      env?.BOND_APPROVED_MARKETS_EVIDENCE_URL
+        || verifiedMarkets.map(({ evidence_url: evidenceUrl }) => httpsUrl(evidenceUrl)).sort()[0]
+    )
+    : blocked(
+      'approved_secondary_markets',
+      'requires at least one enabled Buy-to-Earn market with immutable HTTPS evidence and verification time'
+    ));
 
   candidates.set('pyth_sol_usd_feed', envEvidence(
     env, 'pyth_sol_usd_feed', 'BOND_PYTH_SOL_USD_FEED', 'BOND_PYTH_SOL_USD_EVIDENCE_URL', 'market-data'
@@ -298,14 +323,17 @@ export function buildBondRegistryEvidence({
   candidates.set('legal_review', envEvidence(
     env, 'legal_review', 'BOND_LEGAL_REVIEW_REF', 'BOND_LEGAL_REVIEW_EVIDENCE_URL', 'governance'
   ));
-  candidates.set('readiness_report', readinessReady
+  // This registry entry proves the deployed readiness contract, not the final
+  // readiness result. The result itself includes the registry gate, so embedding
+  // it here would create a circular dependency that could never become ready.
+  candidates.set('readiness_report', readinessContractProven
     ? proven(
       'readiness_report',
-      `${readiness.reportVersion}:${readiness.reportHash}`,
+      `${readiness.reportVersion}:contract:${commitSha}`,
       'campaign-governance',
       env?.BOND_READINESS_REPORT_EVIDENCE_URL || commitUrl
     )
-    : blocked('readiness_report', 'all public launch gates must pass before the final readiness fingerprint is registry evidence'));
+    : blocked('readiness_report', 'deployed readiness contract version and immutable commit evidence are required'));
 
   const fields = REQUIRED_REGISTRY_FIELDS.map((field) =>
     candidates.get(field) || missing(field, 'no evidence rule configured')

@@ -8,7 +8,7 @@ create table if not exists public.campaign_holder_eligibility_events (
   id bigserial primary key,
   campaign_id text not null references public.campaigns(id),
   telegram_user_id bigint not null,
-  profile_id uuid not null references public.crabstar_profiles(profile_id),
+  profile_id uuid not null,
   reward_wallet text not null,
   token_account text,
   balance_base_units numeric(39,0) not null check (balance_base_units >= 0),
@@ -20,7 +20,9 @@ create table if not exists public.campaign_holder_eligibility_events (
   source text not null default 'HELIUS_DAS_SOLANA_RPC',
   idempotency_key text not null unique check (idempotency_key ~ '^[0-9a-f]{64}$'),
   created_at timestamptz not null default now(),
-  unique (campaign_id, telegram_user_id, observed_at)
+  unique (campaign_id, telegram_user_id, observed_at),
+  foreign key (campaign_id, profile_id)
+    references public.identity_links(campaign_id, profile_id)
 );
 
 create index if not exists campaign_holder_eligibility_latest_idx

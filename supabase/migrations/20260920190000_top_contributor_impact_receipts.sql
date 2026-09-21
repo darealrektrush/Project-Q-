@@ -6,7 +6,7 @@
 create table if not exists public.campaign_top_contributor_finalizations (
   campaign_id text primary key references public.campaigns(id),
   telegram_user_id bigint not null,
-  profile_id uuid not null references public.crabstar_profiles(profile_id),
+  profile_id uuid not null,
   reward_wallet text not null check (reward_wallet ~ '^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
   total_xp bigint not null check (total_xp > 0),
   finalized_by bigint not null,
@@ -14,7 +14,9 @@ create table if not exists public.campaign_top_contributor_finalizations (
   foreign key (campaign_id, finalized_by)
     references public.campaign_founders(campaign_id, founder_user_id),
   foreign key (campaign_id, telegram_user_id)
-    references public.identity_links(campaign_id, telegram_user_id)
+    references public.identity_links(campaign_id, telegram_user_id),
+  foreign key (campaign_id, profile_id)
+    references public.identity_links(campaign_id, profile_id)
 );
 
 create table if not exists public.campaign_impact_receipts (
@@ -22,7 +24,7 @@ create table if not exists public.campaign_impact_receipts (
   campaign_id text not null references public.campaigns(id),
   receipt_type text not null check (receipt_type in ('WINNER_PRIZE','CONSERVATION_IMPACT')),
   telegram_user_id bigint not null,
-  profile_id uuid not null references public.crabstar_profiles(profile_id),
+  profile_id uuid not null,
   recipient_address text not null check (recipient_address ~ '^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
   amount_lamports bigint not null check (amount_lamports > 0),
   transaction_signature text not null unique
@@ -37,7 +39,9 @@ create table if not exists public.campaign_impact_receipts (
   foreign key (campaign_id, telegram_user_id)
     references public.identity_links(campaign_id, telegram_user_id),
   foreign key (campaign_id, recorded_by)
-    references public.campaign_founders(campaign_id, founder_user_id)
+    references public.campaign_founders(campaign_id, founder_user_id),
+  foreign key (campaign_id, profile_id)
+    references public.identity_links(campaign_id, profile_id)
 );
 
 create index if not exists campaign_impact_receipts_profile_idx

@@ -102,6 +102,43 @@ test('registry audit treats Buy-to-Earn as weight-only inside 15M once deployed 
   assert.match(byField.get('top_contributor_prize_funding').value, /0\.1 SOL Ocean Conservation/);
 });
 
+test('registry audit proves only enabled markets with immutable evidence', () => {
+  const report = buildBondRegistryEvidence({
+    campaign: { id: 'bond-the-duck-2026', rules_hash: 'a'.repeat(64), ruleset_version: 4 },
+    rules,
+    appConfig,
+    latestMigration: '20260920180000_lock_bond_buytoearn_conservation_economics',
+    deployedCommitSha: 'a'.repeat(40),
+    approvedMarkets: [{
+      venue_key: 'pump_swap',
+      enabled: true,
+      evidence_url: 'https://example.com/pump-swap-policy',
+      verified_at: '2026-09-21T12:00:00.000Z',
+    }],
+  });
+  const byField = new Map(report.fields.map((row) => [row.field, row]));
+  assert.equal(byField.get('approved_secondary_markets').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.equal(byField.get('approved_secondary_markets').value, 'pump_swap');
+});
+
+test('readiness registry evidence proves the contract without requiring its circular final result', () => {
+  const report = buildBondRegistryEvidence({
+    campaign: { id: 'bond-the-duck-2026', rules_hash: 'a'.repeat(64), ruleset_version: 4 },
+    rules,
+    appConfig,
+    latestMigration: '20260920180000_lock_bond_buytoearn_conservation_economics',
+    deployedCommitSha: 'a'.repeat(40),
+    readiness: {
+      ready: false,
+      reportVersion: 'bond-readiness-v2',
+      reportHash: 'e'.repeat(64),
+    },
+  });
+  const row = report.fields.find(({ field }) => field === 'readiness_report');
+  assert.equal(row.status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.equal(row.value, `bond-readiness-v2:contract:${'a'.repeat(40)}`);
+});
+
 test('registry audit proves immutable public machine facts only when stable HTTPS evidence exists', () => {
   const commit = 'a'.repeat(40);
   const report = buildBondRegistryEvidence({
@@ -187,6 +224,12 @@ test('a complete evidence report produces rows accepted by registry validation a
       acceptingWebsiteCount: 3,
       acceptingTelegramBotCount: 5,
     },
+    approvedMarkets: [{
+      venue_key: 'pump_swap',
+      enabled: true,
+      evidence_url: 'https://example.com/pumpswap',
+      verified_at: '2026-09-21T12:00:00.000Z',
+    }],
     latestMigration: '20260920080000_bond_holder_eligibility',
     readiness: {
       ready: true,
@@ -197,13 +240,9 @@ test('a complete evidence report produces rows accepted by registry validation a
     env,
   });
 
-  assert.equal(report.complete, false);
-  assert.equal(report.registryHash, null);
-  assert.equal(report.entries.length, 0);
-  const blockedFields = report.fields
-    .filter(({ status }) => status === REGISTRY_EVIDENCE_STATUS.BLOCKED)
-    .map(({ field }) => field);
-  assert.ok(blockedFields.includes('approved_secondary_markets'));
+  assert.equal(report.complete, true);
+  assert.match(report.registryHash, /^[0-9a-f]{64}$/);
+  assert.equal(report.entries.length, REQUIRED_REGISTRY_FIELDS.length);
 
   // The subset already proven is individually registry-safe.
   const proven = report.fields

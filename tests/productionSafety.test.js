@@ -68,6 +68,8 @@ test('campaign XP is profile-keyed and exported through a private retry-safe out
     'supabase/migrations/20260918082555_oracle_campaign_xp_outbox.sql'
   );
   assert.match(migration, /alter table public\.xp_ledger[\s\S]+add column if not exists profile_id uuid/);
+  assert.doesNotMatch(migration, /references public\.crabstar_profiles/);
+  assert.match(migration, /references public\.identity_links\(campaign_id, profile_id\)/);
   assert.match(migration, /alter column profile_id set not null/);
   assert.match(migration, /create table if not exists public\.campaign_xp_exports/);
   assert.match(migration, /campaign participant has no permanent Oracle profile/);
@@ -78,6 +80,18 @@ test('campaign XP is profile-keyed and exported through a private retry-safe out
 
   const blueprint = await read('render.yaml');
   assert.match(blueprint, /PROJECT_Q_ORACLE_XP_EXPORT_ENABLED\n\s+value: "false"/);
+});
+
+test('campaign identity-dependent features use the cross-database identity bridge', async () => {
+  for (const path of [
+    'supabase/migrations/20260920050000_campaign_buy_to_earn_engine.sql',
+    'supabase/migrations/20260920080000_bond_holder_eligibility.sql',
+    'supabase/migrations/20260920190000_top_contributor_impact_receipts.sql',
+  ]) {
+    const migration = await read(path);
+    assert.doesNotMatch(migration, /references public\.crabstar_profiles/);
+    assert.match(migration, /references public\.identity_links\(campaign_id, profile_id\)/);
+  }
 });
 
 test('verification source certifications are append-only, private and non-activating', async () => {

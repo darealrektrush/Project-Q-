@@ -26,7 +26,7 @@ create table if not exists public.campaign_buy_to_earn_events (
   campaign_id text not null references public.campaigns(id),
   cycle_id integer not null,
   telegram_user_id bigint not null,
-  profile_id uuid not null references public.crabstar_profiles(profile_id),
+  profile_id uuid not null,
   reward_wallet text not null,
   source_event_id text not null
     check (source_event_id ~ '^[A-Za-z0-9:_-]{8,160}$'),
@@ -45,7 +45,9 @@ create table if not exists public.campaign_buy_to_earn_events (
   foreign key (campaign_id, cycle_id)
     references public.cycles(campaign_id, cycle_id),
   foreign key (campaign_id, venue_key)
-    references public.campaign_buy_to_earn_markets(campaign_id, venue_key)
+    references public.campaign_buy_to_earn_markets(campaign_id, venue_key),
+  foreign key (campaign_id, profile_id)
+    references public.identity_links(campaign_id, profile_id)
 );
 
 create index if not exists campaign_buy_to_earn_events_wallet_idx
