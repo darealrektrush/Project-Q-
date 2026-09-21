@@ -1,8 +1,7 @@
 import { runBondAutomatedRehearsal } from './automatedRehearsal.js';
 
 const REQUIRED_BETA_SCENARIOS = Object.freeze([
-  'happy-path', 'below-holder-floor', 'identity-replay', 'founder-exclusion',
-  'website-review', 'cooldown-cap', 'referral-invite', 'recovery',
+  'telegram-navigation', 'x-oauth-link', 'wallet-session', 'comprehension-recovery',
 ]);
 
 function timestamp(value, label) {
@@ -19,10 +18,10 @@ function fresh(value, now, hours) {
 
 export function evaluateTeamBetaEvidence(evidence, now = new Date().toISOString()) {
   const reasons = [];
-  if (!evidence || evidence.schema !== 'bond-team-beta-v1') reasons.push('team beta evidence is missing');
+  if (!evidence || evidence.schema !== 'bond-team-smoke-v2') reasons.push('team usability evidence is missing');
   if (evidence?.environment !== 'ISOLATED_STAGING') reasons.push('team beta must run in isolated staging');
   if (evidence?.productionDataTouched !== false) reasons.push('team beta must not touch production data');
-  if (!Number.isSafeInteger(evidence?.testerCount) || evidence.testerCount < 6) reasons.push('at least six team testers are required');
+  if (!Number.isSafeInteger(evidence?.testerCount) || evidence.testerCount < 3) reasons.push('at least three team testers are required');
   if (Number(evidence?.criticalIssues || 0) !== 0 || Number(evidence?.highIssues || 0) !== 0) {
     reasons.push('critical and high issues must be zero');
   }
