@@ -5,11 +5,10 @@ import { buildBondLaunchQualification } from '../src/campaign/launchQualificatio
 
 const now = '2030-01-20T20:00:00.000Z';
 const beta = {
-  schema: 'bond-team-beta-v1', environment: 'ISOLATED_STAGING', testerCount: 8,
+  schema: 'bond-team-smoke-v2', environment: 'ISOLATED_STAGING', testerCount: 3,
   completedAt: '2030-01-20T19:00:00.000Z', criticalIssues: 0, highIssues: 0,
   productionDataTouched: false,
-  scenarios: ['happy-path', 'below-holder-floor', 'identity-replay', 'founder-exclusion',
-    'website-review', 'cooldown-cap', 'referral-invite', 'recovery']
+  scenarios: ['telegram-navigation', 'x-oauth-link', 'wallet-session', 'comprehension-recovery']
     .map((id) => ({ id, status: 'PASSED' })),
 };
 const gates = {
@@ -29,6 +28,22 @@ test('launch qualification passes only all four evidence layers together', () =>
   assert.deepEqual(report.gates, { automated: true, teamBeta: true, onchain: true, production: true });
   assert.equal(report.blockers.length, 0);
   assert.equal(report.mutationsPerformed, false);
+});
+
+test('team usability evidence requires three testers and every external-client scenario', () => {
+  const tooFew = buildBondLaunchQualification({
+    betaEvidence: { ...beta, testerCount: 2 }, onchainEvidence: onchain,
+    productionReadiness: { ready: true }, now,
+  });
+  assert.equal(tooFew.ready, false);
+  assert.match(tooFew.blockers.join('; '), /at least three/);
+
+  const missingWallet = buildBondLaunchQualification({
+    betaEvidence: { ...beta, scenarios: beta.scenarios.filter(({ id }) => id !== 'wallet-session') },
+    onchainEvidence: onchain, productionReadiness: { ready: true }, now,
+  });
+  assert.equal(missingWallet.ready, false);
+  assert.match(missingWallet.blockers.join('; '), /wallet-session/);
 });
 
 test('launch qualification fails closed on missing evidence', () => {
