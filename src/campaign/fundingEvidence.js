@@ -44,6 +44,7 @@ export function buildFundingEvidencePacket({
   founderUserId,
   vaultAddress,
   vaultBaseUnits = BOND_FUNDING_BASE_UNITS,
+  observedVaultBaseUnits,
   squadsApprovalThreshold = BOND_SQUADS_APPROVAL_THRESHOLD,
   squadsMemberCount = BOND_SQUADS_MEMBER_COUNT,
   topContributorPrizeLamports = BOND_TOP_CONTRIBUTOR_LAMPORTS,
@@ -61,6 +62,7 @@ export function buildFundingEvidencePacket({
   const founder = String(founderUserId || '').trim();
   const vault = String(vaultAddress || '').trim();
   const amount = String(vaultBaseUnits ?? '').trim();
+  const observedAmount = String(observedVaultBaseUnits ?? '').trim();
   const prize = String(topContributorPrizeLamports ?? '').trim();
   const conservation = String(conservationContributionLamports ?? '').trim();
   const totalSol = String(totalSolCommitmentLamports ?? '').trim();
@@ -75,7 +77,12 @@ export function buildFundingEvidencePacket({
   if (normalizedCampaignId !== 'bond-the-duck-2026') reasons.push('campaign identity is not Bond the Duck');
   if (!/^\d+$/.test(founder)) reasons.push('authorized founder Telegram ID is required');
   if (!WALLET.test(vault)) reasons.push('valid Squads vault address is required');
-  if (amount !== BOND_FUNDING_BASE_UNITS) reasons.push('vault balance must be exactly 17,500,000 FAWKQ');
+  if (amount !== BOND_FUNDING_BASE_UNITS) reasons.push('campaign vault commitment must be exactly 17,500,000 FAWKQ');
+  if (!/^\d+$/.test(observedAmount)) {
+    reasons.push('current on-chain vault balance is required');
+  } else if (BigInt(observedAmount) < BigInt(BOND_FUNDING_BASE_UNITS)) {
+    reasons.push('current on-chain vault balance is below the 17,500,000 FAWKQ commitment');
+  }
   if (Number(squadsApprovalThreshold) !== BOND_SQUADS_APPROVAL_THRESHOLD) reasons.push('Squads approval threshold must be 2');
   if (Number(squadsMemberCount) !== BOND_SQUADS_MEMBER_COUNT) reasons.push('Squads member count must be 3');
   if (prize !== BOND_TOP_CONTRIBUTOR_LAMPORTS) reasons.push('top contributor prize must be exactly 1 SOL');
@@ -117,6 +124,7 @@ export function buildFundingEvidencePacket({
     founderUserId: founder || null,
     vaultAddress: vault || null,
     vaultBaseUnits: amount || null,
+    observedVaultBaseUnits: observedAmount || null,
     squadsApprovalThreshold: Number(squadsApprovalThreshold),
     squadsMemberCount: Number(squadsMemberCount),
     topContributorPrizeLamports: prize || null,
@@ -143,6 +151,7 @@ export function buildFundingEvidencePacket({
       founderUserId: founder || null,
       vaultAddress: vault || null,
       vaultBaseUnits: amount || null,
+      observedVaultBaseUnits: observedAmount || null,
       squadsApprovalThreshold: Number(squadsApprovalThreshold),
       squadsMemberCount: Number(squadsMemberCount),
       topContributorPrizeLamports: prize || null,

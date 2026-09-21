@@ -54,7 +54,7 @@ The two private Telegram approval identities are bound by immutable numeric IDs,
 
 The total token commitment represented by the campaign is 32,500,000 FAWKQ (3.25% of the original reference supply), but only the additional 15,000,000 FAWKQ creator-wallet reserve is designated for Earn to Burn. The other 17,500,000 FAWKQ remains reward and bonus supply.
 
-The 15,000,000 FAWKQ campaign pool and 2,500,000 FAWKQ Diamond Duck bonus share one Squads community vault. Project Q must verify the exact 17,500,000 FAWKQ token balance and the 2-of-3 Squads authority before the funding gate can pass. Neither allocation depends on Streamflow or any future unlock. The separate 1 SOL top-contributor prize is paid only after final campaign verification.
+The 15,000,000 FAWKQ campaign pool and 2,500,000 FAWKQ Diamond Duck bonus share one larger Squads community vault. Project Q must verify that the live vault balance covers the full 17,500,000 FAWKQ campaign commitment, bind exactly 17,500,000 FAWKQ to the campaign funding ledger, and verify the 2-of-3 Squads authority before the funding gate can pass. Neither allocation depends on Streamflow or any future unlock. The separate 1 SOL top-contributor prize is paid only after final campaign verification.
 
 The one-billion value is a campaign reference, not a substitute for an on-chain pre-burn observation. If no other supply change occurs, the audited observed supply minus the planned opening amount is exactly `984,999,999.658335` FAWKQ. Every receipt must store the actual verified before/after base-unit values.
 

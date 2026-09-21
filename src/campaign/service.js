@@ -153,7 +153,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
 
   const checks = [
     { key: 'rules', label: 'Final rules complete and hash-matched', ready: rulesReady },
-    { key: 'funding', label: '17,500,000 FAWKQ Squads vault funding verified', ready: funded === EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS },
+    { key: 'funding', label: '17,500,000 FAWKQ Squads vault commitment verified', ready: funded === EXPECTED_CAMPAIGN_FUNDING_BASE_UNITS },
     { key: 'registry', label: 'Deployment and vault registry complete', ready: registryReady },
     {
       key: 'sources',

@@ -10,6 +10,7 @@ import {
 const good = {
   founderUserId: 101,
   vaultAddress: '11111111111111111111111111111111',
+  observedVaultBaseUnits: '40000000000000',
   conservationVaultAddress: '22222222222222222222222222222222',
   evidenceUrl: 'https://evidence.example/squads-vault',
   evidenceHash: 'a'.repeat(64),
@@ -22,6 +23,7 @@ test('funding evidence packet is ready only for the exact locked funding facts',
   assert.equal(packet.ready, true);
   assert.equal(packet.reasons.length, 0);
   assert.equal(packet.evidence.vaultBaseUnits, '17500000000000');
+  assert.equal(packet.evidence.observedVaultBaseUnits, '40000000000000');
   assert.equal(packet.evidence.squadsApprovalThreshold, 2);
   assert.equal(packet.evidence.squadsMemberCount, 3);
   assert.equal(packet.evidence.topContributorPrizeLamports, '1000000000');
@@ -37,6 +39,8 @@ test('funding evidence packet is ready only for the exact locked funding facts',
 test('funding evidence packet fails closed on stale, wrong amount, wrong authority or missing proof', () => {
   for (const patch of [
     { vaultBaseUnits: '17499999999999' },
+    { observedVaultBaseUnits: '17499999999999' },
+    { observedVaultBaseUnits: null },
     { squadsApprovalThreshold: 1 },
     { squadsMemberCount: 4 },
     { topContributorPrizeLamports: '999999999' },

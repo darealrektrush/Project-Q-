@@ -8,6 +8,7 @@ function main() {
     founderUserId: process.env.BOND_FUNDING_PROPOSER_TELEGRAM_ID,
     vaultAddress: process.env.BOND_SQUADS_VAULT_PUBLIC,
     vaultBaseUnits: process.env.BOND_SQUADS_VAULT_BASE_UNITS || '17500000000000',
+    observedVaultBaseUnits: process.env.BOND_SQUADS_VAULT_OBSERVED_BASE_UNITS,
     squadsApprovalThreshold: process.env.BOND_SQUADS_APPROVAL_THRESHOLD || 2,
     squadsMemberCount: process.env.BOND_SQUADS_MEMBER_COUNT || 3,
     topContributorPrizeLamports: process.env.BOND_TOP_CONTRIBUTOR_PRIZE_LAMPORTS || '1000000000',

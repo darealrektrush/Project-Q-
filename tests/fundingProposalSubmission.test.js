@@ -7,6 +7,7 @@ import { submitFundingEvidenceProposal } from '../src/campaign/fundingEvidence.j
 const good = {
   founderUserId: 101,
   vaultAddress: '11111111111111111111111111111111',
+  observedVaultBaseUnits: '40000000000000',
   conservationVaultAddress: '22222222222222222222222222222222',
   evidenceUrl: 'https://evidence.example/funding',
   evidenceHash: 'a'.repeat(64),

@@ -168,7 +168,7 @@ export function buildFundingGovernanceText(state) {
     proposal ? `*Proposal #${proposal.id}*` : '*No funding proposal recorded*',
     ...(proposal ? [
       `Vault: ${shortAddress(proposal.vaultAddress)}`,
-      `Vault amount: ${proposal.vaultBaseUnits} base units`,
+      `Campaign commitment: ${proposal.vaultBaseUnits} base units`,
       `Squads authority: ${proposal.approvalThreshold}-of-${proposal.memberCount}`,
       `Winner prize: ${proposal.topContributorPrizeLamports} lamports (1 SOL)`,
       `Conservation: ${proposal.conservationContributionLamports} lamports (0.10 SOL)`,
