@@ -1,5 +1,7 @@
 import 'dotenv/config';
 
+import path from 'node:path';
+
 import * as multisig from '@sqds/multisig';
 import {
   TOKEN_2022_PROGRAM_ID,
@@ -21,10 +23,12 @@ import {
 
 import { buildBondLifecycleFixture } from '../src/campaign/automatedRehearsal.js';
 import { buildBondOnchainRehearsalPlan } from '../src/campaign/bondOnchainRehearsal.js';
+import { loadOrCreateDevnetRehearsalPayer } from '../src/campaign/devnetRehearsalPayer.js';
 import { validateBondRehearsalEnvironment } from '../src/campaign/rehearsalIsolation.js';
 
 const { Permission, Permissions } = multisig.types;
 const FULL_LEDGER = String(process.env.BOND_REHEARSAL_FULL_LEDGER || '').toLowerCase() === 'true';
+const PAYER_FILE = path.resolve(process.env.BOND_REHEARSAL_PAYER_FILE || '.bond-devnet-payer.json');
 
 async function confirm(connection, signature) {
   const latest = await connection.getLatestBlockhash('confirmed');
@@ -48,7 +52,11 @@ async function ensureFunding(connection, payer) {
     }
   }
   if (balance < minimum) {
-    throw new Error(`public Devnet faucet could not fund the ephemeral rehearsal payer (${lastError?.message || 'insufficient balance'})`);
+    throw new Error(
+      `Devnet rehearsal payer ${payer.publicKey.toBase58()} has ${balance} lamports; `
+      + `requires ${minimum}. Public faucet unavailable (${lastError?.message || 'insufficient balance'}). `
+      + 'The same ignored test payer will be reused so funding can accumulate safely.',
+    );
   }
 }
 
@@ -112,8 +120,14 @@ async function main() {
   if (!isolation.ready || isolation.network !== 'devnet') {
     throw new Error(`isolated devnet configuration required: ${isolation.reasons.join('; ')}`);
   }
-  const connection = new Connection(isolation.rpcUrl, 'confirmed');
-  const payer = Keypair.generate();
+  const connection = new Connection(isolation.rpcUrl, {
+    commitment: 'confirmed',
+    disableRetryOnRateLimit: true,
+  });
+  const { payer, source: payerSource } = await loadOrCreateDevnetRehearsalPayer({
+    encoded: process.env.BOND_REHEARSAL_PAYER_JSON,
+    file: PAYER_FILE,
+  });
   const secondMember = Keypair.generate();
   const thirdMember = Keypair.generate();
   const createKey = Keypair.generate();
@@ -142,6 +156,7 @@ async function main() {
     rentCollector: null,
     memo: 'Bond the Duck isolated rehearsal 2-of-3',
   }));
+  const createdMultisig = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
 
   await sendInstructions(connection, payer, [SystemProgram.transfer({
     fromPubkey: payer.publicKey,
@@ -225,7 +240,7 @@ async function main() {
   const gates = {
     isolatedDevnet: isolation.ready && isolation.productionAssetsAllowed === false,
     token2022Mint: mintAfter.tlvData != null,
-    squadsThreshold2Of3: true,
+    squadsThreshold2Of3: createdMultisig.threshold === 2 && createdMultisig.members.length === 3,
     planned175Transfers: plan.manifest.transferCount === 175,
     planned15mRewards: plan.manifest.transferTotalBaseUnits === '15000000000000',
     executedFullRewardLedger: FULL_LEDGER && transferBatches.length === plan.transferBatches.length,
@@ -247,6 +262,8 @@ async function main() {
     gates,
     manifest: plan.manifest,
     evidence: {
+      payer: payer.publicKey.toBase58(),
+      payerSource,
       multisig: multisigPda.toBase58(),
       vault: vaultPda.toBase58(),
       mint: mint.toBase58(),
