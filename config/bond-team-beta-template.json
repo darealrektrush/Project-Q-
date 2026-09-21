@@ -1,5 +1,5 @@
 {
-  "schema": "bond-team-beta-v1",
+  "schema": "bond-team-smoke-v2",
   "environment": "ISOLATED_STAGING",
   "testerCount": 0,
   "completedAt": null,
@@ -7,13 +7,9 @@
   "highIssues": 0,
   "productionDataTouched": false,
   "scenarios": [
-    { "id": "happy-path", "status": "PENDING" },
-    { "id": "below-holder-floor", "status": "PENDING" },
-    { "id": "identity-replay", "status": "PENDING" },
-    { "id": "founder-exclusion", "status": "PENDING" },
-    { "id": "website-review", "status": "PENDING" },
-    { "id": "cooldown-cap", "status": "PENDING" },
-    { "id": "referral-invite", "status": "PENDING" },
-    { "id": "recovery", "status": "PENDING" }
+    { "id": "telegram-navigation", "status": "PENDING" },
+    { "id": "x-oauth-link", "status": "PENDING" },
+    { "id": "wallet-session", "status": "PENDING" },
+    { "id": "comprehension-recovery", "status": "PENDING" }
   ]
 }
