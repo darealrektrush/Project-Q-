@@ -1,4 +1,5 @@
 import { chmod, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 import { Keypair } from '@solana/web3.js';
 
@@ -9,9 +10,20 @@ function decodeKeypair(bytes, label) {
   return Keypair.fromSecretKey(Uint8Array.from(bytes));
 }
 
-export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', file }) {
+function deriveKeypair(seed) {
+  const normalized = String(seed).trim();
+  if (normalized.length < 32) {
+    throw new Error('BOND_REHEARSAL_PAYER_SEED must contain at least 32 characters of protected entropy');
+  }
+  return Keypair.fromSeed(createHash('sha256').update(normalized, 'utf8').digest());
+}
+
+export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', seed = '', file }) {
   if (String(encoded).trim()) {
     return { payer: decodeKeypair(JSON.parse(encoded), 'BOND_REHEARSAL_PAYER_JSON'), source: 'PROTECTED_ENV' };
+  }
+  if (String(seed).trim()) {
+    return { payer: deriveKeypair(seed), source: 'PROTECTED_ENV_SEED' };
   }
   try {
     const payer = decodeKeypair(JSON.parse(await readFile(file, 'utf8')), 'rehearsal payer file');

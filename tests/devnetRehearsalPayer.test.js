@@ -34,3 +34,15 @@ test('Devnet rehearsal payer accepts a protected environment key and rejects mal
     /64-byte keypair array/,
   );
 });
+
+test('Devnet rehearsal payer derives a stable key from a protected persistent seed', async () => {
+  const seed = 'render-generated-secret-with-at-least-32-characters';
+  const first = await loadOrCreateDevnetRehearsalPayer({ seed, file: 'unused' });
+  const second = await loadOrCreateDevnetRehearsalPayer({ seed, file: 'unused' });
+  assert.equal(first.source, 'PROTECTED_ENV_SEED');
+  assert.equal(second.payer.publicKey.toBase58(), first.payer.publicKey.toBase58());
+  await assert.rejects(
+    loadOrCreateDevnetRehearsalPayer({ seed: 'too-short', file: 'unused' }),
+    /at least 32 characters/,
+  );
+});

@@ -26,6 +26,7 @@ import { buildBondOnchainRehearsalPlan } from '../src/campaign/bondOnchainRehear
 import { loadOrCreateDevnetRehearsalPayer } from '../src/campaign/devnetRehearsalPayer.js';
 import { validateBondRehearsalEnvironment } from '../src/campaign/rehearsalIsolation.js';
 import { confirmSolanaSignature } from '../src/campaign/solanaConfirmation.js';
+import { withSolanaRpcRetry } from '../src/campaign/solanaRpcRetry.js';
 
 const { Permission, Permissions } = multisig.types;
 const FULL_LEDGER = String(process.env.BOND_REHEARSAL_FULL_LEDGER || '').toLowerCase() === 'true';
@@ -37,13 +38,13 @@ async function confirm(connection, signature) {
 
 async function ensureFunding(connection, payer) {
   const minimum = 2 * LAMPORTS_PER_SOL;
-  let balance = await connection.getBalance(payer.publicKey, 'confirmed');
+  let balance = await withSolanaRpcRetry(() => connection.getBalance(payer.publicKey, 'confirmed'));
   let lastError = null;
   for (let attempt = 0; balance < minimum && attempt < 8; attempt += 1) {
     try {
       const signature = await connection.requestAirdrop(payer.publicKey, LAMPORTS_PER_SOL / 2);
       await confirm(connection, signature);
-      balance = await connection.getBalance(payer.publicKey, 'confirmed');
+      balance = await withSolanaRpcRetry(() => connection.getBalance(payer.publicKey, 'confirmed'));
     } catch (error) {
       lastError = error;
       await new Promise((resolve) => setTimeout(resolve, 1_000 * (attempt + 1)));
@@ -59,7 +60,7 @@ async function ensureFunding(connection, payer) {
 }
 
 async function sendInstructions(connection, payer, instructions) {
-  const latest = await connection.getLatestBlockhash('confirmed');
+  const latest = await withSolanaRpcRetry(() => connection.getLatestBlockhash('confirmed'));
   const transaction = new VersionedTransaction(new TransactionMessage({
     payerKey: payer.publicKey,
     recentBlockhash: latest.blockhash,
@@ -73,11 +74,13 @@ async function sendInstructions(connection, payer, instructions) {
 async function executeSquadsInstructions({
   connection, payer, secondMember, multisigPda, vaultPda, instructions, memo,
 }) {
-  const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
+  const multisigInfo = await withSolanaRpcRetry(
+    () => multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda),
+  );
   const transactionIndex = BigInt(multisigInfo.transactionIndex.toString()) + 1n;
   const transactionMessage = new TransactionMessage({
     payerKey: vaultPda,
-    recentBlockhash: (await connection.getLatestBlockhash('confirmed')).blockhash,
+    recentBlockhash: (await withSolanaRpcRetry(() => connection.getLatestBlockhash('confirmed'))).blockhash,
     instructions,
   });
   await confirm(connection, await multisig.rpc.vaultTransactionCreate({
@@ -118,10 +121,11 @@ async function main() {
   }
   const connection = new Connection(isolation.rpcUrl, {
     commitment: 'confirmed',
-    disableRetryOnRateLimit: true,
+    disableRetryOnRateLimit: false,
   });
   const { payer, source: payerSource } = await loadOrCreateDevnetRehearsalPayer({
     encoded: process.env.BOND_REHEARSAL_PAYER_JSON,
+    seed: process.env.BOND_REHEARSAL_PAYER_SEED,
     file: PAYER_FILE,
   });
   const secondMember = Keypair.generate();
@@ -135,7 +139,9 @@ async function main() {
   const [multisigPda] = multisig.getMultisigPda({ createKey: createKey.publicKey });
   const [vaultPda] = multisig.getVaultPda({ multisigPda, index: 0 });
   const programConfigPda = multisig.getProgramConfigPda({})[0];
-  const programConfig = await multisig.accounts.ProgramConfig.fromAccountAddress(connection, programConfigPda);
+  const programConfig = await withSolanaRpcRetry(
+    () => multisig.accounts.ProgramConfig.fromAccountAddress(connection, programConfigPda),
+  );
   await confirm(connection, await multisig.rpc.multisigCreateV2({
     connection,
     treasury: programConfig.treasury,
@@ -152,7 +158,9 @@ async function main() {
     rentCollector: null,
     memo: 'Bond the Duck isolated rehearsal 2-of-3',
   }));
-  const createdMultisig = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
+  const createdMultisig = await withSolanaRpcRetry(
+    () => multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda),
+  );
 
   await sendInstructions(connection, payer, [SystemProgram.transfer({
     fromPubkey: payer.publicKey,
@@ -243,8 +251,8 @@ async function main() {
     vaultBalanceReconciled: vaultAfter.amount === expectedVault,
     burn15mExecuted: burnAfter.amount === 0n,
     supplyBurnReconciled: mintAfter.supply === 17_500_000_000_000n,
-    impactPaymentsSeparated: await connection.getBalance(topContributor.publicKey) === 1_000_000_000
-      && await connection.getBalance(conservation.publicKey) === 100_000_000,
+    impactPaymentsSeparated: await withSolanaRpcRetry(() => connection.getBalance(topContributor.publicKey)) === 1_000_000_000
+      && await withSolanaRpcRetry(() => connection.getBalance(conservation.publicKey)) === 100_000_000,
   };
   const passed = Object.entries(gates)
     .filter(([key]) => key !== 'executedFullRewardLedger')
