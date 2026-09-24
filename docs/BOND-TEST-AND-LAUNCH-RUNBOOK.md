@@ -4,7 +4,7 @@
 
 - Production remains `DRAFT` throughout rehearsal.
 - Staging must not use the production Supabase project, FAWKQ mint, Squads vault, bot token, or webhook.
-- Devnet keys are generated ephemerally and are never printed or persisted.
+- Devnet payer secrets are never printed. Local runs persist only to the ignored mode-`0600` payer file; disposable cloud runners must use a platform-generated protected seed so the same Devnet address survives sleeps and redeploys.
 - The pinned campaign post remains the final launch input.
 - No production transfer, burn, signature, activation, or publication is part of these rehearsals.
 
@@ -26,9 +26,14 @@ The public Devnet faucet is rate-limited. Use a dedicated Devnet RPC or a pre-fu
 BOND_REHEARSAL_NETWORK=devnet \
 BOND_REHEARSAL_RPC_URL=https://api.devnet.solana.com \
 BOND_REHEARSAL_ACK=TEST_ONLY_NO_PRODUCTION_ASSETS \
+BOND_REHEARSAL_PAYER_SEED='<platform-generated-protected-secret>' \
 BOND_REHEARSAL_FULL_LEDGER=true \
 npm run rehearse:bond-devnet
 ```
+
+For a disposable cloud runner, generate `BOND_REHEARSAL_PAYER_SEED` inside the hosting platform with at least 32 characters of entropy. Do not copy its value into logs, chat, source control, or build output. Reusing that protected value deterministically restores the same Devnet-only payer without exposing key material. Local runs may omit it and reuse the ignored `.bond-devnet-payer.json` file.
+
+The client enables Solana's native 429 handling and adds bounded exponential retry only around idempotent RPC reads. Known transaction failures and ambiguous signatures still fail closed and are never automatically replayed.
 
 The full mode creates a disposable six-decimal Token-2022 mint and a fresh Squads 2-of-3 multisig, executes all 175 scheduled test transfers, executes five test burns, executes the separate test winner and conservation SOL payments, and reconciles balances and supply. Save the JSON output as short-lived evidence only after a successful run.
 
