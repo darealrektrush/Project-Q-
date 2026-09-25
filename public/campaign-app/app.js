@@ -545,7 +545,7 @@ function rewardsScreen() {
     : '—';
   const commitmentRows = commitments.campaignRewards ? [
     ['Campaign reward pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Existing missions and campaign rewards'],
-    ['Diamond Duck bonus', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Separate founder Streamflow supply after unlock'],
+    ['Diamond Duck bonus', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Planned from Squads community vault · within the 17.5M FAWKQ campaign reserve'],
     ['Top Duck prize', `${escapeHtml(commitments.topContributorPrize.amountSol)} SOL`, 'Top overall Bond the Duck contributor'],
     ['Earn to Burn reserve', `${formatBaseUnits(commitments.earnToBurn.amountBaseUnits)} FAWKQ`, 'Additional creator-wallet reserve · burn only'],
   ] : [];
