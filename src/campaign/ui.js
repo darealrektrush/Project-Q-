@@ -157,7 +157,7 @@ const SCREEN_TEXT = Object.freeze({
   ].join('\n'),
   missions: [
     '🎯 *Missions & Voting*', '',
-    'This centre will contain campaign missions, nine certified website-voting sources and five verified Telegram trending bots.',
+    'This centre will show nine listed voting sites with their verification status and five Telegram trending bots. Only individually verified actions earn XP.',
     'First daily bot vote: 2 XP · repeat votes after certified cooldown: 1 XP · 20 bot XP/day.',
     'Every accepted bot vote also counts as one uncapped Trending Push.',
     '', '*Current state:* Sources are not enabled',
@@ -285,7 +285,8 @@ export function getMissionScreen(screen) {
   const screens = {
     votes: [
       '🗳 *Website Voting*', '',
-      'Nine certified campaign voting sources will appear here with cooldown and verification status.',
+      'Nine campaign sites will appear with their current status. Three currently support individual screenshot review; verified votes earn 1 XP each.',
+      'Finish every currently eligible site for a one-time 2 XP bonus, subject to daily XP caps. Community-only and unavailable sites earn no personal XP.',
       '', '*Current state:* Sources not enabled',
     ].join('\n'),
     bots: [
