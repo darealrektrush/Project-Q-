@@ -18,6 +18,7 @@ function fakeClient({
   pendingEvents = [],
   ledgerRows = [],
   verificationSources = [],
+  certifications,
   creditedVoteSourceKeys = [],
   bonusAlreadyPaid = false,
   earlierBotActions = [],
@@ -39,7 +40,16 @@ function fakeClient({
         }
         return ledgerRows;
       }
-      if (table === 'verification_sources') return verificationSources;
+      if (table === 'verification_sources') return verificationSources.map((row) => ({
+        campaign_id: CAMPAIGN_ID, source: 'vote', classification: 'PROOF_SUPPORTED', ...row,
+      }));
+      if (table === 'verification_source_certifications') return certifications ?? verificationSources.map((row, index) => ({
+        id: index + 1, campaign_id: CAMPAIGN_ID, source_key: row.source_key,
+        source_kind: 'WEBSITE_VOTE', classification: row.classification ?? 'PROOF_SUPPORTED',
+        health: 'HEALTHY', evidence_hash: 'a'.repeat(64),
+        evidence_url: 'https://example.com/source-review',
+        checked_at: '2026-08-17T11:00:00Z', expires_at: '2026-08-19T11:00:00Z',
+      }));
       throw new Error(`unexpected select on ${table} (${query})`);
     },
     insert: async (table, rows) => {
@@ -109,8 +119,9 @@ test('crediting the last remaining voting site also awards the one-time completi
     verificationSources: [
       { source_key: 'dexscreener', source: 'vote' },
       { source_key: 'geckoterminal', source: 'vote' },
+      { source_key: 'coinmun', source: 'vote' },
     ],
-    creditedVoteSourceKeys: ['dexscreener', 'geckoterminal'], // both now credited, including this event
+    creditedVoteSourceKeys: ['dexscreener', 'geckoterminal', 'coinmun'],
   });
   const event = {
     id: 3, cycle_id: 1, source: 'vote', source_key: 'geckoterminal', telegram_user_id: 123,
@@ -129,8 +140,8 @@ test('crediting the last remaining voting site also awards the one-time completi
 
 test('the completion bonus is never paid twice', async () => {
   const { client, calls } = fakeClient({
-    verificationSources: [{ source_key: 'dexscreener', source: 'vote' }],
-    creditedVoteSourceKeys: ['dexscreener'],
+    verificationSources: [{ source_key: 'dexscreener' }, { source_key: 'geckoterminal' }, { source_key: 'coinmun' }],
+    creditedVoteSourceKeys: ['dexscreener', 'geckoterminal', 'coinmun'],
     bonusAlreadyPaid: true,
   });
   const event = {
@@ -141,6 +152,58 @@ test('the completion bonus is never paid twice', async () => {
 
   assert.equal(result.bonusAmount, 0);
   assert.equal(calls.insert.length, 1); // site award only, no duplicate bonus row
+});
+
+test('uncertified sites and community-only credits cannot satisfy the completion bonus', async () => {
+  const sources = [
+    { source_key: 'web:coinmooner' },
+    { source_key: 'web:gemfinder' },
+    { source_key: 'web:coinmun' },
+    { source_key: 'web:coinsniper', classification: 'SOURCE_UNAVAILABLE' },
+    { source_key: 'web:geckoterminal', classification: 'COMMUNITY_PROGRESS_ONLY' },
+  ];
+  const event = {
+    id: 42, cycle_id: 1, source: 'vote', source_key: 'web:coinmooner',
+    telegram_user_id: 123, verified_at: '2026-08-17T00:00:00Z',
+  };
+  const certification = {
+    id: 1, campaign_id: CAMPAIGN_ID, source_key: 'web:coinmooner',
+    source_kind: 'WEBSITE_VOTE', classification: 'PROOF_SUPPORTED', health: 'HEALTHY',
+    evidence_hash: 'a'.repeat(64), evidence_url: 'https://example.com/review',
+    checked_at: '2026-08-17T11:00:00Z', expires_at: '2026-08-19T11:00:00Z',
+  };
+  const certifications = ['web:coinmooner', 'web:gemfinder', 'web:coinmun']
+    .map((sourceKey, index) => ({ ...certification, id: index + 1, source_key: sourceKey }));
+  const { client } = fakeClient({
+    verificationSources: sources, certifications,
+    creditedVoteSourceKeys: ['web:coinmooner', 'web:gemfinder', 'web:coinmun'],
+  });
+  const result = await settleParticipationEvent(client, CAMPAIGN_ID, event, new Date('2026-08-17T12:00:00Z'));
+  assert.equal(result.bonusAmount, 2);
+
+  const { client: otherClient, calls } = fakeClient({
+    verificationSources: sources, certifications,
+    creditedVoteSourceKeys: ['web:coinmooner', 'web:gemfinder', 'web:geckoterminal'],
+  });
+  const otherResult = await settleParticipationEvent(otherClient, CAMPAIGN_ID, event, new Date('2026-08-17T12:00:00Z'));
+  assert.equal(otherResult.bonusAmount, 0);
+  assert.equal(calls.insert.length, 1);
+});
+
+test('a one-time completion bonus waits when only one XP remains under the daily cap', async () => {
+  const { client, calls } = fakeClient({
+    ledgerRows: [{ amount: 13, cap_bucket: 'participation' }],
+    verificationSources: [{ source_key: 'web:coinmooner' }, { source_key: 'web:gemfinder' }, { source_key: 'web:coinmun' }],
+    creditedVoteSourceKeys: ['web:coinmooner', 'web:gemfinder', 'web:coinmun'],
+  });
+  const event = {
+    id: 43, cycle_id: 1, source: 'vote', source_key: 'web:coinmooner',
+    telegram_user_id: 123, verified_at: '2026-08-17T00:00:00Z',
+  };
+  const result = await settleParticipationEvent(client, CAMPAIGN_ID, event, new Date('2026-08-17T12:00:00Z'));
+  assert.equal(result.amount, 1);
+  assert.equal(result.bonusAmount, 0);
+  assert.equal(calls.insert.length, 1);
 });
 
 test('the dedicated 20 XP/day trending cap limits bot XP', async () => {
