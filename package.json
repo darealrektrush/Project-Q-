@@ -29,6 +29,7 @@
     "prepare:bond-draw": "node scripts/prepare-bond-draw-commitments.js",
     "audit:bond-cutoff": "node scripts/audit-bond-draw-cutoff.js",
     "audit:bond-funding": "node scripts/audit-bond-funding.js",
+    "audit:bond-onchain-reserves": "node scripts/audit-bond-onchain-reserves.js",
     "audit:bond-burn-provisioning": "node scripts/audit-bond-burn-provisioning.js",
     "provision:bond-burn": "node scripts/provision-bond-burn.js",
     "prepare:bond-final-rules": "node scripts/prepare-bond-final-rules.js",

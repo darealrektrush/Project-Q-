@@ -56,6 +56,15 @@ Any critical or high-severity issue resets the affected scenario to `PENDING` un
 
 ## Final qualification
 
+Before preparing a founder funding proposal, run `npm run audit:bond-onchain-reserves`.
+It checks the finalized mainnet genesis, FAWKQ Token-2022 mint, Squads 2-of-3
+authority and derived vault token account, and creator account at one RPC slot.
+The output gives exact base-unit balances and a reproducible snapshot hash.
+This public, read-only capacity snapshot is **not** a 17.5M FAWKQ campaign
+commitment, a creator burn authorization, or evidence of the 1.10 SOL impact
+obligation. The two founders must review separate current evidence and approve
+the governed funding packet. Never use a Devnet balance for this audit.
+
 ```bash
 BOND_TEAM_BETA_EVIDENCE_FILE=/secure/path/team-beta.json \
 BOND_ONCHAIN_REHEARSAL_EVIDENCE_FILE=/secure/path/devnet.json \
