@@ -182,6 +182,9 @@ test('campaign clock keeps pending dates honest when its countdown refreshes', a
   });
   assert.match(pending, /data-empty-label="Dates pending">Dates pending<\/strong>/);
   assert.doesNotMatch(pending, /Review complete/);
+  assert.match(pending, /5 campaign cycles of 48 hours/);
+  assert.match(pending, /Prepare identity for launch/);
+  assert.doesNotMatch(pending, /Unlock missions and rewards/);
   const element = { dataset: { targetAt: '', emptyLabel: 'Dates pending' }, textContent: '' };
   context.document.querySelectorAll = () => [element];
   vm.runInContext('updateCountdownLabels()', context);
