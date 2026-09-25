@@ -24,6 +24,7 @@ import {
 import { buildBondLifecycleFixture } from '../src/campaign/automatedRehearsal.js';
 import { buildBondOnchainRehearsalPlan } from '../src/campaign/bondOnchainRehearsal.js';
 import { loadOrCreateDevnetRehearsalPayer } from '../src/campaign/devnetRehearsalPayer.js';
+import { assertBondDevnetGenesis } from '../src/campaign/devnetRehearsalPreflight.js';
 import { validateBondRehearsalEnvironment } from '../src/campaign/rehearsalIsolation.js';
 import { confirmSolanaSignature } from '../src/campaign/solanaConfirmation.js';
 import { withSolanaRpcRetry } from '../src/campaign/solanaRpcRetry.js';
@@ -123,6 +124,7 @@ async function main() {
     commitment: 'confirmed',
     disableRetryOnRateLimit: false,
   });
+  await assertBondDevnetGenesis(connection);
   const { payer, source: payerSource } = await loadOrCreateDevnetRehearsalPayer({
     encoded: process.env.BOND_REHEARSAL_PAYER_JSON,
     seed: process.env.BOND_REHEARSAL_PAYER_SEED,
