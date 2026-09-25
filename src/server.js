@@ -24,6 +24,7 @@ import * as buyToEarn from './campaign/buyToEarn.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { scheduleOraclePlatformOutbox } from './campaign/oraclePlatformOutbox.js';
 import { oracleProfileHandler, oracleProfileAppHandler } from './campaign/oracleProfile.js';
+import { universeCampaignProfileHandler } from './campaign/universeCampaignProfile.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import {
   ensureCampaignProfile,
@@ -434,6 +435,14 @@ app.post('/oracle/profile', oracleProfileHandler({
 app.post('/oracle/profile-app', oracleProfileAppHandler({
   secret: process.env.ORACLE_PROFILE_SECRET || ORACLE_CAMPAIGN_SECRET,
   botToken: process.env.TELEGRAM_BOT_TOKEN,
+}));
+
+app.post('/universe/campaigns/:campaignId/profile', universeCampaignProfileHandler({
+  secret: process.env.UNIVERSE_PROJECT_Q_SECRET,
+  enabled: process.env.PROJECT_Q_UNIVERSE_CAMPAIGNS_ENABLED === 'true',
+  campaignId: process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID,
+  getParticipantStatusByProfile: (profileId) =>
+    campaignService.getParticipantStatusByProfile(supabase, profileId),
 }));
 
 app.post('/oracle/campaign-identity', async (req, res) => {
