@@ -32,6 +32,7 @@
     "audit:bond-burn-provisioning": "node scripts/audit-bond-burn-provisioning.js",
     "provision:bond-burn": "node scripts/provision-bond-burn.js",
     "prepare:bond-final-rules": "node scripts/prepare-bond-final-rules.js",
+    "schedule:bond-final-cycles": "node scripts/schedule-bond-final-cycles.js",
     "rehearse:bond-launch": "node scripts/rehearse-bond-launch.js",
     "submit:bond-funding-proposal": "node scripts/submit-bond-funding-proposal.js",
     "submit:bond-source-certifications": "node scripts/submit-bond-source-certifications.js"
