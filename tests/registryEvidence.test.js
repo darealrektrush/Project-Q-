@@ -98,8 +98,8 @@ test('registry audit treats Buy-to-Earn as weight-only inside 15M once deployed 
   assert.equal(byField.get('buy_to_earn_schedule').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
   assert.match(byField.get('buy_to_earn_wallet_cap').value, /separatePool=0/);
   assert.match(byField.get('buy_to_earn_schedule').value, /weight3/);
-  assert.equal(byField.get('top_contributor_prize_funding').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
-  assert.match(byField.get('top_contributor_prize_funding').value, /0\.1 SOL Ocean Conservation/);
+  assert.equal(byField.get('top_contributor_prize_funding').status, REGISTRY_EVIDENCE_STATUS.MISSING);
+  assert.match(byField.get('top_contributor_prize_funding').reason, /independently evidenced/);
 });
 
 test('registry audit proves only enabled markets with immutable evidence', () => {
@@ -119,6 +119,26 @@ test('registry audit proves only enabled markets with immutable evidence', () =>
   const byField = new Map(report.fields.map((row) => [row.field, row]));
   assert.equal(byField.get('approved_secondary_markets').status, REGISTRY_EVIDENCE_STATUS.PROVEN);
   assert.equal(byField.get('approved_secondary_markets').value, 'pump_swap');
+});
+
+test('registry cannot treat deployed SOL prize terms as funded without treasury evidence', () => {
+  const base = {
+    campaign: { id: 'bond-the-duck-2026', rules_hash: 'a'.repeat(64), ruleset_version: 4 },
+    rules, appConfig, deployedCommitSha: 'a'.repeat(40),
+  };
+  const unproven = buildBondRegistryEvidence({
+    ...base, env: { BOND_TOP_CONTRIBUTOR_EVIDENCE_URL: 'https://example.com/receipt' },
+  }).fields.find(({ field }) => field === 'top_contributor_prize_funding');
+  assert.equal(unproven.status, REGISTRY_EVIDENCE_STATUS.MISSING);
+
+  const evidenced = buildBondRegistryEvidence({
+    ...base, env: {
+      BOND_TOP_CONTRIBUTOR_FUNDING_REF: 'reviewed-1.1-sol-commitment',
+      BOND_TOP_CONTRIBUTOR_EVIDENCE_URL: 'https://example.com/receipt',
+    },
+  }).fields.find(({ field }) => field === 'top_contributor_prize_funding');
+  assert.equal(evidenced.status, REGISTRY_EVIDENCE_STATUS.PROVEN);
+  assert.match(evidenced.value, /0\.1 SOL Ocean Conservation/);
 });
 
 test('readiness registry evidence proves the contract without requiring its circular final result', () => {
