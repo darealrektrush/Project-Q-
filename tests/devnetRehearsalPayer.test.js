@@ -38,11 +38,30 @@ test('Devnet rehearsal payer accepts a protected environment key and rejects mal
 test('Devnet rehearsal payer derives a stable key from a protected persistent seed', async () => {
   const seed = 'render-generated-secret-with-at-least-32-characters';
   const first = await loadOrCreateDevnetRehearsalPayer({ seed, file: 'unused' });
-  const second = await loadOrCreateDevnetRehearsalPayer({ seed, file: 'unused' });
+  const second = await loadOrCreateDevnetRehearsalPayer({ seed, file: 'unused', requireProtectedEnv: true });
   assert.equal(first.source, 'PROTECTED_ENV_SEED');
   assert.equal(second.payer.publicKey.toBase58(), first.payer.publicKey.toBase58());
   await assert.rejects(
     loadOrCreateDevnetRehearsalPayer({ seed: 'too-short', file: 'unused' }),
     /at least 32 characters/,
   );
+});
+
+test('cloud rehearsal refuses to create or reuse a payer from ephemeral disk', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'bond-payer-cloud-'));
+  const file = path.join(directory, 'payer.json');
+  try {
+    await assert.rejects(
+      loadOrCreateDevnetRehearsalPayer({ file, requireProtectedEnv: true }),
+      /requires BOND_REHEARSAL_PAYER_SEED or BOND_REHEARSAL_PAYER_JSON/,
+    );
+    await assert.rejects(stat(file), { code: 'ENOENT' });
+    await loadOrCreateDevnetRehearsalPayer({ file });
+    await assert.rejects(
+      loadOrCreateDevnetRehearsalPayer({ file, requireProtectedEnv: true }),
+      /refusing to create an ephemeral payer/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

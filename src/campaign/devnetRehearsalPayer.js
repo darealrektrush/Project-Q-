@@ -18,12 +18,15 @@ function deriveKeypair(seed) {
   return Keypair.fromSeed(createHash('sha256').update(normalized, 'utf8').digest());
 }
 
-export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', seed = '', file }) {
+export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', seed = '', file, requireProtectedEnv = false }) {
   if (String(encoded).trim()) {
     return { payer: decodeKeypair(JSON.parse(encoded), 'BOND_REHEARSAL_PAYER_JSON'), source: 'PROTECTED_ENV' };
   }
   if (String(seed).trim()) {
     return { payer: deriveKeypair(seed), source: 'PROTECTED_ENV_SEED' };
+  }
+  if (requireProtectedEnv) {
+    throw new Error('Cloud Devnet rehearsal requires BOND_REHEARSAL_PAYER_SEED or BOND_REHEARSAL_PAYER_JSON in protected persistent environment configuration; refusing to create an ephemeral payer');
   }
   try {
     const payer = decodeKeypair(JSON.parse(await readFile(file, 'utf8')), 'rehearsal payer file');

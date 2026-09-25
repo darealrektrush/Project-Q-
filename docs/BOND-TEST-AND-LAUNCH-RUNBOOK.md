@@ -33,6 +33,8 @@ npm run rehearse:bond-devnet
 
 For a disposable cloud runner, generate `BOND_REHEARSAL_PAYER_SEED` inside the hosting platform with at least 32 characters of entropy. Do not copy its value into logs, chat, source control, or build output. Reusing that protected value deterministically restores the same Devnet-only payer without exposing key material. Local runs may omit it and reuse the ignored `.bond-devnet-payer.json` file.
 
+On Render, the rehearsal now refuses to start without a protected persistent seed or keypair environment value. A payer file in a web service's ephemeral filesystem is not a funding destination: restarting that service can discard the key. The earlier `bond-devnet-rehearsal-wait` and `bond-devnet-rehearsal-temp` services generated payer files in their start commands; do not restart or fund them. Verify the stable payer address across a redeploy and a read-only balance check before any new test funding or on-chain run.
+
 The client enables Solana's native 429 handling and adds bounded exponential retry only around idempotent RPC reads. Known transaction failures and ambiguous signatures still fail closed and are never automatically replayed.
 
 The full mode creates a disposable six-decimal Token-2022 mint and a fresh Squads 2-of-3 multisig, executes all 175 scheduled test transfers, executes five test burns, executes the separate test winner and conservation SOL payments, and reconciles balances and supply. Save the JSON output as short-lived evidence only after a successful run.
