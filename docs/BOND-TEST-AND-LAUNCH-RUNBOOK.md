@@ -20,7 +20,9 @@ The command must prove five cycles, 25 winner slots, 175 unique release rows, ex
 
 ## Isolated Devnet rehearsal
 
-The public Devnet faucet is rate-limited. Use a dedicated Devnet RPC or a pre-funded ephemeral test environment when available. Never substitute mainnet.
+The public Devnet faucet is rate-limited. Use a dedicated Devnet RPC and a runner with a protected persistent payer. Never substitute mainnet.
+
+Before the on-chain run, set the isolated Devnet acknowledgement, RPC and a protected persistent payer seed/keypair in the runner. Run `npm run check:bond-devnet-payer` twice, including after a redeploy, and compare `payerAddress`. This read-only command checks the Devnet genesis hash and balance without requesting an airdrop, creating accounts or moving funds. It exits 2 when the script's 2 SOL entry minimum is not met; passing that minimum does not guarantee enough SOL for all 175 releases. Do not send funds to a payer until the protected address has survived a redeploy. If an earlier run failed after creating accounts, inspect its signatures and recoverability instead of assuming a fresh run will resume.
 
 ```bash
 BOND_REHEARSAL_NETWORK=devnet \
