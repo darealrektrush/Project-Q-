@@ -979,7 +979,7 @@ function missionDetailMarkup(mission) {
       }))
       : [];
   const sourceList = configuredSources.length
-    ? `<section class="mission-rule-block"><span class="label">Registered sources</span><div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, certificationStatus, individualXpEligible }) => {
+    ? `<section class="mission-rule-block"><span class="label">Registered sources</span><div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, individualXpEligible }) => {
       let safeUrl = null;
       try {
         const candidate = new URL(String(url || ''));
@@ -997,7 +997,7 @@ function missionDetailMarkup(mission) {
           : verificationMode === 'PENDING_LIVE_TEST'
             ? 'Live certification pending · no XP'
             : verificationMode === 'SOURCE_UNAVAILABLE'
-              ? `${String(certificationStatus || 'Unavailable').replaceAll('_', ' ').toLowerCase()} · no XP`
+              ? 'Source not certified for individual XP'
               : null;
       const runtimeSource = sourceKey ? websiteVoteSourceState(sourceKey) : null;
       const runtimeStatus = runtimeSource?.status || null;
