@@ -450,6 +450,44 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
   };
 }
 
+const PROFILE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export async function getParticipantStatusByProfile(client, profileId, options = {}) {
+  const normalized = String(profileId ?? '').trim();
+  if (!PROFILE_ID_RE.test(normalized)) throw new Error('invalid profile_id');
+
+  const id = campaignId();
+  const identityRows = await client.select(
+    'identity_links',
+    `?campaign_id=eq.${encodeURIComponent(id)}&profile_id=eq.${encodeURIComponent(normalized)}` +
+      '&select=telegram_user_id,profile_id&limit=1'
+  );
+  const identity = identityRows[0] ?? null;
+
+  if (!identity) {
+    const campaignRows = await client.select(
+      'campaigns',
+      `?id=eq.${encodeURIComponent(id)}&select=state&limit=1`
+    );
+    return {
+      ...closedParticipantStatus(),
+      profileId: normalized,
+      campaignState: campaignRows[0]?.state ?? 'DRAFT',
+      unavailable: false,
+    };
+  }
+
+  const telegramUserId = Number(identity.telegram_user_id);
+  if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0) {
+    throw new Error('invalid campaign identity');
+  }
+
+  const status = await getParticipantStatus(client, telegramUserId, options);
+  if (status.profileId !== normalized) throw new Error('campaign profile mismatch');
+  return status;
+}
+
+
 export async function getParticipantRaidStatus(client, telegramUserId) {
   const id = campaignId();
   const rows = await client.select(
