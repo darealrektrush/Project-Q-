@@ -45,7 +45,9 @@ jobs:
       - name: Rebuild from committed schema and migrations
         run: supabase db reset --local --no-seed
       - name: Run Bond database rehearsal assertions
-        run: supabase test db --local supabase/tests/bond_rehearsal.sql
+        run: |
+          node scripts/build-bond-schedule-sql-test.js /tmp/bond_schedule_generated.sql
+          supabase test db --local supabase/tests/bond_rehearsal.sql /tmp/bond_schedule_generated.sql
       - name: Lint public database objects
         run: |
           supabase db lint --local --schema public --level error --fail-on none > /tmp/db-lint.json

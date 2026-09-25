@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(14);
 
 select has_table('public', 'campaigns', 'campaign registry exists');
 select has_table('public', 'cycles', 'campaign cycles exist');
@@ -9,6 +9,16 @@ select has_table('public', 'releases', 'release schedule exists');
 select has_table('public', 'campaign_cycle_draw_commitments', 'draw commitments exist');
 select has_table('public', 'campaign_funding_finalizations', 'funding finalizations exist');
 select has_table('public', 'campaign_impact_receipts', 'impact receipts exist');
+select is(
+  (select count(*)::integer from pg_proc where oid = 'public.schedule_bond_final_cycles(text,text)'::regprocedure),
+  1,
+  'service-only final five-cycle scheduling operation exists'
+);
+select is(
+  has_function_privilege('authenticated', 'public.schedule_bond_final_cycles(text,text)', 'execute'),
+  false,
+  'participants cannot reschedule Bond cycles'
+);
 
 select is(
   (select state from public.campaigns where id = 'bond-the-duck-2026'),
