@@ -35,7 +35,7 @@ select is((public.schedule_bond_final_cycles('bond-the-duck-2026',${hash})->>'re
 update public.cycles set allocation_base_units=1
   where campaign_id='bond-the-duck-2026' and cycle_id=1;
 select throws_ok(
-  $$select public.schedule_bond_final_cycles('bond-the-duck-2026',${packet.rulesHash});$$,
+  $$select public.schedule_bond_final_cycles('bond-the-duck-2026',${hash});$$,
   'refusing to replace Bond cycles after campaign evidence exists',
   'allocated campaign cycles cannot be rescheduled'
 );
