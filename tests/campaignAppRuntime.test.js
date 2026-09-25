@@ -173,6 +173,28 @@ test('home renders authoritative campaign phase, cycle rail and fail-closed laun
   assert.match(live, /class="current" title="Cycle 2"/);
 });
 
+test('campaign clock keeps pending dates honest when its countdown refreshes', async () => {
+  const context = await loadRuntime();
+  const pending = context.__renderHomeWithRuntime({
+    serverNow: '2026-09-25T09:00:00.000Z', databaseState: 'DRAFT', operational: false,
+    displayLabel: 'PRE-LAUNCH', tone: 'pending',
+    schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
+  });
+  assert.match(pending, /data-empty-label="Dates pending">Dates pending<\/strong>/);
+  assert.doesNotMatch(pending, /Review complete/);
+  const element = { dataset: { targetAt: '', emptyLabel: 'Dates pending' }, textContent: '' };
+  context.document.querySelectorAll = () => [element];
+  vm.runInContext('updateCountdownLabels()', context);
+  assert.equal(element.textContent, 'Dates pending');
+
+  const reviewed = context.__renderHomeWithRuntime({
+    serverNow: '2026-10-10T09:00:00.000Z', databaseState: 'COMPLETED', operational: false,
+    displayLabel: 'POST-REVIEW', tone: 'pending',
+    schedule: { phase: 'POST_REVIEW', label: 'Final review complete', targetAt: null, currentCycle: null },
+  });
+  assert.match(reviewed, /data-empty-label="Review complete">Review complete<\/strong>/);
+});
+
 test('XP progress bars render authoritative daily bucket usage', async () => {
   const context = await loadRuntime();
   const rendered = context.__renderXpWithDailyBuckets({ participation: 3, trending: 9, mission: 8, other: 4 });
