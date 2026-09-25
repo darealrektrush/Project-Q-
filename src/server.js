@@ -24,6 +24,7 @@ import * as buyToEarn from './campaign/buyToEarn.js';
 import * as oracleIngest from './campaign/oracleIngest.js';
 import { scheduleOraclePlatformOutbox } from './campaign/oraclePlatformOutbox.js';
 import { oracleProfileHandler, oracleProfileAppHandler } from './campaign/oracleProfile.js';
+import { oracleCampaignIntelligenceHandler } from './campaign/oracleCampaignIntelligence.js';
 import { validateTelegramInitData } from './campaign/telegramMiniApp.js';
 import {
   ensureCampaignProfile,
@@ -434,6 +435,12 @@ app.post('/oracle/profile', oracleProfileHandler({
 app.post('/oracle/profile-app', oracleProfileAppHandler({
   secret: process.env.ORACLE_PROFILE_SECRET || ORACLE_CAMPAIGN_SECRET,
   botToken: process.env.TELEGRAM_BOT_TOKEN,
+}));
+
+app.post('/oracle/campaign-intelligence', oracleCampaignIntelligenceHandler({
+  secret: process.env.ORACLE_PLATFORM_SECRET || process.env.ORACLE_PROFILE_SECRET || ORACLE_CAMPAIGN_SECRET,
+  getCampaignIntelligence: (campaignId) =>
+    supabase.rpc('project_q_campaign_intelligence', { p_campaign_id: campaignId }),
 }));
 
 app.post('/oracle/campaign-identity', async (req, res) => {
