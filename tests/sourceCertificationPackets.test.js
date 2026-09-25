@@ -63,6 +63,16 @@ test('classification-health mismatch is invalid before any database write', () =
   assert.match(packets[4].reasons.join(' '), /health does not match/);
 });
 
+test('a certification packet rejects duplicate or unregistered source evidence', () => {
+  const evidence = sources.map(evidenceFor);
+  assert.throws(() => buildSourceCertificationPackets(sources, [...evidence, evidence[0]], {
+    founderUserId: 8560606243,
+  }), /duplicate certification evidence/);
+  assert.throws(() => buildSourceCertificationPackets(sources, [
+    ...evidence, { ...evidence[0], sourceKey: 'web:unregistered' },
+  ], { founderUserId: 8560606243 }), /unknown certification source/);
+});
+
 test('packet fingerprint is deterministic for identical source evidence', () => {
   const evidence = sources.map(evidenceFor);
   const left = buildSourceCertificationPackets(sources, evidence, {

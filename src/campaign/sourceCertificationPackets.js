@@ -39,9 +39,18 @@ export function buildSourceCertificationPackets(
     throw new Error('invalid certification ttl');
   }
 
-  const evidenceByKey = new Map(
-    (evidenceRows || []).map((row) => [String(row?.sourceKey || row?.source_key || '').trim(), row])
-  );
+  if (!Array.isArray(sourceRows) || !Array.isArray(evidenceRows)) {
+    throw new Error('certification sources and evidence must be arrays');
+  }
+  const sourceKeys = new Set(sourceRows.map(({ source_key: key }) => String(key || '').trim()));
+  if (sourceKeys.size !== sourceRows.length) throw new Error('duplicate registered certification source');
+  const evidenceByKey = new Map();
+  for (const row of evidenceRows) {
+    const key = String(row?.sourceKey || row?.source_key || '').trim();
+    if (!sourceKeys.has(key)) throw new Error(`unknown certification source: ${key}`);
+    if (evidenceByKey.has(key)) throw new Error(`duplicate certification evidence: ${key}`);
+    evidenceByKey.set(key, row);
+  }
   const expiresAt = new Date(checked.getTime() + ttlMs).toISOString();
 
   return sourceRows.map((source) => {

@@ -135,6 +135,17 @@ Certifications are append-only, evidence-hash bound and valid for no more than
 registry and must be submitted by an enabled campaign founder through the
 server-only RPC. The dedicated certification feature flag defaults to `false`.
 
+Copy `config/bond-source-certification-template.json` **outside the repository**
+for the launch-window review. Fill each source's current `health`, HTTPS
+`evidenceUrl`, and SHA-256 `evidenceHash` from independently checked receipts
+or operational observations. `PROOF_SUPPORTED` sources require `HEALTHY`;
+`COMMUNITY_PROGRESS_ONLY` permits `HEALTHY` or `DEGRADED`; `SOURCE_UNAVAILABLE`
+permits `DEGRADED` or `OFFLINE`. Keep private screenshots and evidence
+outside Git. With the founder ID and private evidence-file path set, run
+`npm run audit:bond-sources` first; submit the full 14-source packet only
+after the audit reports `complete: true`. Duplicate and unknown keys are
+rejected. Certification does not by itself award participant XP.
+
 The private Telegram admin panel reports composition, freshness and the source
 keys needing attention. Evidence URLs and hashes are not rendered. The public
 Mini App receives only the single source-gate outcome through the normal
