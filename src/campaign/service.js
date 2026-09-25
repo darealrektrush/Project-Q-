@@ -157,7 +157,7 @@ export async function getCampaignReadiness(client, env = process.env, { now = ne
     { key: 'registry', label: 'Deployment and vault registry complete', ready: registryReady },
     {
       key: 'sources',
-      label: 'Nine voting sites and five Telegram bots currently certified',
+      label: 'Nine voting sites and five bots truthfully certified; at least three sites and all five bots support individual verification',
       ready: sourceCertificationState.ready,
     },
     { key: 'dates', label: `${EXPECTED_CYCLES} locked 48-hour cycles scheduled for launch`, ready: datesReady },

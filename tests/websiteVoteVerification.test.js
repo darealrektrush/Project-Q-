@@ -101,14 +101,17 @@ test('participant state exposes source readiness without hashes, storage keys or
   const clientWithState = {
     select: async (table) => {
       if (table === 'verification_sources') return [
-        { source_key: 'web:coinmooner', source: 'vote', classification: 'PROOF_SUPPORTED', cooldown_seconds: 86400 },
-        { source_key: 'web:gemfinder', source: 'vote', classification: 'PROOF_SUPPORTED', cooldown_seconds: 86400 },
-        { source_key: 'web:coinmun', source: 'vote', classification: 'PROOF_SUPPORTED', cooldown_seconds: 86400 },
+        { campaign_id: 'bond-the-duck-2026', source_key: 'web:coinmooner', source: 'vote', classification: 'PROOF_SUPPORTED', cooldown_seconds: 86400 },
+        { campaign_id: 'bond-the-duck-2026', source_key: 'web:gemfinder', source: 'vote', classification: 'PROOF_SUPPORTED', cooldown_seconds: 86400 },
+        { campaign_id: 'bond-the-duck-2026', source_key: 'web:coinmun', source: 'vote', classification: 'PROOF_SUPPORTED', cooldown_seconds: 86400 },
       ];
       if (table === 'verification_source_certifications') return [
-        { id: 1, source_key: 'web:coinmooner', classification: 'PROOF_SUPPORTED', health: 'HEALTHY', checked_at: '2026-09-02T11:00:00Z', expires_at: '2026-09-04T11:00:00Z' },
-        { id: 2, source_key: 'web:gemfinder', classification: 'PROOF_SUPPORTED', health: 'HEALTHY', checked_at: '2026-09-02T11:00:00Z', expires_at: '2026-09-04T11:00:00Z' },
-        { id: 3, source_key: 'web:coinmun', classification: 'PROOF_SUPPORTED', health: 'HEALTHY', checked_at: '2026-09-02T11:00:00Z', expires_at: '2026-09-04T11:00:00Z' },
+        ...['web:coinmooner', 'web:gemfinder', 'web:coinmun'].map((source_key, index) => ({
+          id: index + 1, campaign_id: 'bond-the-duck-2026', source_key,
+          source_kind: 'WEBSITE_VOTE', classification: 'PROOF_SUPPORTED', health: 'HEALTHY',
+          evidence_hash: 'a'.repeat(64), evidence_url: 'https://example.com/review',
+          checked_at: '2026-09-02T11:00:00Z', expires_at: '2026-09-04T11:00:00Z',
+        })),
       ];
       if (table === 'website_vote_attempts') return [{
         id: 10, source_key: 'web:gemfinder', status: 'SUBMITTED',
@@ -126,6 +129,7 @@ test('participant state exposes source readiness without hashes, storage keys or
   assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'web:gemfinder').status, 'PENDING_REVIEW');
   assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'web:coinmun').status, 'ON_COOLDOWN');
   assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'web:geckoterminal').status, 'COMMUNITY_ONLY');
+  assert.equal(state.sources.find(({ sourceKey }) => sourceKey === 'web:top100token').status, 'UNAVAILABLE');
   assert.doesNotMatch(JSON.stringify(state), /proof_sha256|reviewer_user_id|storage/i);
 });
 

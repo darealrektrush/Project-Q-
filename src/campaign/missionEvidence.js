@@ -21,7 +21,7 @@ export function closedMissionEvidence(campaignState = 'DRAFT', reason = 'Mission
     generatedAt: null,
     reason,
     oracleRaids: emptyLane(5),
-    websiteVoting: emptyLane(9),
+    websiteVoting: emptyLane(3),
     trendingBots: emptyLane(5, { pushPoints: 0 }),
   };
 }

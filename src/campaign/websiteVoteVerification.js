@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 
 import { websiteVoteReviewEnabled } from '../lib/featureFlags.js';
+import { evaluateSourceCertifications } from './sourceCertifications.js';
 
 export const WEBSITE_VOTE_ATTEMPT_TTL_MS = 15 * 60 * 1000;
 export const WEBSITE_VOTE_COOLDOWN_SECONDS = 24 * 60 * 60;
@@ -120,17 +121,6 @@ function latestBySource(rows, dateField = 'id') {
   return result;
 }
 
-function currentHealthyCertification(source, certification, nowMs) {
-  const checkedAt = parsedTime(certification?.checked_at);
-  const expiresAt = parsedTime(certification?.expires_at);
-  return Boolean(certification
-    && certification.classification === source.classification
-    && certification.health === 'HEALTHY'
-    && checkedAt !== null && checkedAt <= nowMs + 5 * 60 * 1000
-    && expiresAt !== null && expiresAt > nowMs
-    && expiresAt > checkedAt && expiresAt - checkedAt <= 72 * 60 * 60 * 1000);
-}
-
 export function publicWebsiteVoteAttempt(row) {
   if (!row) return null;
   return {
@@ -176,12 +166,12 @@ export async function getWebsiteVoteParticipantState(
     client.select(
       'verification_sources',
       `?campaign_id=eq.${encodedCampaign}&source=eq.vote` +
-        '&select=source_key,classification,cooldown_seconds,health,target_url&limit=50'
+        '&select=campaign_id,source_key,source,classification,cooldown_seconds,health,target_url&limit=50'
     ),
     client.select(
       'verification_source_certifications',
       `?campaign_id=eq.${encodedCampaign}&source_kind=eq.WEBSITE_VOTE` +
-        '&select=id,source_key,classification,health,checked_at,expires_at&order=checked_at.desc,id.desc&limit=100'
+        '&select=id,campaign_id,source_key,source_kind,classification,health,evidence_hash,evidence_url,checked_at,expires_at&order=checked_at.desc,id.desc&limit=100'
     ),
     client.select(
       'website_vote_attempts',
@@ -196,7 +186,8 @@ export async function getWebsiteVoteParticipantState(
     ),
   ]);
   const registry = new Map(registryRows.map((row) => [row.source_key, row]));
-  const certifications = latestBySource(certificationRows, 'checked_at');
+  const sourceStatuses = new Map(evaluateSourceCertifications(registryRows, certificationRows, { now })
+    .sources.map((source) => [source.sourceKey, source]));
   const attempts = latestBySource(attemptRows);
   const events = latestBySource(eventRows, 'verified_at');
   const enabled = websiteVoteReviewEnabled(env);
@@ -208,8 +199,7 @@ export async function getWebsiteVoteParticipantState(
     const attempt = publicWebsiteVoteAttempt(attemptRow);
     const classificationAccepting = ['MACHINE_VERIFIED', 'PROOF_SUPPORTED']
       .includes(String(source?.classification || ''));
-    const certified = Boolean(source
-      && currentHealthyCertification(source, certifications.get(configured.sourceKey), nowMs));
+    const certified = sourceStatuses.get(configured.sourceKey)?.current === true;
     const cooldownSeconds = Number(source?.cooldown_seconds ?? configured.cooldownSeconds);
     const lastVerifiedAtMs = parsedTime(event?.verified_at);
     const nextAvailableAtMs = lastVerifiedAtMs === null
@@ -219,8 +209,7 @@ export async function getWebsiteVoteParticipantState(
     let status;
     if (configured.verificationMode === 'AGGREGATE_ONLY') status = 'COMMUNITY_ONLY';
     else if (!configured.individualXpEligible || !classificationAccepting) {
-      status = configured.verificationMode === 'PENDING_LIVE_TEST'
-        ? 'PENDING_CERTIFICATION' : 'UNAVAILABLE';
+      status = 'UNAVAILABLE';
     } else if (attempt?.status === 'SUBMITTED') status = 'PENDING_REVIEW';
     else if (!enabled || !certified) status = 'PENDING_CERTIFICATION';
     else if (attempt?.status === 'OPEN' && parsedTime(attempt.expiresAt) > nowMs) status = 'IN_PROGRESS';
