@@ -8,7 +8,7 @@ const outputPath = process.argv[2];
 if (!outputPath) throw new Error('test SQL output path is required');
 const draft = JSON.parse(await readFile(new URL('../config/bond-the-duck-rules-v1.json', import.meta.url), 'utf8'));
 const packet = prepareBondFinalRulesPacket({
-  campaign: { state: 'DRAFT', ruleset_version: 2 },
+  campaign: { state: 'DRAFT', ruleset_version: 3 },
   reviewedDraft: draft,
   activeOpensAt: '2030-01-01T16:00:00.000Z',
   xInviteMainPostId: '1234567890123456789', // disposable test fixture only
@@ -21,8 +21,8 @@ const sql = `begin;
 select plan(8);
 select is((select count(*)::integer from public.cycles where campaign_id='bond-the-duck-2026'), 7, 'historical draft has seven old cycles');
 insert into public.ruleset_versions(campaign_id,version,rules_json,rules_hash)
-  values('bond-the-duck-2026',3,${rules}::jsonb,${hash});
-update public.campaigns set ruleset_version=3,rules_hash=${hash}
+  values('bond-the-duck-2026',4,${rules}::jsonb,${hash});
+update public.campaigns set ruleset_version=4,rules_hash=${hash}
   where id='bond-the-duck-2026';
 select is((public.schedule_bond_final_cycles('bond-the-duck-2026',${hash})->>'cycleCount')::integer,
   5,'approved final rules materialize five cycles');
