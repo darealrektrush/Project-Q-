@@ -168,7 +168,9 @@ function campaignClockMarkup(campaign) {
   const cycleCount = Number(campaign.schedule?.cycles?.length || 5);
   const completedCycles = schedule.phase === 'ACTIVE' ? Math.max(0, cycle - 1)
     : ['HANDOFF', 'REVIEW', 'REVIEW_EXTENSION', 'POST_REVIEW'].includes(schedule.phase) ? cycleCount : 0;
-  const countdown = schedule.targetAt ? formatCountdown(schedule.targetAt) : 'Review complete';
+  const countdown = schedule.targetAt ? formatCountdown(schedule.targetAt)
+    : schedule.phase === 'POST_REVIEW' ? 'Review complete'
+      : schedule.phase === 'PRE_LAUNCH' ? 'Dates pending' : 'Schedule unavailable';
   const detail = schedule.phase === 'ACTIVE' && !runtime.operational
     ? 'Calendar window reached · operations remain closed until every activation gate passes'
     : schedule.phase === 'ACTIVE'
@@ -185,12 +187,13 @@ function campaignClockMarkup(campaign) {
     const status = number <= completedCycles ? 'complete' : number === cycle ? 'current' : '';
     return `<i class="${status}" title="Cycle ${number}">${number}</i>`;
   }).join('');
-  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
+  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
 }
 
 function updateCountdownLabels() {
   document.querySelectorAll('[data-countdown]').forEach((element) => {
-    element.textContent = formatCountdown(element.dataset.targetAt);
+    element.textContent = element.dataset.targetAt
+      ? formatCountdown(element.dataset.targetAt) : element.dataset.emptyLabel || 'Schedule unavailable';
   });
 }
 
@@ -311,9 +314,9 @@ function home() {
     <div class="readiness-block"><div><span>Campaign readiness</span><b>${readinessLabel}</b></div><div class="progress hero-progress" role="progressbar" aria-label="Campaign readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readiness}"`}><span style="width:${readiness ?? 0}%"></span></div></div>
   </section>
   ${campaignClockMarkup(c)}
-  <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} verified 48-hour cycles</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
+  <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
   ${readinessDetailsMarkup()}
-  <button class="gold-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${identityReady ? 'Verified campaign operations' : 'Unlock missions and rewards'}</small></span><i>→</i></button>
+  <button class="gold-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${state.runtime?.operational ? (identityReady ? 'Verified campaign operations' : 'Complete identity for rewards') : (identityReady ? 'Explore the campaign before launch' : 'Prepare identity for launch')}</small></span><i>→</i></button>
   <section class="status-panel"><div class="panel-label">Your status</div><div class="status-grid">${metric('ID', `${count}/3`)}${metric('XP', Number(p.xp || 0).toLocaleString())}${metric('Rank', escapeHtml(p.rank))}${metric('Rewards', allocation)}</div></section>
   ${nextStatusCard()}
   <div class="section-head compact-head"><div><span class="label">Campaign operations</span><h2>Your next actions</h2></div><button class="text-action" data-screen="missions">View all ${c.missions.length}</button></div>
