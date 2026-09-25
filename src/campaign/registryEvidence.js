@@ -160,14 +160,16 @@ export function buildBondRegistryEvidence({
     && rules?.commitments?.totalSolCommitmentLamports === '1100000000'
     && rules?.commitments?.topContributorConservationDestination === 'OCEAN_CONSERVATION_VAULT'
     && rules?.commitments?.topContributorConservationAttribution === 'TOP_BOND_THE_DUCKER_PUBLIC_CAMPAIGN_IDENTITY';
-  candidates.set('top_contributor_prize_funding', impactFundingLocked
-    ? proven(
-      'top_contributor_prize_funding',
-      '1.0 SOL winner prize + 0.1 SOL Ocean Conservation contribution; total=1.1 SOL; separate receipts',
-      'treasury',
-      env?.BOND_TOP_CONTRIBUTOR_EVIDENCE_URL || commitUrl
-    )
-    : blocked('top_contributor_prize_funding', 'top-contributor prize and conservation impact commitment are not locked'));
+  candidates.set('top_contributor_prize_funding', !impactFundingLocked
+    ? blocked('top_contributor_prize_funding', 'top-contributor prize and conservation impact commitment are not locked')
+    : env?.BOND_TOP_CONTRIBUTOR_FUNDING_REF && httpsUrl(env?.BOND_TOP_CONTRIBUTOR_EVIDENCE_URL)
+      ? proven(
+        'top_contributor_prize_funding',
+        `1.0 SOL winner prize + 0.1 SOL Ocean Conservation contribution; total=1.1 SOL; separate receipts; funding=${env.BOND_TOP_CONTRIBUTOR_FUNDING_REF}`,
+        'treasury',
+        env.BOND_TOP_CONTRIBUTOR_EVIDENCE_URL
+      )
+      : missing('top_contributor_prize_funding', 'requires an independently evidenced 1.10 SOL funding reference'));
   candidates.set('offline_recovery_public_key', envEvidence(
     env, 'offline_recovery_public_key', 'BOND_OFFLINE_RECOVERY_PUBLIC_KEY', 'BOND_OFFLINE_RECOVERY_EVIDENCE_URL', 'security'
   ));
