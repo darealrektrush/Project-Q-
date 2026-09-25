@@ -168,7 +168,9 @@ function campaignClockMarkup(campaign) {
   const cycleCount = Number(campaign.schedule?.cycles?.length || 5);
   const completedCycles = schedule.phase === 'ACTIVE' ? Math.max(0, cycle - 1)
     : ['HANDOFF', 'REVIEW', 'REVIEW_EXTENSION', 'POST_REVIEW'].includes(schedule.phase) ? cycleCount : 0;
-  const countdown = schedule.targetAt ? formatCountdown(schedule.targetAt) : 'Review complete';
+  const countdown = schedule.targetAt ? formatCountdown(schedule.targetAt)
+    : schedule.phase === 'POST_REVIEW' ? 'Review complete'
+      : schedule.phase === 'PRE_LAUNCH' ? 'Dates pending' : 'Schedule unavailable';
   const detail = schedule.phase === 'ACTIVE' && !runtime.operational
     ? 'Calendar window reached · operations remain closed until every activation gate passes'
     : schedule.phase === 'ACTIVE'
@@ -185,12 +187,13 @@ function campaignClockMarkup(campaign) {
     const status = number <= completedCycles ? 'complete' : number === cycle ? 'current' : '';
     return `<i class="${status}" title="Cycle ${number}">${number}</i>`;
   }).join('');
-  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
+  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
 }
 
 function updateCountdownLabels() {
   document.querySelectorAll('[data-countdown]').forEach((element) => {
-    element.textContent = formatCountdown(element.dataset.targetAt);
+    element.textContent = element.dataset.targetAt
+      ? formatCountdown(element.dataset.targetAt) : element.dataset.emptyLabel || 'Schedule unavailable';
   });
 }
 
