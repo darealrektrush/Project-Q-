@@ -18,6 +18,7 @@
     "rehearse:bond-25": "node scripts/rehearse-bond-25-profiles.js",
     "rehearse:bond-automated": "node scripts/rehearse-bond-automated.js",
     "rehearse:bond-devnet": "node scripts/rehearse-bond-devnet.js",
+    "check:bond-devnet-payer": "node scripts/check-bond-devnet-payer.js",
     "qualify:bond-launch": "node scripts/qualify-bond-launch.js",
     "rehearse:oracle-project-q": "node scripts/rehearse-oracle-project-q-canary.js",
     "test": "node --test tests/*.test.js",
