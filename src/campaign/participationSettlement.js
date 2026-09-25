@@ -21,6 +21,7 @@
 // still respect the 75 XP/day overall cap.
 
 import { DAILY_XP_CAPS, campaignDayBounds, campaignDayKey, loadDailyXpUsage } from './xpCaps.js';
+import { getVerificationSourceCertificationState, MIN_ACCEPTING_SOURCE_COUNTS } from './sourceCertifications.js';
 
 export const VOTE_XP_PER_SITE = 1;
 export const VOTE_COMPLETION_BONUS_XP = 2;
@@ -47,26 +48,14 @@ async function hasVoteCompletionBonus(client, campaignId, telegramUserId) {
   return rows.length > 0;
 }
 
-// Voting sites currently accepting participant-attributed verified events.
-// Aggregate-only sites never count toward an individual completion bonus.
-async function countAvailableVoteSites(client, campaignId) {
-  const rows = await client.select(
-    'verification_sources',
-    `?campaign_id=eq.${encodeURIComponent(campaignId)}&source=eq.vote` +
-      '&classification=in.(MACHINE_VERIFIED,PROOF_SUPPORTED)' +
-      '&select=source_key'
-  );
-  return rows.length;
-}
-
-async function countCreditedVoteSites(client, campaignId, telegramUserId) {
+async function creditedVoteSiteKeys(client, campaignId, telegramUserId) {
   const rows = await client.select(
     'campaign_participation_events',
     `?campaign_id=eq.${encodeURIComponent(campaignId)}` +
       `&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +
       '&source=eq.vote&credited=eq.true&select=source_key'
   );
-  return new Set(rows.map((row) => row.source_key)).size;
+  return new Set(rows.map((row) => row.source_key));
 }
 
 async function hasEarlierBotActionToday(client, campaignId, event, day) {
@@ -98,16 +87,21 @@ async function maybeAwardVoteCompletionBonus(client, campaignId, event, now, usa
   const alreadyPaid = await hasVoteCompletionBonus(client, campaignId, event.telegram_user_id);
   if (alreadyPaid) return 0;
 
-  const availableSites = await countAvailableVoteSites(client, campaignId);
-  if (availableSites <= 0) return 0;
+  const sourceState = await getVerificationSourceCertificationState(client, campaignId, { now });
+  const eligibleKeys = sourceState.sources
+    .filter((source) => source.sourceKind === 'WEBSITE_VOTE'
+      && source.registryAccepting && source.current)
+    .map((source) => source.sourceKey);
+  if (eligibleKeys.length < MIN_ACCEPTING_SOURCE_COUNTS.WEBSITE_VOTE) return 0;
 
-  const creditedSites = await countCreditedVoteSites(client, campaignId, event.telegram_user_id);
-  if (creditedSites < availableSites) return 0;
+  const creditedKeys = await creditedVoteSiteKeys(client, campaignId, event.telegram_user_id);
+  if (!eligibleKeys.every((key) => creditedKeys.has(key))) return 0;
 
   const overallRemaining = Math.max(0, DAILY_XP_CAPS.overall - usage.overall);
   const participationRemaining = Math.max(0, DAILY_XP_CAPS.participation - usage.participation);
-  const bonusAmount = Math.min(VOTE_COMPLETION_BONUS_XP, overallRemaining, participationRemaining);
-  if (bonusAmount <= 0) return 0;
+  if (overallRemaining < VOTE_COMPLETION_BONUS_XP
+    || participationRemaining < VOTE_COMPLETION_BONUS_XP) return 0;
+  const bonusAmount = VOTE_COMPLETION_BONUS_XP;
 
   await client.insert('xp_ledger', [{
     campaign_id: campaignId,
