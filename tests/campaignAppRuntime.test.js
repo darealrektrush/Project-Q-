@@ -108,6 +108,14 @@ test('every Project Q V3 screen renders from the real Bond campaign config', asy
   assert.match(context.__profiles.identity, /Privacy &amp; security|Privacy & security/);
 });
 
+test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {
+  const context = await loadRuntime();
+  const voting = context.__missionDetails['website-voting'];
+  assert.match(voting, /CoinBuzzer<\/b><small>[^<]*Source not certified for individual XP/);
+  assert.doesNotMatch(voting, /CoinBuzzer<\/b><small>[^<]*offline/);
+  assert.match(voting, /<button[^>]*data-vote-source-key="web:coinbuzzer"[^>]*disabled/);
+});
+
 test('Launch Readiness screen groups all public gates and exposes only the report fingerprint', async () => {
   const context = await loadRuntime();
   const keys = ['rules', 'funding', 'registry', 'sources', 'dates', 'app', 'wallet', 'settlement', 'burn-rules', 'burn-progress', 'burn-verification'];
