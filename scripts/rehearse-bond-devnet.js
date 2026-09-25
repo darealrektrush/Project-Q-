@@ -127,6 +127,7 @@ async function main() {
     encoded: process.env.BOND_REHEARSAL_PAYER_JSON,
     seed: process.env.BOND_REHEARSAL_PAYER_SEED,
     file: PAYER_FILE,
+    requireProtectedEnv: process.env.RENDER === 'true',
   });
   const secondMember = Keypair.generate();
   const thirdMember = Keypair.generate();
