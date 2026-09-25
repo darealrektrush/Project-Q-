@@ -16,9 +16,9 @@ service and moves no funds. It is a release prerequisite, not evidence that the 
 bridges are enabled. A controlled production canary is still required before campaign
 activation.
 
-Project Q evaluates eleven public launch gates across three controlled layers:
+Project Q evaluates twelve public launch gates across three controlled layers:
 
-1. Campaign foundation: rules, funding, deployment registry, certified sources and the locked schedule.
+1. Campaign foundation: rules, funding, deployment registry, certified sources, the locked schedule and five pre-open draw commitments.
 2. Participation rails: Mini App access, wallet verification and campaign XP settlement.
 3. Earn to Burn: approved rules/source/founders/milestones, progress accounting and on-chain verification.
 
@@ -28,7 +28,7 @@ evidence URLs, participant identifiers, service credentials or founder IDs.
 
 ## Readiness fingerprint
 
-`bond-readiness-v2` hashes the authoritative campaign rules/funding state,
+`bond-readiness-v3` hashes the authoritative campaign rules/funding state,
 five cycle boundaries, source classifications, the latest source
 certification evidence hashes and validity windows, registry hash, Earn to
 Burn configuration and deployment-gate state. Arrays and flag keys are
@@ -46,7 +46,7 @@ and an append-only `APPROVE` / `HOLD` ledger. Decisions are accepted only when:
 - the dedicated Render feature flag is explicitly enabled;
 - the request comes from an authorized founder in a private Telegram chat;
 - the campaign is `SCHEDULED`;
-- all eleven readiness gates pass; and
+- all twelve readiness gates pass; and
 - the decision names the current report version and complete SHA-256 hash.
 
 The latest decision by each enabled founder controls the result. A later
@@ -109,6 +109,15 @@ Finalization does not change campaign state, funding, registry values, feature
 flags, reward balances or treasury state. A later readiness report still needs
 to pass and receive its own two-founder approvals before activation.
 
+The old draft database has seven expired September cycle rows with no campaign
+evidence. Finalizing a five-cycle ruleset does not change those rows. After the
+two founders approve and finalize the real future ruleset, run
+`npm run schedule:bond-final-cycles` with its exact finalized
+`BOND_FINAL_RULES_HASH` and `BOND_FINAL_SCHEDULE_ACK=SCHEDULE_FINAL_FIVE_CYCLES`.
+The service-only RPC checks the final rules and all cycle-linked evidence inside
+one transaction before writing five future 48-hour cycles. It cannot run with
+draft rules or a fabricated pinned post.
+
 ## Verification-source certifications
 
 The source gate now requires the exact operating composition—not simply 14
@@ -116,8 +125,10 @@ database rows:
 
 - nine registered website-voting sources;
 - five registered Telegram bots;
-- an accepting registry classification for every source; and
-- a latest `HEALTHY` certification for every source that has not expired.
+- at least three currently healthy websites that support individual proof and
+  all five currently healthy Telegram bots; and
+- a truthful, current operational certification for all fourteen sources,
+  including community-only and unavailable sites under their proper health state.
 
 Certifications are append-only, evidence-hash bound and valid for no more than
 72 hours. Each record must match the source type and classification in the
@@ -133,8 +144,9 @@ The certification migration does not register or name any source, seed a
 certification, alter campaign state, change funding, or activate participation.
 A separate registry migration records the five confirmed bots as
 proof-supported and pending certification. A second registry migration records
-the nine founder-supplied websites in the same pending state. All fourteen
-sources must be independently evidenced before this gate can pass.
+the nine founder-supplied websites with their source-specific classifications.
+All fourteen sources must be independently evidenced before this gate can pass;
+only individually verifiable sources can award participant XP.
 
 The confirmed Telegram set is `@majorbuybot`, `@wtftrending`, `@trenchobot`,
 `@BBtrendingbot` and `@drokiatrendsbot`. The first accepted confirmation from
