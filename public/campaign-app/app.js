@@ -166,11 +166,15 @@ function campaignClockMarkup(campaign) {
   }
   const cycle = Number(schedule.currentCycle || 0);
   const cycleCount = Number(campaign.schedule?.cycles?.length || 5);
+  const targetIsFuture = Number.isFinite(Date.parse(campaign.schedule?.activeOpensAt || ''))
+    && Date.parse(campaign.schedule.activeOpensAt) > runtimeNow();
+  const awaitingTargetApproval = schedule.phase === 'PRE_LAUNCH' && !schedule.targetAt && targetIsFuture;
   const completedCycles = schedule.phase === 'ACTIVE' ? Math.max(0, cycle - 1)
     : ['HANDOFF', 'REVIEW', 'REVIEW_EXTENSION', 'POST_REVIEW'].includes(schedule.phase) ? cycleCount : 0;
   const countdown = schedule.targetAt ? formatCountdown(schedule.targetAt)
     : schedule.phase === 'POST_REVIEW' ? 'Review complete'
-      : schedule.phase === 'PRE_LAUNCH' ? 'Dates pending' : 'Schedule unavailable';
+      : awaitingTargetApproval ? 'Target awaiting approval'
+        : schedule.phase === 'PRE_LAUNCH' ? 'Dates pending' : 'Schedule unavailable';
   const detail = schedule.phase === 'ACTIVE' && !runtime.operational
     ? 'Calendar window reached · operations remain closed until every activation gate passes'
     : schedule.phase === 'ACTIVE'
@@ -187,7 +191,7 @@ function campaignClockMarkup(campaign) {
     const status = number <= completedCycles ? 'complete' : number === cycle ? 'current' : '';
     return `<i class="${status}" title="Cycle ${number}">${number}</i>`;
   }).join('');
-  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
+  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(awaitingTargetApproval ? 'Campaign target awaiting approval' : schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
 }
 
 function updateCountdownLabels() {
@@ -636,7 +640,7 @@ function profileOverview() {
     ? p.xpByCycle.map(({ cycleId, xp }) => `<div><span>Cycle ${Number(cycleId)}</span><b>${Number(xp).toLocaleString()} XP</b></div>`).join('')
     : '<div class="profile-empty-line"><span>48H cycles</span><b>No settled XP yet</b></div>';
   return `<section class="profile-overview-grid">
-    <article class="command-card profile-card branded-card"><div class="panel-title"><span>Campaign status</span>${statePill(p.campaignState === 'ACTIVE' ? 'LIVE' : p.campaignState, p.campaignState === 'ACTIVE' ? 'success' : 'pending')}</div><h3>${escapeHtml(c.name)}</h3><p>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')} active · ${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')} review.</p><div class="profile-detail-list"><div><span>Mission progress</span><b>${Number(p.completedMissions || 0)} verified lanes</b></div><div><span>Next action</span><button class="text-action" ${verifiedCount() === 3 ? 'data-screen="missions"' : 'data-profile-view="identity"'}>${escapeHtml(nextIdentityAction())} →</button></div></div><img class="profile-card-art" src="/campaign-app/assets/system/q-campaigns.webp" alt="" /></article>
+    <article class="command-card profile-card branded-card"><div class="panel-title"><span>Campaign status</span>${statePill(p.campaignState === 'ACTIVE' ? 'LIVE' : p.campaignState, p.campaignState === 'ACTIVE' ? 'success' : 'pending')}</div><h3>${escapeHtml(c.name)}</h3><p>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')} · ${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}.</p><div class="profile-detail-list"><div><span>Mission progress</span><b>${Number(p.completedMissions || 0)} verified lanes</b></div><div><span>Next action</span><button class="text-action" ${verifiedCount() === 3 ? 'data-screen="missions"' : 'data-profile-view="identity"'}>${escapeHtml(nextIdentityAction())} →</button></div></div><img class="profile-card-art" src="/campaign-app/assets/system/q-campaigns.webp" alt="" /></article>
     <article class="command-card profile-card branded-card oracle-card"><div class="panel-title"><span>Community Pulse</span>${statePill(pulse?.eligible ? 'QUALIFIED' : 'PENDING', pulse?.eligible ? 'success' : 'pending')}</div><h3>${pulse ? `${Number(pulse.xp_awarded || 0)} XP today` : 'No daily score yet'}</h3><p>Daily recognition rewards meaningful participation across time—not raw message volume.</p><div class="profile-detail-list"><div><span>Qualifying days</span><b>${state.community?.history?.filter(({ eligible }) => eligible).length || 0}</b></div><div><span>Today rank</span><b>${pulse?.daily_rank ? `#${Number(pulse.daily_rank)}` : '—'}</b></div></div><img class="profile-card-art oracle-profile-art" src="${ORACLE_LOGO}" alt="Oracle" /></article>
   </section>
   <section class="command-card cycle-panel"><div class="panel-title"><span>48H XP cycles</span><small>Settled ledger totals</small></div><div class="cycle-strip">${cycleRows}</div></section>

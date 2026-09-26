@@ -181,22 +181,30 @@ test('home renders authoritative campaign phase, cycle rail and fail-closed laun
   assert.match(live, /class="current" title="Cycle 2"/);
 });
 
-test('campaign clock keeps pending dates honest when its countdown refreshes', async () => {
+test('campaign clock distinguishes a proposed target from an authoritative schedule', async () => {
   const context = await loadRuntime();
   const pending = context.__renderHomeWithRuntime({
     serverNow: '2026-09-25T09:00:00.000Z', databaseState: 'DRAFT', operational: false,
     displayLabel: 'PRE-LAUNCH', tone: 'pending',
     schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
   });
-  assert.match(pending, /data-empty-label="Dates pending">Dates pending<\/strong>/);
+  assert.match(pending, /Campaign target awaiting approval/);
+  assert.match(pending, /data-empty-label="Target awaiting approval">Target awaiting approval<\/strong>/);
   assert.doesNotMatch(pending, /Review complete/);
   assert.match(pending, /5 campaign cycles of 48 hours/);
   assert.match(pending, /Prepare identity for launch/);
   assert.doesNotMatch(pending, /Unlock missions and rewards/);
-  const element = { dataset: { targetAt: '', emptyLabel: 'Dates pending' }, textContent: '' };
+  const element = { dataset: { targetAt: '', emptyLabel: 'Target awaiting approval' }, textContent: '' };
   context.document.querySelectorAll = () => [element];
   vm.runInContext('updateCountdownLabels()', context);
-  assert.equal(element.textContent, 'Dates pending');
+  assert.equal(element.textContent, 'Target awaiting approval');
+
+  const missed = context.__renderHomeWithRuntime({
+    serverNow: '2026-09-30T09:00:00.000Z', databaseState: 'DRAFT', operational: false,
+    displayLabel: 'PRE-LAUNCH', tone: 'pending',
+    schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
+  });
+  assert.match(missed, /data-empty-label="Dates pending">Dates pending<\/strong>/);
 
   const reviewed = context.__renderHomeWithRuntime({
     serverNow: '2026-10-10T09:00:00.000Z', databaseState: 'COMPLETED', operational: false,

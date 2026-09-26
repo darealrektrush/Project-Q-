@@ -191,7 +191,7 @@ test('Bond the Duck V3 uses the cinematic campaign hero without duplicate visibl
   const campaign = await readJson('bond-the-duck-2026.json');
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
   const styles = await readFile(new URL('../styles.css', campaignRoot), 'utf8');
-  assert.equal(campaign.banner, '/campaign-app/assets/bond-the-duck-campaign-hero-v4.jpg');
+  assert.equal(campaign.banner, '/campaign-app/assets/bond-the-duck-campaign-hero-v5.jpg');
   assert.match(app, /<h2 class="sr-only">Bond the Duck<\/h2>/);
   assert.match(styles, /\.command-hero::before[\s\S]*background-image: var\(--campaign-art\)/);
 });
