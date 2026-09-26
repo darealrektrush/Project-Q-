@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { loadOrCreateDevnetRehearsalPayer } from './devnetRehearsalPayer.js';
 import { validateBondRehearsalEnvironment } from './rehearsalIsolation.js';
 import { withSolanaRpcRetry } from './solanaRpcRetry.js';
@@ -21,7 +23,9 @@ export async function inspectBondDevnetPayer(connection, env = process.env) {
   const { payer, source } = await loadOrCreateDevnetRehearsalPayer({
     encoded: env.BOND_REHEARSAL_PAYER_JSON,
     seed: env.BOND_REHEARSAL_PAYER_SEED,
-    requireProtectedEnv: true,
+    file: path.resolve(env.BOND_REHEARSAL_PAYER_FILE || '.bond-devnet-payer.json'),
+    requireProtectedEnv: env.RENDER === 'true',
+    createIfMissing: false,
   });
   await assertBondDevnetGenesis(connection);
   const balanceLamports = await withSolanaRpcRetry(

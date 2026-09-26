@@ -33,7 +33,7 @@ BOND_REHEARSAL_FULL_LEDGER=true \
 npm run rehearse:bond-devnet
 ```
 
-For a disposable cloud runner, generate `BOND_REHEARSAL_PAYER_SEED` inside the hosting platform with at least 32 characters of entropy. Do not copy its value into logs, chat, source control, or build output. Reusing that protected value deterministically restores the same Devnet-only payer without exposing key material. Local runs may omit it and reuse the ignored `.bond-devnet-payer.json` file.
+For a disposable cloud runner, generate `BOND_REHEARSAL_PAYER_SEED` inside the hosting platform with at least 32 characters of entropy. Do not copy its value into logs, chat, source control, or build output. Reusing that protected value deterministically restores the same Devnet-only payer without exposing key material. Local preflight runs may omit it and inspect the existing ignored `.bond-devnet-payer.json` file, or set `BOND_REHEARSAL_PAYER_FILE` to another existing private payer file. The read-only check fails if the file is missing; it never creates a payer. A cloud preflight continues to require a protected persistent seed or keypair.
 
 On Render, the rehearsal now refuses to start without a protected persistent seed or keypair environment value. A payer file in a web service's ephemeral filesystem is not a funding destination: restarting that service can discard the key. The earlier `bond-devnet-rehearsal-wait` and `bond-devnet-rehearsal-temp` services generated payer files in their start commands; do not restart or fund them. Verify the stable payer address across a redeploy and a read-only balance check before any new test funding or on-chain run.
 
