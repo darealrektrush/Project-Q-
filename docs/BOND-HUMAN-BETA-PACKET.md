@@ -4,7 +4,7 @@ Use this with three trusted testers in the Campaign Testing topic. The current p
 
 ## Phase A: public preview, available now
 
-Open https://project-q-8k3a.onrender.com/campaign-app/ on a real phone and, if available, a second browser. For a separate current-build preview, an operator can manually start the `Bond isolated public preview` GitHub Actions workflow and copy the temporary URL from its job summary. That preview uses a disposable local database and a read-only gateway; the workflow ends after 90 minutes. Do not connect a wallet, submit votes, link X, or provide private information for this phase.
+Open https://project-q-8k3a.onrender.com/campaign-app/ on a real phone and, if available, a second browser. The optional `Bond isolated public preview` GitHub Actions workflow only prints a temporary URL after its external reachability and read-only checks pass. Its Cloudflare tunnel failed that check on September 25; do not give testers a URL from a failed run. Do not connect a wallet, submit votes, link X, or provide private information for this phase.
 
 1. Start at Home. Can you tell that the campaign is **PRE-LAUNCH** and that September 29 at 8:00 AM Pacific is a target awaiting approval? Does anything imply rewards are already available?
 2. Open Missions and each visible lane. Can you explain what actions would count, what is closed until launch, and where to find the source details? Check that a disabled action does not promise XP.
@@ -17,6 +17,29 @@ Open https://project-q-8k3a.onrender.com/campaign-app/ on a real phone and, if a
 ## Phase B: isolated staging, required for launch qualification
 
 The operator first confirms a current campaign build with a **separate test database, bot, OAuth configuration, and wallets**, and that no production data or assets can be touched. The production campaign must remain `DRAFT`. Do not direct testers to the old suspended `project-q-dev` deployment or use production for these account-based scenarios.
+
+### Lock-in checklist before inviting testers to the live beta
+
+- [ ] Operator records the exact Git commit and reachable HTTPS Mini App URL, and confirms the URL loads on a tester's phone. The suspended free Render service and an unverified temporary tunnel do not qualify.
+- [ ] Operator verifies the test database is separate from production, applies the current migrations, and confirms writes and resets cannot reach the production project. No production user export or real treasury credentials go into staging.
+- [ ] Founder creates a separate Telegram bot with BotFather and supplies its token through protected environment configuration, never in the testing topic or Git. Operator checks `getMe`, `/startq`, Mini App launch and webhook identity against that bot.
+- [ ] Operator provides an isolated Oracle identity and wallet-event route plus a test X OAuth client/redirect. The production Oracle identity service and production X account links must not be changed for this beta. If that integration is unavailable, `x-oauth-link` and the authenticated beta remain `PENDING`.
+- [ ] Operator configures Devnet-only test wallets and token fixtures, with live transfer, distribution, burn and production posting flags off. No member supplies a seed phrase, signs a mainnet transaction, or funds a mainnet vault.
+- [ ] Three testers join the Campaign Testing topic, each using their own Telegram and X test identity and an empty test wallet. Record only device/browser and a tester label in the topic.
+
+### Short-cycle session, after the checklist is complete
+
+Budget 10 minutes for setup and baseline; 35 minutes for Telegram, X and wallet identity; 25 minutes for missions, vote/trend cooldown feedback, eligibility and receipts; and 20 minutes for ranks, rewards, recoveries and issue triage. Run the same build on three real mobile Telegram clients. A test-only fixture may present pre-launch, active, review and completed screens within the session; it must not change the five 48-hour cycle production rules or masquerade as actual elapsed time.
+
+| Coverage | Human check | Separate automated or Devnet proof |
+| --- | --- | --- |
+| Telegram and identity | `/startq`, navigation, reopening, receipt; verify wrong bot and duplicate account fail safely. | Auth/session and identity collision tests. |
+| X and wallet | Consent, cancellation, expiry, reconnect, rejected signing and wrong network. | Oracle integration and wallet binding checks on isolated data. |
+| Holder and missions | Explain $2 eligibility, lower balance, raids, vote/trend link and cooldown messages, buy-to-earn, referrals and proof states. | Eligibility, caps, source certification and settlement tests. Real third-party sources need separate current certification. |
+| XP and ranking | Inspect credited versus pending XP, founder exclusion, rank and leaderboard text. | Five-cycle winner selection, one-cycle cooldown and replay checks. |
+| Rewards and impact | Distinguish scheduled, released, burn, 1 SOL winner prize and 0.10 SOL conservation obligation from completed receipts. | 175 release rows, 15M reward reconciliation, 2.5M reserve, 15M burn and both SOL obligations in the offline rehearsal; actual 175 transfers and five burns require the full isolated Devnet run. |
+
+Record `PASS`, `FAIL`, or `PENDING` for each row and fix any high or critical defect before repeating the affected path. A 90-minute session verifies human behavior and screen comprehension; it cannot compress real 48-hour third-party cooldowns, ten days of activity, or mainnet payments. The automated rehearsal already simulates all five cycles without signing, but the full Devnet ledger and current source evidence remain independent gates.
 
 Run one 60–90 minute session with at least three trusted testers on real mobile Telegram clients. Each tester records pass/fail and a short issue description without credentials or personal identifiers.
 
