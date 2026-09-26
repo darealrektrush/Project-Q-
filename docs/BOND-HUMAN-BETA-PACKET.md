@@ -16,15 +16,15 @@ Open https://project-q-8k3a.onrender.com/campaign-app/ on a real phone and, if a
 
 ## Phase B: isolated staging, required for launch qualification
 
-The operator first confirms a current campaign build with a **separate test database, bot, OAuth configuration, and wallets**, and that no production data or assets can be touched. The production campaign must remain `DRAFT`. Do not direct testers to the old suspended `project-q-dev` deployment or use production for these account-based scenarios.
+The named test bots are `@testingCQ_bot` (Project Q) and `@testingCQO_bot` (Oracle). These are reported handles; verify each bot's identity with Bot API `getMe` using its own token in protected configuration before the live beta. Do not paste tokens into Git, this document, or the testing topic. The operator first confirms a current campaign build with a **separate test database, bot, OAuth configuration, and wallets**, and that no production data or assets can be touched. The production campaign must remain `DRAFT`. Do not direct testers to the old suspended `project-q-dev` deployment or use production for these account-based scenarios.
 
 ### Lock-in checklist before inviting testers to the live beta
 
 - [ ] Operator records the exact Git commit and reachable HTTPS Mini App URL, and confirms the URL loads on a tester's phone. The suspended free Render service and an unverified temporary tunnel do not qualify.
 - [ ] Operator verifies the test database is separate from production, applies the current migrations, and confirms writes and resets cannot reach the production project. No production user export or real treasury credentials go into staging.
-- [ ] Founder creates a separate Telegram bot with BotFather and supplies its token through protected environment configuration, never in the testing topic or Git. Operator checks `getMe`, `/startq`, Mini App launch and webhook identity against that bot.
+- [ ] Founder uses `@testingCQ_bot` as the Project Q beta bot and supplies its token through protected environment configuration, never in the testing topic or Git. Operator checks `getMe`, `/startq`, Mini App launch and webhook identity against that bot.
 - [ ] Operator provides an isolated Oracle identity and wallet-event route plus a test X OAuth client/redirect. The production Oracle identity service and production X account links must not be changed for this beta. If that integration is unavailable, `x-oauth-link` and the authenticated beta remain `PENDING`.
-- [ ] The Oracle test bot, its X callback and its database are separately verified. The existing `crabstar-oracle-bot-dev` is suspended and the Oracle Blueprint says it shares the production Telegram token; do not resume or treat it as a beta bot. `@testingCQ_bot` is the Project Q test bot only and cannot substitute for Oracle `/linkx`.
+- [ ] Operator verifies `@testingCQO_bot` through `getMe`, `/linkx`, its X callback and a separate Oracle beta database. Its OAuth redirect must target the beta endpoint and its token must never be configured in production. The existing `crabstar-oracle-bot-dev` is suspended and the Oracle Blueprint says it shares the production Telegram token; do not resume or treat it as a beta bot. `@testingCQ_bot` is the Project Q test bot only and cannot substitute for Oracle `/linkx`.
 - [ ] Operator configures Devnet-only test wallets and token fixtures, with live transfer, distribution, burn and production posting flags off. No member supplies a seed phrase, signs a mainnet transaction, or funds a mainnet vault.
 - [ ] Three testers join the Campaign Testing topic, each using their own Telegram and X test identity and an empty test wallet. Record only device/browser and a tester label in the topic.
 
