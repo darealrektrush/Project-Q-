@@ -4,7 +4,7 @@ Use this with three trusted testers in the Campaign Testing topic. The current p
 
 ## Phase A: public preview, available now
 
-Open https://project-q-8k3a.onrender.com/campaign-app/ on a real phone and, if available, a second browser. Do not connect a wallet, submit votes, link X, or provide private information for this phase.
+Open https://project-q-8k3a.onrender.com/campaign-app/ on a real phone and, if available, a second browser. For a separate current-build preview, an operator can manually start the `Bond isolated public preview` GitHub Actions workflow and copy the temporary URL from its job summary. That preview uses a disposable local database and a read-only gateway; the workflow ends after 90 minutes. Do not connect a wallet, submit votes, link X, or provide private information for this phase.
 
 1. Start at Home. Can you tell that the campaign is **PRE-LAUNCH** and that September 29 at 8:00 AM Pacific is a target awaiting approval? Does anything imply rewards are already available?
 2. Open Missions and each visible lane. Can you explain what actions would count, what is closed until launch, and where to find the source details? Check that a disabled action does not promise XP.
