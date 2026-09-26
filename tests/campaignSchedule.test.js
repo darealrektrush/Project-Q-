@@ -48,20 +48,21 @@ test('review timing remains 24-hour handoff then 48-hour checkpoint and 72-hour 
   assert.deepEqual(PHASED_RELEASE_OFFSETS_DAYS, [6, 12, 18, 24, 30]);
 });
 
-test('Mini App config keeps final dates pending while preserving five cycle slots', async () => {
+test('Mini App target starts at 8 AM Vancouver time and preserves five contiguous cycles', async () => {
   const campaign = JSON.parse(await readFile(
     new URL('../public/campaign-app/campaigns/bond-the-duck-2026.json', import.meta.url),
     'utf8'
   ));
-  assert.equal(campaign.schedule.activeOpensAt, null);
-  assert.equal(campaign.schedule.activeClosesAt, null);
-  assert.equal(campaign.schedule.reviewOpensAt, null);
-  assert.equal(campaign.schedule.review48HourCheckpointAt, null);
-  assert.equal(campaign.schedule.reviewClosesAt, null);
+  assert.equal(campaign.status, 'DRAFT');
+  assert.equal(campaign.schedule.activeOpensAt, '2026-09-29T15:00:00.000Z');
+  assert.equal(campaign.schedule.activeClosesAt, '2026-10-09T15:00:00.000Z');
+  assert.equal(campaign.schedule.reviewOpensAt, '2026-10-10T15:00:00.000Z');
+  assert.equal(campaign.schedule.review48HourCheckpointAt, '2026-10-12T15:00:00.000Z');
+  assert.equal(campaign.schedule.reviewClosesAt, '2026-10-13T15:00:00.000Z');
   assert.equal(campaign.schedule.cycles.length, EXPECTED_CYCLES);
-  assert.ok(campaign.schedule.cycles.every(({ opensAt, closesAt }) =>
-    opensAt === null && closesAt === null
-  ));
+  assert.equal(lockedCampaignCyclesMatch(campaign.schedule.cycles.map(({ cycleId, opensAt, closesAt }) => ({
+    cycle_id: cycleId, opens_at: opensAt, closes_at: closesAt,
+  }))), true);
   assert.deepEqual(
     campaign.schedule.phasedRelease.offsetDaysAfterPostReviewRelease,
     PHASED_RELEASE_OFFSETS_DAYS
