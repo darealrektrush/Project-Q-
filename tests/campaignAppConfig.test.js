@@ -133,8 +133,8 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.equal(campaign.draw.weightedDrawPool, 'RANKS_3_TO_15');
   assert.equal(campaign.draw.priorWinnerCooldownCycles, 1);
   assert.equal(campaign.schedule.timeZone, 'America/Vancouver');
-  assert.equal(campaign.schedule.activeLabel, 'Final dates pending · 10 active days');
-  assert.equal(campaign.schedule.reviewLabel, '48–72 hours after campaign handoff');
+  assert.equal(campaign.schedule.activeLabel, 'Sep 29 target · readiness pending · 10 active days');
+  assert.equal(campaign.schedule.reviewLabel, 'Oct 10–13 target · 48–72h review');
   assert.equal(campaign.schedule.cycles.length, 5);
   assert.equal(campaign.schedule.postReviewRelease.condition, 'FINAL_REVIEW_CLEARED');
   assert.equal('readinessPercent' in campaign, false);
