@@ -1,0 +1,65 @@
+name: Bond isolated public preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+      - name: Build disposable Project Q database
+        run: |
+          cp supabase/schema.sql supabase/migrations/20260819000000_ci_base_schema.sql
+          cp supabase/bond_the_duck.sql supabase/migrations/20260822000000_ci_bond_base.sql
+          mv supabase/migrations/20260908011500_secure_raid_thread_context.sql /tmp/
+          supabase start --exclude gotrue,realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase db reset --local --no-seed
+      - name: Start test-only app and read-only gateway
+        run: |
+          umask 077
+          supabase status -o env > "$RUNNER_TEMP/bond-local-supabase.env"
+          set -a
+          . "$RUNNER_TEMP/bond-local-supabase.env"
+          set +a
+          export SUPABASE_URL="$API_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          export PORT=3001
+          node src/server.js > "$RUNNER_TEMP/bond-preview-app.log" 2>&1 &
+          node scripts/serve-bond-public-preview.js > "$RUNNER_TEMP/bond-preview-proxy.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/healthz > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/bond-preview-proxy.log"
+          exit 1
+      - name: Open temporary free test tunnel
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o "$RUNNER_TEMP/cloudflared"
+          chmod 700 "$RUNNER_TEMP/cloudflared"
+          "$RUNNER_TEMP/cloudflared" tunnel --no-autoupdate --url http://127.0.0.1:3000 > "$RUNNER_TEMP/bond-tunnel.log" 2>&1 &
+          for attempt in $(seq 1 45); do
+            preview_url="$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$RUNNER_TEMP/bond-tunnel.log" | head -1 || true)"
+            if [ -n "$preview_url" ]; then
+              echo "## Bond isolated public preview" >> "$GITHUB_STEP_SUMMARY"
+              echo "Open ${preview_url}/campaign-app/ for read-only phone and browser checks." >> "$GITHUB_STEP_SUMMARY"
+              echo "Disposable database; no production credentials, bot, X OAuth, or wallet signing. This does not count as the qualifying team beta." >> "$GITHUB_STEP_SUMMARY"
+              sleep 5400
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'The temporary tunnel did not start.' >&2
+          exit 1
