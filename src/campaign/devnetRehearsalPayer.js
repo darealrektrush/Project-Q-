@@ -18,7 +18,7 @@ function deriveKeypair(seed) {
   return Keypair.fromSeed(createHash('sha256').update(normalized, 'utf8').digest());
 }
 
-export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', seed = '', file, requireProtectedEnv = false }) {
+export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', seed = '', file, requireProtectedEnv = false, createIfMissing = true }) {
   if (String(encoded).trim()) {
     return { payer: decodeKeypair(JSON.parse(encoded), 'BOND_REHEARSAL_PAYER_JSON'), source: 'PROTECTED_ENV' };
   }
@@ -33,6 +33,7 @@ export async function loadOrCreateDevnetRehearsalPayer({ encoded = '', seed = ''
     return { payer, source: 'IGNORED_LOCAL_FILE' };
   } catch (error) {
     if (error?.code !== 'ENOENT') throw new Error(`invalid rehearsal payer file: ${error.message}`);
+    if (!createIfMissing) throw new Error('existing local Devnet payer file is required for read-only preflight');
     const payer = Keypair.generate();
     await writeFile(file, `${JSON.stringify([...payer.secretKey])}\n`, { mode: 0o600, flag: 'wx' });
     await chmod(file, 0o600);
