@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   getCampaignStatus,
   getParticipantStatus,
+  getParticipantStatusByProfile,
   closedCampaignStatus,
   getParticipantRaidStatus,
   assertCampaignParticipationEnabled,
@@ -167,6 +168,95 @@ test('participant status derives verification readiness and sums XP', async () =
   assert.equal(status.buyToEarn.eligible, true);
   assert.equal(status.campaignState, 'ACTIVE');
   assert.equal(status.recentActivity[0].missionCode, 'oracle-raids');
+});
+
+test('participant status by profile reuses the canonical participant service', async () => {
+  const profileId = '11111111-1111-4111-8111-111111111111';
+  const queries = [];
+  const client = {
+    select: async (table, query) => {
+      queries.push([table, query]);
+      if (table === 'identity_links' && query.includes('profile_id=eq.')) {
+        return [{ telegram_user_id: 123, profile_id: profileId }];
+      }
+      if (table === 'identity_links') {
+        return [{
+          profile_id: profileId,
+          x_user_id: 'x-1',
+          reward_wallet: 'wallet-1',
+          x_verified_at: '2026-08-14T00:00:00Z',
+          wallet_verified_at: '2026-08-15T00:00:00Z',
+          fawkq_token_account: 'ata-1',
+          enrolled_at: '2026-08-13T00:00:00Z',
+        }];
+      }
+      if (table === 'campaign_xp_totals') return [{ cycle_id: 1, xp: 12 }];
+      if (table === 'xp_ledger' && query.includes('awarded_at=gte')) return [];
+      if (table === 'xp_ledger') return [];
+      if (table === 'allocations' || table === 'positions'
+          || table === 'campaign_holder_eligibility_events') return [];
+      if (table === 'campaigns') return [{ state: 'ACTIVE' }];
+      return [];
+    },
+  };
+
+  const status = await getParticipantStatusByProfile(client, profileId);
+  assert.equal(status.profileId, profileId);
+  assert.equal(status.enrolled, true);
+  assert.equal(status.totalXp, 12);
+  assert.match(
+    queries.find(([table, query]) => table === 'identity_links' && query.includes('profile_id=eq.'))[1],
+    /select=telegram_user_id,profile_id/
+  );
+});
+
+test('participant status by profile returns a real unenrolled state and rejects mismatches', async () => {
+  const profileId = '11111111-1111-4111-8111-111111111111';
+  const unenrolled = {
+    select: async (table, query) => {
+      if (table === 'identity_links' && query.includes('profile_id=eq.')) return [];
+      if (table === 'campaigns') return [{ state: 'ACTIVE' }];
+      return [];
+    },
+  };
+  const status = await getParticipantStatusByProfile(unenrolled, profileId);
+  assert.equal(status.profileId, profileId);
+  assert.equal(status.enrolled, false);
+  assert.equal(status.unavailable, false);
+  assert.equal(status.campaignState, 'ACTIVE');
+
+  await assert.rejects(
+    () => getParticipantStatusByProfile(unenrolled, '../bad'),
+    /invalid profile_id/
+  );
+
+  const mismatch = {
+    select: async (table, query) => {
+      if (table === 'identity_links' && query.includes('profile_id=eq.')) {
+        return [{ telegram_user_id: 123, profile_id: profileId }];
+      }
+      if (table === 'identity_links') {
+        return [{
+          profile_id: '22222222-2222-4222-8222-222222222222',
+          x_user_id: null,
+          reward_wallet: null,
+          x_verified_at: null,
+          wallet_verified_at: null,
+          fawkq_token_account: null,
+          enrolled_at: null,
+        }];
+      }
+      if (table === 'campaign_xp_totals' || table === 'xp_ledger'
+          || table === 'allocations' || table === 'positions'
+          || table === 'campaign_holder_eligibility_events') return [];
+      if (table === 'campaigns') return [{ state: 'DRAFT' }];
+      return [];
+    },
+  };
+  await assert.rejects(
+    () => getParticipantStatusByProfile(mismatch, profileId),
+    /campaign profile mismatch/
+  );
 });
 
 test('closed fallback never reports live campaign state', () => {
