@@ -53,6 +53,7 @@ jobs:
           for attempt in $(seq 1 45); do
             preview_url="$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$RUNNER_TEMP/bond-tunnel.log" | head -1 || true)"
             if [ -n "$preview_url" ]; then
+              echo "Temporary Bond preview: ${preview_url}/campaign-app/"
               echo "## Bond isolated public preview" >> "$GITHUB_STEP_SUMMARY"
               echo "Open ${preview_url}/campaign-app/ for read-only phone and browser checks." >> "$GITHUB_STEP_SUMMARY"
               echo "Disposable database; no production credentials, bot, X OAuth, or wallet signing. This does not count as the qualifying team beta." >> "$GITHUB_STEP_SUMMARY"
