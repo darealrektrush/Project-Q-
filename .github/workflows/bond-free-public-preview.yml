@@ -53,6 +53,21 @@ jobs:
           for attempt in $(seq 1 45); do
             preview_url="$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$RUNNER_TEMP/bond-tunnel.log" | head -1 || true)"
             if [ -n "$preview_url" ]; then
+              runtime_status=''
+              for check in $(seq 1 12); do
+                runtime_status="$(curl -sS --max-time 8 -o /dev/null -w '%{http_code}' "$preview_url/campaign-app/api/runtime" || true)"
+                if [ "$runtime_status" = 200 ]; then break; fi
+                sleep 2
+              done
+              if [ "$runtime_status" != 200 ]; then
+                echo "The public preview URL did not serve runtime data (HTTP $runtime_status)." >&2
+                exit 1
+              fi
+              write_status="$(curl -sS --max-time 8 -o /dev/null -w '%{http_code}' -X POST "$preview_url/campaign-app/api/session" || true)"
+              if [ "$write_status" != 405 ]; then
+                echo "The public preview did not block POST (HTTP $write_status)." >&2
+                exit 1
+              fi
               echo "Temporary Bond preview: ${preview_url}/campaign-app/"
               echo "## Bond isolated public preview" >> "$GITHUB_STEP_SUMMARY"
               echo "Open ${preview_url}/campaign-app/ for read-only phone and browser checks." >> "$GITHUB_STEP_SUMMARY"
