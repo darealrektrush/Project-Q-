@@ -14,6 +14,7 @@ const MAINNET_GENESIS = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
 const EXPECTED_VAULT_AUTHORITY = '3z6YpKpgDrUdRuqp1KkJfVhw5X3BRGQzUZhGN8VMNfci';
 const MIN_VAULT = 17_500_000_000_000n;
 const MIN_CREATOR = 15_000_000_000_000n;
+const MIN_SOL_IMPACT_LAMPORTS = 1_100_000_000n;
 
 async function main() {
   const multisigAddress = new PublicKey(process.env.BOND_SQUADS_MULTISIG_PUBLIC || '9xTq2tfgGWimdk3wEgZ6dQxnV98baEysotxwapsBDwUf');
@@ -59,6 +60,8 @@ async function main() {
     vaultAuthority: vaultAuthority.toBase58(), vaultTokenAccount: vaultTokenAddress.toBase58(),
     threshold: state.threshold, memberCount: state.members.length,
     vaultBalanceBaseUnits: vault.amount.toString(), vaultCapacityAtLeast17500000: vault.amount >= MIN_VAULT,
+    vaultSolLamports: String(value[1].lamports),
+    vaultSolCapacityAtLeast1Point1: BigInt(value[1].lamports) >= MIN_SOL_IMPACT_LAMPORTS,
     creatorTokenAccount: creatorAddress.toBase58(), creatorBalanceBaseUnits: creator.amount.toString(),
     creatorCapacityAtLeast15000000: creator.amount >= MIN_CREATOR,
     campaignFundingCommitmentVerified: false, creatorBurnApprovalVerified: false,
