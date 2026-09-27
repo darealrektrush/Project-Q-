@@ -460,12 +460,20 @@ function home() {
 
   const schedule = state.runtime?.schedule;
   const target = schedule?.targetAt ? Date.parse(schedule.targetAt) : null;
-  const diff = Number.isFinite(target) ? Math.max(0, target - runtimeNow()) : 0;
+  const hasTarget = Number.isFinite(target);
+  const diff = hasTarget ? Math.max(0, target - runtimeNow()) : 0;
   const totalSeconds = Math.floor(diff / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
+  const countdownState = !state.runtime
+    ? 'SYNCING'
+    : !hasTarget
+      ? (schedule?.phase === 'PRE_LAUNCH' ? 'TARGET PENDING' : 'SCHEDULE PENDING')
+      : diff <= 0
+        ? 'UPDATING'
+        : null;
 
   return `<div class="terminal-ui terminal-mobile-reference">
     <section class="terminal-campaign-card">
@@ -476,12 +484,14 @@ function home() {
 
       ${c.banner ? `<figure class="terminal-campaign-art"><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
 
-      <div class="terminal-countdown-strip" aria-label="Campaign countdown">
-        <div><strong>${String(days).padStart(2,'0')}</strong><span>DAYS</span></div>
-        <div><strong>${String(hours).padStart(2,'0')}</strong><span>HOURS</span></div>
-        <div><strong>${String(minutes).padStart(2,'0')}</strong><span>MINS</span></div>
-        <div><strong>${String(seconds).padStart(2,'0')}</strong><span>SECS</span></div>
-      </div>
+      ${countdownState
+        ? `<div class="terminal-countdown-state"><span>CAMPAIGN TIMELINE</span><strong>${escapeHtml(countdownState)}</strong><small>${escapeHtml(schedule?.label || 'Waiting for authoritative Project Q state')}</small></div>`
+        : `<div class="terminal-countdown-strip" aria-label="Campaign countdown">
+            <div><strong>${String(days).padStart(2,'0')}</strong><span>DAYS</span></div>
+            <div><strong>${String(hours).padStart(2,'0')}</strong><span>HOURS</span></div>
+            <div><strong>${String(minutes).padStart(2,'0')}</strong><span>MINS</span></div>
+            <div><strong>${String(seconds).padStart(2,'0')}</strong><span>SECS</span></div>
+          </div>`}
 
       <div class="terminal-impact-tags">COMMUNITY × DEFI × CONSERVATION × GLOBAL IMPACT</div>
     </section>
@@ -566,6 +576,18 @@ function missionTelemetry(mission) {
   return null;
 }
 
+function canonicalMissionState(mission, telemetry) {
+  const verified = Number(telemetry?.verified || 0);
+  const pending = Number(telemetry?.pending || 0);
+  const rejected = Number(telemetry?.rejected || 0);
+  if (verified > 0) return { label: 'VERIFIED', tone: 'success' };
+  if (pending > 0) return { label: 'PENDING', tone: 'pending' };
+  if (rejected > 0 && verified === 0 && pending === 0) return { label: 'REJECTED', tone: 'blocked' };
+  if (mission.kind === 'COLLECTIVE') return { label: 'COLLECTIVE', tone: 'pending' };
+  if (mission.enabled) return { label: 'READY', tone: 'ready' };
+  return { label: 'GATED', tone: 'pending' };
+}
+
 function missionCard(mission) {
   const oracle = mission.id === 'oracle-raids';
   const collective = mission.kind === 'COLLECTIVE';
@@ -574,11 +596,10 @@ function missionCard(mission) {
     ? `<img class="mission-art ${oracle ? 'oracle-art' : ''}" src="${image}" alt="" />`
     : `<div class="mission-icon">${escapeHtml(mission.icon || 'Q')}</div>`;
   const telemetry = missionTelemetry(mission);
-  const hasAcceptedEvidence = Number(telemetry?.verified || 0) > 0;
-  const hasPendingEvidence = Number(telemetry?.pending || 0) > 0;
-  const status = hasAcceptedEvidence ? 'Verified' : hasPendingEvidence ? 'Pending' : collective ? 'Collective' : (mission.enabled ? 'Available' : mission.status);
-  const tone = hasAcceptedEvidence ? 'success' : 'pending';
-  const action = mission.enabled ? (mission.id === 'buy-to-earn' ? 'View' : 'Open') : 'Details';
+  const missionState = canonicalMissionState(mission, telemetry);
+  const status = missionState.label;
+  const tone = missionState.tone;
+  const action = mission.enabled ? (mission.id === 'buy-to-earn' ? 'VIEW' : 'OPEN') : 'DETAILS';
   const evidenceLine = telemetry && ('verified' in telemetry)
     ? `<span class="mission-evidence"><i>${Number(telemetry.verified || 0)} verified</i>${mission.id === 'trending-bots' ? `<i>${Number(telemetry.pushPoints || 0)} pushes</i>` : ''}<i>${Number(telemetry.pending || 0)} pending</i><i class="rejected">${Number(telemetry.rejected || 0)} rejected</i></span>`
     : '';
@@ -1692,7 +1713,7 @@ function missionDetailMarkup(mission) {
   const oracleMission = mission.id === 'oracle-raids';
   const providerName = oracleMission ? 'Oracle' : 'Project Q';
   const providerLogo = oracleMission ? ORACLE_LOGO : '/campaign-app/assets/project-q-app-icon.webp';
-  const status = telemetry && Number(telemetry.verified || 0) > 0 ? 'VERIFIED' : mission.enabled ? 'READY' : 'GATED';
+  const status = canonicalMissionState(mission, telemetry).label;
 
   return `<form method="dialog" class="mission-sheet mission-file-sheet">
     <button class="mission-sheet-close" value="close" aria-label="Close mission file">×</button>
@@ -1750,7 +1771,7 @@ function missionDetailMarkup(mission) {
     <section class="verification-provider ${oracleMission ? 'oracle-verification' : 'q-verification'}">
       <img src="${providerLogo}" alt="${escapeHtml(providerName)}" />
       <div><span>${oracleMission ? 'INTELLIGENCE / VERIFICATION PROVIDER' : 'RECORD / SETTLEMENT LAYER'}</span><b>${escapeHtml(providerName)}</b><small>${oracleMission ? 'Oracle verifies supported activity. Project Q records accepted outcomes.' : 'Project Q verifies supported campaign records and settles accepted outcomes.'}</small></div>
-      ${statePill(status, status === 'VERIFIED' ? 'success' : 'pending')}
+      ${statePill(status, status === 'VERIFIED' ? 'success' : status === 'REJECTED' ? 'blocked' : 'pending')}
     </section>
   </form>`;
 }
