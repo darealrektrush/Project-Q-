@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildBondLaunchQualification } from '../src/campaign/launchQualification.js';
+import { readFile } from 'node:fs/promises';
+
+import { buildBondLaunchQualification, evaluateTeamBetaEvidence } from '../src/campaign/launchQualification.js';
 
 const now = '2030-01-20T20:00:00.000Z';
 const beta = {
@@ -65,4 +67,19 @@ test('stale beta or partial Devnet execution cannot qualify launch', () => {
   assert.equal(report.ready, false);
   assert.match(report.blockers.join('; '), /48 hours/);
   assert.match(report.blockers.join('; '), /175-release/);
+});
+
+
+test('team beta evidence template is deliberately non-qualifying', async () => {
+  const template = JSON.parse(await readFile(
+    new URL('../config/bond-team-beta-evidence.template.json', import.meta.url),
+    'utf8'
+  ));
+  const result = evaluateTeamBetaEvidence(template, now);
+  assert.equal(result.ready, false);
+  assert.match(result.reasons.join('; '), /at least three team testers/);
+  assert.match(result.reasons.join('; '), /telegram-navigation/);
+  assert.match(result.reasons.join('; '), /x-oauth-link/);
+  assert.match(result.reasons.join('; '), /wallet-session/);
+  assert.match(result.reasons.join('; '), /comprehension-recovery/);
 });
