@@ -181,8 +181,10 @@ async function saveProjectQTourCompletion(profileId, version) {
 }
 
 app.post('/campaign-app/api/session', async (req, res) => {
+  let telegramUser = null;
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    telegramUser = session.user;
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
     const identity = await ensureCampaignProfile(supabase, {
       campaignId,
@@ -289,6 +291,7 @@ app.post('/campaign-app/api/session', async (req, res) => {
     return res.status(unavailable || databaseFailure || identityFailure ? 503 : 401).json({
       ok: false,
       error: unavailable || databaseFailure || identityFailure ? 'session unavailable' : 'invalid telegram session',
+      ...(identityFailure && telegramUser ? { telegramUser } : {}),
     });
   }
 });

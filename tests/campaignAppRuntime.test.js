@@ -191,6 +191,12 @@ async function loadRuntime() {
       state.profile.walletVerified = walletVerified;
       return { home: home(), profile: profileScreen() };
     };
+    globalThis.__identityPending = async () => {
+      state.telegram = { initData: 'signed-test-data' };
+      await authenticateTelegram();
+      return { status: state.sessionStatus, profile: state.profile,
+        banner: systemStatusMarkup(), screen: profileScreen() };
+    };
 
   `;
   vm.runInContext(instrumented, context);
@@ -208,6 +214,23 @@ test('standalone web stays explicit preview mode and never implies verified Tele
   const sessionFailure = context.__systemStatusWith({ sessionStatus: 'error', runtime: {}, readiness: { available: true } });
   assert.match(sessionFailure, /Participant session unavailable/);
   assert.match(sessionFailure, /No identity or reward state is being inferred/);
+});
+
+test('verified Telegram identity can show its portrait while Oracle campaign identity is unavailable', async () => {
+  const context = await loadRuntime();
+  context.fetch = async () => ({ status: 503, ok: false, json: async () => ({
+    error: 'session unavailable',
+    telegramUser: { firstName: 'Duck', lastName: 'Recruit', photoUrl: 'https://t.me/i/userpic/320/duck.jpg' },
+  }) });
+  const pending = await context.__identityPending();
+  assert.equal(pending.status, 'identity-unavailable');
+  assert.equal(pending.profile.name, 'Duck Recruit');
+  assert.equal(pending.profile.photoUrl, 'https://t.me/i/userpic/320/duck.jpg');
+  assert.equal(pending.profile.telegramVerified, false);
+  assert.equal(pending.profile.xVerified, false);
+  assert.equal(pending.profile.walletVerified, false);
+  assert.match(pending.banner, /campaign record pending/);
+  assert.match(pending.screen, /0\/3/);
 });
 
 test('legacy deep links normalize into the locked Operations IA', async () => {

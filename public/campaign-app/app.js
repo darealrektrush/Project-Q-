@@ -281,6 +281,13 @@ function systemStatusMarkup() {
     </section>`;
   }
 
+  if (state.sessionStatus === 'identity-unavailable') {
+    return `<section class="system-status-banner blocked">
+      <div><span>IDENTITY SYNC</span><b>Telegram confirmed · campaign record pending</b><small>Your Telegram name and photo are confirmed. Oracle identity and reward status are unavailable; participation remains closed.</small></div>
+      <button data-retry-session>Retry</button>
+    </section>`;
+  }
+
   if (!state.runtime || !state.readiness?.available) {
     return `<section class="system-status-banner syncing">
       <div><span>CAMPAIGN SYNC</span><b>Live operation state is temporarily unavailable</b><small>Read-only content remains visible. Eligibility and campaign actions stay fail-closed until authoritative state returns.</small></div>
@@ -2984,7 +2991,22 @@ async function authenticateTelegram() {
     const response = await fetch('/campaign-app/api/session', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData }),
     });
-    if (!response.ok) { state.sessionStatus = 'error'; return false; }
+    if (!response.ok) {
+      if (response.status === 503) {
+        const pending = await response.json();
+        if (pending.telegramUser) {
+          state.profile.name = telegramDisplayName(pending.telegramUser);
+          state.profile.photoUrl = safeHttpsUrl(pending.telegramUser.photoUrl);
+          state.profile.telegramVerified = false;
+          state.profile.xVerified = false;
+          state.profile.walletVerified = false;
+          state.sessionStatus = 'identity-unavailable';
+          return false;
+        }
+      }
+      state.sessionStatus = 'error';
+      return false;
+    }
     const session = await response.json();
     state.profile.name = telegramDisplayName(session.user);
     state.profile.photoUrl = safeHttpsUrl(session.user.photoUrl);
