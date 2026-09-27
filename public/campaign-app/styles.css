@@ -6052,3 +6052,20 @@ body.rail-collapsed .rail .nav-icon svg {
     border-left: 0;
   }
 }
+
+
+/* READ-ONLY MISSION RECORD STATE */
+.mission-start-action.read-only {
+  border-color: var(--line);
+  color: #544c40;
+  background: rgba(255,250,240,.74);
+  box-shadow: none;
+}
+.mission-read-only-note {
+  display: block;
+  margin: -3px 0 10px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.35;
+  text-align: center;
+}
