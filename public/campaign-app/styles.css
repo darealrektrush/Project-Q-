@@ -1757,3 +1757,11 @@ a.release-proof { min-height: 44px; }
   .mobile-nav .nav-label { font-size: 9px; }
   .profile-tabs { padding-bottom: 5px; }
 }
+
+
+/* ONBOARDING FINISH QA */
+.tour-finish .label { display: block; margin-top: 14px; }
+.tour-finish .tour-icon { margin-top: 0; }
+.tour-actions.single { grid-template-columns: 1fr; }
+.explainer-handle { touch-action: none; cursor: grab; }
+.explainer-handle:active { cursor: grabbing; }
