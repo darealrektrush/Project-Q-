@@ -1317,3 +1317,72 @@ h1 { font-size: 17px; letter-spacing: .045em; text-transform: none; }
   .mission-list-v2 .mission-art,
   .mission-list-v2 .mission-icon { width: 44px; height: 44px; }
 }
+
+
+/* PROGRESSION V2 */
+.xp-v2,
+.leaderboard-v2 { display: grid; gap: 14px; }
+
+.progression-hero,
+.rank-hero {
+  min-height: 170px;
+  padding: 22px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 20px;
+  border-color: var(--line-strong);
+  background: radial-gradient(circle at 0% 50%, rgba(201,139,45,.10), transparent 38%), var(--surface-2);
+}
+.progression-value { display: flex; align-items: baseline; gap: 8px; margin-top: 7px; }
+.progression-value strong,
+.rank-hero strong { display: block; font-size: clamp(38px,7vw,64px); line-height: .95; letter-spacing: -.03em; }
+.progression-value em { color: var(--gold-2); font-size: 15px; font-style: normal; font-weight: 850; }
+.progression-copy h2 { margin: 8px 0 6px; font-size: 20px; }
+.progression-copy p,
+.rank-hero p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.progression-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+.xp-daily { padding: 18px; }
+.xp-daily .panel-title { margin-bottom: 10px; }
+.xp-progress-list { display: grid; gap: 9px; }
+.xp-progress-list .progress-row { padding: 0; }
+
+.xp-ledger-section,
+.xp-achievement-section,
+.rank-achievements { margin-top: 2px; }
+.xp-ledger { border-radius: var(--radius-card); overflow: hidden; }
+
+.rank-tabs { overflow-x: auto; scrollbar-width: none; }
+.rank-tabs::-webkit-scrollbar { display: none; }
+.rank-tabs button { min-width: max-content; min-height: 42px; padding: 0 13px; font-size: 11px; }
+.rank-list { border-radius: var(--radius-card); overflow: hidden; }
+.rank-list .leaderboard-row { min-height: 64px; padding: 10px 12px; }
+.rank-list .leaderboard-row > span { font-size: 12px; }
+.rank-list .leaderboard-row b { font-size: 13px; }
+.rank-list .leaderboard-row small { font-size: 11px; }
+.rank-list .leaderboard-row strong { font-size: 13px; }
+.rank-verification-note { min-height: 48px; padding: 10px 12px; }
+.rank-verification-note span,
+.rank-verification-note b { font-size: 10px; }
+
+@media (max-width: 860px) {
+  .progression-hero,
+  .rank-hero { min-height: 150px; }
+}
+
+@media (max-width: 520px) {
+  .progression-hero,
+  .rank-hero {
+    min-height: 0;
+    padding: 17px;
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .progression-value strong,
+  .rank-hero strong { font-size: 42px; }
+  .progression-actions { justify-content: flex-start; }
+  .progression-actions .outline-action { min-height: 42px; }
+  .xp-daily { padding: 15px; }
+  .rank-tabs { margin-right: -14px; padding-right: 14px; }
+}
