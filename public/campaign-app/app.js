@@ -2031,6 +2031,8 @@ function missionStatusSummaryMarkup(mission, telemetry) {
   else if (pending > 0) counted = `${pending} verifying`;
   else if (rejected > 0) counted = `${rejected} rejected`;
 
+  const lockReason = stateInfo.label === 'LOCKED' ? missionLockReason(mission) : null;
+
   let remains = 'Complete an eligible action';
   if (stateInfo.label === 'LOCKED') remains = lockReason?.remains || 'Mission requirements';
   else if (target > 0) remains = `${Math.max(0, target - verified)} of ${target} remaining`;
@@ -2048,7 +2050,6 @@ function missionStatusSummaryMarkup(mission, telemetry) {
     nextWindow = 'Whenever a certified bot cooldown resets';
   }
 
-  const lockReason = stateInfo.label === 'LOCKED' ? missionLockReason(mission) : null;
   const instruction = stateInfo.label === 'LOCKED'
     ? (lockReason?.action || 'Review mission requirements')
     : stateInfo.label === 'VERIFYING' || stateInfo.label === 'SUBMITTED'
