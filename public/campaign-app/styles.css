@@ -6133,3 +6133,70 @@ summary:focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* PASSPORT TINY WIDTH QA */
+@media (max-width: 340px) {
+  .passport-wallet-hero,
+  .passport-economic-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .passport-wallet-hero .state-pill,
+  .passport-economic-summary .state-pill {
+    justify-self: start;
+  }
+
+  .passport-wallet-balance {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .passport-wallet-balance .outline-action {
+    justify-self: start;
+  }
+
+  .passport-wallet-records article {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .passport-wallet-records article > span,
+  .passport-wallet-records article > code,
+  .passport-wallet-records article > button {
+    grid-column: 1;
+  }
+
+  .passport-wallet-records article > button {
+    justify-self: start;
+  }
+
+  .wallet-protection-note {
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-protection-note .state-pill {
+    justify-self: start;
+  }
+
+  .passport-economic-grid,
+  .passport-activity-summary {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .passport-economic-grid article,
+  .passport-activity-summary > div {
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .passport-economic-grid article:nth-child(2n),
+  .passport-activity-summary > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .passport-economic-grid article:nth-last-child(-n+2),
+  .passport-activity-summary > div:nth-last-child(-n+2) {
+    border-bottom: 0;
+  }
+}
