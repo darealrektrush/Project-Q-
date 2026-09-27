@@ -952,8 +952,6 @@ function recordScreen() {
 
 function rewardsScreen() {
   const c = state.campaign || fallbackCampaign;
-  const plan = c.releases || [];
-  const commitments = c.campaignCommitments || {};
   const rewards = state.profile.rewards || {};
   const allocation = rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : '—';
   const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : '—';
@@ -962,41 +960,59 @@ function rewardsScreen() {
     ? subtractBaseUnits(rewards.allocatedBaseUnits, rewards.distributedBaseUnits || '0')
     : null;
   const outstanding = outstandingBaseUnits == null ? '—' : formatBaseUnits(outstandingBaseUnits);
-  const failed = rewards.releaseCount ? BigInt(rewards.failedBaseUnits || 0) : 0n;
   const actualReleases = rewards.releases || [];
   const delivery = rewardDeliveryState(rewards);
-  const walletBalance = state.walletStatus.available
-    ? formatBaseUnits(state.walletStatus.balanceBaseUnits, state.walletStatus.decimals)
-    : '—';
   const walletLabel = state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected';
-  const releaseTrack = actualReleases.length
-    ? actualReleases.map(participantReleaseRow).join('')
-    : plan.map((release) => `<article><span>${Number(release.percent)}%</span><div><b>${escapeHtml(release.label)}</b><small>${escapeHtml(release.detail)} · planned</small></div><i>○</i></article>`).join('');
 
-  const commitmentRows = commitments.campaignRewards ? [
-    ['Campaign reward pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Campaign rewards'],
-    ['Diamond Duck bonus', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Separate campaign bonus'],
-    ['Top Duck prize', `${escapeHtml(commitments.topContributorPrize.amountSol)} SOL`, 'Top overall contributor'],
-    ['Earn to Burn reserve', `${formatBaseUnits(commitments.earnToBurn.amountBaseUnits)} FAWKQ`, 'Separate burn reserve'],
-  ] : [];
+  const stages = [
+    ['01', 'Verified Activity', Boolean(state.profile.xp > 0 || state.profile.completedMissions > 0), 'Accepted participation recorded'],
+    ['02', 'Q Allocation', Boolean(rewards.recorded), rewards.recorded ? 'Allocation recorded' : 'Awaiting finalization'],
+    ['03', 'Squads Authorization', actualReleases.length > 0, actualReleases.length ? 'Release record created' : 'Awaiting authorization'],
+    ['04', 'On-chain Delivery', actualReleases.some(({ status }) => ['paid','recovered'].includes(status)), 'Delivered to verified wallet'],
+    ['05', 'Receipt', actualReleases.some(({ transactionSignature }) => isSolanaSignature(transactionSignature)), 'Finalized proof'],
+  ];
 
-  const notice = failed > 0n
-    ? `<div><b>Release recovery review required</b><p>${formatBaseUnits(failed.toString())} FAWKQ is recorded in failed release state. Nothing is shown as distributed until recovery is finalized.</p></div>`
-    : rewards.recorded
-      ? '<div><b>Your reward record is live</b><p>Allocations and releases are shown only from finalized Project Q records.</p></div>'
-      : '<div><b>No allocation has been finalized yet</b><p>Your reward totals will appear after campaign review and allocation records are created.</p></div>';
+  const receiptCards = actualReleases
+    .filter(({ status, transactionSignature }) => ['paid','recovered'].includes(status) || isSolanaSignature(transactionSignature))
+    .map((release) => {
+      const sig = isSolanaSignature(release.transactionSignature) ? release.transactionSignature : null;
+      return `<article class="allocation-receipt">
+        <header><span>PROJECT Q // ALLOCATION RECEIPT</span><b>OP ${operationNumber()}</b></header>
+        <div class="receipt-grid">
+          <div><span>Recipient</span><b>${escapeHtml(state.profile.name)}</b></div>
+          <div><span>Asset</span><b>FAWKQ</b></div>
+          <div><span>Amount</span><b>${formatBaseUnits(release.amountBaseUnits)}</b></div>
+          <div><span>Status</span><b>${escapeHtml(String(release.status || '').toUpperCase())}</b></div>
+          <div><span>Release</span><b>${Number(release.percent || 0)}%</b></div>
+          <div><span>Verified</span><b>${escapeHtml(formatProfileDate(release.scheduledAt))}</b></div>
+        </div>
+        ${sig ? `<a href="https://solscan.io/tx/${encodeURIComponent(sig)}" target="_blank" rel="noopener noreferrer">TX ${escapeHtml(short(sig))} ↗</a>` : '<span class="receipt-pending">On-chain receipt pending</span>'}
+      </article>`;
+    }).join('');
 
-  return `<div class="rewards-v2">
-    <section class="reward-hero command-card">
+  return `<div class="rewards-operations-ui">
+    <section class="rewards-command">
       <div>
-        <span class="label">Your rewards</span>
-        <div class="reward-hero-value"><strong>${allocation}</strong><em>FAWKQ</em></div>
-        <p>${rewards.recorded ? 'Finalized allocation recorded for this campaign.' : 'No finalized participant allocation yet.'}</p>
-        ${statePill(delivery.label, delivery.tone)}
+        <span>PROJECT Q REWARDS</span>
+        <h2>${allocation}</h2>
+        <b>FAWKQ ALLOCATED</b>
+        <p>Verified participation moves through a transparent allocation and delivery pipeline.</p>
       </div>
-      <div class="progression-actions">
-        <button class="info-action" data-explainer="rewards" aria-label="How rewards work">?</button>
-        <button class="outline-action" id="reward-profile">Open reward profile</button>
+      <div class="reward-status-card">
+        ${statePill(delivery.label, delivery.tone)}
+        <small>Verified wallet</small>
+        <b>${walletLabel}</b>
+      </div>
+    </section>
+
+    <section class="reward-pipeline">
+      <div class="dossier-heading"><span>Reward Pipeline</span><b>VERIFIED DELIVERY</b></div>
+      <div class="pipeline-steps">
+        ${stages.map(([number,label,complete,detail]) => `<article class="${complete ? 'complete' : ''}">
+          <span>${number}</span>
+          <div><b>${label}</b><small>${detail}</small></div>
+          <i>${complete ? '✓' : '○'}</i>
+        </article>`).join('')}
       </div>
     </section>
 
@@ -1007,31 +1023,17 @@ function rewardsScreen() {
       <article><span>Outstanding</span><strong>${outstanding}</strong><small>remaining</small></article>
     </section>
 
-    <section class="wallet-quickbar reward-wallet-bar">
-      <div><img src="/campaign-app/assets/system/q-wallet.webp" alt="" /><span><small>Verified reward wallet</small><b>${walletLabel}</b></span></div>
-      <div><small>Current wallet balance</small><b>${walletBalance} FAWKQ</b></div>
-      <button class="text-action" id="open-wallet-profile">Open wallet →</button>
+    <section class="reward-destination">
+      <div><span>DESTINATION</span><b>Verified Reward Wallet</b><small>${walletLabel}</small></div>
+      <button data-screen="profile" data-profile-view="wallet">OPEN WALLET →</button>
     </section>
 
-    ${automaticDeliveryRail(rewards)}
+    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${actualReleases.length} RELEASE RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No finalized receipt yet.</h3><p>Receipts appear after a release reaches on-chain delivery and Project Q records the finalized proof.</p></section>`}
 
-    <section class="reward-release-section">
-      <div class="section-head compact-head">
-        <div><span class="label">${actualReleases.length ? 'Your payout record' : 'Release plan'}</span><h2>Reward timeline</h2></div>
-        <span>${actualReleases.length ? `${actualReleases.length} recorded releases` : 'Planned schedule'}</span>
-      </div>
-      <section class="release-track reward-release-track">${releaseTrack}</section>
+    <section class="reward-transparency-link">
+      <button data-operation-view="rewards">VIEW OPERATION ECONOMICS →</button>
+      <button data-explainer="rewards">HOW REWARDS WORK ?</button>
     </section>
-
-    <section class="reward-transparency">
-      <div class="section-head">
-        <div><span class="label">Transparency</span><h2>Campaign commitments</h2></div>
-        <span>Separated by purpose</span>
-      </div>
-      <section class="commitment-list reward-commitments">${commitmentRows.map(([label, amount, detail]) => `<article><div><b>${label}</b><small>${detail}</small></div><strong>${amount}</strong></article>`).join('')}</section>
-    </section>
-
-    <div class="notice-surface reward-notice">${notice}<button class="outline-action" data-screen="profile">Check identity</button></div>
   </div>`;
 }
 
