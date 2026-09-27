@@ -1932,6 +1932,7 @@ async function authenticateTelegram() {
     state.missionEvidence = session.missionEvidence || state.missionEvidence;
     state.websiteVotes = session.websiteVotes || state.websiteVotes;
     state.telegramTrendingSources = session.telegramTrendingSources || state.telegramTrendingSources;
+    state.preferences = session.preferences || state.preferences;
     state.websiteVoteReviewEnabled = Boolean(session.capabilities?.websiteVoteReview);
     state.leaderboardMeta = session.leaderboards || null;
     if (session.leaderboards) {
