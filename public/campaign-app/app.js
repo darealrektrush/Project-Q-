@@ -1129,23 +1129,50 @@ function missionName(code, source) {
 }
 
 function profileTabs() {
-  const tabs = [['overview', 'Overview'], ['wallet', 'Wallet'], ['rewards', 'Rewards'], ['activity', 'Activity'], ['referrals', 'Referrals'], ['identity', 'Identity']];
-  return `<div class="profile-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
+  const tabs = [['overview', 'Overview'], ['wallet', 'Wallet'], ['rewards', 'Rewards'], ['activity', 'Activity']];
+  return `<div class="profile-tabs passport-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
 }
 
 function profileOverview() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
   const pulse = state.community?.today;
-  const cycleRows = p.xpByCycle.length
-    ? p.xpByCycle.map(({ cycleId, xp }) => `<div><span>Cycle ${Number(cycleId)}</span><b>${Number(xp).toLocaleString()} XP</b></div>`).join('')
-    : '<div class="profile-empty-line"><span>48H cycles</span><b>No settled XP yet</b></div>';
-  return `<section class="profile-overview-grid">
-    <article class="command-card profile-card branded-card"><div class="panel-title"><span>Campaign status</span>${statePill(p.campaignState === 'ACTIVE' ? 'LIVE' : p.campaignState, p.campaignState === 'ACTIVE' ? 'success' : 'pending')}</div><h3>${escapeHtml(c.name)}</h3><p>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')} · ${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}.</p><div class="profile-detail-list"><div><span>Mission progress</span><b>${Number(p.completedMissions || 0)} verified lanes</b></div><div><span>Next action</span><button class="text-action" ${verifiedCount() === 3 ? 'data-screen="missions"' : 'data-profile-view="identity"'}>${escapeHtml(nextIdentityAction())} →</button></div></div><img class="profile-card-art" src="/campaign-app/assets/system/q-campaigns.webp" alt="" /></article>
-    <article class="command-card profile-card branded-card oracle-card"><div class="panel-title"><span>Community Pulse</span>${statePill(pulse?.eligible ? 'QUALIFIED' : 'PENDING', pulse?.eligible ? 'success' : 'pending')}</div><h3>${pulse ? `${Number(pulse.xp_awarded || 0)} XP today` : 'No daily score yet'}</h3><p>Daily recognition rewards meaningful participation across time—not raw message volume.</p><div class="profile-detail-list"><div><span>Qualifying days</span><b>${state.community?.history?.filter(({ eligible }) => eligible).length || 0}</b></div><div><span>Today rank</span><b>${pulse?.daily_rank ? `#${Number(pulse.daily_rank)}` : '—'}</b></div></div><img class="profile-card-art oracle-profile-art" src="${ORACLE_LOGO}" alt="Oracle" /></article>
-  </section>
-  <section class="command-card cycle-panel"><div class="panel-title"><span>48H XP cycles</span><small>Settled ledger totals</small></div><div class="cycle-strip">${cycleRows}</div></section>
-  <section class="command-card profile-card next-profile-card"><div><span class="label">Your Project Q record</span><h3>One identity. Every verified contribution.</h3><p>Mission XP, Community Pulse, referrals, Buy-to-Earn and future reward receipts settle into this participant record.</p></div><button class="outline-action" data-profile-view="activity">Open activity</button></section><section class="command-card profile-card help-card"><div><span class="label">Help & onboarding</span><h3>Need a refresher?</h3><p>Replay the guided Project Q tour or open contextual explainers anywhere you see the help icon.</p></div><button class="outline-action" data-replay-tour>Replay App Tour</button></section>`;
+  const count = verifiedCount();
+
+  return `<div class="passport-overview">
+    <section class="passport-overview-grid">
+      <article class="passport-overview-card">
+        <span>ACTIVE OPERATION</span>
+        <h3>${escapeHtml(c.name || 'Bond the Duck')}</h3>
+        <p>${Number(p.completedMissions || 0)} verified missions · ${Number(p.xp || 0).toLocaleString()} XP</p>
+        <button data-screen="operations">OPEN OP ${operationNumber()} →</button>
+      </article>
+
+      <article class="passport-overview-card oracle-passport-card">
+        <span>IDENTITY</span>
+        <h3>${count}/3 Verified</h3>
+        <p>Telegram, Oracle X and reward wallet form your Project Q identity.</p>
+        <button data-profile-view="identity">MANAGE IDENTITY →</button>
+      </article>
+    </section>
+
+    <section class="passport-secondary-actions">
+      <button data-profile-view="identity"><span>Identity & Verification</span><b>${count}/3</b></button>
+      <button data-profile-view="referrals"><span>Verified Referrals</span><b>${Number(state.referrals?.counts?.qualified || 0)}</b></button>
+      <button data-replay-tour><span>Project Q Guide</span><b>REPLAY</b></button>
+    </section>
+
+    <section class="passport-achievements-preview">
+      <div class="dossier-heading"><span>Achievements</span><button data-record-view="achievements">VIEW ALL →</button></div>
+      ${badgeGallery((c.xpBadges || []).slice(0,4))}
+    </section>
+
+    <section class="passport-impact-stamp">
+      <span>SMALL ACTIONS.</span>
+      <b>BIGGER OCEANS.</b>
+      <small>Every verified contribution becomes part of your permanent Project Q record.</small>
+    </section>
+  </div>`;
 }
 
 function profileActivity() {
