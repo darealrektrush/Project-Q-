@@ -149,3 +149,57 @@
   .q-shell-v2 .q-footer::before{content:"";position:absolute;left:50%;top:-4px;width:6px;height:6px;border:1px solid var(--q-connection);border-radius:50%;background:#b7e8f6;box-shadow:0 0 0 2px #168fcb33;transform:translateX(-50%)}
 }
 @media(max-width:359px){.q-shell-v2 .account-control::before,.q-shell-v2 .account-control::after{display:none}}
+
+/* Operations dossier: the approved campaign art leads; operational facts remain live. */
+.q-shell-v2 .operations-ui{font-family:var(--q-display);color:var(--q-ink);gap:8px}
+.q-shell-v2 .operation-cover-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.q-shell-v2 .operation-cover-heading .state-pill{font:700 11px/1 var(--q-display);border-radius:5px;background:#071318;color:#efc75f;border:1px solid #52718a;white-space:nowrap}
+.q-shell-v2 .operation-reference .bond-cover{display:flex;flex-direction:column;min-height:0;border:0;border-radius:10px;background:#071016;box-shadow:none;isolation:isolate}
+.q-shell-v2 .operation-reference .bond-cover::after{display:none}
+.q-shell-v2 .operation-reference .bond-cover>img{position:static;order:-1;display:block;width:100%;height:auto;aspect-ratio:1280/533;object-fit:cover;opacity:1;filter:none}
+.q-shell-v2 .operation-reference .bond-cover .operation-cover-copy{padding:11px 13px 13px;background:linear-gradient(145deg,#061016,#0a1920);color:#f4f2e8}
+.q-shell-v2 .operation-reference .bond-cover h2{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.q-shell-v2 .operation-reference .bond-cover .operation-kicker{color:#f3d37e;font:700 15px/1 var(--q-display);letter-spacing:.07em}
+.q-shell-v2 .operation-reference .bond-cover .operation-cover-copy>p{max-width:none;margin:7px 0 10px;color:#a7c4d8;font:400 11px/1.2 var(--q-display);letter-spacing:.09em}
+.q-shell-v2 .operation-reference .bond-cover .operation-facts{max-width:none;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.q-shell-v2 .operation-reference .bond-cover .operation-facts>div{padding:7px 5px;border:1px solid #356078;border-radius:6px;background:#0d202a}
+.q-shell-v2 .operation-reference .bond-cover .operation-facts span{color:#80b7d7;font:400 9px/1 var(--q-display);letter-spacing:.06em}
+.q-shell-v2 .operation-reference .bond-cover .operation-facts b{margin-top:5px;color:#f7f7ee;font:700 14px/1 var(--q-display);white-space:nowrap}
+.q-shell-v2 .operation-tabs{gap:3px;padding:4px;border:1px solid #243743;border-radius:9px;background:#071016}
+.q-shell-v2 .operation-tabs button{flex:1 1 0;min-width:0;min-height:40px;padding:0 5px;color:#9cb8cb;font:700 12px/1 var(--q-display);letter-spacing:.02em;border:0;border-radius:6px}
+.q-shell-v2 .operation-tabs button.active{color:#111;background:linear-gradient(135deg,#f5d471,#dba93a);box-shadow:inset 0 0 0 1px #bd9244}
+.q-shell-v2 .operation-lifecycle,.q-shell-v2 .operation-phase-brief,.q-shell-v2 .operation-content-panel{border:1px solid var(--q-border);border-radius:9px;background:var(--q-paper);box-shadow:none}
+.q-shell-v2 .operation-lifecycle-head>span,.q-shell-v2 .operation-phase-brief span,.q-shell-v2 .operation-section-head span{color:#287ea9}
+.q-shell-v2 .operation-lifecycle-track>div.current i{background:#e8b84c;box-shadow:0 0 5px #e8b84c66}
+.q-shell-v2 .operation-lifecycle-track>div.current span{color:#7f5f21}
+.q-shell-v2 .operation-phase-brief>div+div{border-color:var(--q-border);background:#edf4f5}
+.q-shell-v2 .operation-progress-bar{background:#dce6e9}
+.q-shell-v2 .operation-progress-bar i{background:linear-gradient(90deg,#267fb2,#52b6da)}
+.q-shell-v2 .operation-economics{border-color:var(--q-border)}
+.q-shell-v2 .operation-economics article{background:#f6f7f3;border-color:var(--q-border)}
+.q-shell-v2 .operation-economics strong{font-family:var(--q-display);color:#0e1718}
+.q-shell-v2 .operation-economics span{color:#a17826}
+.q-shell-v2 .operation-economics small{color:var(--q-copy)}
+.q-shell-v2 .operation-impact-note{border:1px solid #237fa6;background:linear-gradient(110deg,#051116,#102a3a);box-shadow:inset 0 0 14px #157fac33}
+.q-shell-v2 .operation-impact-note b{color:#f4ce71}
+.q-shell-v2 .operation-impact-note span{color:#aac7d9}
+.q-shell-v2 .operation-content-panel .q-primary-action{border-radius:25px;border:1px solid #c79a36;background:linear-gradient(135deg,#f4d674,#e6b443);color:#111;font:700 15px/1 var(--q-display)}
+.q-shell-v2 .mission-file-row{border-color:var(--q-border);border-radius:8px;background:#f8f9f4;box-shadow:none}
+.q-shell-v2 .mission-file-row small{color:var(--q-copy)}
+@media(max-width:520px){
+ .q-shell-v2 .operation-reference .bond-cover{min-height:0}
+ .q-shell-v2 .operation-reference .bond-cover>img{height:auto;opacity:1}
+ .q-shell-v2 .operation-reference .bond-cover::before{display:none}
+ .q-shell-v2 .operation-reference .bond-cover .operation-cover-copy{padding:10px 11px 12px}
+ .q-shell-v2 .operation-reference .bond-cover .operation-facts{max-width:none;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .q-shell-v2 .operation-tabs button{min-height:40px;padding:0 3px;font-size:11px}
+ .q-shell-v2 .operation-content-panel{padding:12px}
+ .q-shell-v2 .operation-economics article{padding:8px 5px}
+ .q-shell-v2 .operation-economics strong{font-size:17px}
+}
+@media(max-width:359px){
+ .q-shell-v2 .operation-reference .bond-cover .operation-facts span{font-size:8px}
+ .q-shell-v2 .operation-reference .bond-cover .operation-facts b{font-size:11px}
+ .q-shell-v2 .operation-tabs button{font-size:10px}
+ .q-shell-v2 .operation-economics strong{font-size:14px}
+}

@@ -1439,10 +1439,13 @@ function operationsScreen() {
     </section>`;
   }
 
+  const bondCover = String(c.name || '').trim().toLowerCase() === 'bond the duck';
+  const coverImage = bondCover ? '/campaign-app/assets/bond-the-duck-terminal-hero-20260927.jpg' : c.banner;
   return `<div class="operations-ui operation-reference">
-    <section class="operation-cover">
+    <section class="operation-cover ${bondCover ? 'bond-cover' : ''}">
+      ${coverImage ? `<img src="${escapeHtml(coverImage)}" alt="${escapeHtml(bondCover ? 'Bond the Duck. 10-day verified. Small actions, bigger oceans.' : c.bannerAlt || c.name)}" />` : ''}
       <div class="operation-cover-copy">
-        <span class="operation-kicker">OPERATION ${op}</span>
+        <div class="operation-cover-heading"><span class="operation-kicker">OPERATION ${op}</span>${statePill(operationLifecycleState().label, operationLifecycleState().tone)}</div>
         <h2>${escapeHtml(c.name || 'Bond the Duck')}</h2>
         <p>MISSION // ${escapeHtml(c.tagline || 'Small actions. Bigger oceans.')}</p>
 
@@ -1453,8 +1456,6 @@ function operationsScreen() {
           <div><span>FINAL REVIEW</span><b>48–72H</b></div>
         </div>
       </div>
-      ${c.banner ? `<img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" />` : ''}
-      <span class="operation-stamp">OP ${op}</span>
     </section>
 
     ${operationTabs()}
