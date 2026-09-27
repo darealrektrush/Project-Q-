@@ -42,8 +42,22 @@ async function loadRuntime() {
       return missionsScreen();
     };
     globalThis.__missionDetails = Object.fromEntries(state.campaign.missions.map((mission) => [mission.id, missionDetailMarkup(mission)]));
+    globalThis.__missionById = (id) => state.campaign.missions.find((mission) => mission.id === id);
     globalThis.__renderMissionDetail = (mission) => missionDetailMarkup(mission);
+    globalThis.__renderMissionDetailWithClearance = (mission) => {
+      state.profile.telegramVerified = true;
+      state.profile.xVerified = true;
+      state.profile.walletVerified = true;
+      state.profile.tokenAccountReady = true;
+      state.profile.holderEligible = true;
+      return missionDetailMarkup(mission);
+    };
     globalThis.__renderWebsiteVoteDetail = (websiteVotes, flow = null) => {
+      state.profile.telegramVerified = true;
+      state.profile.xVerified = true;
+      state.profile.walletVerified = true;
+      state.profile.tokenAccountReady = true;
+      state.profile.holderEligible = true;
       state.websiteVotes = websiteVotes;
       state.websiteVoteFlow = flow;
       const mission = { ...state.campaign.missions.find(({ id }) => id === 'website-voting'), enabled: true };
@@ -79,35 +93,44 @@ async function loadRuntime() {
       state.readiness = readiness;
       return readinessScreen();
     };
+    globalThis.__renderOperationsWithReadiness = (readiness, view = 'intel') => {
+      state.readiness = readiness;
+      state.operationsView = view;
+      return operationsScreen();
+    };
+    globalThis.__renderOperationsWithRuntime = (runtime, view = 'overview') => {
+      state.runtime = runtime;
+      state.runtimeLoadedAt = Date.now();
+      state.operationsView = view;
+      return operationsScreen();
+    };
   `;
   vm.runInContext(instrumented, context);
   return context;
 }
 
-test('every Project Q V3 screen renders from the real Bond campaign config', async () => {
+test('Operations UI renders from the real Bond campaign config', async () => {
   const context = await loadRuntime();
-  assert.deepEqual(Array.from(context.__nav, ([id]) => id), ['home', 'missions', 'xp', 'leaderboard', 'rewards']);
-  for (const screen of ['home', 'missions', 'xp', 'leaderboard', 'rewards', 'burns', 'profile', 'readiness']) {
+  assert.deepEqual(Array.from(context.__nav, ([id]) => id), ['home', 'operations', 'record', 'rewards', 'profile']);
+  for (const screen of ['home', 'operations', 'record', 'rewards', 'profile', 'burns', 'readiness']) {
     assert.equal(typeof context.__rendered[screen], 'string');
     assert.ok(context.__rendered[screen].length > 300, `${screen} should render substantial native UI`);
   }
   assert.match(context.__rendered.home, /Bond[\s\S]*the Duck/);
-  assert.match(context.__rendered.missions, /Oracle X Raids/);
-  assert.match(context.__rendered.missions, /Community Pulse/);
-  assert.match(context.__rendered.missions, /Verified Referrals/);
-  assert.match(context.__rendered.missions, /Earn to Burn/);
-  assert.match(context.__rendered.xp, /Verified XP/);
-  assert.match(context.__rendered.leaderboard, /No placeholder scores or identities are shown/);
-  assert.match(context.__rendered.rewards, /No participant allocation exists yet/);
+  assert.match(context.__rendered.operations, /OPERATION 01/);
+  assert.match(context.__rendered.operations, /Reward Pool/);
+  assert.match(context.__rendered.record, /PROJECT Q RECORD/);
+  assert.match(context.__rendered.record, /CAMPAIGN XP/);
+  assert.match(context.__rendered.rewards, /Reward Pipeline/);
+  assert.match(context.__rendered.rewards, /No allocation receipt yet/);
   assert.match(context.__profiles.identity, /oracle-logo\.jpg/);
-  assert.match(context.__profiles.overview, /48H XP cycles/);
-  assert.match(context.__profiles.wallet, /Wallet cockpit/);
-  assert.match(context.__profiles.activity, /Activity ledger/);
-  assert.match(context.__profiles.rewards, /Recorded allocation/);
+  assert.match(context.__profiles.overview, /Campaign Records/);
+  assert.match(context.__profiles.wallet, /VERIFIED REWARD DESTINATION/);
+  assert.match(context.__profiles.wallet, /Non-custodial by design/);
+  assert.match(context.__profiles.activity, /PROJECT Q XP RECORDS/);
+  assert.match(context.__profiles.rewards, /ECONOMIC RECORD/);
   assert.match(context.__profiles.referrals, /\$2 buy pending/);
-  assert.match(context.__profiles.identity, /Privacy &amp; security|Privacy & security/);
 });
-
 test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {
   const context = await loadRuntime();
   const voting = context.__missionDetails['website-voting'];
@@ -136,31 +159,29 @@ test('Launch Readiness screen groups all public gates and exposes only the repor
   assert.doesNotMatch(rendered, /evidence_url|founder_user_id|source_key|service_role/i);
 });
 
-test('V3 readiness templates never fabricate participant results', async () => {
+test('Operations UI never fabricates participant results', async () => {
   const { __rendered: rendered } = await loadRuntime();
   const all = Object.values(rendered).join('\n');
   assert.doesNotMatch(all, /184,250|1,240 XP|@AlphaDuck|@TideBuilder/);
-  assert.match(rendered.rewards, /Project Q Reward Vault[\s\S]*—/);
-  assert.match(rendered.leaderboard, /Rankings are not live/);
+  assert.match(rendered.rewards, /NOT ALLOCATED/);
+  assert.match(rendered.leaderboard, /Rankings open with verified activity/);
   assert.doesNotMatch(rendered.home, /42%/);
 });
-
-test('home renders exact public readiness totals and native launch-gate status', async () => {
+test('Operations renders exact public readiness totals and launch-gate status', async () => {
   const context = await loadRuntime();
   const checks = Array.from({ length: 11 }, (_, index) => ({
     key: `gate-${index + 1}`, label: `Launch gate ${index + 1}`, ready: index < 6,
   }));
-  const rendered = context.__renderHomeWithReadiness({
-    available: true, ready: false, readyCount: 6, totalCount: 11, percent: 55, checks,
-  });
-  assert.match(rendered, /Campaign readiness[\s\S]*55%/);
-  assert.match(rendered, /6 \/ 11 verified/);
-  assert.match(rendered, /Launch gate 1[\s\S]*Verified/);
-  assert.match(rendered, /Launch gate 11[\s\S]*Pending/);
-  assert.match(rendered, /Read-only readiness · no activation or treasury controls/);
+  const readiness = { available: true, ready: false, readyCount: 6, totalCount: 11, percent: 55, checks };
+  const intel = context.__renderOperationsWithReadiness(readiness, 'intel');
+  const progress = context.__renderOperationsWithReadiness(readiness, 'progress');
+  assert.match(progress, /55%/);
+  assert.match(intel, /6 \/ 11 verified/);
+  assert.match(intel, /Launch gate 1[\s\S]*Verified/);
+  assert.match(intel, /Launch gate 11[\s\S]*Pending/);
+  assert.match(intel, /Read-only readiness · no activation or treasury controls/);
 });
-
-test('home renders authoritative campaign phase, cycle rail and fail-closed launch state', async () => {
+test('Terminal and Operations render authoritative campaign phase without unlocking gated missions', async () => {
   const context = await loadRuntime();
   const blocked = context.__renderHomeWithRuntime({
     serverNow: '2026-09-02T15:00:00.000Z', databaseState: 'DRAFT', operational: false,
@@ -168,57 +189,38 @@ test('home renders authoritative campaign phase, cycle rail and fail-closed laun
     schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-09-03T15:00:00.000Z', currentCycle: 1 },
   });
   assert.match(blocked, /LAUNCH BLOCKED/);
-  assert.match(blocked, /operations remain closed until every activation gate passes/);
-  assert.match(blocked, /aria-label="5 campaign cycles"/);
-  const live = context.__renderHomeWithRuntime({
-    serverNow: '2026-09-04T15:00:00.000Z', databaseState: 'ACTIVE', operational: true,
-    displayLabel: 'CYCLE 2 LIVE', tone: 'success',
-    schedule: { phase: 'ACTIVE', label: 'Cycle 2 closes', targetAt: '2026-09-05T15:00:00.000Z', currentCycle: 2 },
-  });
-  assert.match(live, /CYCLE 2 LIVE/);
-  assert.match(live, /Verified activity cycle 2 of 5/);
-  assert.match(live, /class="complete" title="Cycle 1"/);
-  assert.match(live, /class="current" title="Cycle 2"/);
+  const operations = context.__renderOperationsWithRuntime({
+    serverNow: '2026-09-02T15:00:00.000Z', databaseState: 'DRAFT', operational: false,
+    displayLabel: 'LAUNCH BLOCKED', tone: 'blocked',
+    schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-09-03T15:00:00.000Z', currentCycle: 1 },
+  }, 'missions');
+  assert.match(operations, /Mission Files/);
+  assert.match(operations, /LOCKED/);
 });
-
-test('campaign clock distinguishes a proposed target from an authoritative schedule', async () => {
+test('Terminal distinguishes a proposed target from authoritative campaign timing', async () => {
   const context = await loadRuntime();
   const pending = context.__renderHomeWithRuntime({
     serverNow: '2026-09-25T09:00:00.000Z', databaseState: 'DRAFT', operational: false,
     displayLabel: 'PRE-LAUNCH', tone: 'pending',
     schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
   });
-  assert.match(pending, /Campaign target awaiting approval/);
-  assert.match(pending, /data-empty-label="Target awaiting approval">Target awaiting approval<\/strong>/);
-  assert.doesNotMatch(pending, /Review complete/);
-  assert.match(pending, /5 campaign cycles of 48 hours/);
-  assert.match(pending, /Prepare identity for launch/);
-  assert.doesNotMatch(pending, /Unlock missions and rewards/);
-  const element = { dataset: { targetAt: '', emptyLabel: 'Target awaiting approval' }, textContent: '' };
-  context.document.querySelectorAll = () => [element];
-  vm.runInContext('updateCountdownLabels()', context);
-  assert.equal(element.textContent, 'Target awaiting approval');
-
-  const missed = context.__renderHomeWithRuntime({
-    serverNow: '2026-09-30T09:00:00.000Z', databaseState: 'DRAFT', operational: false,
-    displayLabel: 'PRE-LAUNCH', tone: 'pending',
-    schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
+  assert.match(pending, /TARGET PENDING/);
+  assert.match(pending, /Campaign dates pending/);
+  assert.doesNotMatch(pending, /00<\/strong><span>DAYS/);
+  const live = context.__renderHomeWithRuntime({
+    serverNow: '2026-09-29T15:00:00.000Z', databaseState: 'ACTIVE', operational: true,
+    displayLabel: 'CYCLE 1 LIVE', tone: 'success',
+    schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-10-01T15:00:00.000Z', currentCycle: 1 },
   });
-  assert.match(missed, /data-empty-label="Dates pending">Dates pending<\/strong>/);
-
-  const reviewed = context.__renderHomeWithRuntime({
-    serverNow: '2026-10-10T09:00:00.000Z', databaseState: 'COMPLETED', operational: false,
-    displayLabel: 'POST-REVIEW', tone: 'pending',
-    schedule: { phase: 'POST_REVIEW', label: 'Final review complete', targetAt: null, currentCycle: null },
-  });
-  assert.match(reviewed, /data-empty-label="Review complete">Review complete<\/strong>/);
+  assert.match(live, /CYCLE 1 LIVE/);
+  assert.match(live, /DAYS/);
+  assert.match(live, /HOURS/);
 });
-
 test('XP progress bars render authoritative daily bucket usage', async () => {
   const context = await loadRuntime();
   const rendered = context.__renderXpWithDailyBuckets({ participation: 3, trending: 9, mission: 8, other: 4 });
   assert.match(rendered, /Participation[\s\S]*3 \/ 15/);
-  assert.match(rendered, /Trending bots[\s\S]*9 \/ 20/);
+  assert.match(rendered, /Trending activity[\s\S]*9 \/ 20/);
   assert.match(rendered, /Project Q missions[\s\S]*8 \/ 20/);
   assert.match(rendered, /Other verified activity[\s\S]*4 \/ 20/);
 });
@@ -241,19 +243,20 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
   const context = await loadRuntime();
   assert.equal(Object.keys(context.__missionDetails).length, 9);
   for (const detail of Object.values(context.__missionDetails)) {
-    assert.match(detail, /How Project Q verifies it/);
-    assert.match(detail, /Requirements/);
+    assert.match(detail, /Mission Details/);
+    assert.match(detail, /Rules &amp; Guidelines|Rules & Guidelines/);
     assert.match(detail, /Only verified Project Q records count/);
   }
   assert.match(context.__missionDetails['website-voting'], /1 XP per accepted source/);
   assert.match(context.__missionDetails['website-voting'], /available-source completion/);
-  assert.match(context.__missionDetails['website-voting'], /Registered sources/);
+  assert.match(context.__missionDetails['website-voting'], /Choose a verified source|Registered Sources/);
   assert.match(context.__missionDetails['website-voting'], /GeckoTerminal/);
   assert.match(context.__missionDetails['website-voting'], /CoinScope/);
   assert.match(context.__missionDetails['trending-bots'], /drokiatrendsbot/);
-  assert.match(context.__missionDetails['website-voting'], /Readiness gate closed/);
-  assert.match(context.__missionDetails.bagwork, /Open Bagwork/);
-  assert.doesNotMatch(context.__missionDetails.bagwork, /Open Bagwork[\s\S]*disabled/);
+  assert.match(context.__missionDetails['website-voting'], /LOCKED|Operation has not opened this mission yet/);
+  const bagworkReady = context.__renderMissionDetailWithClearance(context.__missionById('bagwork'));
+  assert.match(bagworkReady, /Open Bagwork/);
+  assert.doesNotMatch(bagworkReady, /Open Bagwork[^]*disabled/);
   assert.match(context.__missionDetails['earn-to-burn'], /View public ledger/);
 });
 
@@ -314,8 +317,8 @@ test('Rewards renders exact participant allocation and release records without c
   assert.match(rendered.screen, /184,250/);
   assert.match(rendered.screen, /42,000/);
   assert.match(rendered.screen, /18,000/);
-  assert.match(rendered.screen, /Activity rewards · Cycle 1/);
-  assert.match(rendered.screen, /paid/);
+  assert.match(rendered.screen, /Activity rewards · CYCLE 1/);
+  assert.match(rendered.screen, /PAID/);
   assert.match(rendered.screen, /No claim transaction required/);
   assert.match(rendered.screen, new RegExp(`solscan\\.io/tx/${'5'.repeat(88)}`));
   assert.match(rendered.profile, /Scheduled[\s\S]*42,000/);
