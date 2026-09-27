@@ -1308,6 +1308,8 @@ function rewardsScreen() {
       return `<article class="allocation-receipt">
         <header><span>PROJECT Q // ALLOCATION RECEIPT</span><b>OP ${operationNumber()}</b></header>
         <div class="receipt-grid">
+          <div><span>Operation</span><b>OP ${operationNumber()}</b></div>
+          <div><span>Reason</span><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · CYCLE ${Number(release.cycleId)}` : ''}</b></div>
           <div><span>Recipient</span><b>${escapeHtml(state.profile.name)}</b></div>
           <div><span>Asset</span><b>FAWKQ</b></div>
           <div><span>Amount</span><b>${formatBaseUnits(release.amountBaseUnits)}</b></div>
@@ -1353,7 +1355,7 @@ function rewardsScreen() {
     </section>
 
     <section class="reward-destination">
-      <div><span>DESTINATION</span><b>Verified Reward Wallet</b><small>${walletLabel}</small></div>
+      <div><span>DESTINATION</span><b>Verified Reward Wallet</b><small>${walletLabel}</small><em>No claim transaction required.</em></div>
       <button data-screen="profile" data-profile-view="wallet">OPEN WALLET →</button>
     </section>
 
@@ -1582,6 +1584,11 @@ function profileWallet() {
     <section class="wallet-protection-note">
       <div><span>DESTINATION PROTECTION</span><b>${allocationLocked ? 'Locked after allocation' : 'Changeable before allocation'}</b><small>${allocationLocked ? 'Any wallet recovery requires controlled review because a reward allocation already exists.' : 'A newly verified wallet becomes the campaign destination before allocations are finalized.'}</small></div>
       ${statePill(allocationLocked ? 'PROTECTED' : 'PRE-ALLOCATION', allocationLocked ? 'success' : 'pending')}
+    </section>
+
+    <section class="wallet-noncustodial-note">
+      <img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" />
+      <div><b>Non-custodial by design.</b><small>Project Q cannot sign from your wallet, cannot withdraw funds, and never stores a seed phrase or private key.</small></div>
     </section>
   </div>`;
 }
