@@ -306,7 +306,8 @@ function formatCountdown(targetAt, now = runtimeNow()) {
 
 function runtimePill() {
   if (!state.runtime) return statePill('SYNCING', 'pending');
-  return statePill(state.runtime.displayLabel, state.runtime.tone || 'pending');
+  const lifecycle = operationLifecycleState();
+  return statePill(lifecycle.label, lifecycle.tone);
 }
 
 function campaignClockMarkup(campaign) {
@@ -1963,12 +1964,13 @@ function render() {
   const accountImage = document.querySelector('#account-control img');
   if (accountImage) accountImage.src = safeHttpsUrl(state.profile.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   document.querySelector('#account-control').classList.toggle('verified', verifiedCount() === 3);
+  const lifecycle = state.runtime ? operationLifecycleState() : { label: 'SYNCING', tone: 'pending' };
   const railState = document.querySelector('#rail-campaign-state');
-  if (railState) railState.textContent = state.runtime?.displayLabel || 'SYNCING';
+  if (railState) railState.textContent = lifecycle.label;
   const network = document.querySelector('#campaign-network-state');
   if (network) {
-    network.innerHTML = `<i></i> ${escapeHtml(state.runtime?.displayLabel || 'SYNCING')}`;
-    network.classList.toggle('live', Boolean(state.runtime?.operational));
+    network.innerHTML = `<i></i> ${escapeHtml(lifecycle.label)}`;
+    network.classList.toggle('live', lifecycle.label === 'ACTIVE');
   }
   document.title = `Project Q — ${c.name}`;
   bind();
