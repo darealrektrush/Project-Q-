@@ -1702,3 +1702,11 @@ a.release-proof { min-height: 44px; }
 .topbar:has(.tour-target-active) {
   z-index: 126;
 }
+
+
+/* HOME HERO ARTWORK CLEANUP */
+.home-hero-title { display: none !important; }
+.home-hero-spacer { flex: 1 1 auto; min-height: 120px; }
+@media (max-width: 520px) {
+  .home-hero-spacer { min-height: 92px; }
+}
