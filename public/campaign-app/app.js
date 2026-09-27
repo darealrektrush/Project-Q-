@@ -98,6 +98,7 @@ const APP_TOUR_STEPS = [
 ];
 
 const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
+const RAIL_COLLAPSED_KEY = 'project-q:rail-collapsed';
 
 const READINESS_GROUPS = [
   {
@@ -213,6 +214,27 @@ function verifiedCount() {
 
 function navMarkup() {
   return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id ? 'active' : ''}" data-screen="${id}" data-tour-target="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
+}
+
+function railCollapsedPreference() {
+  try { return localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true'; }
+  catch { return false; }
+}
+
+function applyRailPreference(collapsed = railCollapsedPreference()) {
+  document.body.classList.toggle('rail-collapsed', Boolean(collapsed));
+  const toggle = document.querySelector('#rail-toggle');
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+    toggle.textContent = collapsed ? '›' : '‹';
+  }
+}
+
+function toggleRail() {
+  const collapsed = !document.body.classList.contains('rail-collapsed');
+  try { localStorage.setItem(RAIL_COLLAPSED_KEY, String(collapsed)); } catch {}
+  applyRailPreference(collapsed);
 }
 
 function statePill(label, tone = 'pending') {
@@ -1754,6 +1776,47 @@ async function saveTourCompletion() {
   } catch {}
 }
 
+function tourWelcomeMarkup(source = 'auto') {
+  const replay = source === 'manual';
+  return `<div class="tour-welcome-card" role="dialog" aria-label="Welcome to Project Q">
+    <div class="tour-welcome-mark"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /></div>
+    <span class="label">${replay ? 'Project Q Guide' : 'Welcome to Project Q'}</span>
+    <h2>${replay ? 'Replay the Operations Tour' : 'Enter the Operation'}</h2>
+    <p>${replay
+      ? 'Run through Terminal, Operations, Record, Rewards and your Participant Passport again.'
+      : 'Project Q is your verified participation layer. Learn where to operate, how missions work and where your permanent record is built.'}</p>
+    <div class="tour-welcome-path">
+      <span>TERMINAL</span><i>→</i><span>OPERATIONS</span><i>→</i><span>RECORD</span>
+    </div>
+    <div class="tour-welcome-actions">
+      <button type="button" class="tour-primary" data-tour-begin>${replay ? 'Replay Tour' : 'Begin Tour'}</button>
+      <button type="button" class="tour-secondary" data-tour-dismiss>${replay ? 'Close' : 'Explore on my own'}</button>
+    </div>
+  </div>`;
+}
+
+function showTourWelcome(source = 'auto') {
+  const tour = document.querySelector('#app-tour');
+  if (!tour) return;
+  clearTourTarget();
+  state.tour = { active: false, step: 0, source };
+  tour.hidden = false;
+  tour.innerHTML = `<div class="tour-scrim tour-welcome-scrim"></div>${tourWelcomeMarkup(source)}`;
+  requestAnimationFrame(() => tour.classList.add('tour-visible'));
+  tour.querySelector('[data-tour-begin]')?.addEventListener('click', () => {
+    tour.classList.remove('tour-visible');
+    setTimeout(() => startAppTour(source), 160);
+  });
+  tour.querySelector('[data-tour-dismiss]')?.addEventListener('click', () => {
+    tour.classList.remove('tour-visible');
+    setTimeout(() => {
+      tour.hidden = true;
+      tour.innerHTML = '';
+      if (source !== 'manual') void saveTourCompletion();
+    }, 180);
+  });
+}
+
 function tourFinishMarkup() {
   return `<div class="tour-card tour-finish" role="dialog" aria-label="Project Q app tour complete">
     <div class="tour-icon">✓</div>
@@ -1825,10 +1888,13 @@ function renderTourStep() {
   }
 
   tour.hidden = false;
+  tour.classList.add('tour-visible');
+  tour.classList.add('tour-step-transition');
   tour.innerHTML = `<div class="tour-scrim"></div>${tourCardMarkup(step, index)}`;
   clearTourTarget();
 
   requestAnimationFrame(() => {
+    tour.classList.remove('tour-step-transition');
     const target = visibleTourTarget(step.target);
     if (target) {
       target.classList.add('tour-target-active');
@@ -1871,6 +1937,8 @@ function renderTourStep() {
 
 function startAppTour(source = 'manual') {
   state.tour = { active: true, step: 0, source };
+  const tour = document.querySelector('#app-tour');
+  tour?.classList.remove('tour-visible');
   renderTourStep();
 }
 
@@ -1892,7 +1960,7 @@ function finishAppTour() {
 
 function maybeStartAppTour() {
   if (hasCompletedTour()) return;
-  setTimeout(() => startAppTour('auto'), 350);
+  setTimeout(() => showTourWelcome('auto'), 800);
 }
 
 function explainerMarkup(key) {
@@ -1975,7 +2043,7 @@ function bind() {
     };
   });
   document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
-  document.querySelectorAll('[data-replay-tour]').forEach((element) => { element.onclick = () => startAppTour('manual'); });
+  document.querySelectorAll('[data-replay-tour]').forEach((element) => { element.onclick = () => showTourWelcome('manual'); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
@@ -1989,6 +2057,8 @@ function bind() {
   document.querySelectorAll('[data-record-view]').forEach((element) => {
     element.onclick = () => { state.recordView = element.dataset.recordView; state.screen = 'record'; render(); };
   });
+  document.querySelector('#rail-toggle')?.addEventListener('click', toggleRail);
+  applyRailPreference();
   const account = document.querySelector('#account-control');
   if (account) account.onclick = () => go('profile');
   document.querySelector('#profile-wallet')?.addEventListener('click', openOracle);
@@ -2168,8 +2238,8 @@ async function boot() {
   const splashStarted = performance.now();
   state.telegram?.ready();
   state.telegram?.expand();
-  state.telegram?.setHeaderColor?.('#050505');
-  state.telegram?.setBackgroundColor?.('#050505');
+  state.telegram?.setHeaderColor?.('#e9e2d3');
+  state.telegram?.setBackgroundColor?.('#e9e2d3');
   state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); await loadWalletStatus(); render(); });
   state.screen = location.hash.slice(1) in screens ? location.hash.slice(1) : 'home';
   await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
