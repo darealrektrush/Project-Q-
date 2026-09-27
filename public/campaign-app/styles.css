@@ -3620,3 +3620,53 @@ body.rail-collapsed .rail .nav-icon svg {
   }
   .tour-welcome-actions { grid-template-columns: 1fr; }
 }
+
+
+/* MOBILE CANONICAL VIEWPORT FIX */
+@media (max-width: 860px) {
+  .app-shell {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .rail {
+    display: none !important;
+  }
+
+  main,
+  body.rail-collapsed main {
+    grid-column: auto !important;
+    width: 100% !important;
+    max-width: 720px !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+  }
+
+  .topbar,
+  .screen {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 520px) {
+  main,
+  body.rail-collapsed main {
+    width: 100% !important;
+    max-width: none !important;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  .terminal-ui,
+  .operations-ui,
+  .record-ui,
+  .rewards-operations-ui,
+  .passport-ui {
+    width: 100%;
+    min-width: 0;
+  }
+}
