@@ -4613,3 +4613,29 @@ body.rail-collapsed .rail .nav-icon svg {
     min-height: 108px;
   }
 }
+
+
+/* TELEGRAM VIEWPORT HEIGHT LOCK */
+:root {
+  --tg-viewport-height: 100dvh;
+}
+
+@media (max-width: 520px) {
+  .mission-dialog {
+    height: var(--tg-viewport-height) !important;
+    max-height: var(--tg-viewport-height) !important;
+  }
+
+  .mission-file-sheet {
+    min-height: var(--tg-viewport-height);
+    max-height: var(--tg-viewport-height);
+  }
+
+  .explainer-dialog {
+    max-height: calc(var(--tg-viewport-height) - 24px);
+  }
+
+  .app-tour {
+    height: var(--tg-viewport-height);
+  }
+}
