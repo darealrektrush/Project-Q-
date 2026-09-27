@@ -190,7 +190,8 @@ async function loadRuntime() {
       return systemStatusMarkup();
     };
     globalThis.__resolveRoute = (screen) => resolveScreenRoute(screen);
-    globalThis.__renderIdentityState = ({ user, telegramVerified = true, xVerified = false, walletVerified = false }) => {
+    globalThis.__renderIdentityState = ({ user, telegramVerified = true, xVerified = false, walletVerified = false, oracleAvailable = true }) => {
+      state.runtime = { ...(state.runtime || {}), oracleBotUrl: oracleAvailable ? 'https://t.me/Oracle_Dev_cs_bot' : null };
       state.profile.name = telegramDisplayName(user);
       state.profile.photoUrl = safeHttpsUrl(user.photoUrl);
       state.profile.telegramVerified = telegramVerified;
@@ -384,6 +385,11 @@ test('Telegram identity paints the participant passport and advances the Oracle 
   assert.match(xStep.home, /assets\/oracle-logo\.jpg/);
   const walletStep = context.__renderIdentityState({ user, xVerified: true });
   assert.match(walletStep.home, /Verify Reward Wallet/);
+  const pending = context.__renderIdentityState({ user, oracleAvailable: false });
+  assert.match(pending.home, /Oracle Dev setup pending/);
+  assert.doesNotMatch(pending.home, /<b>Connect Oracle X<\/b>/);
+  const pendingWallet = context.__renderIdentityState({ user, xVerified: true, oracleAvailable: false });
+  assert.match(pendingWallet.home, /Wallet connection will open when Oracle Dev is ready/);
   const privatePhoto = context.__renderIdentityState({ user: { firstName: 'Duck', photoUrl: null } });
   assert.match(privatePhoto.profile, /assets\/system\/q-id\.webp/);
 });
