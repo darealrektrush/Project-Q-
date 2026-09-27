@@ -1104,6 +1104,16 @@ function operationLifecycleMarkup() {
   </section>`;
 }
 
+function formatOperationDate(value) {
+  const date = new Date(value || '');
+  if (!Number.isFinite(date.getTime())) return 'PENDING';
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: state.campaign?.schedule?.timeZone || 'America/Vancouver',
+  }).toUpperCase();
+}
+
 function operationNumber() {
   const sequence = String(state.campaign?.sequence || '01').match(/\d+/)?.[0] || '01';
   return sequence.padStart(2, '0');
@@ -1208,7 +1218,7 @@ function operationsScreen() {
         <p>MISSION // ${escapeHtml(c.tagline || 'Small actions. Bigger oceans.')}</p>
 
         <div class="operation-facts">
-          <div><span>START</span><b>${escapeHtml(c.schedule?.activeLabel || 'Pending')}</b></div>
+          <div><span>START</span><b>${escapeHtml(formatOperationDate(c.schedule?.activeOpensAt))}</b></div>
           <div><span>DURATION</span><b>10 DAYS</b></div>
           <div><span>CYCLES</span><b>5 × 48H</b></div>
           <div><span>FINAL REVIEW</span><b>48–72H</b></div>
