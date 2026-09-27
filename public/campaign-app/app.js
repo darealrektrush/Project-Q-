@@ -1063,31 +1063,39 @@ function participantReleaseRow(release) {
 
 
 function operationLifecycleState() {
-  const campaignState = String(state.profile?.campaignState || state.campaign?.status || 'DRAFT').toUpperCase();
+  const campaignState = String(
+    state.runtime?.databaseState || state.profile?.campaignState || state.campaign?.status || 'DRAFT'
+  ).toUpperCase();
   const phase = String(state.runtime?.schedule?.phase || '').toUpperCase();
-  const releases = state.profile?.rewards?.releases || [];
 
-  if (state.campaignRecord?.archived || campaignState === 'ARCHIVED') {
+  if (campaignState === 'ARCHIVED' || state.campaignRecord?.archived) {
     return { label: 'ARCHIVED', tone: 'pending' };
   }
-  if (['POST_REVIEW','COMPLETED','FINALIZED'].includes(phase) || campaignState === 'COMPLETED') {
-    const outstanding = state.profile?.rewards?.recorded
-      ? subtractBaseUnits(state.profile.rewards.allocatedBaseUnits, state.profile.rewards.distributedBaseUnits || '0')
-      : null;
-    if (outstanding && outstanding !== '0') return { label: 'DISTRIBUTING', tone: 'ready' };
+  if (campaignState === 'TERMINATED') {
+    return { label: 'TERMINATED', tone: 'blocked' };
+  }
+  if (campaignState === 'PAUSED') {
+    return { label: 'PAUSED', tone: 'blocked' };
+  }
+  if (campaignState === 'COMPLETED') {
     return { label: 'COMPLETED', tone: 'success' };
   }
-  if (['REVIEW','REVIEW_EXTENSION','HANDOFF'].includes(phase)) {
+  if (campaignState === 'DISTRIBUTING') {
+    return { label: 'DISTRIBUTING', tone: 'ready' };
+  }
+  if (['VERIFYING','ALLOCATIONS_FROZEN'].includes(campaignState)
+      || ['HANDOFF','REVIEW','REVIEW_EXTENSION','POST_REVIEW'].includes(phase)) {
     return { label: 'REVIEWING', tone: 'pending' };
   }
-  if (phase === 'ACTIVE' || state.runtime?.operational) {
+  if (campaignState === 'ACTIVE' && phase === 'ACTIVE' && state.runtime?.operational) {
     return { label: 'ACTIVE', tone: 'success' };
   }
-  if (campaignState === 'DRAFT' || phase === 'PRE_LAUNCH' || !state.runtime) {
-    return { label: 'UPCOMING', tone: 'pending' };
+  if (phase === 'ACTIVE' && campaignState !== 'ACTIVE') {
+    return { label: 'LAUNCH BLOCKED', tone: 'blocked' };
   }
-  if (releases.some(({ status }) => ['scheduled','paid','recovered'].includes(status))) {
-    return { label: 'DISTRIBUTING', tone: 'ready' };
+  if (['DRAFT','READINESS_BLOCKED','FUNDED','SCHEDULED'].includes(campaignState)
+      || phase === 'PRE_LAUNCH' || !state.runtime) {
+    return { label: 'UPCOMING', tone: 'pending' };
   }
   return { label: campaignState || 'UPCOMING', tone: 'pending' };
 }
@@ -1125,6 +1133,21 @@ function operationPhaseBriefMarkup() {
       detail: 'This operation is read-only. Historical participation, outcomes and receipts remain available for audit.',
       next: 'Review archived records.',
     },
+    'LAUNCH BLOCKED': {
+      title: 'Launch gates are not cleared',
+      detail: 'The campaign window may have arrived, but Project Q remains fail-closed until authoritative activation requirements pass.',
+      next: 'Review Operation Intel and wait for launch clearance.',
+    },
+    PAUSED: {
+      title: 'Operation paused',
+      detail: 'Campaign participation is temporarily paused by authoritative operation state.',
+      next: 'Wait for Project Q to resume or publish the next operation status.',
+    },
+    TERMINATED: {
+      title: 'Operation terminated',
+      detail: 'Campaign participation has been terminated. Existing verified records remain available for audit.',
+      next: 'Review your Record and finalized receipts.',
+    },
   }[lifecycle.label] || {
     title: 'Operation status',
     detail: 'Project Q is synchronizing authoritative operation state.',
@@ -1141,7 +1164,8 @@ function operationLifecycleMarkup() {
   const current = operationLifecycleState();
   const stages = ['UPCOMING','ACTIVE','REVIEWING','DISTRIBUTING','COMPLETED'];
   const currentIndex = stages.indexOf(current.label);
-  return `<section class="operation-lifecycle" aria-label="Operation lifecycle">
+  const exception = !stages.includes(current.label) && current.label !== 'ARCHIVED';
+  return `<section class="operation-lifecycle ${exception ? 'exception' : ''}" aria-label="Operation lifecycle">
     <div class="operation-lifecycle-head"><span>OPERATION STATE</span>${statePill(current.label, current.tone)}</div>
     <div class="operation-lifecycle-track">
       ${stages.map((label, index) => `<div class="${currentIndex >= 0 && index < currentIndex ? 'complete' : label === current.label ? 'current' : ''}"><i></i><span>${label}</span></div>`).join('')}
