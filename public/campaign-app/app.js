@@ -1725,6 +1725,22 @@ function syncTelegramViewport() {
   }
 }
 
+function resolveScreenRoute(screen) {
+  if (screen === 'missions') {
+    state.operationsView = 'missions';
+    return 'operations';
+  }
+  if (screen === 'xp') {
+    state.recordView = 'xp';
+    return 'record';
+  }
+  if (screen === 'leaderboard') {
+    state.recordView = 'rank';
+    return 'record';
+  }
+  return screen;
+}
+
 function updateTelegramBackButton() {
   const backButton = state.telegram?.BackButton;
   if (!backButton) return;
@@ -1756,6 +1772,7 @@ function navigateBack() {
 }
 
 function go(screen, { replace = false } = {}) {
+  screen = resolveScreenRoute(screen);
   if (!screens[screen]) return;
   if (!replace && state.screen !== screen) state.navigationStack.push(state.screen);
   state.screen = screen;
@@ -2685,8 +2702,12 @@ async function boot() {
   state.telegram?.onEvent?.('viewportChanged', syncTelegramViewport);
   state.telegram?.BackButton?.onClick?.(navigateBack);
   window.addEventListener('resize', syncTelegramViewport);
-  state.screen = location.hash.slice(1) in screens ? location.hash.slice(1) : 'home';
-  state.navigationStack = state.screen === 'home' ? ['home'] : ['home'];
+  const requestedScreen = location.hash.slice(1);
+  state.screen = resolveScreenRoute(requestedScreen in screens ? requestedScreen : 'home');
+  state.navigationStack = ['home'];
+  if (requestedScreen && requestedScreen !== state.screen) {
+    history.replaceState(null, '', `#${state.screen}`);
+  }
   await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
   await loadWalletStatus();
   restoreWebsiteVoteFlow();
