@@ -6243,3 +6243,80 @@ summary:focus-visible,
     font-size: 7px;
   }
 }
+
+
+/* REWARD RECOVERY STATE */
+.reward-recovery-alert {
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: start;
+  gap: 10px;
+  border: 1px solid rgba(166,66,60,.24);
+  border-radius: 8px;
+  background: linear-gradient(90deg,rgba(166,66,60,.06),rgba(255,250,240,.72));
+}
+.reward-recovery-alert > div span {
+  color: var(--danger);
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.reward-recovery-alert h3 {
+  margin: 4px 0 5px;
+  font-size: 16px;
+}
+.reward-recovery-alert p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.reward-recovery-alert small {
+  display: block;
+  margin-top: 6px;
+  color: #746c62;
+  font-size: 9px;
+}
+.reward-recovery-alert > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 9px;
+  border: 1px solid rgba(166,66,60,.24);
+  border-radius: 5px;
+  color: #8d3f3a;
+  background: rgba(166,66,60,.05);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+@media (max-width: 340px) {
+  .reward-recovery-alert {
+    grid-template-columns: 1fr;
+  }
+
+  .reward-recovery-alert > .state-pill {
+    justify-self: start;
+  }
+
+  .terminal-next-step > button,
+  .mission-start-action,
+  .q-primary-action,
+  .reward-destination button,
+  .reward-transparency-link button,
+  .clearance-row > button {
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.2;
+  }
+
+  .terminal-next-step > button {
+    min-height: 40px;
+  }
+
+  .reward-transparency-link {
+    grid-template-columns: 1fr;
+  }
+}
