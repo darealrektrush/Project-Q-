@@ -385,142 +385,116 @@ function nextStatusCard() {
 function home() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
-  const missions = Array.isArray(c.missions) ? c.missions : [];
   const count = verifiedCount();
+  const op = operationNumber();
   const identityReady = count === 3;
-  const allocation = p.allocation == null ? '—' : formatBaseUnits(p.allocation);
-  const readiness = state.readiness?.available
-    ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0)))
-    : null;
-  const readinessLabel = readiness == null ? '—' : `${readiness}%`;
-  const heroStyle = c.banner ? ` style="--campaign-art:url('${c.banner}')"` : '';
 
   let nextMove = {
-    eyebrow: 'Complete your setup',
+    label: 'Next Step',
     title: 'Verify Telegram',
-    detail: 'Open Project Q from the official Telegram bot to establish your campaign identity.',
-    action: 'Review profile',
+    detail: 'Open Project Q from the official Telegram bot to establish your participant identity.',
+    action: 'OPEN PROFILE',
     screen: 'profile',
+    profileView: 'identity',
+    brand: 'q',
   };
   if (p.telegramVerified && !p.xVerified) {
     nextMove = {
-      eyebrow: 'Complete your setup',
-      title: 'Connect your X identity',
-      detail: 'Verify X through Oracle to unlock eligible social and campaign activity.',
-      action: 'Connect with Oracle',
+      label: 'Next Step',
+      title: 'Connect Oracle X',
+      detail: 'Verify your X identity to unlock eligible social missions.',
+      action: 'CONNECT',
       screen: 'profile',
+      profileView: 'identity',
+      brand: 'oracle',
     };
   } else if (p.telegramVerified && p.xVerified && !p.walletVerified) {
     nextMove = {
-      eyebrow: 'One step remaining',
-      title: 'Verify your reward wallet',
-      detail: 'Connect the wallet Project Q will use for eligibility, allocations and verified releases.',
-      action: 'Verify wallet',
+      label: 'Next Step',
+      title: 'Verify Reward Wallet',
+      detail: 'Connect the wallet Project Q will use for eligibility and distributions.',
+      action: 'VERIFY',
       screen: 'profile',
-    };
-  } else if (identityReady && state.runtime?.operational) {
-    nextMove = {
-      eyebrow: 'You are campaign ready',
-      title: 'Choose your next mission',
-      detail: 'Complete eligible activity, build XP and progress through the active campaign.',
-      action: 'Explore missions',
-      screen: 'missions',
+      profileView: 'identity',
+      brand: 'oracle',
     };
   } else if (identityReady) {
     nextMove = {
-      eyebrow: 'Identity ready',
-      title: 'Explore the campaign',
-      detail: 'Review missions, rewards and campaign mechanics while Project Q prepares the next active phase.',
-      action: 'Explore missions',
-      screen: 'missions',
+      label: 'Next Step',
+      title: 'Enter Mission Files',
+      detail: 'Your identity is ready. Open the active operation and choose your next mission.',
+      action: 'ENTER',
+      screen: 'operations',
+      operationsView: 'missions',
+      brand: 'q',
     };
   }
 
-  return `<div class="home-v2">
-    <section class="command-hero home-hero"${heroStyle}>
-      <div class="hero-copy">
-        <div class="campaign-line"><span>${escapeHtml(c.sequence)}</span>${runtimePill()}</div>
-        <div class="home-hero-spacer" aria-hidden="true"></div>
+  const actionAttrs = nextMove.screen === 'operations'
+    ? `data-operation-view="${nextMove.operationsView}"`
+    : nextMove.profileView
+      ? `data-screen="${nextMove.screen}" data-profile-view="${nextMove.profileView}"`
+      : `data-screen="${nextMove.screen}"`;
+
+  return `<div class="terminal-ui">
+    <section class="terminal-campaign">
+      <div class="terminal-campaign-head">
+        <span>CAMPAIGN ${op}</span>
+        ${runtimePill()}
       </div>
-      <div class="readiness-block home-readiness">
-        <div><span>Campaign readiness</span><b>${readinessLabel}</b></div>
-        <div class="progress hero-progress" role="progressbar" aria-label="Campaign readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readiness}"`}>
-          <span style="width:${readiness ?? 0}%"></span>
-        </div>
+      ${c.banner ? `<figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
+      <div class="terminal-countdown">
+        <span>CAMPAIGN TIMELINE</span>
+        ${campaignClockMarkup(c)}
       </div>
     </section>
 
-    ${campaignClockMarkup(c)}
-
-    <section class="home-next-move command-card">
-      <div class="home-next-copy">
-        <span class="label">${escapeHtml(nextMove.eyebrow)}</span>
-        <h2>${escapeHtml(nextMove.title)}</h2>
-        <p>${escapeHtml(nextMove.detail)}</p>
+    <section class="terminal-next-step ${nextMove.brand === 'oracle' ? 'oracle-next' : ''}">
+      <div class="terminal-next-icon">
+        ${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<span>Q</span>'}
       </div>
-      <button class="home-primary-cta" data-screen="${nextMove.screen}">
-        <span>${escapeHtml(nextMove.action)}</span><i>→</i>
+      <div>
+        <span>${escapeHtml(nextMove.label)}</span>
+        <b>${escapeHtml(nextMove.title)}</b>
+        <small>${escapeHtml(nextMove.detail)}</small>
+      </div>
+      <button ${actionAttrs}>${escapeHtml(nextMove.action)} →</button>
+    </section>
+
+    <section class="terminal-actions">
+      <button data-operation-view="missions">
+        <span class="terminal-action-icon">⌖</span>
+        <div><b>Mission Files</b><small>Complete tasks, earn XP & rewards</small></div>
+      </button>
+      <button data-record-view="rank">
+        <span class="terminal-action-icon">♜</span>
+        <div><b>Rankings</b><small>See your progress and standing</small></div>
+      </button>
+      <button data-screen="rewards">
+        <span class="terminal-action-icon">◆</span>
+        <div><b>Rewards</b><small>Allocations, wallet and receipts</small></div>
+      </button>
+      <button data-operation-view="intel">
+        <span class="terminal-action-icon">▤</span>
+        <div><b>Intel</b><small>Updates, verification and operation info</small></div>
       </button>
     </section>
 
-    <section class="home-progress-section">
-      <div class="section-head compact-head">
-        <div><span class="label">Your progress</span><h2>Campaign snapshot</h2></div>
-        <button class="text-action" data-screen="profile">View profile</button>
-      </div>
-      <div class="home-progress-grid">
-        <article class="home-metric"><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong><small>Campaign XP</small></article>
-        <article class="home-metric"><span>Rank</span><strong>${escapeHtml(p.rank || '—')}</strong><small>Current standing</small></article>
-        <article class="home-metric"><span>Missions</span><strong>${Number(p.completedMissions || 0).toLocaleString()}</strong><small>Completed</small></article>
-        <article class="home-metric"><span>Rewards</span><strong>${allocation}</strong><small>Recorded allocation</small></article>
-      </div>
-      <div class="home-identity-strip">
-        <div><span>Identity</span><b>${count}/3 verified</b></div>
-        <div class="home-identity-progress" aria-label="${count} of 3 identity steps verified">
-          <i class="${p.telegramVerified ? 'complete' : ''}"></i>
-          <i class="${p.xVerified ? 'complete' : ''}"></i>
-          <i class="${p.walletVerified ? 'complete' : ''}"></i>
-        </div>
-        <button class="text-action" data-screen="profile">${identityReady ? 'Review' : 'Finish setup'} →</button>
-      </div>
+    <section class="terminal-record-strip">
+      <div><span>XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
+      <div><span>Rank</span><b>${escapeHtml(p.rank || '—')}</b></div>
+      <div><span>Missions</span><b>${Number(p.completedMissions || 0)}</b></div>
+      <div><span>Identity</span><b>${count}/3</b></div>
     </section>
 
-    <section class="home-missions-section">
-      <div class="section-head">
-        <div><span class="label">Missions for you</span><h2>Your next opportunities</h2></div>
-        <div class="section-actions"><button class="info-action" data-explainer="campaign" aria-label="How campaigns work">?</button><button class="text-action" data-screen="missions">View all ${missions.length}</button></div>
+    <section class="terminal-impact">
+      <div>
+        <span>PROJECT Q // IMPACT LAYER</span>
+        <h2>Real community.<br />Real impact.</h2>
+        <p>Verified participation powers campaign economics, contribution records and transparent ecosystem impact.</p>
       </div>
-      <div class="quick-actions home-mission-list">
-        ${missions.filter(({ kind }) => kind !== 'COLLECTIVE').slice(0, 3).map(missionCard).join('')}
-      </div>
+      <button data-operation-view="overview" aria-label="Open active operation">→</button>
     </section>
-
-    <button class="burn-utility home-burn-card" data-screen="burns">
-      <img src="/campaign-app/assets/missions/v3-earn-to-burn.webp" alt="" />
-      <span><small>Collective campaign mechanic</small><b>Earn to Burn</b><em>Community participation advances transparent ecosystem burn milestones.</em></span>
-      <i>→</i>
-    </button>
-
-    <section class="ecosystem-strip home-ecosystem" aria-label="Project Q ecosystem">
-      <div><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Participation · XP · rewards</small></span></div>
-      <div class="oracle-brand" data-tour-target="oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Identity · verification · intelligence</small></span></div>
-    </section>
-
-    <details class="home-advanced">
-      <summary>
-        <span><small>Campaign transparency</small><b>Advanced campaign details</b></span>
-        <em>View details</em>
-      </summary>
-      <div class="home-advanced-body">
-        <section class="campaign-schedule" aria-label="Campaign schedule">
-          <div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div>
-          <i></i>
-          <div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div>
-        </section>
-        ${readinessDetailsMarkup()}
-        ${c.banner ? `<details class="campaign-details"><summary>Campaign artwork <span>View artwork</span></summary><figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || `${c.name} campaign banner`)}" /></figure></details>` : ''}
-      </div>
-    </details>
   </div>`;
 }
 
@@ -1298,31 +1272,54 @@ function profileIdentity() {
 
 function profileScreen() {
   const p = state.profile;
+  const c = state.campaign || fallbackCampaign;
   const count = verifiedCount();
   const fullyVerified = count === 3;
-  const eligibility = p.rewardEligible ? 'Reward ready' : p.campaignReady ? 'Holder check' : 'Finish identity';
+  const op = operationNumber();
+  const eligibility = p.rewardEligible ? 'Reward Ready' : p.campaignReady ? 'Holder Check' : 'Pending';
   const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
 
-  return `<div class="profile-v2">
-    <section class="profile-hero command-card">
-      <div class="profile-hero-copy">
-        <span class="label">Project Q participant</span>
+  return `<div class="passport-ui">
+    <section class="participant-passport">
+      <div class="passport-copy">
+        <span class="passport-kicker">CRAB ARMY PARTICIPANT</span>
         <h2>${escapeHtml(p.name)}</h2>
-        <p>One verified identity for campaign access, activity, XP, rewards and receipts.</p>
-        <div class="profile-hero-status">
-          ${statePill(`${count}/3 VERIFIED`, fullyVerified ? 'success' : 'pending')}
-          <button class="info-action" data-explainer="profile" aria-label="How your identity works">?</button>
-        </div>
+        <div class="passport-id-line"><span>ID</span><b>${count}/3</b>${statePill(fullyVerified ? 'VERIFIED' : 'PENDING', fullyVerified ? 'success' : 'pending')}</div>
+        <p>Persistent Project Q identity and verified participation history.</p>
       </div>
-      <img src="/campaign-app/assets/system/q-id.webp" alt="Project Q identity" />
+      <div class="passport-photo">
+        <img src="/campaign-app/assets/system/q-id.webp" alt="Project Q participant identity" />
+        <span class="${fullyVerified ? 'verified' : ''}">${fullyVerified ? 'VERIFIED' : 'PENDING'}</span>
+      </div>
+      <div class="passport-motto">PEOPLE<br />COMMUNITY<br />DEFI<br />OCEAN IMPACT</div>
     </section>
 
-    <section class="profile-summary-v2">
-      <article><span>Identity</span><strong>${count}/3</strong><small>${fullyVerified ? 'complete' : 'setup required'}</small></article>
-      <article><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong><small>verified total</small></article>
-      <article><span>Rank</span><strong>${escapeHtml(p.rank || '—')}</strong><small>current standing</small></article>
-      <article><span>Eligibility</span><strong>${escapeHtml(eligibility)}</strong><small>campaign status</small></article>
+    <section class="passport-stats">
+      <article><span>Rank</span><strong>${escapeHtml(p.rank || '—')}</strong></article>
+      <article><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
+      <article><span>Missions</span><strong>${Number(p.completedMissions || 0)}</strong></article>
+      <article><span>Eligibility</span><strong>${escapeHtml(eligibility)}</strong></article>
+    </section>
+
+    <section class="passport-records">
+      <div class="dossier-heading"><span>Campaign Records</span><b>1 ACTIVE</b></div>
+      <button class="passport-operation-record" data-screen="operations">
+        <span class="passport-op">OP<br /><b>${op}</b></span>
+        <div class="passport-record-copy">
+          <small>${escapeHtml(c.shortName || 'Operation')}</small>
+          <b>${escapeHtml(c.name || 'Bond the Duck')}</b>
+          <span>${escapeHtml(c.schedule?.activeLabel || 'Campaign schedule pending')}</span>
+        </div>
+        ${c.banner ? `<img src="${c.banner}" alt="" />` : ''}
+        <em>${escapeHtml(p.campaignState || 'DRAFT')}</em>
+      </button>
+      <div class="passport-record-metrics">
+        <div><span>XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
+        <div><span>Rank</span><b>${escapeHtml(p.rank || '—')}</b></div>
+        <div><span>Missions</span><b>${Number(p.completedMissions || 0)}</b></div>
+        <div><span>Rewards</span><b>${p.allocation == null ? '—' : formatBaseUnits(p.allocation)}</b></div>
+      </div>
     </section>
 
     ${profileTabs()}
@@ -1912,7 +1909,12 @@ function openExplainer(key) {
 }
 
 function bind() {
-  document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });
+  document.querySelectorAll('[data-screen]').forEach((element) => {
+    element.onclick = () => {
+      if (element.dataset.profileView) state.profileView = element.dataset.profileView;
+      go(element.dataset.screen);
+    };
+  });
   document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
   document.querySelectorAll('[data-replay-tour]').forEach((element) => { element.onclick = () => startAppTour('manual'); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
