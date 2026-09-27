@@ -1582,3 +1582,115 @@ h1 { font-size: 17px; letter-spacing: .045em; text-transform: none; }
   .identity-eligibility .state-pill { justify-self: start; }
   .identity-security-grid { grid-template-columns: 1fr; }
 }
+
+
+/* FINAL READABILITY QA */
+.rail-campaign span,
+.rail-campaign b { font-size: 10px; }
+
+.network { font-size: 10px; }
+.campaign-line { font-size: 10px; }
+.cycle-rail i { font-size: 10px; }
+
+.metric > span,
+.metric > small { font-size: 10px; }
+.metric strong { font-size: clamp(18px,3vw,24px); }
+
+.next-status span { font-size: 10px; }
+.next-status small { font-size: 11px; }
+
+.mission-copy > small { font-size: 12px; line-height: 1.45; }
+.mission-meta { font-size: 10px; }
+.mission-evidence { font-size: 10px; }
+.mission-action { font-size: 10px; }
+
+.burn-utility small { font-size: 10px; }
+.burn-utility b { font-size: 14px; }
+.burn-utility em { font-size: 11px; }
+.burn-plan-row b { font-size: 12px; }
+.burn-plan-row small { font-size: 10px; }
+.burn-plan-row > strong { font-size: 11px; }
+
+.ecosystem-strip b { font-size: 12px; letter-spacing: .04em; }
+.ecosystem-strip small { font-size: 10px; }
+.campaign-details summary { font-size: 12px; }
+
+.screen-intro p { font-size: 13px; color: var(--text-secondary); }
+.lane-heading { font-size: 10px; }
+.oracle-note p { font-size: 11px; color: var(--text-secondary); }
+
+.panel-title > span { font-size: 11px; }
+.panel-title > small { font-size: 10px; }
+.progress-row > div:first-child { font-size: 11px; }
+.progress-row b { font-size: 10px; }
+
+.community-pulse > p { font-size: 12px; color: var(--text-secondary); }
+.community-pulse > small { font-size: 10px; }
+.ledger-row b { font-size: 12px; }
+.ledger-row small { font-size: 10px; }
+.ledger-row > strong { font-size: 11px; }
+.empty b { font-size: 13px; }
+.empty p { font-size: 11px; }
+
+.achievement b { font-size: 12px; }
+.achievement p { font-size: 10px; line-height: 1.4; }
+.achievement > span { font-size: 9px; }
+
+.tabs button { font-size: 10px; }
+.leaderboard-row > span { font-size: 11px; }
+.leaderboard-row b { font-size: 12px; }
+.leaderboard-row small { font-size: 10px; }
+.leaderboard-row strong { font-size: 12px; }
+.leaderboard-clock,
+.leaderboard-clock b { font-size: 10px; }
+
+.reward-balances span { font-size: 10px; }
+.wallet-quickbar small { font-size: 10px; }
+.delivery-rail p { font-size: 11px; color: var(--text-secondary); }
+.delivery-steps b { font-size: 11px; }
+.delivery-steps small { font-size: 10px; }
+
+.campaign-schedule span { font-size: 10px; }
+.campaign-schedule small { font-size: 10px; }
+.readiness-details summary small { font-size: 10px; }
+.readiness-details summary em { font-size: 10px; }
+.readiness-gate i { font-size: 10px; }
+.readiness-gate span { font-size: 11px; }
+.readiness-gate b { font-size: 9px; }
+.readiness-details footer { font-size: 10px; }
+.readiness-empty b,
+.readiness-empty p { font-size: 11px; }
+
+.release-track b { font-size: 12px; }
+.release-track small { font-size: 10px; }
+.release-proof a { font-size: 9px; }
+.commitment-list b { font-size: 12px; }
+.commitment-list small { font-size: 10px; }
+.notice-surface b { font-size: 12px; }
+.notice-surface p { font-size: 11px; color: var(--text-secondary); }
+
+.launch-command p,
+.launch-group header p,
+.readiness-fingerprint p,
+.profile-command p,
+.referral-head p { font-size: 12px; color: var(--text-secondary); }
+
+.profile-tabs button { font-size: 11px; }
+.profile-detail-list span,
+.profile-detail-list small { font-size: 10px; }
+.profile-detail-list b { font-size: 12px; }
+
+button,
+[role="button"],
+a.receipt-action,
+a.release-proof { min-height: 44px; }
+
+@media (max-width: 520px) {
+  .metric > span,
+  .metric > small { font-size: 10px; }
+  .mission-meta,
+  .mission-evidence { flex-wrap: wrap; white-space: normal; }
+  .ledger-row small,
+  .release-track small,
+  .commitment-list small { line-height: 1.4; }
+}
