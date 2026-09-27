@@ -1352,11 +1352,27 @@ function recordScreen() {
     content = xpScreen();
   }
 
+  const lifecycle = operationLifecycleState();
+  const allocation = p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation);
+
   return `<div class="record-ui">
     <section class="record-header">
       <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified campaign participation becomes an auditable operation record.</p></div>
       <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>CAMPAIGN XP</span><small>RANK ${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
     </section>
+
+    <section class="record-operation-context">
+      <button data-screen="operations">
+        <span>OP ${operationNumber()}</span>
+        <div><b>${escapeHtml(c.name || 'Operation')}</b><small>${escapeHtml(lifecycle.label)} · ${Number(p.completedMissions || 0)} missions · ${escapeHtml(allocation)} FAWKQ</small></div>
+        <i>OPEN DOSSIER →</i>
+      </button>
+      <div class="record-proof-links">
+        <button data-screen="rewards">Allocation Receipts →</button>
+        <button data-screen="burns">Earn-to-Burn Receipts →</button>
+      </div>
+    </section>
+
     ${recordTabs()}
     ${content}
   </div>`;
