@@ -1569,13 +1569,14 @@ function missionDetailMarkup(mission) {
         cooldownCertification: sourceConfig.telegramBotCooldownCertification?.[name] || 'PENDING_EXACT',
       }))
       : [];
+
   const sourceList = configuredSources.length
-    ? `<section class="mission-rule-block"><span class="label">Registered sources</span><div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, individualXpEligible }) => {
+    ? `<div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, individualXpEligible }) => {
       let safeUrl = null;
       try {
         const candidate = new URL(String(url || ''));
         if (candidate.protocol === 'https:') safeUrl = candidate.href;
-      } catch { /* invalid targets remain visibly unavailable */ }
+      } catch {}
       const cooldown = cooldownCertification === 'PENDING_EXACT'
         ? 'Exact cooldown pending certification'
         : cooldownSeconds >= 3600
@@ -1612,20 +1613,76 @@ function missionDetailMarkup(mission) {
       return sourceActionEnabled && safeUrl
         ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${content}</a>`
         : `<div>${content}</div>`;
-    }).join('')}</div></section>`
+    }).join('')}</div>`
     : '';
+
   const evidence = telemetry && ('verified' in telemetry)
     ? `<div class="mission-detail-evidence"><div><span>Verified</span><b>${Number(telemetry.verified || 0)}</b></div>${mission.id === 'trending-bots' ? `<div><span>Pushes</span><b>${Number(telemetry.pushPoints || 0)}</b></div>` : ''}<div><span>Pending</span><b>${Number(telemetry.pending || 0)}</b></div><div><span>Rejected</span><b>${Number(telemetry.rejected || 0)}</b></div></div>`
     : `<div class="mission-personal-line"><span>Personal status</span><b>${escapeHtml(telemetry?.detail || 'No verified participant record yet')}</b></div>`;
-  return `<form method="dialog" class="mission-sheet"><button class="mission-sheet-close" value="close" aria-label="Close mission details">×</button>
-    <header class="mission-sheet-hero"><img src="${escapeHtml(mission.image)}" alt="" /><div><span class="label">${escapeHtml(mission.kind === 'COLLECTIVE' ? 'Collective mission' : 'Mission lane')}</span><h2>${escapeHtml(mission.title)}</h2><p>${escapeHtml(mission.description)}</p></div>${statePill(mission.enabled ? 'AVAILABLE' : mission.status)}</header>
-    <section class="mission-facts"><div><span>Reward</span><b>${escapeHtml(mission.reward)}</b></div><div><span>Frequency</span><b>${escapeHtml(mission.frequency || 'Campaign')}</b></div><div><span>Your progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div></section>
-    ${evidence}
-    <section class="mission-rule-block"><span class="label">How Project Q verifies it</span><p>${escapeHtml(mission.verification || 'Verification rules will be published before this mission opens.')}</p></section>
-    ${sourceList}
-    ${mission.id === 'website-voting' ? websiteVoteFlowMarkup() : ''}
-    <section class="mission-rule-block"><span class="label">Requirements</span><ol>${requirements.map((requirement) => `<li>${escapeHtml(requirement)}</li>`).join('')}</ol></section>
-    <footer class="mission-sheet-actions"><button type="button" class="gold-action compact" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}><span><b>${escapeHtml(mission.id === 'website-voting' && actionEnabled ? 'Choose a verified source above' : footerActionEnabled ? (mission.actionLabel || 'Open mission') : 'Readiness gate closed')}</b><small>${escapeHtml(mission.id === 'website-voting' && actionEnabled ? 'Each source opens through its own protected attempt' : footerActionEnabled ? 'Continue through the official verified flow' : 'No submission can be made yet')}</small></span><i>→</i></button><small>Only verified Project Q records count. Opening a destination does not guarantee XP or rewards.</small></footer>
+
+  const oracleMission = mission.id === 'oracle-raids';
+  const providerName = oracleMission ? 'Oracle' : 'Project Q';
+  const providerLogo = oracleMission ? ORACLE_LOGO : '/campaign-app/assets/project-q-app-icon.webp';
+  const status = telemetry && Number(telemetry.verified || 0) > 0 ? 'VERIFIED' : mission.enabled ? 'READY' : 'GATED';
+
+  return `<form method="dialog" class="mission-sheet mission-file-sheet">
+    <button class="mission-sheet-close" value="close" aria-label="Close mission file">×</button>
+
+    <header class="mission-file-header">
+      <div class="mission-file-heading">
+        <span>MISSION FILE</span>
+        <small>${escapeHtml(state.campaign?.name || 'Operation')} › ${escapeHtml(mission.title)}</small>
+      </div>
+      <div class="mission-file-title-row">
+        <div class="mission-file-provider ${oracleMission ? 'oracle-provider' : ''}">
+          <img src="${providerLogo}" alt="${escapeHtml(providerName)}" />
+        </div>
+        <div>
+          <h2>${escapeHtml(mission.title)}</h2>
+          <p>${escapeHtml(mission.description)}</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="mission-file-facts">
+      <div><span>Reward</span><b>${escapeHtml(mission.reward)}</b></div>
+      <div><span>Status</span><b>${escapeHtml(status)}</b></div>
+      <div><span>Progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div>
+    </section>
+
+    ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : 'Readiness Gate Closed')} <span>→</span></button>` : ''}
+
+    ${mission.id === 'website-voting' ? `<section class="mission-file-sources"><div class="mission-file-section-title">Choose a verified source</div>${sourceList}${websiteVoteFlowMarkup()}</section>` : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
+
+    <details class="mission-file-disclosure" open>
+      <summary>Mission Details <span>⌄</span></summary>
+      <div class="mission-file-disclosure-body">
+        <p>${escapeHtml(mission.verification || 'Verification rules will be published before this mission opens.')}</p>
+      </div>
+    </details>
+
+    <details class="mission-file-disclosure">
+      <summary>Accepted Activity <span>⌄</span></summary>
+      <div class="mission-file-disclosure-body">${evidence}</div>
+    </details>
+
+    <details class="mission-file-disclosure">
+      <summary>Rules & Guidelines <span>⌄</span></summary>
+      <div class="mission-file-disclosure-body"><ol>${requirements.map((requirement) => `<li>${escapeHtml(requirement)}</li>`).join('')}</ol></div>
+    </details>
+
+    <details class="mission-file-disclosure">
+      <summary>Proof & Verification <span>⌄</span></summary>
+      <div class="mission-file-disclosure-body">
+        <p>Only finalized Project Q records count toward XP, rank or campaign rewards. Opening a destination alone never guarantees credit.</p>
+      </div>
+    </details>
+
+    <section class="verification-provider ${oracleMission ? 'oracle-verification' : 'q-verification'}">
+      <img src="${providerLogo}" alt="${escapeHtml(providerName)}" />
+      <div><span>${oracleMission ? 'INTELLIGENCE / VERIFICATION PROVIDER' : 'RECORD / SETTLEMENT LAYER'}</span><b>${escapeHtml(providerName)}</b><small>${oracleMission ? 'Oracle verifies supported activity. Project Q records accepted outcomes.' : 'Project Q verifies supported campaign records and settles accepted outcomes.'}</small></div>
+      ${statePill(status, status === 'VERIFIED' ? 'success' : 'pending')}
+    </section>
   </form>`;
 }
 
@@ -1642,7 +1699,7 @@ function executeMissionAction(missionId) {
   if (missionId === 'buy-to-earn') { state.profileView = 'rewards'; return go('profile'); }
   if (missionId === 'verified-referrals') { state.profileView = 'referrals'; return go('profile'); }
   if (missionId === 'earn-to-burn') return go('burns');
-  if (['community-pulse', 'participation-xp'].includes(missionId)) return go('xp');
+  if (['community-pulse', 'participation-xp'].includes(missionId)) { state.recordView = 'xp'; return go('record'); }
   const mission = state.campaign?.missions?.find(({ id }) => id === missionId);
   toast(`${mission?.title || 'Mission'} source launcher is not available.`);
 }
