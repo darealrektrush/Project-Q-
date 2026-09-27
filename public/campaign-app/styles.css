@@ -6320,3 +6320,70 @@ summary:focus-visible,
     grid-template-columns: 1fr;
   }
 }
+
+
+/* TERMINAL STATE + CLEARANCE PREREQUISITE */
+.terminal-state-stack {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.terminal-state-stack > small {
+  color: #766e62;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.terminal-clearance-prereq {
+  min-height: 62px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(185,135,47,.24);
+  border-radius: 8px;
+  background: linear-gradient(90deg,rgba(215,168,63,.07),rgba(255,250,240,.70));
+}
+.terminal-clearance-prereq span,
+.terminal-clearance-prereq b,
+.terminal-clearance-prereq small {
+  display: block;
+}
+.terminal-clearance-prereq span {
+  color: #846525;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .07em;
+}
+.terminal-clearance-prereq b {
+  margin-top: 2px;
+  font-size: 10px;
+}
+.terminal-clearance-prereq small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.35;
+}
+.terminal-clearance-prereq > button {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid rgba(185,135,47,.28);
+  border-radius: 5px;
+  color: #6c5116;
+  background: rgba(215,168,63,.09);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+@media (max-width: 340px) {
+  .terminal-clearance-prereq {
+    grid-template-columns: 1fr;
+  }
+  .terminal-clearance-prereq > button {
+    justify-self: start;
+  }
+}
