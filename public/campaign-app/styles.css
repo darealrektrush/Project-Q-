@@ -6200,3 +6200,46 @@ summary:focus-visible,
     border-bottom: 0;
   }
 }
+
+
+/* MISSION FILE STATE PILL LAYOUT */
+.mission-file-row {
+  grid-template-columns: 52px 48px minmax(0,1fr) auto auto;
+}
+.mission-file-state {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.mission-file-state .state-pill {
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .mission-file-row {
+    grid-template-columns: 44px 42px minmax(0,1fr);
+  }
+
+  .mission-file-state {
+    grid-column: 3;
+    justify-content: flex-start;
+    margin-top: 3px;
+  }
+
+  .mission-file-row em {
+    grid-column: 3;
+    justify-self: start;
+    margin-top: 2px;
+  }
+}
+
+@media (max-width: 340px) {
+  .mission-file-row {
+    grid-template-columns: 38px 36px minmax(0,1fr);
+    gap: 7px;
+  }
+
+  .mission-file-state .state-pill {
+    font-size: 7px;
+  }
+}
