@@ -78,7 +78,7 @@ const NAV = [
 ];
 
 const NAV_ICONS = {
-  home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>',
+  home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 3l9 7v11h-6v-7H9v7H3z"/></svg>',
   operations: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 12l2.2 2.2 4.8-5"/></svg>',
   record: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V9h4v11M10 20V5h4v15M15 20V12h4v8M3 20.5h18"/></svg>',
   rewards: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v11H4zM3 6.5h18V10H3zM12 6.5V21"/><path d="M12 6.5H8.7A2.7 2.7 0 1 1 12 3.2zm0 0h3.3A2.7 2.7 0 1 0 12 3.2z"/></svg>',
@@ -578,71 +578,41 @@ function home() {
         ? 'UPDATING'
         : null;
 
-  return `<div class="terminal-ui terminal-mobile-reference">
-    <section class="terminal-campaign-card">
-      <div class="terminal-campaign-meta">
-        <span>CAMPAIGN ${op}</span>
-        <div class="terminal-state-stack">${terminalOperationPill()}${state.runtime?.displayLabel && state.runtime.displayLabel !== operationLifecycleState().label ? `<small>${escapeHtml(state.runtime.displayLabel)}</small>` : ''}</div>
+  const bondArtwork = c.id === 'bond-the-duck-2026';
+  const globe = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6h14M5 18h14"/></svg>';
+  const targetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>';
+  const xIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2h5l13 20h-5L3 2ZM21 2 3 22"/></svg>';
+  const identitySymbol = !p.telegramVerified
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 11 20-8-4 19-6-7-4 4v-6l10-7-12 6z"/></svg>'
+    : !p.xVerified ? xIcon : !p.walletVerified ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h17v15H3zM3 6V3h14v3M15 11h6v5h-6z"/></svg>' : NAV_ICONS.operations;
+  return `<div class="terminal-ui terminal-mobile-reference terminal-v2">
+    <section class="terminal-v2-campaign" aria-label="${escapeHtml(c.name)}">
+      ${bondArtwork
+        ? '<figure class="reference-art reference-hero"><img src="/campaign-app/assets/terminal-approved-reference.jpg" alt="Bond the Duck. 10-day verified. Small actions, bigger oceans. The tide rises together." /></figure>'
+        : c.banner ? `<figure class="terminal-campaign-art"><img src="${escapeHtml(c.banner)}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
+      <div class="operation-summary">
+        <div class="operation-summary-heading"><strong>OPERATION ${op}</strong>${terminalOperationPill()}<button data-operation-view="overview">VIEW OPERATIONS <span aria-hidden="true">→</span></button></div>
+        <div class="operation-summary-body">
+          ${countdownState
+            ? `<div class="terminal-countdown-state"><strong>${escapeHtml(countdownState === 'TARGET PENDING' ? 'DATES PENDING' : countdownState)}</strong><small>${escapeHtml(schedule?.label || 'Checking campaign schedule')}</small></div>`
+            : `<div class="terminal-countdown-strip" aria-label="Campaign countdown">${[[days,'DAYS'],[hours,'HOURS'],[minutes,'MINS'],[seconds,'SECS']].map(([value,label]) => `<div><strong>${String(value).padStart(2,'0')}</strong><span>${label}</span></div>`).join('')}</div>`}
+          <div class="operation-impact-categories">${globe}<span>PEOPLE<br />COMMUNITY<br />DEFI<br />OCEAN IMPACT</span></div>
+        </div>
       </div>
-
-      ${c.banner ? `<figure class="terminal-campaign-art"><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
-
-      ${countdownState
-        ? `<div class="terminal-countdown-state"><span>CAMPAIGN TIMELINE</span><strong>${escapeHtml(countdownState)}</strong><small>${escapeHtml(schedule?.label || 'Waiting for authoritative Project Q state')}</small></div>`
-        : `<div class="terminal-countdown-strip" aria-label="Campaign countdown">
-            <div><strong>${String(days).padStart(2,'0')}</strong><span>DAYS</span></div>
-            <div><strong>${String(hours).padStart(2,'0')}</strong><span>HOURS</span></div>
-            <div><strong>${String(minutes).padStart(2,'0')}</strong><span>MINS</span></div>
-            <div><strong>${String(seconds).padStart(2,'0')}</strong><span>SECS</span></div>
-          </div>`}
-
-      <div class="terminal-impact-tags">COMMUNITY × DEFI × CONSERVATION × GLOBAL IMPACT</div>
     </section>
-
     <section class="terminal-next-step ${nextMove.brand === 'oracle' ? 'oracle-next' : ''}">
-      <div class="terminal-next-icon">
-        ${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<span>Q</span>'}
-      </div>
-      <div>
-        <span>${escapeHtml(nextMove.label)}</span>
-        <b>${escapeHtml(nextMove.title)}</b>
-        <small>${escapeHtml(nextMove.detail)}</small>
-      </div>
-      <button ${actionAttrs}>${escapeHtml(nextMove.action)} →</button>
+      <div class="terminal-identity-art"><span class="identity-channel">${identitySymbol}</span>${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<img src="/campaign-app/assets/q-medallion.svg" alt="Project Q" />'}</div>
+      <div><span>${escapeHtml(nextMove.label)}</span><b>${escapeHtml(nextMove.title)}</b><small>${escapeHtml(nextMove.detail)}</small></div>
+      <button ${actionAttrs}>${escapeHtml(nextMove.action)} <span aria-hidden="true">→</span></button>
     </section>
-
-    ${identityReady && !campaignClearanceReady() ? `<section class="terminal-clearance-prereq">
-      <div><span>CAMPAIGN CLEARANCE</span><b>${escapeHtml(campaignEligibilityRequirements().find(({ complete }) => !complete)?.label || 'Requirement incomplete')}</b><small>${escapeHtml(campaignEligibilityRequirements().find(({ complete }) => !complete)?.detail || 'Complete the remaining eligibility requirement before eligible missions can open.')}</small></div>
-      <button data-screen="${campaignEligibilityRequirements().find(({ complete }) => !complete)?.action?.screen || 'profile'}" data-profile-view="${campaignEligibilityRequirements().find(({ complete }) => !complete)?.action?.profileView || 'wallet'}">FIX →</button>
-    </section>` : ''}
-
-    <section class="terminal-actions">
-      <button data-operation-view="overview">
-        <span class="terminal-action-icon">${NAV_ICONS.operations}</span>
-        <div><b>View Operations</b><small>Campaign details and missions</small></div>
-      </button>
-      <button data-record-view="xp">
-        <span class="terminal-action-icon">${NAV_ICONS.record}</span>
-        <div><b>Track Progress</b><small>Your XP, activity and standing</small></div>
-      </button>
-      <button data-screen="rewards">
-        <span class="terminal-action-icon">${NAV_ICONS.rewards}</span>
-        <div><b>Your Rewards</b><small>Allocations and delivery receipts</small></div>
-      </button>
-      <button data-operation-view="intel">
-        <span class="terminal-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8M8 16h6"/></svg></span>
-        <div><b>Latest Intel</b><small>Operation info and verification</small></div>
-      </button>
+    ${identityReady && !campaignClearanceReady() ? `<section class="terminal-clearance-prereq"><div><span>CAMPAIGN CLEARANCE</span><b>${escapeHtml(campaignEligibilityRequirements().find(({complete})=>!complete)?.label || 'Requirement incomplete')}</b></div><button data-screen="profile" data-profile-view="wallet">REVIEW →</button></section>` : ''}
+    <section class="terminal-actions" aria-label="Terminal shortcuts">
+      <button data-operation-view="overview"><span class="terminal-action-icon">${targetIcon}</span><div><b>View Operations</b><small>Campaign details<br />and missions</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
+      <button data-record-view="xp"><span class="terminal-action-icon">${NAV_ICONS.record}</span><div><b>Track Progress</b><small>Your XP, activity<br />and standing</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
+      <button data-screen="rewards"><span class="terminal-action-icon">${NAV_ICONS.rewards}</span><div><b>Your Rewards</b><small>Allocations and<br />delivery receipts</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
+      <button data-operation-view="intel"><span class="terminal-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2h16v20H4z" fill="currentColor"/><path d="M8 7h8M8 12h8M8 17h5" stroke="#faf9f4"/></svg></span><div><b>Latest Intel</b><small>Operation info<br />and verification</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
     </section>
-
-    <section class="terminal-impact">
-      <div>
-        <span>PROJECT Q // IMPACT LAYER</span>
-        <h2>Real community.<br />Real impact.</h2>
-        <p>Verified participation powers campaign economics, contribution records and transparent ecosystem impact.</p>
-      </div>
-      <button data-operation-view="overview" aria-label="Open operation dossier">→</button>
-    </section>
+    <button class="terminal-ocean-banner reference-art reference-impact" data-operation-view="intel" aria-label="Explore ocean conservation and Project Q impact"><img src="/campaign-app/assets/terminal-approved-reference.jpg" alt="Cleaner oceans. Brighter tomorrows. Powered by people. Real impact. Lasting change." /></button>
   </div>`;
 }
 
@@ -2040,11 +2010,13 @@ function render() {
   const screen = document.querySelector('#screen');
   const markup = screens[state.screen]();
   screen.classList.add('screen-rendering');
-  screen.innerHTML = `${systemStatusMarkup()}${markup}`;
+  document.body.classList.toggle('q-terminal', state.screen === 'home');
+  screen.innerHTML = state.screen === 'home' ? `${markup}${systemStatusMarkup()}` : `${systemStatusMarkup()}${markup}`;
   requestAnimationFrame(() => screen.classList.remove('screen-rendering'));
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
-  document.querySelector('#account-name').textContent = state.profile.telegramVerified ? state.profile.name : `${verifiedCount()}/3 ID`;
+  document.querySelector('#account-control .account-copy b').textContent = state.profile.telegramVerified ? state.profile.name : 'Profile';
+  document.querySelector('#account-name').textContent = `${verifiedCount()}/3 Verified`;
   const accountImage = document.querySelector('#account-control img');
   if (accountImage) accountImage.src = safeHttpsUrl(state.profile.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   document.querySelector('#account-control').classList.toggle('verified', verifiedCount() === 3);
@@ -2823,6 +2795,15 @@ function openExplainer(key) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
+function openCampaignUpdates() {
+  const dialog = document.querySelector('#updates-dialog');
+  const lifecycle = state.runtime ? operationLifecycleState().label : 'Checking status';
+  dialog.innerHTML = `<header><div><small>PROJECT Q</small><h2>Campaign updates</h2></div><button aria-label="Close updates">×</button></header><article><span>${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Campaign')}</h3><p>${escapeHtml(state.runtime?.schedule?.label || 'Live campaign status is temporarily unavailable.')}</p></article><p>Review operation details, verification requirements and launch status in Intel.</p><button class="updates-intel">Open Intel →</button>`;
+  dialog.querySelector('[aria-label="Close updates"]').onclick = () => dialog.close();
+  dialog.querySelector('.updates-intel').onclick = () => { dialog.close(); state.operationsView = 'intel'; go('operations'); };
+  dialog.showModal();
+}
+
 function bind() {
   document.querySelectorAll('[data-screen]').forEach((element) => {
     element.onclick = () => {
@@ -2862,6 +2843,8 @@ function bind() {
   });
   document.querySelector('#rail-toggle')?.addEventListener('click', toggleRail);
   applyRailPreference();
+  const updates = document.querySelector('#campaign-updates');
+  if (updates) updates.onclick = openCampaignUpdates;
   const account = document.querySelector('#account-control');
   if (account) account.onclick = () => go('profile');
   document.querySelector('#profile-wallet')?.addEventListener('click', openOracle);

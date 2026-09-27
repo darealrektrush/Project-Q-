@@ -7,9 +7,10 @@
   <title>Project Q — Operations Terminal</title>
   <link rel="icon" type="image/webp" href="/campaign-app/assets/project-q-app-icon.webp" />
   <link rel="stylesheet" href="/campaign-app/styles.css" />
+  <link rel="stylesheet" href="/campaign-app/terminal-v2.css" />
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 </head>
-<body class="loading">
+<body class="loading q-shell-v2">
   <div id="splash" class="splash" role="status" aria-label="Project Q is loading">
     <img src="/campaign-app/assets/project-q-splash.webp" alt="Project Q — Built Different. Signal Only. Powering the FAWKQ ecosystem." />
   </div>
@@ -29,23 +30,25 @@
     <main>
       <header class="topbar">
         <div class="topbar-identity">
-          <button class="compact-brand" data-screen="home" aria-label="Project Q home"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /></button>
-          <div><p class="eyebrow" id="campaign-sequence">PROJECT Q / OPERATIONS TERMINAL</p><h1 id="screen-title">Operations Terminal</h1></div>
+          <button class="compact-brand" data-screen="home" aria-label="Project Q home"><img src="/campaign-app/assets/q-medallion.svg" alt="" /></button>
+          <div class="brand-wordmark"><b>PROJECT Q</b><h1 id="screen-title">Operations Terminal</h1><span class="sr-only" id="campaign-sequence">Project Q</span></div>
         </div>
         <div class="top-actions">
-          <span class="network" id="campaign-network-state"><i></i> SYNCING</span>
-          <button id="account-control" class="account-control" aria-label="Open participant profile"><img src="/campaign-app/assets/system/q-id.webp" alt="" /><span class="account-copy"><b>Profile</b><small id="account-name">0/3 ID</small></span><i></i></button>
+          <span class="network sr-only" id="campaign-network-state"><i></i> SYNCING</span>
+          <button id="campaign-updates" class="notification-control" aria-label="Open campaign updates"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4M12 2V1"/></svg></button>
+          <button id="account-control" class="account-control" aria-label="Open participant profile"><img src="/campaign-app/assets/system/q-id.webp" alt="" /><span class="account-copy"><b>Profile</b><small id="account-name">0/3 Verified</small></span><span class="account-chevron" aria-hidden="true">›</span></button>
         </div>
       </header>
 
       <section id="screen" class="screen" aria-live="polite"></section>
     </main>
 
-    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav>
+    <div class="mobile-dock"><nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav><div class="q-footer"><span>PROJECT Q // THE ECONOMIC ENGINE</span><span>BUILT DIFFERENT. <b aria-hidden="true">♛</b></span></div></div>
   </div>
   <dialog id="mission-dialog" class="mission-dialog" aria-label="Mission details"></dialog>
   <dialog id="explainer-dialog" class="explainer-dialog" aria-label="How it works"></dialog>
   <div id="app-tour" class="app-tour" hidden aria-live="polite"></div>
+  <dialog id="updates-dialog" class="updates-dialog" aria-label="Campaign updates"></dialog>
   <div id="toast" class="toast" role="status"></div>
   <script type="module" src="/campaign-app/app.js"></script>
 </body>
