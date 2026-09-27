@@ -523,6 +523,17 @@ function home() {
         detail: 'Review your verified participation, XP, outcomes and campaign history.',
         action: 'VIEW',
         screen: 'record',
+        recordView: 'activity',
+        brand: 'q',
+      };
+    } else if (['PAUSED','TERMINATED','LAUNCH BLOCKED'].includes(lifecycle.label)) {
+      nextMove = {
+        label: 'Operation Status',
+        title: lifecycle.label === 'PAUSED' ? 'Operation Paused' : lifecycle.label === 'TERMINATED' ? 'Operation Closed' : 'Launch Gate Incomplete',
+        detail: 'Campaign actions remain closed. Review Operation Intel for the current verified status and readiness state.',
+        action: 'CHECK',
+        screen: 'operations',
+        operationsView: 'intel',
         brand: 'q',
       };
     } else {
@@ -540,9 +551,11 @@ function home() {
 
   const actionAttrs = nextMove.screen === 'operations'
     ? `data-operation-view="${nextMove.operationsView}"`
-    : nextMove.profileView
-      ? `data-screen="${nextMove.screen}" data-profile-view="${nextMove.profileView}"`
-      : `data-screen="${nextMove.screen}"`;
+    : nextMove.screen === 'record' && nextMove.recordView
+      ? `data-record-view="${nextMove.recordView}"`
+      : nextMove.profileView
+        ? `data-screen="${nextMove.screen}" data-profile-view="${nextMove.profileView}"`
+        : `data-screen="${nextMove.screen}"`;
 
   const schedule = state.runtime?.schedule;
   const target = schedule?.targetAt ? Date.parse(schedule.targetAt) : null;
