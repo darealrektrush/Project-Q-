@@ -5906,3 +5906,53 @@ body.rail-collapsed .rail .nav-icon svg {
     border-bottom: 0;
   }
 }
+
+
+/* OPERATION PHASE BRIEF */
+.operation-phase-brief {
+  display: grid;
+  grid-template-columns: minmax(0,1.55fr) minmax(180px,.8fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255,250,240,.66);
+}
+.operation-phase-brief > div {
+  min-width: 0;
+  padding: 10px 11px;
+}
+.operation-phase-brief > div + div {
+  border-left: 1px solid var(--line-soft);
+  background: rgba(255,255,255,.18);
+}
+.operation-phase-brief span,
+.operation-phase-brief b,
+.operation-phase-brief small { display: block; }
+.operation-phase-brief span {
+  color: #7a694c;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.operation-phase-brief b {
+  margin-top: 3px;
+  color: #35312b;
+  font-size: 10px;
+  line-height: 1.3;
+}
+.operation-phase-brief small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+@media (max-width: 520px) {
+  .operation-phase-brief {
+    grid-template-columns: 1fr;
+  }
+  .operation-phase-brief > div + div {
+    border-top: 1px solid var(--line-soft);
+    border-left: 0;
+  }
+}
