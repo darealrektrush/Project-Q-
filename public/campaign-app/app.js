@@ -582,15 +582,54 @@ function missionCard(mission) {
 
 function missionsScreen() {
   const c = state.campaign || fallbackCampaign;
-  const individual = c.missions.filter(({ kind }) => kind !== 'COLLECTIVE');
-  const collective = c.missions.filter(({ kind }) => kind === 'COLLECTIVE');
-  return `<section class="screen-intro operations-intro"><div><span class="label">Campaign operations</span><h2>Missions</h2><p>Eight individual lanes settle verified participation into one Project Q record.</p></div>${runtimePill()}</section>
-  <section class="mission-summary"><div><span>Today</span><strong>${individual.filter(({ enabled }) => enabled).length}</strong><small>actions available</small></div><div><span>Identity</span><strong>${verifiedCount()}/3</strong><small>verified</small></div><div><span>Daily XP</span><strong>${Number(state.profile.todayXp || 0)}</strong><small>of ${Number(c.xpCaps?.overallDaily || 0)}</small></div></section>
-  <div class="lane-heading"><span>Mission lanes</span><b>${individual.length} individual</b></div>
-  <div class="mission-list">${individual.map(missionCard).join('')}</div>
-  <div class="lane-heading collective-heading"><span>Collective mission</span><b>Separate burn reserve</b></div>
-  <div class="mission-list">${collective.map(missionCard).join('')}</div>
-  <section class="oracle-note"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><b>Oracle verification</b><p>Oracle verifies eligible X activity and sends accepted evidence to Project Q. Project Q controls XP accounting, caps and campaign records.</p></div></section>`;
+  const missions = Array.isArray(c.missions) ? c.missions : [];
+  const individual = missions.filter(({ kind }) => kind !== 'COLLECTIVE');
+  const collective = missions.filter(({ kind }) => kind === 'COLLECTIVE');
+  const available = individual.filter(({ enabled }) => enabled).length;
+  const verified = individual.reduce((total, mission) => total + Number(missionTelemetry(mission)?.verified || 0), 0);
+
+  return `<div class="missions-v2">
+    <section class="screen-intro operations-intro missions-hero">
+      <div>
+        <span class="label">Campaign operations</span>
+        <h2>Missions</h2>
+        <p>Choose an eligible action, complete it, and let Project Q record verified campaign participation.</p>
+      </div>
+      <div class="section-actions">
+        <button class="info-action" data-explainer="campaign" aria-label="How campaigns work">?</button>
+        ${runtimePill()}
+      </div>
+    </section>
+
+    <section class="missions-snapshot">
+      <article><span>Available now</span><strong>${available}</strong><small>mission lanes</small></article>
+      <article><span>Verified today</span><strong>${verified}</strong><small>accepted actions</small></article>
+      <article><span>Daily XP</span><strong>${Number(state.profile.todayXp || 0)}</strong><small>of ${Number(c.xpCaps?.overallDaily || 0)}</small></article>
+      <article><span>Identity</span><strong>${verifiedCount()}/3</strong><small>${verifiedCount() === 3 ? 'campaign ready' : 'finish setup'}</small></article>
+    </section>
+
+    <section class="missions-primary">
+      <div class="section-head">
+        <div><span class="label">For you</span><h2>Individual missions</h2></div>
+        <span>${individual.length} campaign lanes</span>
+      </div>
+      <div class="mission-list mission-list-v2">${individual.map(missionCard).join('')}</div>
+    </section>
+
+    ${collective.length ? `<section class="missions-collective">
+      <div class="section-head">
+        <div><span class="label">Collective objective</span><h2>Ecosystem missions</h2></div>
+        <span>Shared progress</span>
+      </div>
+      <div class="mission-list mission-list-v2 collective-list">${collective.map(missionCard).join('')}</div>
+    </section>` : ''}
+
+    <section class="oracle-note missions-oracle" data-tour-target="oracle">
+      <img src="${ORACLE_LOGO}" alt="Oracle" />
+      <div><b>Verified with Oracle</b><p>Oracle verifies supported identity and activity signals. Project Q remains the source of truth for XP, caps, eligibility and campaign records.</p></div>
+      <button class="info-action" data-explainer="oracle" aria-label="What Oracle does">?</button>
+    </section>
+  </div>`;
 }
 
 function communityPulsePanel() {
