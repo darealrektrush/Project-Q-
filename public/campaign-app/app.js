@@ -620,7 +620,7 @@ function home() {
   return `<div class="terminal-ui terminal-mobile-reference terminal-v2">
     <section class="terminal-v2-campaign" aria-label="${escapeHtml(c.name)}">
       ${bondArtwork
-        ? '<figure class="reference-art reference-hero"><img src="/campaign-app/assets/terminal-approved-reference.jpg?v=crabstar-blue-1" alt="Bond the Duck. 10-day verified. Small actions, bigger oceans. The tide rises together." /></figure>'
+        ? '<figure class="reference-art reference-hero"><img src="/campaign-app/assets/bond-the-duck-terminal-hero-20260927.jpg" alt="Bond the Duck. 10-day verified. Small actions, bigger oceans. The tide rises together." /></figure>'
         : c.banner ? `<figure class="terminal-campaign-art"><img src="${escapeHtml(c.banner)}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
       <div class="operation-summary">
         <div class="operation-summary-heading"><strong>OPERATION ${op}</strong>${terminalOperationPill()}<button data-operation-view="overview">VIEW OPERATIONS <span aria-hidden="true">→</span></button></div>

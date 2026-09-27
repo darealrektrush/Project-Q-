@@ -22,9 +22,8 @@
 .terminal-v2-campaign{min-width:0}
 .reference-art{position:relative;overflow:hidden;display:block;margin:0;padding:0;border:0;isolation:isolate;background:#050707}
 .reference-art>img{position:absolute;display:block;max-width:none!important;height:auto!important;object-fit:fill!important;pointer-events:none}
-.reference-hero{aspect-ratio:568/267}
-.reference-hero>img{width:112.676056%;left:-6.338028%;top:-67.041199%}
-.reference-hero>img{filter:contrast(1.14) saturate(1.14) brightness(1.025)}
+.reference-hero{aspect-ratio:1280/533}
+.reference-hero>img{position:static;width:100%;height:auto!important;object-fit:contain!important}
 .operation-summary{margin:0 8px;padding:8px 8px 9px;border-radius:10px 10px 0 0;background:var(--q-paper);position:relative}
 .operation-summary-heading{display:flex;align-items:center;gap:8px;margin-bottom:7px;min-width:0}
 .operation-summary-heading>strong{font-size:14px;font-weight:700;white-space:nowrap}
