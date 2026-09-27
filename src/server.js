@@ -278,7 +278,13 @@ app.post('/campaign-app/api/session', async (req, res) => {
   } catch (err) {
     const unavailable = err.message === 'telegram mini app authentication unavailable';
     const databaseFailure = String(err.message).startsWith('Supabase ');
+    // Validation errors contain a fixed reason only; never log initData, its hash, or user fields.
     if (unavailable || databaseFailure) console.error('campaign Mini App session failed', err.message);
+    else {
+      const reason = /^(invalid telegram (init data|init data hash|init data signature|user)|duplicate telegram (auth_date|user|query_id|start_param)|expired telegram init data)$/.test(err.message)
+        ? err.message : 'unclassified rejection';
+      console.warn('campaign Mini App session rejected', reason);
+    }
     return res.status(unavailable || databaseFailure ? 503 : 401).json({
       ok: false,
       error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
