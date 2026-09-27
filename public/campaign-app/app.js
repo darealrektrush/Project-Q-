@@ -2957,21 +2957,43 @@ async function boot() {
   state.telegram?.onEvent?.('viewportChanged', syncTelegramViewport);
   state.telegram?.BackButton?.onClick?.(navigateBack);
   window.addEventListener('resize', syncTelegramViewport);
+
   const requestedScreen = location.hash.slice(1);
   state.screen = resolveScreenRoute(requestedScreen in screens ? requestedScreen : 'home');
   state.navigationStack = ['home'];
   if (requestedScreen && requestedScreen !== state.screen) {
     history.replaceState(null, '', `#${state.screen}`);
   }
-  await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
+
+  // Phase 1: load campaign presentation first so the Terminal can paint quickly.
+  await loadCampaign();
+  render();
+  updateTelegramBackButton();
+
+  const splashRemaining = Math.max(0, 500 - (performance.now() - splashStarted));
+  await new Promise((resolve) => setTimeout(resolve, splashRemaining));
+  document.body.classList.remove('loading');
+
+  // Phase 2: settle authoritative runtime, identity, readiness and public ledgers.
+  await Promise.allSettled([
+    loadCampaignRuntime(),
+    loadCampaignReadiness(),
+    loadBurnSummary(),
+    authenticateTelegram(),
+  ]);
   await loadWalletStatus();
   restoreWebsiteVoteFlow();
   render();
   updateTelegramBackButton();
+
+  // Only introduce onboarding after the actual participant/system state has settled.
+  setTimeout(maybeStartAppTour, 450);
+
   setInterval(updateCountdownLabels, 1000);
-  setInterval(async () => { await Promise.all([loadCampaignRuntime(), loadCampaignReadiness()]); render(); }, 60000);
-  const remaining = Math.max(0, 650 - (performance.now() - splashStarted));
-  setTimeout(() => { document.body.classList.remove('loading'); maybeStartAppTour(); }, remaining);
+  setInterval(async () => {
+    await Promise.allSettled([loadCampaignRuntime(), loadCampaignReadiness()]);
+    render();
+  }, 60000);
 }
 
 boot();
