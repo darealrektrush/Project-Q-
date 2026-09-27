@@ -6447,3 +6447,43 @@ summary:focus-visible,
     justify-self: start;
   }
 }
+
+
+/* Terminal mobile review: compact next action and consistent shortcut icons. */
+.terminal-action-icon svg {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.terminal-action-icon {
+  border: 0;
+  background: transparent;
+  color: #171711;
+}
+@media (min-width: 360px) and (max-width: 520px) {
+  .terminal-mobile-reference .terminal-next-step {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 12px 10px;
+  }
+  .terminal-mobile-reference .terminal-next-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .terminal-mobile-reference .terminal-next-step > button {
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 22px;
+    justify-self: end;
+  }
+}
+.terminal-mobile-reference .terminal-actions > button:focus-visible {
+  outline: 2px solid var(--gold-3);
+  outline-offset: 3px;
+}

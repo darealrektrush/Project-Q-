@@ -459,7 +459,7 @@ function home() {
   let nextMove = {
     label: 'Next Step',
     title: 'Verify Telegram',
-    detail: 'Open Project Q from the official Telegram bot to establish your participant identity.',
+    detail: 'Open the official Mini App to verify your identity.',
     action: 'OPEN',
     screen: 'profile',
     profileView: 'identity',
@@ -617,21 +617,21 @@ function home() {
     </section>` : ''}
 
     <section class="terminal-actions">
-      <button data-operation-view="missions">
-        <span class="terminal-action-icon">⌖</span>
-        <div><b>Missions</b><small>Complete tasks, earn XP & rewards</small></div>
+      <button data-operation-view="overview">
+        <span class="terminal-action-icon">${NAV_ICONS.operations}</span>
+        <div><b>View Operations</b><small>Campaign details and missions</small></div>
       </button>
-      <button data-record-view="rank">
-        <span class="terminal-action-icon">♜</span>
-        <div><b>Rankings</b><small>See your progress and standing</small></div>
+      <button data-record-view="xp">
+        <span class="terminal-action-icon">${NAV_ICONS.record}</span>
+        <div><b>Track Progress</b><small>Your XP, activity and standing</small></div>
       </button>
       <button data-screen="rewards">
-        <span class="terminal-action-icon">◆</span>
-        <div><b>Rewards</b><small>Allocations, wallet and receipts</small></div>
+        <span class="terminal-action-icon">${NAV_ICONS.rewards}</span>
+        <div><b>Your Rewards</b><small>Allocations and delivery receipts</small></div>
       </button>
       <button data-operation-view="intel">
-        <span class="terminal-action-icon">▤</span>
-        <div><b>Intel</b><small>Updates, verification and operation info</small></div>
+        <span class="terminal-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8M8 16h6"/></svg></span>
+        <div><b>Latest Intel</b><small>Operation info and verification</small></div>
       </button>
     </section>
 
@@ -641,7 +641,7 @@ function home() {
         <h2>Real community.<br />Real impact.</h2>
         <p>Verified participation powers campaign economics, contribution records and transparent ecosystem impact.</p>
       </div>
-      <button data-operation-view="overview" aria-label="Open active operation">→</button>
+      <button data-operation-view="overview" aria-label="Open operation dossier">→</button>
     </section>
   </div>`;
 }
