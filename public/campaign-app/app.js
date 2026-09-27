@@ -415,7 +415,7 @@ function home() {
     label: 'Next Step',
     title: 'Verify Telegram',
     detail: 'Open Project Q from the official Telegram bot to establish your participant identity.',
-    action: 'OPEN PROFILE',
+    action: 'OPEN',
     screen: 'profile',
     profileView: 'identity',
     brand: 'q',
@@ -424,7 +424,7 @@ function home() {
     nextMove = {
       label: 'Next Step',
       title: 'Connect Oracle X',
-      detail: 'Verify your X identity to unlock eligible social missions.',
+      detail: 'Verify your X identity to unlock missions.',
       action: 'CONNECT',
       screen: 'profile',
       profileView: 'identity',
@@ -434,7 +434,7 @@ function home() {
     nextMove = {
       label: 'Next Step',
       title: 'Verify Reward Wallet',
-      detail: 'Connect the wallet Project Q will use for eligibility and distributions.',
+      detail: 'Connect the wallet used for eligibility and distributions.',
       action: 'VERIFY',
       screen: 'profile',
       profileView: 'identity',
@@ -444,7 +444,7 @@ function home() {
     nextMove = {
       label: 'Next Step',
       title: 'Enter Mission Files',
-      detail: 'Your identity is ready. Open the active operation and choose your next mission.',
+      detail: 'Your identity is ready. Choose your next mission.',
       action: 'ENTER',
       screen: 'operations',
       operationsView: 'missions',
@@ -458,17 +458,32 @@ function home() {
       ? `data-screen="${nextMove.screen}" data-profile-view="${nextMove.profileView}"`
       : `data-screen="${nextMove.screen}"`;
 
-  return `<div class="terminal-ui">
-    <section class="terminal-campaign">
-      <div class="terminal-campaign-head">
+  const schedule = state.runtime?.schedule;
+  const target = schedule?.targetAt ? Date.parse(schedule.targetAt) : null;
+  const diff = Number.isFinite(target) ? Math.max(0, target - runtimeNow()) : 0;
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `<div class="terminal-ui terminal-mobile-reference">
+    <section class="terminal-campaign-card">
+      <div class="terminal-campaign-meta">
         <span>CAMPAIGN ${op}</span>
         ${runtimePill()}
       </div>
-      ${c.banner ? `<figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
-      <div class="terminal-countdown">
-        <span>CAMPAIGN TIMELINE</span>
-        ${campaignClockMarkup(c)}
+
+      ${c.banner ? `<figure class="terminal-campaign-art"><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
+
+      <div class="terminal-countdown-strip" aria-label="Campaign countdown">
+        <div><strong>${String(days).padStart(2,'0')}</strong><span>DAYS</span></div>
+        <div><strong>${String(hours).padStart(2,'0')}</strong><span>HOURS</span></div>
+        <div><strong>${String(minutes).padStart(2,'0')}</strong><span>MINS</span></div>
+        <div><strong>${String(seconds).padStart(2,'0')}</strong><span>SECS</span></div>
       </div>
+
+      <div class="terminal-impact-tags">COMMUNITY × DEFI × CONSERVATION × GLOBAL IMPACT</div>
     </section>
 
     <section class="terminal-next-step ${nextMove.brand === 'oracle' ? 'oracle-next' : ''}">
@@ -486,7 +501,7 @@ function home() {
     <section class="terminal-actions">
       <button data-operation-view="missions">
         <span class="terminal-action-icon">⌖</span>
-        <div><b>Mission Files</b><small>Complete tasks, earn XP & rewards</small></div>
+        <div><b>Missions</b><small>Complete tasks, earn XP & rewards</small></div>
       </button>
       <button data-record-view="rank">
         <span class="terminal-action-icon">♜</span>
@@ -500,13 +515,6 @@ function home() {
         <span class="terminal-action-icon">▤</span>
         <div><b>Intel</b><small>Updates, verification and operation info</small></div>
       </button>
-    </section>
-
-    <section class="terminal-record-strip">
-      <div><span>XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
-      <div><span>Rank</span><b>${escapeHtml(p.rank || '—')}</b></div>
-      <div><span>Missions</span><b>${Number(p.completedMissions || 0)}</b></div>
-      <div><span>Identity</span><b>${count}/3</b></div>
     </section>
 
     <section class="terminal-impact">
