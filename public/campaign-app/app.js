@@ -2833,7 +2833,7 @@ function bind() {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
   });
   document.querySelectorAll('[data-profile-view]').forEach((element) => {
-    element.onclick = () => { state.profileView = element.dataset.profileView; render(); };
+    element.onclick = () => { state.profileView = element.dataset.profileView; go('profile'); };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
     element.onclick = () => { state.operationsView = element.dataset.operationView; go('operations'); };
