@@ -148,6 +148,13 @@ async function loadRuntime() {
       state.operationsView = view;
       return operationsScreen();
     };
+    globalThis.__renderOperationWithStart = (proposedStart, runtime) => {
+      state.campaign.schedule.activeOpensAt = proposedStart;
+      state.runtime = runtime;
+      state.runtimeLoadedAt = Date.now();
+      state.operationsView = 'overview';
+      return operationsScreen();
+    };
     globalThis.__renderHomeLifecycleWith = (runtime, campaignState = 'DRAFT') => {
       state.runtime = runtime;
       state.runtimeLoadedAt = Date.now();
@@ -214,6 +221,21 @@ test('standalone web stays explicit preview mode and never implies verified Tele
   const sessionFailure = context.__systemStatusWith({ sessionStatus: 'error', runtime: {}, readiness: { available: true } });
   assert.match(sessionFailure, /Participant session unavailable/);
   assert.match(sessionFailure, /No identity or reward state is being inferred/);
+});
+
+test('Operations distinguishes a proposed launch date from an approved start', async () => {
+  const context = await loadRuntime();
+  const proposed = new Date(Date.now() + 7 * 86400_000).toISOString();
+  const pending = context.__renderOperationWithStart(proposed, {
+    databaseState: 'DRAFT', schedule: { phase: 'PRE_LAUNCH', targetAt: null },
+  });
+  assert.match(pending, /<span>TARGET<\/span><b>[A-Z]{3} \d{1,2}<\/b>/);
+  assert.doesNotMatch(pending, /<span>START<\/span><b>[A-Z]{3} \d{1,2}<\/b>/);
+
+  const scheduled = context.__renderOperationWithStart(proposed, {
+    databaseState: 'SCHEDULED', schedule: { phase: 'PRE_LAUNCH', targetAt: proposed },
+  });
+  assert.match(scheduled, /<span>START<\/span><b>[A-Z]{3} \d{1,2}<\/b>/);
 });
 
 test('verified Telegram identity can show its portrait while Oracle campaign identity is unavailable', async () => {
