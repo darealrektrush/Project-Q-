@@ -17,6 +17,15 @@ const NAV_ICONS = {
 };
 
 const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
+const GUIDE_COMPLETE_KEY = 'project-q:campaign-guide-v1';
+const GUIDE_STEPS = [
+  { screen: 'home', title: 'Home', description: 'See campaign status, verify your identity and choose your next action.' },
+  { screen: 'missions', title: 'Missions', description: 'Open a mission to read its steps and how Project Q verifies it.' },
+  { screen: 'xp', title: 'XP and progress', description: 'Track verified XP, daily limits and your activity record.' },
+  { screen: 'leaderboard', title: 'Rankings', description: 'Compare verified standings when the campaign is active.' },
+  { screen: 'rewards', title: 'Rewards', description: 'See planned releases and your actual allocations and payment receipts.' },
+  { screen: 'profile', title: 'Profile', description: 'Check Telegram, X, wallet and FAWKQ eligibility in one place.' },
+];
 
 const READINESS_GROUPS = [
   {
@@ -101,6 +110,7 @@ const state = {
   sessionStatus: 'checking',
   walletManagedByOracle: true,
   websiteVoteReviewEnabled: false,
+  guideStep: null,
 };
 
 const fallbackCampaign = {
@@ -210,7 +220,7 @@ function readinessDetailsMarkup() {
   const checks = available ? readiness.checks.map(({ key, label, ready }) =>
     `<article class="readiness-gate ${ready ? 'complete' : 'pending'}" data-readiness-key="${escapeHtml(key)}"><i>${ready ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${ready ? 'Verified' : 'Pending'}</b></article>`
   ).join('') : '<div class="readiness-empty"><b>No launch state is being inferred.</b><p>Project Q will retry the authoritative readiness service automatically.</p></div>';
-  return `<details class="readiness-details"><summary><span><small>Public launch gates</small><b>${escapeHtml(status)}</b></span><em>${available ? 'Review gates' : 'Retrying'}</em></summary><div class="readiness-gates">${checks}</div><footer><span>Read-only readiness · no activation or treasury controls</span><button class="text-action" data-screen="readiness">Open launch status →</button></footer></details>`;
+  return `<details class="readiness-details"><summary><span><small>Launch checklist</small><b>${escapeHtml(status)}</b></span><em>${available ? 'Review checklist' : 'Retrying'}</em></summary><div class="readiness-gates">${checks}</div><footer><span>Read-only readiness · no activation or treasury controls</span><button class="text-action" data-screen="readiness">Open launch status →</button></footer></details>`;
 }
 
 function readinessGroupMarkup(group, checks) {
@@ -321,11 +331,15 @@ function home() {
   <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
   ${readinessDetailsMarkup()}
   <button class="gold-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${state.runtime?.operational ? (identityReady ? 'Verified campaign operations' : 'Complete identity for rewards') : (identityReady ? 'Explore the campaign before launch' : 'Prepare identity for launch')}</small></span><i>→</i></button>
+  <div class="section-head compact-head"><div><span class="label">Your verification</span><h2>Get ready to participate</h2></div><button class="text-action" data-screen="profile">View profile →</button></div>
+  <section class="verification-summary" aria-label="Campaign eligibility"><div><b>${p.telegramVerified ? '✓' : '○'} Telegram</b><small>${p.telegramVerified ? 'Recognized' : 'Open through Project Q bot'}</small></div><div><b>${p.xVerified ? '✓' : '○'} X identity</b><small>${p.xVerified ? 'Linked through Oracle' : 'Link through Oracle for social missions'}</small></div><div><b>${p.walletVerified ? '✓' : '○'} Reward wallet</b><small>${p.walletVerified ? 'Verified through Oracle' : 'Connect through Oracle'}</small></div><div><b>${p.holderEligible ? '✓' : '○'} FAWKQ holding</b><small>${p.holderEligible ? '$2 minimum confirmed' : '$2 minimum for reward eligibility'}</small></div></section>
   <section class="status-panel"><div class="panel-label">Your status</div><div class="status-grid">${metric('ID', `${count}/3`)}${metric('XP', Number(p.xp || 0).toLocaleString())}${metric('Rank', escapeHtml(p.rank))}${metric('Rewards', allocation)}</div></section>
   ${nextStatusCard()}
   <div class="section-head compact-head"><div><span class="label">Campaign operations</span><h2>Your next actions</h2></div><button class="text-action" data-screen="missions">View all ${c.missions.length}</button></div>
+  <details class="how-it-works"><summary>How campaign operations work</summary><p>Choose a mission, follow its official steps and wait for verification. Accepted activity can count toward your XP and campaign record. Oracle verifies supported X activity; Project Q records campaign progress.</p></details>
   <div class="quick-actions">${c.missions.filter(({ kind }) => kind !== 'COLLECTIVE').slice(0, 3).map(missionCard).join('')}</div>
   <button class="burn-utility" data-screen="burns"><img src="/campaign-app/assets/missions/v3-earn-to-burn.webp" alt="" /><span><small>Collective mission</small><b>Earn to Burn</b><em>Public milestones and on-chain receipts</em></span><i>→</i></button>
+  <details class="how-it-works"><summary>How Earn to Burn works</summary><p>Verified community activity advances shared milestones. When a milestone is completed and reviewed, FAWKQ from a separate creator-wallet reserve is burned. Burn transactions appear as public receipts; this reserve does not reduce campaign rewards.</p></details>
   <section class="ecosystem-strip" aria-label="Project Q ecosystem"><div><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Proves · operates · distributes</small></span></div><div class="oracle-brand"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Guides · verifies · executes</small></span></div></section>
   ${c.banner ? `<details class="campaign-details"><summary>Full campaign details <span>View artwork</span></summary><figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || `${c.name} campaign banner`)}" /></figure></details>` : ''}`;
 }
@@ -569,9 +583,10 @@ function rewardsScreen() {
   <section class="reward-balances four"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div><div><span>Outstanding</span><b>${outstanding}</b></div></section>
   ${automaticDeliveryRail(rewards)}
   <div class="section-head compact-head"><div><span class="label">${actualReleases.length ? 'Participant payout record' : 'Payout plan'}</span><h2>Verified campaign rewards</h2></div><span>${actualReleases.length ? `${actualReleases.length} recorded releases` : 'No releases recorded'}</span></div>
+  <p class="reward-explanation">The first 25% follows verified activity. After campaign review, 50% is scheduled. The remaining 25% is released in five 5% steps on days 6, 12, 18, 24 and 30. These are portions of a finalized allocation, not separate prizes; actual delivery appears only when recorded below.</p>
   <section class="release-track">${releaseTrack}</section>
   <button class="receipt-action" id="reward-profile"><span>Open reward profile</span><i>→</i></button>
-  <div class="section-head"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
+  <div class="section-head" id="campaign-commitments"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
   <section class="commitment-list">${commitmentRows.map(([label, amount, detail]) => `<article><div><b>${label}</b><small>${detail}</small></div><strong>${amount}</strong></article>`).join('')}</section>
   <div class="notice-surface">${notice}<button class="outline-action" data-screen="profile">Check identity</button></div>`;
 }
@@ -674,7 +689,7 @@ function profileRewards() {
     <article class="command-card profile-card"><div class="panel-title"><span>Buy-to-Earn</span>${statePill(buy?.eligible ? 'ELIGIBLE' : 'PENDING', buy?.eligible ? 'success' : 'pending')}</div><h3>${buy?.tier ? `Tier ${Number(buy.tier)}` : 'No finalized position'}</h3><p>${buy ? `Snapshot value ${buy.snapshot_usd == null ? 'pending' : `$${Number(buy.snapshot_usd).toFixed(2)}`}. Weight ${Number(buy.weight || 0)}.` : 'Verified purchase and snapshot data will appear here once recorded.'}</p></article>
   </section>
   <section class="command-card allocation-panel"><div class="panel-title"><span>Allocation breakdown</span><small>Finalized records only</small></div>${allocationRows.length ? allocationRows.map(([category, amount]) => `<div><span>${escapeHtml(category.replaceAll('_', ' '))}</span><b>${formatBaseUnits(amount)} FAWKQ</b></div>`).join('') : '<div class="profile-empty-line"><span>Campaign rewards</span><b>No participant allocation exists yet</b></div>'}</section>
-  <div class="notice-surface"><div><b>Rewards remain evidence-bound</b><p>Allocated, scheduled and distributed totals appear only when Project Q records exist.</p></div><button class="outline-action" data-screen="rewards">Campaign commitments</button></div>`;
+  <div class="notice-surface"><div><b>Rewards remain evidence-bound</b><p>Allocated, scheduled and distributed totals appear only when Project Q records exist.</p></div><button class="outline-action" id="profile-commitments">Campaign commitments</button></div>`;
 }
 
 function profileWallet() {
@@ -780,14 +795,48 @@ function render() {
   }
   document.title = `Project Q — ${c.name}`;
   bind();
+  renderGuide();
 }
 
-function go(screen) {
+function renderGuide() {
+  const overlay = document.querySelector('#guide-overlay');
+  if (!overlay) return;
+  document.querySelectorAll('.guide-target').forEach((element) => element.classList.remove('guide-target'));
+  const step = GUIDE_STEPS[state.guideStep];
+  overlay.hidden = !step;
+  document.body.classList.toggle('guide-active', Boolean(step));
+  if (!step) return;
+  document.querySelector('#guide-count').textContent = `${state.guideStep + 1} of ${GUIDE_STEPS.length}`;
+  document.querySelector('#guide-title').textContent = step.title;
+  document.querySelector('#guide-description').textContent = step.description;
+  document.querySelector('#guide-next').textContent = state.guideStep === GUIDE_STEPS.length - 1 ? 'Finish' : 'Next';
+  const selector = step.screen === 'profile' ? '#account-control'
+    : window.matchMedia('(max-width: 860px)').matches
+      ? `#mobile-nav [data-screen="${step.screen}"]`
+      : `#desktop-nav [data-screen="${step.screen}"]`;
+  document.querySelector(selector)?.classList.add('guide-target');
+  document.querySelector('#guide-next').focus();
+}
+
+function closeGuide() {
+  state.guideStep = null;
+  try { window.localStorage?.setItem(GUIDE_COMPLETE_KEY, 'done'); } catch { /* tour remains optional */ }
+  renderGuide();
+  document.querySelector('#guide-control')?.focus();
+}
+
+function startGuide() {
+  state.guideStep = 0;
+  go('home');
+}
+
+function go(screen, targetId = null) {
   if (!screens[screen]) return;
   state.screen = screen;
   history.replaceState(null, '', `#${screen}`);
   render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (targetId) document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
@@ -1034,6 +1083,7 @@ function missionDetailMarkup(mission) {
     <header class="mission-sheet-hero"><img src="${escapeHtml(mission.image)}" alt="" /><div><span class="label">${escapeHtml(mission.kind === 'COLLECTIVE' ? 'Collective mission' : 'Mission lane')}</span><h2>${escapeHtml(mission.title)}</h2><p>${escapeHtml(mission.description)}</p></div>${statePill(mission.enabled ? 'AVAILABLE' : mission.status)}</header>
     <section class="mission-facts"><div><span>Reward</span><b>${escapeHtml(mission.reward)}</b></div><div><span>Frequency</span><b>${escapeHtml(mission.frequency || 'Campaign')}</b></div><div><span>Your progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div></section>
     ${evidence}
+    ${mission.id === 'buy-to-earn' ? `<section class="mission-rule-block eligibility-explainer"><span class="label">Two separate requirements</span><p><b>Campaign eligibility:</b> verify Telegram, link X through Oracle, connect a reward wallet and hold at least $${Number(state.campaign?.eligibility?.minimumFawkqUsd || 2)} of FAWKQ for reward eligibility. The $2 holding check applies across the campaign, not just to Buy-to-Earn.</p><p><b>Buy-to-Earn position:</b> approved-market net buys must reach 0.07 SOL for Tier 1 or 0.20 SOL for Tier 2. These tiers affect the weighted winner draw; they do not add a separate token pool or automatic XP.</p></section>` : ''}
     <section class="mission-rule-block"><span class="label">How Project Q verifies it</span><p>${escapeHtml(mission.verification || 'Verification rules will be published before this mission opens.')}</p></section>
     ${sourceList}
     ${mission.id === 'website-voting' ? websiteVoteFlowMarkup() : ''}
@@ -1076,6 +1126,13 @@ function openMission(missionId) {
 }
 
 function bind() {
+  document.querySelector('#guide-control').onclick = startGuide;
+  document.querySelector('#guide-skip').onclick = closeGuide;
+  document.querySelector('#guide-next').onclick = () => {
+    if (state.guideStep === GUIDE_STEPS.length - 1) return closeGuide();
+    state.guideStep += 1;
+    go(GUIDE_STEPS[state.guideStep].screen);
+  };
   document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
@@ -1102,6 +1159,7 @@ function bind() {
   document.querySelector('#oracle-link')?.addEventListener('click', openOracle);
   document.querySelector('#oracle-home-link')?.addEventListener('click', openOracle);
   document.querySelector('#reward-profile')?.addEventListener('click', () => { state.profileView = 'rewards'; go('profile'); });
+  document.querySelector('#profile-commitments')?.addEventListener('click', () => go('rewards', 'campaign-commitments'));
   document.querySelector('#open-wallet-profile')?.addEventListener('click', () => { state.profileView = 'wallet'; go('profile'); });
   document.querySelector('#copy-wallet')?.addEventListener('click', () => copyValue(state.wallet, 'Reward wallet copied.'));
   document.querySelector('#copy-token-account')?.addEventListener('click', () => copyValue(state.profile.tokenAccount, 'FAWKQ token account copied.'));
@@ -1273,7 +1331,24 @@ async function boot() {
   setInterval(updateCountdownLabels, 1000);
   setInterval(async () => { await Promise.all([loadCampaignRuntime(), loadCampaignReadiness()]); render(); }, 60000);
   const remaining = Math.max(0, 650 - (performance.now() - splashStarted));
-  setTimeout(() => document.body.classList.remove('loading'), remaining);
+  setTimeout(() => {
+    document.body.classList.remove('loading');
+    try { if (!window.localStorage?.getItem(GUIDE_COMPLETE_KEY)) startGuide(); }
+    catch { /* blocked storage must not block the app */ }
+  }, remaining);
 }
+
+document.addEventListener?.('keydown', (event) => {
+  if (state.guideStep === null) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeGuide(); }
+  if (event.key === 'Tab') {
+    const buttons = [document.querySelector('#guide-skip'), document.querySelector('#guide-next')];
+    const nextIndex = event.shiftKey ? 0 : 1;
+    if (document.activeElement === buttons[nextIndex]) {
+      event.preventDefault();
+      buttons[1 - nextIndex]?.focus();
+    }
+  }
+});
 
 boot();
