@@ -61,7 +61,7 @@ async function loadRuntime() {
       state.runtimeLoadedAt = Date.now();
       return missionDetailMarkup(mission);
     };
-    globalThis.__renderClearanceWith = (profilePatch = {}) => {
+    globalThis.__renderClearanceWith = (profilePatch = {}, eligibilityPatch = null) => {
       Object.assign(state.profile, {
         telegramVerified: false,
         xVerified: false,
@@ -69,7 +69,11 @@ async function loadRuntime() {
         tokenAccountReady: false,
         holderEligible: false,
       }, profilePatch);
-      return clearanceMarkup();
+      const previous = state.campaign.eligibility;
+      if (eligibilityPatch) state.campaign.eligibility = { ...previous, ...eligibilityPatch };
+      const rendered = clearanceMarkup();
+      state.campaign.eligibility = previous;
+      return rendered;
     };
     globalThis.__missionStateWith = (id, runtime, campaignState = 'DRAFT', clearance = true) => {
       state.runtime = runtime;
@@ -383,6 +387,25 @@ test('campaign clearance explains the exact missing requirement instead of gener
   });
   assert.match(holderMissing, /Minimum \$2 FAWKQ/);
   assert.match(holderMissing, /Hold at least \$2 of FAWKQ/);
+});
+
+test('campaign clearance only renders requirements configured by the operation', async () => {
+  const context = await loadRuntime();
+  const rendered = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: true,
+  }, {
+    telegramRequired: true,
+    oracleXRequired: true,
+    walletRequiredForRewards: false,
+    minimumFawkqUsd: 0,
+  });
+
+  assert.match(rendered, /Telegram identity/);
+  assert.match(rendered, /X linked through Oracle/);
+  assert.doesNotMatch(rendered, /Reward wallet/);
+  assert.doesNotMatch(rendered, /FAWKQ token account/);
+  assert.doesNotMatch(rendered, /Minimum \$/);
 });
 
 test('failed reward release remains visible as recovery review and is never shown as distributed', async () => {
