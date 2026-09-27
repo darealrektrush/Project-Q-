@@ -950,17 +950,47 @@ function leaderboardScreen() {
   const tabs = [['overall', 'Overall'], ['48h', '48H'], ['missions', 'Missions'], ['trending', 'Trending'], ['community', 'Community'], ['burn', 'Earn-to-Burn']];
   const view = state.leaderboardMeta?.[state.leaderboardView];
   const change = Number(state.profile.rankChange || 0);
-  const rankDetail = view?.available ? `${Number(view.participantCount || 0).toLocaleString()} verified participants` : 'Finalized verified standings';
-  const emptyTitle = view?.available ? 'No ranked activity yet' : 'Rankings open with verified activity';
-  const emptyDetail = view?.reason || 'No placeholder scores or identities are shown. Verified records will appear here.';
-  const mode = state.leaderboardMeta?.available ? 'VERIFIED RECORDS' : 'READINESS MODE';
+  const lifecycle = operationLifecycleState();
+  const participantCount = Number(view?.participantCount || 0).toLocaleString();
+
+  const standingState = lifecycle.label === 'ACTIVE'
+    ? {
+        kicker: 'LIVE CAMPAIGN STANDING',
+        detail: view?.available ? `${participantCount} verified participants · rank can still move` : 'Standings open as verified campaign activity settles.',
+        note: 'Live standings update only after finalized verification.',
+        mode: 'LIVE VERIFIED',
+      }
+    : lifecycle.label === 'REVIEWING'
+      ? {
+          kicker: 'FINAL REVIEW',
+          detail: view?.available ? `${participantCount} verified participants · final verification in progress` : 'Final standings are being reconciled.',
+          note: 'Campaign scoring is closed while Project Q finalizes verified standings.',
+          mode: 'UNDER REVIEW',
+        }
+      : ['DISTRIBUTING','COMPLETED','ARCHIVED'].includes(lifecycle.label)
+        ? {
+            kicker: 'FINAL CAMPAIGN STANDING',
+            detail: view?.available ? `${participantCount} verified participants · finalized campaign result` : 'Finalized verified standings.',
+            note: 'This standing is part of your permanent Project Q operation record.',
+            mode: 'FINALIZED',
+          }
+        : {
+            kicker: 'CAMPAIGN STANDING',
+            detail: view?.available ? `${participantCount} verified participants` : 'Rankings open with verified activity.',
+            note: 'No placeholder scores or identities are shown.',
+            mode: 'PRE-LAUNCH',
+          };
+
+  const emptyTitle = view?.available ? 'No ranked activity yet' : standingState.detail;
+  const emptyDetail = view?.reason || standingState.note;
+  const rank = state.profile.rank && state.profile.rank !== '—' ? state.profile.rank : 'UNRANKED';
 
   return `<div class="leaderboard-v2">
     <section class="rank-hero command-card">
       <div>
-        <span class="label">Your standing</span>
-        <strong>${escapeHtml(state.profile.rank)}</strong>
-        <p>${change ? `${change > 0 ? '↑' : '↓'} ${Math.abs(change)} positions today` : escapeHtml(rankDetail)}</p>
+        <span class="label">${escapeHtml(standingState.kicker)}</span>
+        <strong>${escapeHtml(rank)}</strong>
+        <p>${change && lifecycle.label === 'ACTIVE' ? `${change > 0 ? '↑' : '↓'} ${Math.abs(change)} positions today · ${escapeHtml(standingState.detail)}` : escapeHtml(standingState.detail)}</p>
       </div>
       <div class="progression-actions">
         <button class="info-action" data-explainer="leaderboard" aria-label="How leaderboards work">?</button>
@@ -977,13 +1007,13 @@ function leaderboardScreen() {
     </section>
 
     <div class="leaderboard-clock rank-verification-note">
-      <span>Standings update after finalized verification</span><b>${mode}</b>
+      <span>${escapeHtml(standingState.note)}</span><b>${escapeHtml(standingState.mode)}</b>
     </div>
 
     <section class="rank-achievements">
       <div class="section-head">
-        <div><span class="label">Rank progression</span><h2>Performance badges</h2></div>
-        <span>Verified standings only</span>
+        <div><span class="label">Campaign rank</span><h2>Performance badges</h2></div>
+        <span>Verified campaign standings only</span>
       </div>
       ${badgeGallery(c.leaderboardBadges)}
     </section>
