@@ -435,11 +435,7 @@ function home() {
     <section class="command-hero home-hero"${heroStyle}>
       <div class="hero-copy">
         <div class="campaign-line"><span>${escapeHtml(c.sequence)}</span>${runtimePill()}</div>
-        <div class="home-hero-title">
-          <span class="label">Project Q Campaign</span>
-          <h2>${escapeHtml(c.name || 'Bond the Duck')}</h2>
-          <p>${escapeHtml(c.tagline || c.description || 'Verified participation. Transparent rewards.')}</p>
-        </div>
+        <div class="home-hero-spacer" aria-hidden="true"></div>
       </div>
       <div class="readiness-block home-readiness">
         <div><span>Campaign readiness</span><b>${readinessLabel}</b></div>
