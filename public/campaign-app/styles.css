@@ -5956,3 +5956,16 @@ body.rail-collapsed .rail .nav-icon svg {
     border-left: 0;
   }
 }
+
+
+/* OPERATION LIFECYCLE EXCEPTIONS */
+.operation-lifecycle.exception {
+  border-color: rgba(166,66,60,.24);
+  background: linear-gradient(90deg,rgba(166,66,60,.055),rgba(255,250,240,.64));
+}
+.operation-lifecycle.exception .operation-lifecycle-head > span {
+  color: var(--danger);
+}
+.operation-lifecycle.exception .operation-lifecycle-track {
+  opacity: .52;
+}
