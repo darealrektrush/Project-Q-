@@ -894,8 +894,8 @@ function xpScreen() {
   return `<div class="xp-v2">
     <section class="progression-hero command-card">
       <div class="progression-copy">
-        <span class="label">Verified progression</span>
-        <div class="progression-value"><strong>${totalXp.toLocaleString()}</strong><em>XP</em></div>
+        <span class="label">Campaign progression</span>
+        <div class="progression-value"><strong>${totalXp.toLocaleString()}</strong><em>CAMPAIGN XP</em></div>
         <h2>${escapeHtml(rank)}</h2>
         <p>${todayXp > 0 ? `+${todayXp} XP today from verified activity.` : 'Complete eligible activity to build verified campaign progress.'}</p>
       </div>
@@ -1265,7 +1265,7 @@ function recordScreen() {
   return `<div class="record-ui">
     <section class="record-header">
       <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified participation becomes permanent progression.</p></div>
-      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>XP</span><small>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
+      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>CAMPAIGN XP</span><small>RANK ${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
     </section>
     ${recordTabs()}
     ${content}
@@ -1702,8 +1702,8 @@ function profileScreen() {
     </section>
 
     <section class="passport-stats">
-      <article><span>Rank</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></article>
-      <article><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
+      <article><span>OP Rank</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></article>
+      <article><span>OP XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
       <article><span>Missions</span><strong>${Number(p.completedMissions || 0)}</strong></article>
       <article><span>Eligibility</span><strong>${escapeHtml(eligibility)}</strong></article>
     </section>
@@ -1721,8 +1721,8 @@ function profileScreen() {
         <em>${escapeHtml(p.campaignState || 'DRAFT')}</em>
       </button>
       <div class="passport-record-metrics">
-        <div><span>XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
-        <div><span>Rank</span><b>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</b></div>
+        <div><span>OP XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
+        <div><span>Campaign Rank</span><b>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</b></div>
         <div><span>Missions</span><b>${Number(p.completedMissions || 0)}</b></div>
         <div><span>Rewards</span><b>${p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation)}</b></div>
       </div>
