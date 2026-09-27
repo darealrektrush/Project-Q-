@@ -3844,3 +3844,224 @@ body.rail-collapsed .rail .nav-icon svg {
     justify-self: start;
   }
 }
+
+
+/* OPERATION MOBILE REFERENCE LOCK */
+.operation-reference .operation-cover {
+  min-height: 300px;
+}
+
+.operation-content-panel {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(249,242,228,.82);
+}
+
+.operation-section-head {
+  margin-bottom: 12px;
+  padding-bottom: 9px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.operation-section-head span {
+  color: #77694d;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.operation-section-head h3 {
+  margin: 3px 0 0;
+  font-size: 16px;
+}
+.operation-section-head > b {
+  color: #7d6e55;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.operation-cycle-summary {
+  margin: 10px 0;
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,252,245,.56);
+}
+.operation-cycle-summary span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+.operation-cycle-summary b {
+  font-size: 10px;
+  text-align: right;
+}
+
+.impact-globe {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 50%;
+  color: #f0d78b;
+  font-size: 17px;
+}
+
+@media (max-width: 520px) {
+  .operation-reference {
+    gap: 9px;
+  }
+
+  .operation-reference .operation-cover {
+    min-height: 355px;
+    border-radius: 9px;
+  }
+
+  .operation-reference .operation-cover > img {
+    height: 59%;
+    opacity: .72;
+  }
+
+  .operation-reference .operation-cover::before {
+    inset: 34% 0 0;
+    background: linear-gradient(180deg, rgba(239,230,213,.96), rgba(239,230,213,.70) 36%, rgba(239,230,213,.14));
+  }
+
+  .operation-reference .operation-cover-copy {
+    padding: 15px;
+  }
+
+  .operation-reference .operation-cover h2 {
+    max-width: 78%;
+    margin-top: 8px;
+    font-size: clamp(42px,13vw,58px);
+    line-height: .86;
+  }
+
+  .operation-reference .operation-cover-copy > p {
+    max-width: 72%;
+    margin-bottom: 11px;
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .operation-reference .operation-facts {
+    max-width: 62%;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .operation-reference .operation-facts > div {
+    padding: 6px 7px;
+    background: rgba(248,241,226,.76);
+  }
+
+  .operation-reference .operation-facts span {
+    font-size: 8px;
+  }
+
+  .operation-reference .operation-facts b {
+    font-size: 9px;
+  }
+
+  .operation-reference .operation-stamp {
+    top: 10px;
+    right: 10px;
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+
+  .operation-tabs {
+    padding: 3px;
+  }
+
+  .operation-tabs button {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 9px;
+  }
+
+  .operation-content-panel {
+    padding: 13px;
+  }
+
+  .operation-economics {
+    grid-template-columns: repeat(4,minmax(0,1fr));
+  }
+
+  .operation-economics article {
+    padding: 9px 6px;
+    border-bottom: 0;
+  }
+
+  .operation-economics article:nth-child(2n) {
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .operation-economics article:last-child {
+    border-right: 0;
+  }
+
+  .operation-economics strong {
+    font-size: 16px;
+  }
+
+  .operation-economics span {
+    font-size: 7px;
+  }
+
+  .operation-economics small {
+    margin-top: 4px;
+    font-size: 8px;
+    line-height: 1.2;
+  }
+
+  .operation-impact-note {
+    margin: 9px 0;
+    padding: 10px;
+    grid-template-columns: 36px minmax(0,1fr);
+    align-items: center;
+  }
+
+  .operation-impact-note b {
+    font-size: 10px;
+  }
+
+  .operation-impact-note span {
+    font-size: 9px;
+  }
+
+  .q-primary-action {
+    min-height: 46px;
+    margin-top: 9px;
+    font-size: 10px;
+  }
+
+  .mission-file-row {
+    min-height: 70px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 390px) {
+  .operation-reference .operation-facts {
+    max-width: 66%;
+  }
+
+  .operation-economics strong {
+    font-size: 14px;
+  }
+
+  .operation-tabs button {
+    padding: 0 8px;
+  }
+}
