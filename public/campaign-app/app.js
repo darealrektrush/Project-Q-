@@ -686,6 +686,35 @@ function clearanceMarkup({ compact = false } = {}) {
   </section>`;
 }
 
+function missionLockReason(mission) {
+  if (!mission.enabled) {
+    const campaignState = String(state.profile?.campaignState || state.campaign?.status || 'DRAFT').toUpperCase();
+    if (['DRAFT','PRE_LAUNCH'].includes(campaignState)) {
+      return {
+        title: 'Operation has not opened this mission yet',
+        action: 'Wait for operation activation',
+        remains: 'Mission readiness gate',
+      };
+    }
+    return {
+      title: 'Mission is currently unavailable',
+      action: 'Review operation status',
+      remains: 'Mission availability',
+    };
+  }
+
+  if (!campaignClearanceReady()) {
+    const next = campaignEligibilityRequirements().find(({ complete }) => !complete);
+    return {
+      title: next ? `${next.label} incomplete` : 'Campaign clearance incomplete',
+      action: next?.action?.label || 'Complete campaign clearance',
+      remains: next?.label || 'Campaign clearance',
+    };
+  }
+
+  return null;
+}
+
 function canonicalMissionState(mission, telemetry) {
   const verified = Number(telemetry?.verified || 0);
   const pending = Number(telemetry?.pending || 0);
@@ -1881,9 +1910,9 @@ function missionStatusSummaryMarkup(mission, telemetry) {
   else if (rejected > 0) counted = `${rejected} rejected`;
 
   let remains = 'Complete an eligible action';
-  if (target > 0) remains = `${Math.max(0, target - verified)} of ${target} remaining`;
+  if (stateInfo.label === 'LOCKED') remains = lockReason?.remains || 'Mission requirements';
+  else if (target > 0) remains = `${Math.max(0, target - verified)} of ${target} remaining`;
   else if (stateInfo.label === 'VERIFIED') remains = 'Verified activity recorded';
-  else if (stateInfo.label === 'LOCKED') remains = 'Complete campaign clearance';
 
   let nextWindow = mission.frequency || 'Campaign';
   if (mission.id === 'website-voting') {
@@ -1897,8 +1926,9 @@ function missionStatusSummaryMarkup(mission, telemetry) {
     nextWindow = 'Whenever a certified bot cooldown resets';
   }
 
+  const lockReason = stateInfo.label === 'LOCKED' ? missionLockReason(mission) : null;
   const instruction = stateInfo.label === 'LOCKED'
-    ? 'Complete campaign clearance'
+    ? (lockReason?.action || 'Review mission requirements')
     : stateInfo.label === 'VERIFYING' || stateInfo.label === 'SUBMITTED'
       ? 'Wait for verification'
       : stateInfo.label === 'VERIFIED'
@@ -2018,7 +2048,7 @@ function missionDetailMarkup(mission) {
 
     ${clearanceMarkup({ compact: true })}
 
-    ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : 'Readiness Gate Closed')} <span>→</span></button>` : ''}
+    ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : (missionLockReason(mission)?.title || 'Mission Locked'))} <span>→</span></button>` : ''}
 
     ${mission.id === 'website-voting' ? `<section class="mission-file-sources"><div class="mission-file-section-title">Choose a verified source</div>${sourceList}${websiteVoteFlowMarkup()}</section>` : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
 
