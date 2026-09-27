@@ -5116,3 +5116,54 @@ body.rail-collapsed .rail .nav-icon svg {
     border-bottom: 0;
   }
 }
+
+
+/* XP RECORD RECEIPTS */
+.record-receipt-row {
+  min-height: 70px;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: 40px minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--line-soft);
+  background: rgba(255,250,240,.48);
+}
+.record-receipt-row:last-child { border-bottom: 0; }
+
+.record-receipt-copy { min-width: 0; }
+.record-receipt-copy > span {
+  display: block;
+  color: #7b6a49;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .07em;
+}
+.record-receipt-copy > b,
+.record-receipt-copy > small { display: block; }
+.record-receipt-copy > b {
+  margin-top: 3px;
+  font-size: 11px;
+}
+.record-receipt-copy > small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.record-receipt-row > strong {
+  color: #745819;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .record-receipt-row {
+    grid-template-columns: 36px minmax(0,1fr) auto;
+  }
+
+  .record-receipt-row > .state-pill {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+}
