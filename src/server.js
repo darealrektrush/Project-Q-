@@ -56,6 +56,7 @@ app.use(express.json({ limit: '100kb', strict: true }));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use('/campaign-app', express.static(path.join(__dirname, '..', 'public', 'campaign-app')));
+app.get('/', (req, res) => res.redirect(302, '/campaign-app/'));
 
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
