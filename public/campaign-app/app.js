@@ -1460,6 +1460,14 @@ function render() {
   bind();
 }
 
+function syncTelegramViewport() {
+  const tg = state.telegram;
+  const height = Number(tg?.viewportStableHeight || tg?.viewportHeight || window.innerHeight);
+  if (Number.isFinite(height) && height > 0) {
+    document.documentElement.style.setProperty('--tg-viewport-height', `${Math.round(height)}px`);
+  }
+}
+
 function updateTelegramBackButton() {
   const backButton = state.telegram?.BackButton;
   if (!backButton) return;
@@ -2056,9 +2064,11 @@ function finishAppTour() {
   }
   state.tour.active = false;
   void saveTourCompletion();
+  state.navigationStack = ['home'];
   state.screen = 'home';
   history.replaceState(null, '', '#home');
   render();
+  updateTelegramBackButton();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   toast('Project Q guide complete.');
 }
@@ -2343,10 +2353,13 @@ async function boot() {
   const splashStarted = performance.now();
   state.telegram?.ready();
   state.telegram?.expand();
+  syncTelegramViewport();
   state.telegram?.setHeaderColor?.('#e9e2d3');
   state.telegram?.setBackgroundColor?.('#e9e2d3');
   state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); await loadWalletStatus(); render(); });
+  state.telegram?.onEvent?.('viewportChanged', syncTelegramViewport);
   state.telegram?.BackButton?.onClick?.(navigateBack);
+  window.addEventListener('resize', syncTelegramViewport);
   state.screen = location.hash.slice(1) in screens ? location.hash.slice(1) : 'home';
   state.navigationStack = state.screen === 'home' ? ['home'] : ['home'];
   await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
