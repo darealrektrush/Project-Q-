@@ -9,6 +9,7 @@ import * as solana from './lib/solana.js';
 import * as admin from './lib/admin.js';
 import * as menuContent from './lib/menuContent.js';
 import { supabase } from './lib/supabase.js';
+import { assertDevDatabaseTarget } from './lib/devDatabaseGuard.js';
 import * as bagwork from './lib/bagwork.js';
 import * as signal from './lib/signal.js';
 import * as events from './lib/events.js';
@@ -1313,6 +1314,7 @@ async function handlePostSignalCommand(message) {
   return telegram.sendMessage(chatId, `📡 Posted a new ${kindLabel} Signal to fawkq-announcements.`, { threadId });
 }
 
+assertDevDatabaseTarget();
 telegram.validateTopicIds();
 
 const PORT = process.env.PORT || 3000;
