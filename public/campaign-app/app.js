@@ -655,16 +655,55 @@ function badgeGallery(badges = []) {
 function xpScreen() {
   const c = state.campaign || fallbackCampaign;
   const caps = c.xpCaps || fallbackCampaign.xpCaps;
-  const otherCap = Math.max(0, caps.overallDaily - caps.participationDaily
-    - caps.projectQDaily - caps.trendingBotsDaily);
+  const otherCap = Math.max(0, caps.overallDaily - caps.participationDaily - caps.projectQDaily - caps.trendingBotsDaily);
   const today = state.profile.todayXpByBucket || {};
   const activity = state.profile.activity || [];
-  return `<section class="xp-command command-card"><span class="label">Verified XP</span><strong>${Number(state.profile.xp || 0).toLocaleString()} <em>XP</em></strong><small>Today ${Number(state.profile.todayXp || 0) > 0 ? '+' : ''}${Number(state.profile.todayXp || 0)}</small><div class="xp-orbit"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" /></div></section>
-  <section class="command-card progress-panel"><div class="panel-title"><span>Daily progress</span><small>Overall cap ${Number(caps.overallDaily || 0)} XP</small></div>${progressRow('Participation', today.participation, caps.participationDaily)}${progressRow('Trending bots', today.trending, caps.trendingBotsDaily)}${progressRow('Project Q missions', today.mission, caps.projectQDaily)}${progressRow('Other verified activity', today.other, otherCap)}</section>
-  ${communityPulsePanel()}
-  <div class="section-head compact-head"><div><span class="label">XP ledger</span><h2>Auditable participation</h2></div><span>Source · status · time</span></div>
-  <section class="ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>No verified activity yet</b><p>Each action appears here only after its source is verified and XP is settled.</p></div>'}</section>
-  <div class="section-head"><div><span class="label">Achievements</span><h2>Campaign progression</h2></div><span>Calculated from verified records</span></div>${badgeGallery(c.xpBadges)}`;
+  const totalXp = Number(state.profile.xp || 0);
+  const todayXp = Number(state.profile.todayXp || 0);
+  const rank = state.profile.rank || '—';
+
+  return `<div class="xp-v2">
+    <section class="progression-hero command-card">
+      <div class="progression-copy">
+        <span class="label">Verified progression</span>
+        <div class="progression-value"><strong>${totalXp.toLocaleString()}</strong><em>XP</em></div>
+        <h2>${escapeHtml(rank)}</h2>
+        <p>${todayXp > 0 ? `+${todayXp} XP today from verified activity.` : 'Complete eligible activity to build verified campaign progress.'}</p>
+      </div>
+      <div class="progression-actions">
+        <button class="info-action" data-explainer="xp" aria-label="How XP works">?</button>
+        <button class="outline-action" data-screen="leaderboard">View standing</button>
+      </div>
+    </section>
+
+    <section class="xp-daily command-card">
+      <div class="panel-title"><span>Today’s XP</span><small>Overall cap ${Number(caps.overallDaily || 0)} XP</small></div>
+      <div class="xp-progress-list">
+        ${progressRow('Participation', today.participation, caps.participationDaily)}
+        ${progressRow('Trending activity', today.trending, caps.trendingBotsDaily)}
+        ${progressRow('Project Q missions', today.mission, caps.projectQDaily)}
+        ${progressRow('Other verified activity', today.other, otherCap)}
+      </div>
+    </section>
+
+    ${communityPulsePanel()}
+
+    <section class="xp-ledger-section">
+      <div class="section-head compact-head">
+        <div><span class="label">Verified activity</span><h2>XP ledger</h2></div>
+        <span>Source · status · time</span>
+      </div>
+      <section class="ledger xp-ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>No verified activity yet</b><p>Accepted activity appears here after verification and XP settlement.</p></div>'}</section>
+    </section>
+
+    <section class="xp-achievement-section">
+      <div class="section-head">
+        <div><span class="label">Progression</span><h2>Achievements</h2></div>
+        <button class="info-action" data-explainer="ranks" aria-label="How ranks work">?</button>
+      </div>
+      ${badgeGallery(c.xpBadges)}
+    </section>
+  </div>`;
 }
 
 function leaderboardRow(row, index, unit = 'XP') {
@@ -682,11 +721,40 @@ function leaderboardScreen() {
   const emptyTitle = view?.available ? 'No qualifying XP yet' : 'Rankings are not live';
   const emptyDetail = view?.reason || 'No placeholder scores or identities are shown. Verified records will appear here.';
   const mode = state.leaderboardMeta?.available ? 'VERIFIED RECORDS' : 'READINESS MODE';
-  return `<section class="rank-command command-card"><div><span class="label">Your rank</span><strong>${escapeHtml(state.profile.rank)}</strong><small>${change ? `${change > 0 ? '↑' : '↓'} ${Math.abs(change)} today` : rankDetail}</small></div><img src="/campaign-app/assets/system/q-signal.webp" alt="" /></section>
-  <div class="tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.leaderboardView === id ? 'active' : ''}" data-leaderboard-view="${id}" role="tab" aria-selected="${state.leaderboardView === id}">${label}</button>`).join('')}</div>
-  <section class="leaderboard-list">${rows.length ? rows.map((row, index) => leaderboardRow(row, index, view?.unit || 'XP')).join('') : `<div class="empty compact"><b>${escapeHtml(emptyTitle)}</b><p>${escapeHtml(emptyDetail)}</p></div>`}</section>
-  <div class="leaderboard-clock"><span>Leaderboard updates after finalized verification</span><b>${mode}</b></div>
-  <div class="section-head"><div><span class="label">Rank achievements</span><h2>Performance badges</h2></div><span>Finalized standings only</span></div>${badgeGallery(c.leaderboardBadges)}`;
+
+  return `<div class="leaderboard-v2">
+    <section class="rank-hero command-card">
+      <div>
+        <span class="label">Your standing</span>
+        <strong>${escapeHtml(state.profile.rank)}</strong>
+        <p>${change ? `${change > 0 ? '↑' : '↓'} ${Math.abs(change)} positions today` : escapeHtml(rankDetail)}</p>
+      </div>
+      <div class="progression-actions">
+        <button class="info-action" data-explainer="leaderboard" aria-label="How leaderboards work">?</button>
+        <button class="outline-action" data-explainer="ranks">How ranks work</button>
+      </div>
+    </section>
+
+    <div class="tabs rank-tabs" role="tablist">
+      ${tabs.map(([id, label]) => `<button class="${state.leaderboardView === id ? 'active' : ''}" data-leaderboard-view="${id}" role="tab" aria-selected="${state.leaderboardView === id}">${label}</button>`).join('')}
+    </div>
+
+    <section class="leaderboard-list rank-list">
+      ${rows.length ? rows.map((row, index) => leaderboardRow(row, index, view?.unit || 'XP')).join('') : `<div class="empty compact"><b>${escapeHtml(emptyTitle)}</b><p>${escapeHtml(emptyDetail)}</p></div>`}
+    </section>
+
+    <div class="leaderboard-clock rank-verification-note">
+      <span>Standings update after finalized verification</span><b>${mode}</b>
+    </div>
+
+    <section class="rank-achievements">
+      <div class="section-head">
+        <div><span class="label">Rank progression</span><h2>Performance badges</h2></div>
+        <span>Verified standings only</span>
+      </div>
+      ${badgeGallery(c.leaderboardBadges)}
+    </section>
+  </div>`;
 }
 
 function formatBaseUnits(value, decimals = 6) {
