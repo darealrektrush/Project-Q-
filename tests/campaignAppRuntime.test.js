@@ -109,6 +109,12 @@ async function loadRuntime() {
       state.profile.campaignState = campaignState;
       return operationLifecycleState();
     };
+    globalThis.__renderLeaderboardWithLifecycle = (runtime, campaignState = 'DRAFT', meta = null) => {
+      state.runtime = runtime;
+      state.profile.campaignState = campaignState;
+      state.leaderboardMeta = meta;
+      return leaderboardScreen();
+    };
   `;
   vm.runInContext(instrumented, context);
   return context;
@@ -243,6 +249,27 @@ test('operation lifecycle follows authoritative campaign state instead of partic
     databaseState: 'COMPLETED', operational: false,
     schedule: { phase: 'POST_REVIEW' },
   }, 'COMPLETED').label, 'COMPLETED');
+});
+test('campaign standings communicate live review and finalized lifecycle states', async () => {
+  const context = await loadRuntime();
+  const meta = { available: true, overall: { available: true, participantCount: 12, rows: [], unit: 'XP' } };
+  const live = context.__renderLeaderboardWithLifecycle({
+    databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE' },
+  }, 'ACTIVE', meta);
+  assert.match(live, /LIVE CAMPAIGN STANDING/);
+  assert.match(live, /LIVE VERIFIED/);
+
+  const review = context.__renderLeaderboardWithLifecycle({
+    databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' },
+  }, 'VERIFYING', meta);
+  assert.match(review, /FINAL REVIEW/);
+  assert.match(review, /UNDER REVIEW/);
+
+  const final = context.__renderLeaderboardWithLifecycle({
+    databaseState: 'COMPLETED', operational: false, schedule: { phase: 'POST_REVIEW' },
+  }, 'COMPLETED', meta);
+  assert.match(final, /FINAL CAMPAIGN STANDING/);
+  assert.match(final, /FINALIZED/);
 });
 test('XP progress bars render authoritative daily bucket usage', async () => {
   const context = await loadRuntime();
