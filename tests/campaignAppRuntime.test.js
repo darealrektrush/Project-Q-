@@ -195,7 +195,7 @@ async function loadRuntime() {
       state.telegram = { initData: 'signed-test-data' };
       await authenticateTelegram();
       return { status: state.sessionStatus, profile: state.profile,
-        banner: systemStatusMarkup(), screen: profileScreen() };
+        banner: systemStatusMarkup(), screen: profileScreen(), home: home() };
     };
 
   `;
@@ -231,6 +231,8 @@ test('verified Telegram identity can show its portrait while Oracle campaign ide
   assert.equal(pending.profile.walletVerified, false);
   assert.match(pending.banner, /campaign record pending/);
   assert.match(pending.screen, /0\/3/);
+  assert.match(pending.home, /Sync Oracle Identity/);
+  assert.match(pending.home, /data-retry-session/);
 });
 
 test('legacy deep links normalize into the locked Operations IA', async () => {

@@ -283,7 +283,7 @@ function systemStatusMarkup() {
 
   if (state.sessionStatus === 'identity-unavailable') {
     return `<section class="system-status-banner blocked">
-      <div><span>IDENTITY SYNC</span><b>Telegram confirmed · campaign record pending</b><small>Your Telegram name and photo are confirmed. Oracle identity and reward status are unavailable; participation remains closed.</small></div>
+      <div><span>IDENTITY SYNC</span><b>Telegram confirmed · campaign record pending</b><small>Your signed Telegram name is shown. Your photo appears if Telegram supplies it. Oracle identity and rewards are unavailable; participation remains closed.</small></div>
       <button data-retry-session>Retry</button>
     </section>`;
   }
@@ -442,6 +442,7 @@ function identityStepper() {
 
 function nextIdentityAction() {
   const p = state.profile;
+  if (state.sessionStatus === 'identity-unavailable') return 'Sync Oracle identity';
   if (!p.telegramVerified) return 'Verify Telegram';
   if (!p.xVerified) return 'Connect Oracle X';
   if (!p.walletVerified) return 'Connect wallet in Oracle';
@@ -450,6 +451,9 @@ function nextIdentityAction() {
 
 function nextStatusCard() {
   const p = state.profile;
+  if (state.sessionStatus === 'identity-unavailable') {
+    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Sync Oracle identity</b><small>Telegram is confirmed. The campaign record is temporarily unavailable.</small></div><button class="outline-action" data-retry-session>Retry</button></article>`;
+  }
   if (!p.telegramVerified) {
     return `<article class="next-status"><img src="/campaign-app/assets/identity/telegram-verified.webp" alt="" /><div><span>Next status</span><b>Verify Telegram</b><small>Open Project Q from the official bot.</small></div><button class="outline-action" data-screen="profile">Review</button></article>`;
   }
@@ -562,7 +566,17 @@ function home() {
     }
   }
 
-  const actionAttrs = nextMove.screen === 'operations'
+  if (state.sessionStatus === 'identity-unavailable') {
+    nextMove = {
+      label: 'Identity Sync', title: 'Sync Oracle Identity',
+      detail: 'Telegram is confirmed. Your campaign record is temporarily unavailable.',
+      action: 'RETRY', brand: 'q',
+    };
+  }
+
+  const actionAttrs = state.sessionStatus === 'identity-unavailable'
+    ? 'data-retry-session'
+    : nextMove.screen === 'operations'
     ? `data-operation-view="${nextMove.operationsView}"`
     : nextMove.screen === 'record' && nextMove.recordView
       ? `data-record-view="${nextMove.recordView}"`
