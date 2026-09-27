@@ -4065,3 +4065,265 @@ body.rail-collapsed .rail .nav-icon svg {
     padding: 0 8px;
   }
 }
+
+
+/* PASSPORT OVERVIEW + FULL MOBILE MISSION FILE */
+.passport-overview { display: grid; gap: 10px; }
+
+.passport-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+}
+
+.passport-overview-card {
+  min-height: 132px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255,250,240,.70);
+}
+
+.passport-overview-card > span {
+  color: #7a6b4c;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+
+.passport-overview-card h3 {
+  margin: 5px 0 5px;
+  font-size: 16px;
+}
+
+.passport-overview-card p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.passport-overview-card button {
+  margin-top: auto;
+  align-self: flex-start;
+  min-height: 38px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: #6b531d;
+  background: rgba(215,168,63,.08);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.oracle-passport-card {
+  border-color: rgba(24,136,216,.24);
+  background: linear-gradient(120deg,rgba(24,136,216,.07),rgba(255,250,240,.70));
+}
+
+.oracle-passport-card > span { color: var(--oracle); }
+
+.passport-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 7px;
+}
+
+.passport-secondary-actions button {
+  min-height: 58px;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  background: rgba(255,250,240,.62);
+  text-align: left;
+}
+
+.passport-secondary-actions span,
+.passport-secondary-actions b {
+  display: block;
+}
+
+.passport-secondary-actions span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.passport-secondary-actions b {
+  margin-top: 4px;
+  color: #5a5144;
+  font-size: 11px;
+}
+
+.passport-achievements-preview {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(249,242,228,.76);
+}
+
+.passport-achievements-preview .dossier-heading button {
+  min-height: 34px;
+  padding: 0 6px;
+  border: 0;
+  color: #755818;
+  background: transparent;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.passport-achievements-preview .badge-gallery {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 6px;
+}
+
+.passport-achievements-preview .achievement {
+  min-height: 90px;
+  padding: 8px 5px;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+}
+
+.passport-achievements-preview .achievement img {
+  width: 36px;
+  height: 36px;
+}
+
+.passport-achievements-preview .achievement p {
+  display: none;
+}
+
+.passport-achievements-preview .achievement b {
+  font-size: 9px;
+}
+
+.passport-achievements-preview .achievement > span {
+  font-size: 7px;
+}
+
+.passport-impact-stamp {
+  padding: 18px 14px;
+  overflow: hidden;
+  border: 1px solid rgba(140,89,47,.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(115deg,rgba(175,72,44,.045),transparent 45%),
+    var(--paper);
+  transform: rotate(-.25deg);
+}
+
+.passport-impact-stamp span,
+.passport-impact-stamp b,
+.passport-impact-stamp small {
+  display: block;
+}
+
+.passport-impact-stamp span {
+  color: #9d634b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.passport-impact-stamp b {
+  margin-top: 2px;
+  color: #b06e51;
+  font-size: 21px;
+  letter-spacing: .02em;
+}
+
+.passport-impact-stamp small {
+  max-width: 500px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.passport-tabs {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+}
+
+@media (max-width: 520px) {
+  .mission-dialog {
+    inset: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .mission-dialog::backdrop {
+    background: #efe6d5;
+    backdrop-filter: none;
+  }
+
+  .mission-file-sheet {
+    min-height: 100dvh;
+    max-height: 100dvh;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      12px
+      calc(18px + env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+
+  .mission-file-sheet .mission-sheet-close {
+    position: sticky;
+    top: calc(2px + env(safe-area-inset-top));
+  }
+
+  .mission-file-header {
+    margin-top: -30px;
+    padding-top: 4px;
+  }
+
+  .passport-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-overview-card {
+    min-height: 112px;
+  }
+
+  .passport-secondary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-secondary-actions button {
+    min-height: 50px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .passport-achievements-preview .badge-gallery {
+    grid-template-columns: repeat(4,minmax(0,1fr));
+  }
+
+  .passport-achievements-preview .achievement {
+    min-height: 84px;
+  }
+
+  .passport-impact-stamp b {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 390px) {
+  .passport-achievements-preview .achievement b {
+    font-size: 8px;
+  }
+}
