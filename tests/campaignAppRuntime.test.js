@@ -61,6 +61,16 @@ async function loadRuntime() {
       state.runtimeLoadedAt = Date.now();
       return missionDetailMarkup(mission);
     };
+    globalThis.__renderClearanceWith = (profilePatch = {}) => {
+      Object.assign(state.profile, {
+        telegramVerified: false,
+        xVerified: false,
+        walletVerified: false,
+        tokenAccountReady: false,
+        holderEligible: false,
+      }, profilePatch);
+      return clearanceMarkup();
+    };
     globalThis.__missionStateWith = (id, runtime, campaignState = 'DRAFT', clearance = true) => {
       state.runtime = runtime;
       state.runtimeLoadedAt = Date.now();
@@ -319,6 +329,59 @@ test('Terminal and Operation primary actions follow authoritative lifecycle', as
   assert.match(context.__renderHomeLifecycleWith(completedRuntime, 'COMPLETED'), /View Your Permanent Record/);
   assert.match(context.__renderOperationOverviewWith(completedRuntime, 'COMPLETED'), /VIEW OPERATION RECORD/);
 });
+test('campaign clearance explains the exact missing requirement instead of generic ineligibility', async () => {
+  const context = await loadRuntime();
+
+  const telegramMissing = context.__renderClearanceWith({});
+  assert.match(telegramMissing, /Telegram identity/);
+  assert.match(telegramMissing, /NEXT REQUIRED[\s\S]*Telegram identity/);
+  assert.doesNotMatch(telegramMissing, /\bIneligible\b/i);
+
+  const tokenMissing = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: true,
+    walletVerified: true,
+  });
+  assert.match(tokenMissing, /FAWKQ token account/);
+  assert.match(tokenMissing, /NEXT REQUIRED[\s\S]*FAWKQ token account/);
+
+  const holderMissing = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: true,
+    walletVerified: true,
+    tokenAccountReady: true,
+  });
+  assert.match(holderMissing, /Minimum \$2 FAWKQ/);
+  assert.match(holderMissing, /Hold at least \$2 of FAWKQ/);
+});
+
+test('failed reward release remains visible as recovery review and is never shown as distributed', async () => {
+  const context = await loadRuntime();
+  const rendered = context.__renderRewardsWith({
+    recorded: true,
+    allocatedBaseUnits: '100000000',
+    scheduledBaseUnits: '100000000',
+    distributedBaseUnits: '0',
+    failedBaseUnits: '25000000',
+    releaseCount: 1,
+    receiptCount: 0,
+    releases: [{
+      category: 'activity',
+      cycleId: 1,
+      percent: 25,
+      amountBaseUnits: '25000000',
+      scheduledAt: '2026-10-02T15:00:00.000Z',
+      status: 'failed',
+      transactionSignature: null,
+    }],
+  });
+  assert.match(rendered.screen, /Recovery Review Required/);
+  assert.match(rendered.screen, /25 FAWKQ is recorded in failed release state/);
+  assert.match(rendered.screen, /RECOVERY REVIEW/);
+  assert.match(rendered.screen, /Distributed<\/span><strong>0/);
+  assert.doesNotMatch(rendered.screen, /On-chain receipt confirmed/);
+});
+
 test('configured mission availability still requires authoritative ACTIVE operation state', async () => {
   const context = await loadRuntime();
   assert.equal(context.__missionStateWith('bagwork', {
