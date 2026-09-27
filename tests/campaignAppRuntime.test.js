@@ -104,6 +104,11 @@ async function loadRuntime() {
       state.operationsView = view;
       return operationsScreen();
     };
+    globalThis.__operationLifecycleWith = (runtime, campaignState = 'DRAFT') => {
+      state.runtime = runtime;
+      state.profile.campaignState = campaignState;
+      return operationLifecycleState();
+    };
   `;
   vm.runInContext(instrumented, context);
   return context;
@@ -215,6 +220,29 @@ test('Terminal distinguishes a proposed target from authoritative campaign timin
   assert.match(live, /CYCLE 1 LIVE/);
   assert.match(live, /DAYS/);
   assert.match(live, /HOURS/);
+});
+test('operation lifecycle follows authoritative campaign state instead of participant reward state', async () => {
+  const context = await loadRuntime();
+  assert.equal(context.__operationLifecycleWith({
+    databaseState: 'READINESS_BLOCKED', operational: false,
+    schedule: { phase: 'ACTIVE' },
+  }, 'READINESS_BLOCKED').label, 'LAUNCH BLOCKED');
+  assert.equal(context.__operationLifecycleWith({
+    databaseState: 'ACTIVE', operational: true,
+    schedule: { phase: 'ACTIVE' },
+  }, 'ACTIVE').label, 'ACTIVE');
+  assert.equal(context.__operationLifecycleWith({
+    databaseState: 'VERIFYING', operational: false,
+    schedule: { phase: 'REVIEW' },
+  }, 'VERIFYING').label, 'REVIEWING');
+  assert.equal(context.__operationLifecycleWith({
+    databaseState: 'DISTRIBUTING', operational: false,
+    schedule: { phase: 'POST_REVIEW' },
+  }, 'DISTRIBUTING').label, 'DISTRIBUTING');
+  assert.equal(context.__operationLifecycleWith({
+    databaseState: 'COMPLETED', operational: false,
+    schedule: { phase: 'POST_REVIEW' },
+  }, 'COMPLETED').label, 'COMPLETED');
 });
 test('XP progress bars render authoritative daily bucket usage', async () => {
   const context = await loadRuntime();
