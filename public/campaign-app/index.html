@@ -16,9 +16,12 @@
   <div class="noise" aria-hidden="true"></div>
   <div class="app-shell">
     <aside class="rail" aria-label="Primary navigation">
-      <button class="brand-banner" data-screen="home" aria-label="Open Operations Terminal">
-        <img src="/campaign-app/assets/project-q-horizontal-banner-v3.jpg" alt="Project Q — Identity, Participation, Distribution and Transparency" />
-      </button>
+      <div class="rail-brand-row">
+        <button class="brand-banner" data-screen="home" aria-label="Open Operations Terminal">
+          <img src="/campaign-app/assets/project-q-horizontal-banner-v3.jpg" alt="Project Q — Identity, Participation, Distribution and Transparency" />
+        </button>
+        <button id="rail-toggle" class="rail-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">‹</button>
+      </div>
       <nav id="desktop-nav"></nav>
       <div class="rail-campaign"><span>CAMPAIGN 01</span><b id="rail-campaign-state">SYNCING</b></div>
     </aside>
