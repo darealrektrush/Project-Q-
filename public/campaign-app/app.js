@@ -556,6 +556,7 @@ function missionTelemetry(mission) {
       verified: Number(lane.verified || 0),
       pending: Number(lane.pending || 0),
       rejected: Number(lane.rejected || 0),
+      target,
       pushPoints,
     };
   }
@@ -1739,6 +1740,46 @@ async function submitWebsiteVoteProofFile(file, button) {
   }
 }
 
+function missionStatusSummaryMarkup(mission, telemetry) {
+  const stateInfo = canonicalMissionState(mission, telemetry);
+  const verified = Number(telemetry?.verified || 0);
+  const pending = Number(telemetry?.pending || 0);
+  const rejected = Number(telemetry?.rejected || 0);
+  const target = Number(telemetry?.target || 0);
+
+  let counted = 'No verified activity yet';
+  if (verified > 0) counted = `${verified} verified`;
+  else if (pending > 0) counted = `${pending} verifying`;
+  else if (rejected > 0) counted = `${rejected} rejected`;
+
+  let remains = 'Complete an eligible action';
+  if (target > 0) remains = `${Math.max(0, target - verified)} of ${target} remaining`;
+  else if (stateInfo.label === 'VERIFIED') remains = 'Verified activity recorded';
+  else if (stateInfo.label === 'LOCKED') remains = 'Complete campaign clearance';
+
+  let nextWindow = mission.frequency || 'Campaign';
+  if (mission.id === 'website-voting') {
+    const cooldowns = (state.websiteVotes?.sources || [])
+      .filter(({ status, nextAvailableAt }) => status === 'ON_COOLDOWN' && nextAvailableAt)
+      .map(({ nextAvailableAt }) => new Date(nextAvailableAt).getTime())
+      .filter(Number.isFinite);
+    if (cooldowns.length) nextWindow = `Next source ${formatProfileDate(new Date(Math.min(...cooldowns)).toISOString())}`;
+    else nextWindow = 'Per verified source cooldown';
+  } else if (mission.id === 'trending-bots') {
+    nextWindow = 'Whenever a certified bot cooldown resets';
+  }
+
+  const instruction = mission.actionLabel || (mission.readOnlyAction ? 'Review your verified record' : 'Complete the mission through its official flow');
+
+  return `<section class="mission-status-summary">
+    <div><span>WHAT DO I DO?</span><b>${escapeHtml(instruction)}</b></div>
+    <div><span>WHAT DOES IT EARN?</span><b>${escapeHtml(mission.reward)}</b></div>
+    <div><span>DID IT COUNT?</span><b>${escapeHtml(counted)}</b></div>
+    <div><span>WHEN AGAIN?</span><b>${escapeHtml(nextWindow)}</b></div>
+    <div><span>WHAT REMAINS?</span><b>${escapeHtml(remains)}</b></div>
+  </section>`;
+}
+
 function missionDetailMarkup(mission) {
   const telemetry = missionTelemetry(mission);
   const actionEnabled = Boolean((mission.enabled && campaignClearanceReady()) || mission.readOnlyAction);
@@ -1836,6 +1877,8 @@ function missionDetailMarkup(mission) {
       <div><span>Status</span><b>${escapeHtml(status)}</b></div>
       <div><span>Progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div>
     </section>
+
+    ${missionStatusSummaryMarkup(mission, telemetry)}
 
     ${clearanceMarkup({ compact: true })}
 
