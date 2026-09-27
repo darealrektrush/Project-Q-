@@ -70,31 +70,31 @@ const EXPLAINERS = {
 };
 
 const NAV = [
-  ['home', 'Home'],
-  ['missions', 'Missions'],
-  ['xp', 'XP'],
-  ['leaderboard', 'Ranks'],
+  ['home', 'Terminal'],
+  ['operations', 'Operations'],
+  ['record', 'Record'],
   ['rewards', 'Rewards'],
+  ['profile', 'Profile'],
 ];
 
 const NAV_ICONS = {
-  home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5z"/><path d="M9 21v-7h6v7"/></svg>',
-  missions: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 12l2.2 2.2 4.8-5"/></svg>',
-  xp: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.25"/><path d="m15.1 15.1 2.1 2.1"/></svg>',
-  leaderboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11h4v9M10 20V7h4v13M16 20V3h4v17M3 20.5h18"/></svg>',
+  home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>',
+  operations: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 12l2.2 2.2 4.8-5"/></svg>',
+  record: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V9h4v11M10 20V5h4v15M15 20V12h4v8M3 20.5h18"/></svg>',
   rewards: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v11H4zM3 6.5h18V10H3zM12 6.5V21"/><path d="M12 6.5H8.7A2.7 2.7 0 1 1 12 3.2zm0 0h3.3A2.7 2.7 0 1 0 12 3.2z"/></svg>',
+  profile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.1-6 7-6s6.2 2 7 6"/></svg>',
 };
 
 const APP_TOUR_VERSION = 1;
 
 const APP_TOUR_STEPS = [
-  { screen: 'home', target: '[data-tour-target="home"]', icon: '⌂', title: 'Home', text: 'Your campaign command center shows what matters now, your progress and your next move.' },
-  { screen: 'missions', target: '[data-tour-target="missions"]', icon: '✓', title: 'Missions', text: 'Find eligible campaign actions, see what is available and open mission details from one place.' },
-  { screen: 'xp', target: '[data-tour-target="xp"]', icon: 'XP', title: 'XP & Ranks', text: 'Track verified XP, daily progress and how your campaign contribution advances your rank.' },
-  { screen: 'rewards', target: '[data-tour-target="rewards"]', icon: '◆', title: 'Rewards', text: 'Review recorded allocations, release schedules and transparent reward receipts.' },
-  { screen: 'leaderboard', target: '[data-tour-target="leaderboard"]', icon: '↗', title: 'Leaderboards', text: 'See verified campaign contribution across overall, cycle and mission-specific views.' },
-  { screen: 'profile', target: '#account-control', icon: 'ID', title: 'Profile & Identity', text: 'Your Telegram, X and reward wallet connect to one Project Q participant profile.' },
-  { screen: 'home', target: '[data-tour-target="oracle"]', icon: 'Q', title: 'Oracle & Help', text: 'Oracle supports identity, verification and ecosystem intelligence whenever Project Q needs deeper context.' },
+  { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Operations Terminal', text: 'Your command center shows the active operation, next required action and critical campaign status.' },
+  { screen: 'operations', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Operations', text: 'Open campaign dossiers, mission files, progress, rewards and operational intel.' },
+  { screen: 'record', target: '[data-tour-target="record"]', icon: 'R', title: 'Your Record', text: 'Verified XP, rank, achievements and accepted activity become your permanent Project Q record.' },
+  { screen: 'rewards', target: '[data-tour-target="rewards"]', icon: '◆', title: 'Rewards', text: 'Follow allocations through authorization, on-chain delivery and final receipts.' },
+  { screen: 'profile', target: '[data-tour-target="profile"]', icon: 'ID', title: 'Participant Passport', text: 'Your identity, connections and operation history live in one persistent Project Q participant record.' },
+  { screen: 'operations', target: '[data-tour-target="oracle"]', icon: 'O', title: 'Oracle Verification', text: 'Oracle keeps its own blue identity whenever it verifies people, evidence or supported activity.' },
+  { screen: 'home', target: '[data-tour-target="home"]', icon: '✓', title: 'Enter the Operation', text: 'Participate. Verify. Build your record. Small actions. Bigger oceans.' },
 ];
 
 const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
@@ -143,6 +143,8 @@ const state = {
     bonusXp: null, minimumPurchaseUsd: 2, unavailable: true,
   },
   profileView: 'overview',
+  operationsView: 'overview',
+  recordView: 'xp',
   activeMissionId: null,
   leaderboardView: 'overall',
   leaderboards: { overall: [], '48h': [], missions: [], trending: [], community: [], burn: [] },
@@ -831,6 +833,149 @@ function participantReleaseRow(release) {
   return `<article class="${complete ? 'complete' : failed ? 'failed' : ''}"><span>${Number(release.percent || 0)}%</span><div><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · Cycle ${Number(release.cycleId)}` : ''}</b><small>${escapeHtml(detail)}</small></div><div class="release-proof">${receipt}<i>${symbol}</i></div></article>`;
 }
 
+
+function operationNumber() {
+  const sequence = String(state.campaign?.sequence || '01').match(/\d+/)?.[0] || '01';
+  return sequence.padStart(2, '0');
+}
+
+function operationTabs() {
+  const tabs = [
+    ['overview', 'Overview'],
+    ['missions', 'Mission Files'],
+    ['progress', 'Progress'],
+    ['rewards', 'Rewards'],
+    ['intel', 'Intel'],
+  ];
+  return `<div class="operation-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
+}
+
+function operationsScreen() {
+  const c = state.campaign || fallbackCampaign;
+  const missions = Array.isArray(c.missions) ? c.missions : [];
+  const op = operationNumber();
+  const commitments = c.campaignCommitments || {};
+  const rewardPool = commitments.campaignRewards ? formatBaseUnits(commitments.campaignRewards.amountBaseUnits) : '15M';
+  const duckBonus = commitments.diamondDuckBonus ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '2.5M';
+  const burnReserve = commitments.earnToBurn ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '15M';
+  const topPrize = commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '1 SOL';
+  const startLabel = c.schedule?.activeLabel || 'Launch date pending';
+  const reviewLabel = c.schedule?.reviewLabel || '48–72H final review';
+  const readiness = state.readiness?.available ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0))) : 0;
+
+  let content = '';
+  if (state.operationsView === 'missions') {
+    content = `<section class="dossier-section">
+      <div class="dossier-heading"><span>Mission Files</span><b>${missions.length} FILES</b></div>
+      <div class="mission-file-index">${missions.map((mission, index) => `
+        <button class="mission-file-row" data-mission-id="${escapeHtml(mission.id)}">
+          <span class="file-number">MF ${String(index + 1).padStart(2, '0')}</span>
+          ${mission.image ? `<img src="${mission.image}" alt="" />` : '<i>Q</i>'}
+          <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(mission.enabled ? 'Available' : mission.status)}</small></div>
+          <em>OPEN →</em>
+        </button>`).join('')}
+      </div>
+    </section>`;
+  } else if (state.operationsView === 'progress') {
+    content = `<section class="dossier-section">
+      <div class="dossier-heading"><span>Operation Progress</span><b>${readiness}% READY</b></div>
+      ${campaignClockMarkup(c)}
+      <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+      <button class="operation-burn-link" data-screen="burns">Earn to Burn <span>Collective progress & public receipts →</span></button>
+    </section>`;
+  } else if (state.operationsView === 'rewards') {
+    content = `<section class="dossier-section">
+      <div class="dossier-heading"><span>Operation Economics</span><b>OP ${op}</b></div>
+      <div class="operation-economics">
+        <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Campaign Pool</small></article>
+        <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
+        <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
+        <article><strong>${topPrize}</strong><span></span><small>Top Contributor</small></article>
+      </div>
+      <button class="q-primary-action" data-screen="rewards">OPEN REWARD PIPELINE →</button>
+    </section>`;
+  } else if (state.operationsView === 'intel') {
+    content = `<section class="dossier-section">
+      <div class="dossier-heading"><span>Operational Intel</span><b>VERIFIED SOURCES</b></div>
+      <article class="brand-service oracle-service" data-tour-target="oracle">
+        <img src="${ORACLE_LOGO}" alt="Oracle" />
+        <div><span>INTELLIGENCE / VERIFICATION PROVIDER</span><b>Oracle</b><p>Identity, supported activity verification and evidence signals retain Oracle's native blue identity inside Project Q.</p></div>
+        <button class="info-action" data-explainer="oracle">?</button>
+      </article>
+      ${readinessDetailsMarkup()}
+    </section>`;
+  } else {
+    content = `<section class="dossier-section">
+      <div class="dossier-heading"><span>Operation Brief</span><b>THE PURPOSE · THE PLAN</b></div>
+      <div class="operation-progress-line"><span>Campaign Progress</span><strong>${readiness}%</strong></div>
+      <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+      <div class="operation-economics compact">
+        <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Reward Pool</small></article>
+        <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
+        <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
+        <article><strong>${topPrize}</strong><span></span><small>Top Duck Prize</small></article>
+      </div>
+      <div class="operation-impact-note"><b>Small actions. Bigger oceans.</b><span>Community participation powers a transparent economic and impact layer.</span></div>
+      <button class="q-primary-action" data-operation-view="missions">VIEW MISSION FILES →</button>
+    </section>`;
+  }
+
+  return `<div class="operations-ui">
+    <section class="operation-cover">
+      <div class="operation-cover-copy">
+        <span class="operation-kicker">OPERATION ${op}</span>
+        <h2>${escapeHtml(c.name || 'Bond the Duck')}</h2>
+        <p>MISSION // ${escapeHtml(c.tagline || 'Small actions. Bigger oceans.')}</p>
+        <div class="operation-facts">
+          <div><span>START</span><b>${escapeHtml(startLabel)}</b></div>
+          <div><span>DURATION</span><b>10 DAYS</b></div>
+          <div><span>CYCLES</span><b>5 × 48H</b></div>
+          <div><span>REVIEW</span><b>${escapeHtml(reviewLabel)}</b></div>
+        </div>
+      </div>
+      ${c.banner ? `<img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" />` : ''}
+      <span class="operation-stamp">OP ${op}</span>
+    </section>
+    ${operationTabs()}
+    ${content}
+  </div>`;
+}
+
+function recordTabs() {
+  const tabs = [['xp', 'XP'], ['rank', 'Rank'], ['achievements', 'Achievements'], ['activity', 'Activity']];
+  return `<div class="record-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
+}
+
+function recordScreen() {
+  const c = state.campaign || fallbackCampaign;
+  const p = state.profile;
+  let content = '';
+  if (state.recordView === 'rank') {
+    content = leaderboardScreen();
+  } else if (state.recordView === 'achievements') {
+    content = `<section class="record-panel">
+      <div class="dossier-heading"><span>Achievements</span><b>VERIFIED PERFORMANCE</b></div>
+      ${badgeGallery([...(c.xpBadges || []), ...(c.leaderboardBadges || [])])}
+    </section>`;
+  } else if (state.recordView === 'activity') {
+    content = `<section class="record-panel">
+      <div class="dossier-heading"><span>Verified Activity</span><b>AUDITABLE RECORD</b></div>
+      <section class="ledger">${p.activity?.length ? p.activity.map(activityRow).join('') : '<div class="empty compact"><b>No verified activity yet</b><p>Accepted activity will appear here after verification and settlement.</p></div>'}</section>
+    </section>`;
+  } else {
+    content = xpScreen();
+  }
+
+  return `<div class="record-ui">
+    <section class="record-header">
+      <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified participation becomes permanent progression.</p></div>
+      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>XP</span><small>${escapeHtml(p.rank || '—')}</small></div>
+    </section>
+    ${recordTabs()}
+    ${content}
+  </div>`;
+}
+
 function rewardsScreen() {
   const c = state.campaign || fallbackCampaign;
   const plan = c.releases || [];
@@ -1187,6 +1332,8 @@ function profileScreen() {
 
 const screens = {
   home,
+  operations: operationsScreen,
+  record: recordScreen,
   missions: missionsScreen,
   xp: xpScreen,
   leaderboard: leaderboardScreen,
@@ -1205,13 +1352,13 @@ function toast(message) {
 
 function render() {
   const c = state.campaign || fallbackCampaign;
-  const navTitle = NAV.find(([id]) => id === state.screen)?.[2];
-  const screenTitle = state.screen === 'home' ? 'Project Q' : (navTitle || (state.screen === 'profile' ? 'Profile' : state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
+  const navTitle = NAV.find(([id]) => id === state.screen)?.[1];
+  const screenTitle = state.screen === 'home' ? 'Operations Terminal' : (navTitle || (state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
   document.querySelector('#desktop-nav').innerHTML = navMarkup();
   document.querySelector('#mobile-nav').innerHTML = navMarkup();
   document.querySelector('#screen').innerHTML = screens[state.screen]();
   document.querySelector('#screen-title').textContent = screenTitle;
-  document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q' : `PROJECT Q / ${c.sequence}`;
+  document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
   document.querySelector('#account-name').textContent = state.profile.telegramVerified ? state.profile.name : `${verifiedCount()}/3 ID`;
   document.querySelector('#account-control').classList.toggle('verified', verifiedCount() === 3);
   const railState = document.querySelector('#rail-campaign-state');
@@ -1774,6 +1921,12 @@ function bind() {
   });
   document.querySelectorAll('[data-profile-view]').forEach((element) => {
     element.onclick = () => { state.profileView = element.dataset.profileView; render(); };
+  });
+  document.querySelectorAll('[data-operation-view]').forEach((element) => {
+    element.onclick = () => { state.operationsView = element.dataset.operationView; state.screen = 'operations'; render(); };
+  });
+  document.querySelectorAll('[data-record-view]').forEach((element) => {
+    element.onclick = () => { state.recordView = element.dataset.recordView; state.screen = 'record'; render(); };
   });
   const account = document.querySelector('#account-control');
   if (account) account.onclick = () => go('profile');
