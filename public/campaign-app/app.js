@@ -1092,6 +1092,51 @@ function operationLifecycleState() {
   return { label: campaignState || 'UPCOMING', tone: 'pending' };
 }
 
+function operationPhaseBriefMarkup() {
+  const lifecycle = operationLifecycleState();
+  const copy = {
+    UPCOMING: {
+      title: 'Prepare for launch',
+      detail: 'Review clearance, mission requirements and operation economics before eligible participation opens.',
+      next: 'Complete clearance and review Mission Files.',
+    },
+    ACTIVE: {
+      title: 'Operation active',
+      detail: 'Eligible Mission Files are open. Verified activity contributes to campaign progress, scoring and economic outcomes.',
+      next: 'Complete an eligible mission and confirm it reaches your Record.',
+    },
+    REVIEWING: {
+      title: 'Final review in progress',
+      detail: 'Project Q is reconciling verified activity, outcomes and final allocation inputs. New campaign scoring is closed.',
+      next: 'Follow review status and wait for finalized allocations.',
+    },
+    DISTRIBUTING: {
+      title: 'Reward distribution in progress',
+      detail: 'Finalized allocations are moving through scheduled treasury-authorized releases and on-chain confirmation.',
+      next: 'Track each release until a confirmed receipt appears.',
+    },
+    COMPLETED: {
+      title: 'Operation complete',
+      detail: 'Campaign participation and economic outcomes are finalized. Your verified history remains in your Project Q Record.',
+      next: 'Review your permanent operation record and receipts.',
+    },
+    ARCHIVED: {
+      title: 'Operation archived',
+      detail: 'This operation is read-only. Historical participation, outcomes and receipts remain available for audit.',
+      next: 'Review archived records.',
+    },
+  }[lifecycle.label] || {
+    title: 'Operation status',
+    detail: 'Project Q is synchronizing authoritative operation state.',
+    next: 'Wait for the current state to settle.',
+  };
+
+  return `<section class="operation-phase-brief">
+    <div><span>NOW</span><b>${escapeHtml(copy.title)}</b><small>${escapeHtml(copy.detail)}</small></div>
+    <div><span>NEXT</span><b>${escapeHtml(copy.next)}</b></div>
+  </section>`;
+}
+
 function operationLifecycleMarkup() {
   const current = operationLifecycleState();
   const stages = ['UPCOMING','ACTIVE','REVIEWING','DISTRIBUTING','COMPLETED'];
@@ -1233,6 +1278,7 @@ function operationsScreen() {
 
     ${operationTabs()}
     ${operationLifecycleMarkup()}
+    ${operationPhaseBriefMarkup()}
     ${content}
   </div>`;
 }
