@@ -2227,15 +2227,17 @@ function missionStatusSummaryMarkup(mission, telemetry) {
     nextWindow = 'Whenever a certified bot cooldown resets';
   }
 
-  const instruction = stateInfo.label === 'LOCKED'
-    ? (lockReason?.action || 'Review mission requirements')
-    : stateInfo.label === 'VERIFYING' || stateInfo.label === 'SUBMITTED'
-      ? 'Wait for verification'
-      : stateInfo.label === 'VERIFIED'
-        ? 'Review your verified record'
-        : stateInfo.label === 'COOLDOWN'
-          ? 'Wait for the next eligible window'
-          : mission.actionLabel || (mission.readOnlyAction ? 'Review your verified record' : 'Complete the mission through its official flow');
+  const instruction = stateInfo.label === 'LOCKED' && mission.readOnlyAction
+    ? (mission.actionLabel || 'Review the read-only campaign record')
+    : stateInfo.label === 'LOCKED'
+      ? (lockReason?.action || 'Review mission requirements')
+      : stateInfo.label === 'VERIFYING' || stateInfo.label === 'SUBMITTED'
+        ? 'Wait for verification'
+        : stateInfo.label === 'VERIFIED'
+          ? 'Review your verified record'
+          : stateInfo.label === 'COOLDOWN'
+            ? 'Wait for the next eligible window'
+            : mission.actionLabel || (mission.readOnlyAction ? 'Review your verified record' : 'Complete the mission through its official flow');
 
   return `<section class="mission-status-summary">
     <div><span>WHAT DO I DO?</span><b>${escapeHtml(instruction)}</b></div>
@@ -2348,7 +2350,7 @@ function missionDetailMarkup(mission) {
 
     ${clearanceMarkup({ compact: true })}
 
-    ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : (missionLockReason(mission)?.title || 'Mission Locked'))} <span>→</span></button>` : ''}
+    ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action ${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? 'read-only' : ''}" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : (missionLockReason(mission)?.title || 'Mission Locked'))} <span>→</span></button>${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? '<small class="mission-read-only-note">Read-only access · no new campaign credit is created from this action.</small>' : ''}` : ''}
 
     ${mission.id === 'website-voting' ? `<section class="mission-file-sources"><div class="mission-file-section-title">Choose a verified source</div>${sourceList}${websiteVoteFlowMarkup()}</section>` : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
 
