@@ -688,41 +688,60 @@ function missionTelemetry(mission) {
 function campaignEligibilityRequirements() {
   const c = state.campaign || fallbackCampaign;
   const p = state.profile;
-  const minimumUsd = Number(c.eligibility?.minimumFawkqUsd || state.referrals?.minimumPurchaseUsd || 2);
-  return [
-    {
+  const config = c.eligibility || {};
+  const minimumUsd = Number(config.minimumFawkqUsd ?? state.referrals?.minimumPurchaseUsd ?? 0);
+  const requiresTelegram = config.telegramRequired !== false;
+  const requiresX = config.oracleXRequired !== false;
+  const requiresWallet = config.walletRequiredForRewards !== false || minimumUsd > 0;
+  const requiresTokenAccount = requiresWallet && minimumUsd > 0;
+  const requirements = [];
+
+  if (requiresTelegram) {
+    requirements.push({
       key: 'telegram',
       label: 'Telegram identity',
       complete: Boolean(p.telegramVerified),
       detail: p.telegramVerified ? 'Telegram Mini App identity verified.' : 'Open Project Q from the official Telegram bot.',
       action: p.telegramVerified ? null : { label: 'Open Profile', screen: 'profile', profileView: 'identity' },
       provider: 'q',
-    },
-    {
+    });
+  }
+
+  if (requiresX) {
+    requirements.push({
       key: 'x',
       label: 'X linked through Oracle',
       complete: Boolean(p.xVerified),
       detail: p.xVerified ? 'Oracle X identity verified.' : 'Connect the X account used for eligible campaign activity.',
       action: p.xVerified ? null : { label: 'Connect X', screen: 'profile', profileView: 'identity' },
       provider: 'oracle',
-    },
-    {
+    });
+  }
+
+  if (requiresWallet) {
+    requirements.push({
       key: 'wallet',
       label: 'Reward wallet',
       complete: Boolean(p.walletVerified),
       detail: p.walletVerified ? 'Verified reward wallet connected.' : 'Connect the wallet used for campaign eligibility and distributions.',
       action: p.walletVerified ? null : { label: 'Verify Wallet', screen: 'profile', profileView: 'identity' },
       provider: 'oracle',
-    },
-    {
+    });
+  }
+
+  if (requiresTokenAccount) {
+    requirements.push({
       key: 'token-account',
       label: 'FAWKQ token account',
       complete: Boolean(p.tokenAccountReady),
       detail: p.tokenAccountReady ? 'FAWKQ token account detected.' : 'A FAWKQ token account must be available on the verified reward wallet.',
       action: p.tokenAccountReady ? null : { label: 'Check Wallet', screen: 'profile', profileView: 'wallet' },
       provider: 'q',
-    },
-    {
+    });
+  }
+
+  if (minimumUsd > 0) {
+    requirements.push({
       key: 'holder',
       label: `Minimum $${minimumUsd} FAWKQ`,
       complete: Boolean(p.holderEligible),
@@ -731,8 +750,10 @@ function campaignEligibilityRequirements() {
         : `Hold at least $${minimumUsd} of FAWKQ in the verified reward wallet.`,
       action: p.holderEligible ? null : { label: 'Check Eligibility', screen: 'profile', profileView: 'wallet' },
       provider: 'q',
-    },
-  ];
+    });
+  }
+
+  return requirements;
 }
 
 function campaignClearanceReady() {
