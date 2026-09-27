@@ -863,14 +863,16 @@ function operationsScreen() {
   const duckBonus = commitments.diamondDuckBonus ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '2.5M';
   const burnReserve = commitments.earnToBurn ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '15M';
   const topPrize = commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '1 SOL';
-  const startLabel = c.schedule?.activeLabel || 'Launch date pending';
-  const reviewLabel = c.schedule?.reviewLabel || '48–72H final review';
   const readiness = state.readiness?.available ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0))) : 0;
 
   let content = '';
+
   if (state.operationsView === 'missions') {
-    content = `<section class="dossier-section">
-      <div class="dossier-heading"><span>Mission Files</span><b>${missions.length} FILES</b></div>
+    content = `<section class="operation-content-panel">
+      <div class="operation-section-head">
+        <div><span>MISSION FILES</span><h3>Choose your next objective.</h3></div>
+        <b>${missions.length} FILES</b>
+      </div>
       <div class="mission-file-index">${missions.map((mission, index) => `
         <button class="mission-file-row" data-mission-id="${escapeHtml(mission.id)}">
           <span class="file-number">MF ${String(index + 1).padStart(2, '0')}</span>
@@ -881,65 +883,73 @@ function operationsScreen() {
       </div>
     </section>`;
   } else if (state.operationsView === 'progress') {
-    content = `<section class="dossier-section">
-      <div class="dossier-heading"><span>Operation Progress</span><b>${readiness}% READY</b></div>
-      ${campaignClockMarkup(c)}
+    content = `<section class="operation-content-panel">
+      <div class="operation-section-head"><div><span>OPERATION PROGRESS</span><h3>Verified campaign movement.</h3></div><b>${readiness}%</b></div>
+      <div class="operation-progress-line"><span>Campaign Progress</span><strong>${readiness}%</strong></div>
       <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+      <div class="operation-cycle-summary"><span>5 × 48H CYCLES</span><b>${escapeHtml(state.runtime?.schedule?.label || 'Readiness mode')}</b></div>
       <button class="operation-burn-link" data-screen="burns">Earn to Burn <span>Collective progress & public receipts →</span></button>
     </section>`;
   } else if (state.operationsView === 'rewards') {
-    content = `<section class="dossier-section">
-      <div class="dossier-heading"><span>Operation Economics</span><b>OP ${op}</b></div>
+    content = `<section class="operation-content-panel">
+      <div class="operation-section-head"><div><span>OPERATION ECONOMICS</span><h3>Campaign commitments.</h3></div><b>OP ${op}</b></div>
       <div class="operation-economics">
-        <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Campaign Pool</small></article>
-        <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
-        <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
-        <article><strong>${topPrize}</strong><span></span><small>Top Contributor</small></article>
-      </div>
-      <button class="q-primary-action" data-screen="rewards">OPEN REWARD PIPELINE →</button>
-    </section>`;
-  } else if (state.operationsView === 'intel') {
-    content = `<section class="dossier-section">
-      <div class="dossier-heading"><span>Operational Intel</span><b>VERIFIED SOURCES</b></div>
-      <article class="brand-service oracle-service" data-tour-target="oracle">
-        <img src="${ORACLE_LOGO}" alt="Oracle" />
-        <div><span>INTELLIGENCE / VERIFICATION PROVIDER</span><b>Oracle</b><p>Identity, supported activity verification and evidence signals retain Oracle's native blue identity inside Project Q.</p></div>
-        <button class="info-action" data-explainer="oracle">?</button>
-      </article>
-      ${readinessDetailsMarkup()}
-    </section>`;
-  } else {
-    content = `<section class="dossier-section">
-      <div class="dossier-heading"><span>Operation Brief</span><b>THE PURPOSE · THE PLAN</b></div>
-      <div class="operation-progress-line"><span>Campaign Progress</span><strong>${readiness}%</strong></div>
-      <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
-      <div class="operation-economics compact">
         <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Reward Pool</small></article>
         <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
         <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
         <article><strong>${topPrize}</strong><span></span><small>Top Duck Prize</small></article>
       </div>
-      <div class="operation-impact-note"><b>Small actions. Bigger oceans.</b><span>Community participation powers a transparent economic and impact layer.</span></div>
+      <button class="q-primary-action" data-screen="rewards">OPEN REWARD PIPELINE →</button>
+    </section>`;
+  } else if (state.operationsView === 'intel') {
+    content = `<section class="operation-content-panel">
+      <div class="operation-section-head"><div><span>OPERATIONAL INTEL</span><h3>Verification & readiness.</h3></div><b>LIVE SOURCES</b></div>
+      <article class="brand-service oracle-service" data-tour-target="oracle">
+        <img src="${ORACLE_LOGO}" alt="Oracle" />
+        <div><span>INTELLIGENCE / VERIFICATION PROVIDER</span><b>Oracle</b><p>Identity and supported activity verification retain Oracle's native blue identity inside Project Q.</p></div>
+        <button class="info-action" data-explainer="oracle">?</button>
+      </article>
+      ${readinessDetailsMarkup()}
+    </section>`;
+  } else {
+    content = `<section class="operation-content-panel operation-overview-panel">
+      <div class="operation-progress-line"><span>CAMPAIGN PROGRESS</span><strong>${readiness}%</strong></div>
+      <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+
+      <div class="operation-economics">
+        <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Reward Pool</small></article>
+        <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
+        <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
+        <article><strong>${topPrize}</strong><span></span><small>Top Duck Prize</small></article>
+      </div>
+
+      <div class="operation-impact-note">
+        <div class="impact-globe">◎</div>
+        <div><b>A cleaner ocean. A brighter tomorrow.</b><span>Powered by community.</span></div>
+      </div>
+
       <button class="q-primary-action" data-operation-view="missions">VIEW MISSION FILES →</button>
     </section>`;
   }
 
-  return `<div class="operations-ui">
+  return `<div class="operations-ui operation-reference">
     <section class="operation-cover">
       <div class="operation-cover-copy">
         <span class="operation-kicker">OPERATION ${op}</span>
         <h2>${escapeHtml(c.name || 'Bond the Duck')}</h2>
         <p>MISSION // ${escapeHtml(c.tagline || 'Small actions. Bigger oceans.')}</p>
+
         <div class="operation-facts">
-          <div><span>START</span><b>${escapeHtml(startLabel)}</b></div>
+          <div><span>START</span><b>${escapeHtml(c.schedule?.activeLabel || 'Pending')}</b></div>
           <div><span>DURATION</span><b>10 DAYS</b></div>
           <div><span>CYCLES</span><b>5 × 48H</b></div>
-          <div><span>REVIEW</span><b>${escapeHtml(reviewLabel)}</b></div>
+          <div><span>FINAL REVIEW</span><b>48–72H</b></div>
         </div>
       </div>
       ${c.banner ? `<img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" />` : ''}
       <span class="operation-stamp">OP ${op}</span>
     </section>
+
     ${operationTabs()}
     ${content}
   </div>`;
