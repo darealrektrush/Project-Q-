@@ -171,10 +171,40 @@ async function loadRuntime() {
       state.leaderboardMeta = meta;
       return leaderboardScreen();
     };
+    globalThis.__systemStatusWith = ({ sessionStatus = 'verified', runtime = {}, readiness = { available: true }, campaignUnavailable = false } = {}) => {
+      state.sessionStatus = sessionStatus;
+      state.runtime = runtime;
+      state.readiness = readiness;
+      if (campaignUnavailable) state.campaign = fallbackCampaign;
+      return systemStatusMarkup();
+    };
+    globalThis.__resolveRoute = (screen) => resolveScreenRoute(screen);
+
   `;
   vm.runInContext(instrumented, context);
   return context;
 }
+
+test('standalone web stays explicit preview mode and never implies verified Telegram participation', async () => {
+  const context = await loadRuntime();
+  const preview = context.__systemStatusWith({ sessionStatus: 'outside', runtime: {}, readiness: { available: true } });
+  assert.match(preview, /WEB PREVIEW/);
+  assert.match(preview, /Viewing outside Telegram/);
+  assert.match(preview, /official Telegram Mini App/);
+  assert.doesNotMatch(preview, /VERIFIED PARTICIPANT/i);
+
+  const sessionFailure = context.__systemStatusWith({ sessionStatus: 'error', runtime: {}, readiness: { available: true } });
+  assert.match(sessionFailure, /Participant session unavailable/);
+  assert.match(sessionFailure, /No identity or reward state is being inferred/);
+});
+
+test('legacy deep links normalize into the locked Operations IA', async () => {
+  const context = await loadRuntime();
+  assert.equal(context.__resolveRoute('missions'), 'operations');
+  assert.equal(context.__resolveRoute('xp'), 'record');
+  assert.equal(context.__resolveRoute('leaderboard'), 'record');
+  assert.equal(context.__resolveRoute('rewards'), 'rewards');
+});
 
 test('Operations UI renders from the real Bond campaign config', async () => {
   const context = await loadRuntime();
