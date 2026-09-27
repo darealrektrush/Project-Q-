@@ -687,7 +687,7 @@ function xpScreen() {
   const activity = state.profile.activity || [];
   const totalXp = Number(state.profile.xp || 0);
   const todayXp = Number(state.profile.todayXp || 0);
-  const rank = state.profile.rank || '—';
+  const rank = state.profile.rank && state.profile.rank !== '—' ? state.profile.rank : 'UNRANKED';
 
   return `<div class="xp-v2">
     <section class="progression-hero command-card">
@@ -720,7 +720,7 @@ function xpScreen() {
         <div><span class="label">Verified activity</span><h2>XP ledger</h2></div>
         <span>Source · status · time</span>
       </div>
-      <section class="ledger xp-ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>No verified activity yet</b><p>Accepted activity appears here after verification and XP settlement.</p></div>'}</section>
+      <section class="ledger xp-ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>XP entries appear here after eligible activity is verified and settled by Project Q.</p></div>'}</section>
     </section>
 
     <section class="xp-achievement-section">
@@ -745,7 +745,7 @@ function leaderboardScreen() {
   const view = state.leaderboardMeta?.[state.leaderboardView];
   const change = Number(state.profile.rankChange || 0);
   const rankDetail = view?.available ? `${Number(view.participantCount || 0).toLocaleString()} verified participants` : 'Finalized verified standings';
-  const emptyTitle = view?.available ? 'No qualifying XP yet' : 'Rankings are not live';
+  const emptyTitle = view?.available ? 'No ranked activity yet' : 'Rankings open with verified activity';
   const emptyDetail = view?.reason || 'No placeholder scores or identities are shown. Verified records will appear here.';
   const mode = state.leaderboardMeta?.available ? 'VERIFIED RECORDS' : 'READINESS MODE';
 
@@ -996,7 +996,7 @@ function recordScreen() {
   } else if (state.recordView === 'activity') {
     content = `<section class="record-panel">
       <div class="dossier-heading"><span>Verified Activity</span><b>AUDITABLE RECORD</b></div>
-      <section class="ledger">${p.activity?.length ? p.activity.map(activityRow).join('') : '<div class="empty compact"><b>No verified activity yet</b><p>Accepted activity will appear here after verification and settlement.</p></div>'}</section>
+      <section class="ledger">${p.activity?.length ? p.activity.map(activityRow).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>Your permanent activity record begins when Project Q accepts and settles eligible participation.</p></div>'}</section>
     </section>`;
   } else {
     content = xpScreen();
@@ -1005,7 +1005,7 @@ function recordScreen() {
   return `<div class="record-ui">
     <section class="record-header">
       <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified participation becomes permanent progression.</p></div>
-      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>XP</span><small>${escapeHtml(p.rank || '—')}</small></div>
+      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>XP</span><small>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
     </section>
     ${recordTabs()}
     ${content}
@@ -1015,13 +1015,13 @@ function recordScreen() {
 function rewardsScreen() {
   const c = state.campaign || fallbackCampaign;
   const rewards = state.profile.rewards || {};
-  const allocation = rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : '—';
-  const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : '—';
-  const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '—';
+  const allocation = rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : 'NOT ALLOCATED';
+  const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : 'NOT SCHEDULED';
+  const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '0';
   const outstandingBaseUnits = rewards.recorded
     ? subtractBaseUnits(rewards.allocatedBaseUnits, rewards.distributedBaseUnits || '0')
     : null;
-  const outstanding = outstandingBaseUnits == null ? '—' : formatBaseUnits(outstandingBaseUnits);
+  const outstanding = outstandingBaseUnits == null ? 'PENDING' : formatBaseUnits(outstandingBaseUnits);
   const actualReleases = rewards.releases || [];
   const delivery = rewardDeliveryState(rewards);
   const walletLabel = state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected';
@@ -1090,7 +1090,7 @@ function rewardsScreen() {
       <button data-screen="profile" data-profile-view="wallet">OPEN WALLET →</button>
     </section>
 
-    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${actualReleases.length} RELEASE RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No finalized receipt yet.</h3><p>Receipts appear after a release reaches on-chain delivery and Project Q records the finalized proof.</p></section>`}
+    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${actualReleases.length} RELEASE RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No allocation receipt yet.</h3><p>Your receipt appears after Project Q finalizes an allocation and the release reaches verified on-chain delivery.</p></section>`}
 
     <section class="reward-transparency-link">
       <button data-operation-view="rewards">VIEW OPERATION ECONOMICS →</button>
@@ -1387,7 +1387,7 @@ function profileScreen() {
     </section>
 
     <section class="passport-stats">
-      <article><span>Rank</span><strong>${escapeHtml(p.rank || '—')}</strong></article>
+      <article><span>Rank</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></article>
       <article><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
       <article><span>Missions</span><strong>${Number(p.completedMissions || 0)}</strong></article>
       <article><span>Eligibility</span><strong>${escapeHtml(eligibility)}</strong></article>
@@ -1407,9 +1407,9 @@ function profileScreen() {
       </button>
       <div class="passport-record-metrics">
         <div><span>XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
-        <div><span>Rank</span><b>${escapeHtml(p.rank || '—')}</b></div>
+        <div><span>Rank</span><b>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</b></div>
         <div><span>Missions</span><b>${Number(p.completedMissions || 0)}</b></div>
-        <div><span>Rewards</span><b>${p.allocation == null ? '—' : formatBaseUnits(p.allocation)}</b></div>
+        <div><span>Rewards</span><b>${p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation)}</b></div>
       </div>
     </section>
 
