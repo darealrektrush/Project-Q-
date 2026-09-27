@@ -4557,3 +4557,59 @@ body.rail-collapsed .rail .nav-icon svg {
     font-size: 18px;
   }
 }
+
+
+/* EMPTY + PRELAUNCH STATE POLISH */
+.reward-summary-grid strong,
+.passport-record-metrics b {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.reward-summary-grid strong {
+  line-height: 1.05;
+}
+
+.empty.compact {
+  min-height: 118px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 22px 16px;
+  border: 1px dashed rgba(72,64,52,.20);
+  border-radius: 8px;
+  background: rgba(255,250,240,.44);
+}
+
+.empty.compact b {
+  color: #49433a;
+  font-size: 13px;
+}
+
+.empty.compact p {
+  max-width: 440px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.receipt-empty {
+  min-height: 120px;
+  display: grid;
+  align-content: center;
+}
+
+@media (max-width: 520px) {
+  .reward-summary-grid strong {
+    font-size: 16px;
+  }
+
+  .passport-record-metrics b {
+    font-size: 11px;
+  }
+
+  .empty.compact {
+    min-height: 108px;
+  }
+}
