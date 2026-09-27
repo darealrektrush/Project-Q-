@@ -691,11 +691,11 @@ function campaignEligibilityRequirements() {
     },
     {
       key: 'holder',
-      label: 'Minimum 
+      label: 'Minimum \u0024' + minimumUsd + ' FAWKQ',
       complete: Boolean(p.holderEligible),
       detail: p.holderEligible
-        ? 'Verified FAWKQ holding meets the 
-        : 'Hold at least ,
+        ? 'Verified FAWKQ holding meets the \u0024' + minimumUsd + ' minimum.'
+        : 'Hold at least \u0024' + minimumUsd + ' of FAWKQ in the verified reward wallet.',
       action: p.holderEligible ? null : { label: 'Check Eligibility', screen: 'profile', profileView: 'wallet' },
       provider: 'q',
     },
