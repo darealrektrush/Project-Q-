@@ -1530,6 +1530,18 @@ function saveTourCompletion() {
   catch {}
 }
 
+function tourFinishMarkup() {
+  return `<div class="tour-card tour-finish" role="dialog" aria-label="Project Q app tour complete">
+    <div class="tour-icon">✓</div>
+    <span class="label">Tour complete</span>
+    <h2>You’re Ready</h2>
+    <p>You know where the core Project Q systems live. Explore the app and use the help icon anytime you want a deeper explanation.</p>
+    <div class="tour-actions single">
+      <button type="button" class="tour-primary" data-tour-finish>Explore App</button>
+    </div>
+  </div>`;
+}
+
 function tourCardMarkup(step, index) {
   const last = index === APP_TOUR_STEPS.length - 1;
   return `<div class="tour-card" role="dialog" aria-label="Project Q app tour">
@@ -1615,7 +1627,15 @@ function renderTourStep() {
     });
     tour.querySelector('[data-tour-next]')?.addEventListener('click', () => {
       if (state.tour.step >= APP_TOUR_STEPS.length - 1) {
-        finishAppTour();
+        clearTourTarget();
+        tour.innerHTML = `<div class="tour-scrim"></div>${tourFinishMarkup()}`;
+        const finishCard = tour.querySelector('.tour-finish');
+        if (finishCard) {
+          finishCard.style.left = '50%';
+          finishCard.style.top = '50%';
+          finishCard.style.transform = 'translate(-50%, -50%)';
+        }
+        tour.querySelector('[data-tour-finish]')?.addEventListener('click', finishAppTour);
       } else {
         state.tour.step += 1;
         renderTourStep();
@@ -1667,11 +1687,59 @@ function explainerMarkup(key) {
   </form>`;
 }
 
+function bindExplainerDrag(dialog) {
+  const sheet = dialog?.querySelector('.explainer-sheet');
+  const handle = dialog?.querySelector('.explainer-handle');
+  if (!sheet || !handle || !window.matchMedia('(max-width: 520px)').matches) return;
+
+  let startY = null;
+  let currentY = null;
+  let dragging = false;
+
+  const reset = () => {
+    dragging = false;
+    startY = null;
+    currentY = null;
+    sheet.style.transform = '';
+    sheet.style.transition = '';
+  };
+
+  handle.addEventListener('pointerdown', (event) => {
+    startY = event.clientY;
+    currentY = startY;
+    dragging = true;
+    sheet.setPointerCapture?.(event.pointerId);
+    sheet.style.transition = 'none';
+  });
+
+  handle.addEventListener('pointermove', (event) => {
+    if (!dragging || startY == null) return;
+    currentY = event.clientY;
+    const delta = Math.max(0, currentY - startY);
+    sheet.style.transform = `translateY(${Math.min(delta, 180)}px)`;
+  });
+
+  const finish = () => {
+    if (!dragging || startY == null || currentY == null) return reset();
+    const delta = currentY - startY;
+    if (delta > 90) dialog.close();
+    else {
+      sheet.style.transition = 'transform .18s ease';
+      sheet.style.transform = 'translateY(0)';
+      setTimeout(reset, 190);
+    }
+  };
+
+  handle.addEventListener('pointerup', finish);
+  handle.addEventListener('pointercancel', reset);
+}
+
 function openExplainer(key) {
   const dialog = document.querySelector('#explainer-dialog');
   if (!dialog || !EXPLAINERS[key]) return;
   dialog.innerHTML = explainerMarkup(key);
   if (typeof dialog.showModal === 'function') dialog.showModal();
+  bindExplainerDrag(dialog);
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
