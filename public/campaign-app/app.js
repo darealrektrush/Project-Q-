@@ -1021,6 +1021,48 @@ function participantReleaseRow(release) {
 }
 
 
+function operationLifecycleState() {
+  const campaignState = String(state.profile?.campaignState || state.campaign?.status || 'DRAFT').toUpperCase();
+  const phase = String(state.runtime?.schedule?.phase || '').toUpperCase();
+  const releases = state.profile?.rewards?.releases || [];
+
+  if (state.campaignRecord?.archived || campaignState === 'ARCHIVED') {
+    return { label: 'ARCHIVED', tone: 'pending' };
+  }
+  if (['POST_REVIEW','COMPLETED','FINALIZED'].includes(phase) || campaignState === 'COMPLETED') {
+    const outstanding = state.profile?.rewards?.recorded
+      ? subtractBaseUnits(state.profile.rewards.allocatedBaseUnits, state.profile.rewards.distributedBaseUnits || '0')
+      : null;
+    if (outstanding && outstanding !== '0') return { label: 'DISTRIBUTING', tone: 'ready' };
+    return { label: 'COMPLETED', tone: 'success' };
+  }
+  if (['REVIEW','REVIEW_EXTENSION','HANDOFF'].includes(phase)) {
+    return { label: 'REVIEWING', tone: 'pending' };
+  }
+  if (phase === 'ACTIVE' || state.runtime?.operational) {
+    return { label: 'ACTIVE', tone: 'success' };
+  }
+  if (campaignState === 'DRAFT' || phase === 'PRE_LAUNCH' || !state.runtime) {
+    return { label: 'UPCOMING', tone: 'pending' };
+  }
+  if (releases.some(({ status }) => ['scheduled','paid','recovered'].includes(status))) {
+    return { label: 'DISTRIBUTING', tone: 'ready' };
+  }
+  return { label: campaignState || 'UPCOMING', tone: 'pending' };
+}
+
+function operationLifecycleMarkup() {
+  const current = operationLifecycleState();
+  const stages = ['UPCOMING','ACTIVE','REVIEWING','DISTRIBUTING','COMPLETED'];
+  const currentIndex = stages.indexOf(current.label);
+  return `<section class="operation-lifecycle" aria-label="Operation lifecycle">
+    <div class="operation-lifecycle-head"><span>OPERATION STATE</span>${statePill(current.label, current.tone)}</div>
+    <div class="operation-lifecycle-track">
+      ${stages.map((label, index) => `<div class="${currentIndex >= 0 && index < currentIndex ? 'complete' : label === current.label ? 'current' : ''}"><i></i><span>${label}</span></div>`).join('')}
+    </div>
+  </section>`;
+}
+
 function operationNumber() {
   const sequence = String(state.campaign?.sequence || '01').match(/\d+/)?.[0] || '01';
   return sequence.padStart(2, '0');
@@ -1136,6 +1178,7 @@ function operationsScreen() {
     </section>
 
     ${operationTabs()}
+    ${operationLifecycleMarkup()}
     ${content}
   </div>`;
 }
