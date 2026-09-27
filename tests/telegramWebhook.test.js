@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import {
   TELEGRAM_WEBHOOK_ALLOWED_UPDATES,
+  identifyTelegramBot,
   reconcileTelegramWebhook,
   resolveTelegramWebhookUrl,
 } from '../src/lib/telegramWebhook.js';
@@ -30,6 +31,20 @@ test('webhook reconciliation is inert unless an exact URL is configured', async 
     reason: 'TELEGRAM_WEBHOOK_URL is not configured',
   });
   assert.equal(called, false);
+});
+
+test('dev bot identity check reveals only the bot handle and never changes a webhook', async () => {
+  let method;
+  const bot = await identifyTelegramBot({
+    env: ENV,
+    fetchImpl: async (url) => {
+      method = url.split('/').pop();
+      return response({ is_bot: true, username: 'testingCQ_bot' });
+    },
+  });
+  assert.deepEqual(bot, { configured: true, username: 'testingCQ_bot' });
+  assert.equal(method, 'getMe');
+  assert.deepEqual(await identifyTelegramBot({ env: {}, fetchImpl: async () => { throw Error('unexpected'); } }), { configured: false });
 });
 
 test('webhook URL accepts only the exact credential-free HTTPS ingress path', () => {

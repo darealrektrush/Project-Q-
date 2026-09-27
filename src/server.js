@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as telegram from './lib/telegram.js';
-import { reconcileTelegramWebhook } from './lib/telegramWebhook.js';
+import { identifyTelegramBot, reconcileTelegramWebhook } from './lib/telegramWebhook.js';
 import * as xp from './lib/xp.js';
 import * as solana from './lib/solana.js';
 import * as admin from './lib/admin.js';
@@ -1318,6 +1318,16 @@ telegram.validateTopicIds();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`project-q listening on :${PORT}`);
+  if (process.env.RENDER_EXTERNAL_HOSTNAME === 'project-q-dev.onrender.com') {
+    try {
+      const bot = await identifyTelegramBot();
+      console.log(bot.configured
+        ? `[telegram] dev bot identity: @${bot.username}`
+        : '[telegram] dev bot token is not configured');
+    } catch (err) {
+      console.error('[telegram] dev bot identity verification failed:', err.message);
+    }
+  }
   const outbox = scheduleOraclePlatformOutbox(supabase);
   if (outbox.scheduled) {
     console.log('[oracle-platform] durable event outbox publisher scheduled');

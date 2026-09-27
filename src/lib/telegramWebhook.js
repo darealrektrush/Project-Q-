@@ -59,6 +59,17 @@ async function callTelegram(method, payload, { token, fetchImpl }) {
   return body.result;
 }
 
+export async function identifyTelegramBot({ env = process.env, fetchImpl = fetch } = {}) {
+  const token = String(env.TELEGRAM_BOT_TOKEN ?? '').trim();
+  if (!token) return { configured: false };
+  if (!BOT_TOKEN_PATTERN.test(token)) throw new Error('TELEGRAM_BOT_TOKEN has an invalid format');
+  const bot = await callTelegram('getMe', {}, { token, fetchImpl });
+  if (bot?.is_bot !== true || typeof bot.username !== 'string') {
+    throw new Error('Telegram getMe did not identify a bot');
+  }
+  return { configured: true, username: bot.username };
+}
+
 export async function reconcileTelegramWebhook({ env = process.env, fetchImpl = fetch } = {}) {
   const webhookUrl = resolveTelegramWebhookUrl(env);
   if (!webhookUrl) return { configured: false, reason: 'TELEGRAM_WEBHOOK_URL is not configured' };
