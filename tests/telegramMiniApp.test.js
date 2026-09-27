@@ -24,6 +24,21 @@ test('valid Telegram Mini App init data returns a normalized verified identity',
   });
 });
 
+test('signed Telegram identity preserves the display name and optional portrait', () => {
+  const token = '123456:test-token';
+  const initData = signedInitData(token, {
+    auth_date: '1700000000',
+    user: JSON.stringify({
+      id: 12345, first_name: 'Duck', last_name: 'Recruit',
+      username: 'duck_builder', photo_url: 'https://t.me/i/userpic/320/duck.jpg',
+    }),
+  });
+  const { user } = validateTelegramInitData(initData, token, { nowSeconds: 1700000060 });
+  assert.equal(user.firstName, 'Duck');
+  assert.equal(user.lastName, 'Recruit');
+  assert.equal(user.photoUrl, 'https://t.me/i/userpic/320/duck.jpg');
+});
+
 test('Telegram Mini App validation rejects tampering, expiry and missing server secrets', () => {
   const token = '123456:test-token';
   const valid = signedInitData(token, {

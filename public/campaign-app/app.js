@@ -151,7 +151,7 @@ const state = {
   leaderboards: { overall: [], '48h': [], missions: [], trending: [], community: [], burn: [] },
   leaderboardMeta: null,
   profile: {
-    name: window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Duck Recruit',
+    name: telegramDisplayName(window.Telegram?.WebApp?.initDataUnsafe?.user),
     photoUrl: null,
     telegramVerified: false,
     xVerified: false,
@@ -213,6 +213,12 @@ function safeHttpsUrl(value) {
   } catch {
     return null;
   }
+}
+
+function telegramDisplayName(user) {
+  return [user?.firstName || user?.first_name, user?.lastName || user?.last_name]
+    .filter((part) => typeof part === 'string' && part.trim())
+    .join(' ').trim() || user?.username || 'Duck Recruit';
 }
 
 function short(value) { return `${value.slice(0, 5)}…${value.slice(-5)}`; }
@@ -2015,10 +2021,16 @@ function render() {
   requestAnimationFrame(() => screen.classList.remove('screen-rendering'));
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
-  document.querySelector('#account-control .account-copy b').textContent = state.profile.telegramVerified ? state.profile.name : 'Profile';
+  document.querySelector('#account-control .account-copy b').textContent = state.profile.name;
   document.querySelector('#account-name').textContent = `${verifiedCount()}/3 Verified`;
   const accountImage = document.querySelector('#account-control img');
-  if (accountImage) accountImage.src = safeHttpsUrl(state.profile.photoUrl) || '/campaign-app/assets/system/q-id.webp';
+  if (accountImage) {
+    accountImage.onerror = () => {
+      accountImage.onerror = null;
+      accountImage.src = '/campaign-app/assets/system/q-id.webp';
+    };
+    accountImage.src = safeHttpsUrl(state.profile.photoUrl) || '/campaign-app/assets/system/q-id.webp';
+  }
   document.querySelector('#account-control').classList.toggle('verified', verifiedCount() === 3);
   const lifecycle = state.runtime ? operationLifecycleState() : { label: 'SYNCING', tone: 'pending' };
   const railState = document.querySelector('#rail-campaign-state');
@@ -2805,6 +2817,11 @@ function openCampaignUpdates() {
 }
 
 function bind() {
+  const passportImage = document.querySelector('.passport-photo img');
+  if (passportImage) passportImage.onerror = () => {
+    passportImage.onerror = null;
+    passportImage.src = '/campaign-app/assets/system/q-id.webp';
+  };
   document.querySelectorAll('[data-screen]').forEach((element) => {
     element.onclick = () => {
       if (element.dataset.profileView) state.profileView = element.dataset.profileView;
@@ -2969,7 +2986,7 @@ async function authenticateTelegram() {
     });
     if (!response.ok) { state.sessionStatus = 'error'; return false; }
     const session = await response.json();
-    state.profile.name = session.user.firstName || session.user.username || 'Duck Recruit';
+    state.profile.name = telegramDisplayName(session.user);
     state.profile.photoUrl = safeHttpsUrl(session.user.photoUrl);
     state.profile.telegramVerified = true;
     state.profile.xVerified = Boolean(session.participant?.xVerified);

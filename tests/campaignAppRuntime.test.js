@@ -183,6 +183,14 @@ async function loadRuntime() {
       return systemStatusMarkup();
     };
     globalThis.__resolveRoute = (screen) => resolveScreenRoute(screen);
+    globalThis.__renderIdentityState = ({ user, telegramVerified = true, xVerified = false, walletVerified = false }) => {
+      state.profile.name = telegramDisplayName(user);
+      state.profile.photoUrl = safeHttpsUrl(user.photoUrl);
+      state.profile.telegramVerified = telegramVerified;
+      state.profile.xVerified = xVerified;
+      state.profile.walletVerified = walletVerified;
+      return { home: home(), profile: profileScreen() };
+    };
 
   `;
   vm.runInContext(instrumented, context);
@@ -316,6 +324,21 @@ test('Terminal distinguishes a proposed target from authoritative campaign timin
   assert.match(live, /state-pill success[^>]*><i><\/i>ACTIVE/);
   assert.match(live, /DAYS/);
   assert.match(live, /HOURS/);
+});
+
+test('Telegram identity paints the participant passport and advances the Oracle X step', async () => {
+  const context = await loadRuntime();
+  const user = { firstName: 'Duck', lastName: 'Recruit', photoUrl: 'https://t.me/i/userpic/320/duck.jpg' };
+  const xStep = context.__renderIdentityState({ user });
+  assert.match(xStep.profile, /<h2>Duck Recruit<\/h2>/);
+  assert.match(xStep.profile, /src="https:\/\/t\.me\/i\/userpic\/320\/duck\.jpg"/);
+  assert.match(xStep.home, /Connect Oracle X/);
+  assert.match(xStep.home, /class="terminal-next-step oracle-next"/);
+  assert.match(xStep.home, /assets\/oracle-logo\.jpg/);
+  const walletStep = context.__renderIdentityState({ user, xVerified: true });
+  assert.match(walletStep.home, /Verify Reward Wallet/);
+  const privatePhoto = context.__renderIdentityState({ user: { firstName: 'Duck', photoUrl: null } });
+  assert.match(privatePhoto.profile, /assets\/system\/q-id\.webp/);
 });
 test('operation lifecycle follows authoritative campaign state instead of participant reward state', async () => {
   const context = await loadRuntime();
