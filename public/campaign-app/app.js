@@ -293,18 +293,8 @@ function nextIdentityAction() {
   return 'Open missions';
 }
 
-function nextStatusCard() {
-  const p = state.profile;
-  if (!p.telegramVerified) {
-    return `<article class="next-status"><img src="/campaign-app/assets/identity/telegram-verified.webp" alt="" /><div><span>Next status</span><b>Verify Telegram</b><small>Open Project Q from the official bot.</small></div><button class="outline-action" data-screen="profile">Review</button></article>`;
-  }
-  if (!p.xVerified) {
-    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Connect Oracle X</b><small>Verify your X identity to unlock social missions.</small></div><button class="outline-action" id="oracle-home-link">Connect</button></article>`;
-  }
-  if (!p.walletVerified) {
-    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Verify wallet in Oracle</b><small>Oracle owns the single canonical payout-wallet connection.</small></div><button class="outline-action" data-screen="profile">Open profile</button></article>`;
-  }
-  return `<article class="next-status"><img src="/campaign-app/assets/system/q-campaigns.webp" alt="" /><div><span>Identity ready</span><b>Choose your next mission</b><small>Every accepted action settles into one Project Q record.</small></div><button class="outline-action" data-screen="missions">Open</button></article>`;
+function homeOperation(mission) {
+  return `<button class="home-operation" data-mission-id="${escapeHtml(mission.id)}"><img src="${escapeHtml(mission.image)}" alt="" /><span><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.description)}</small></span><i aria-hidden="true">→</i></button>`;
 }
 
 function home() {
@@ -327,21 +317,21 @@ function home() {
     </div>
     <div class="readiness-block"><div><span>Campaign readiness</span><b>${readinessLabel}</b></div><div class="progress hero-progress" role="progressbar" aria-label="Campaign readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readiness}"`}><span style="width:${readiness ?? 0}%"></span></div></div>
   </section>
+  <button class="gold-action home-primary-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${state.runtime?.operational ? (identityReady ? 'Choose a verified mission' : 'Complete identity for rewards') : (identityReady ? 'Explore the campaign before launch' : 'Prepare identity for launch')}</small></span><i>→</i></button>
+  <div class="section-head home-section-head"><div><span class="label">Campaign status</span><h2>Bond the Duck</h2></div>${runtimePill()}</div>
   ${campaignClockMarkup(c)}
-  <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
-  ${readinessDetailsMarkup()}
-  <button class="gold-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${state.runtime?.operational ? (identityReady ? 'Verified campaign operations' : 'Complete identity for rewards') : (identityReady ? 'Explore the campaign before launch' : 'Prepare identity for launch')}</small></span><i>→</i></button>
+  <details class="home-more"><summary>Launch timeline and checklist <span>View details</span></summary>
+    <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
+    ${readinessDetailsMarkup()}
+  </details>
   <div class="section-head compact-head"><div><span class="label">Your verification</span><h2>Get ready to participate</h2></div><button class="text-action" data-screen="profile">View profile →</button></div>
   <section class="verification-summary" aria-label="Campaign eligibility"><div><b>${p.telegramVerified ? '✓' : '○'} Telegram</b><small>${p.telegramVerified ? 'Recognized' : 'Open through Project Q bot'}</small></div><div><b>${p.xVerified ? '✓' : '○'} X identity</b><small>${p.xVerified ? 'Linked through Oracle' : 'Link through Oracle for social missions'}</small></div><div><b>${p.walletVerified ? '✓' : '○'} Reward wallet</b><small>${p.walletVerified ? 'Verified through Oracle' : 'Connect through Oracle'}</small></div><div><b>${p.holderEligible ? '✓' : '○'} FAWKQ holding</b><small>${p.holderEligible ? '$2 minimum confirmed' : '$2 minimum for reward eligibility'}</small></div></section>
-  <section class="status-panel"><div class="panel-label">Your status</div><div class="status-grid">${metric('ID', `${count}/3`)}${metric('XP', Number(p.xp || 0).toLocaleString())}${metric('Rank', escapeHtml(p.rank))}${metric('Rewards', allocation)}</div></section>
-  ${nextStatusCard()}
-  <div class="section-head compact-head"><div><span class="label">Campaign operations</span><h2>Your next actions</h2></div><button class="text-action" data-screen="missions">View all ${c.missions.length}</button></div>
-  <details class="how-it-works"><summary>How campaign operations work</summary><p>Choose a mission, follow its official steps and wait for verification. Accepted activity can count toward your XP and campaign record. Oracle verifies supported X activity; Project Q records campaign progress.</p></details>
-  <div class="quick-actions">${c.missions.filter(({ kind }) => kind !== 'COLLECTIVE').slice(0, 3).map(missionCard).join('')}</div>
-  <button class="burn-utility" data-screen="burns"><img src="/campaign-app/assets/missions/v3-earn-to-burn.webp" alt="" /><span><small>Collective mission</small><b>Earn to Burn</b><em>Public milestones and on-chain receipts</em></span><i>→</i></button>
-  <details class="how-it-works"><summary>How Earn to Burn works</summary><p>Verified community activity advances shared milestones. When a milestone is completed and reviewed, FAWKQ from a separate creator-wallet reserve is burned. Burn transactions appear as public receipts; this reserve does not reduce campaign rewards.</p></details>
-  <section class="ecosystem-strip" aria-label="Project Q ecosystem"><div><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Proves · operates · distributes</small></span></div><div class="oracle-brand"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Guides · verifies · executes</small></span></div></section>
-  ${c.banner ? `<details class="campaign-details"><summary>Full campaign details <span>View artwork</span></summary><figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || `${c.name} campaign banner`)}" /></figure></details>` : ''}`;
+  ${!p.xVerified ? '<button class="text-action home-x-action" id="oracle-home-link">Link X through Oracle →</button>' : ''}
+  <div class="section-head compact-head"><div><span class="label">Campaign operations</span><h2>Choose your next move</h2></div><button class="text-action" data-screen="missions">All missions →</button></div>
+  <div class="home-operations">${c.missions.filter(({ id }) => ['oracle-raids', 'website-voting', 'trending-bots'].includes(id)).map(homeOperation).join('')}
+    <button class="home-operation" data-screen="burns"><img src="/campaign-app/assets/missions/v3-earn-to-burn.webp" alt="" /><span><b>Earn to Burn</b><small>Shared milestones and verified burn receipts</small></span><i aria-hidden="true">→</i></button></div>
+  <details class="how-it-works home-help"><summary>How do campaign operations work?</summary><p>Choose a mission and follow its official steps. Oracle verifies supported X activity, while Project Q records accepted progress. Earn to Burn advances shared milestones using a separate creator-wallet reserve; it does not reduce campaign rewards.</p></details>
+  <details class="home-more home-progress"><summary>Your progress <span>XP, rank and rewards</span></summary><section class="status-panel"><div class="panel-label">Your campaign record</div><div class="status-grid">${metric('ID', `${count}/3`)}${metric('XP', Number(p.xp || 0).toLocaleString())}${metric('Rank', escapeHtml(p.rank))}${metric('Rewards', allocation)}</div></section></details>`;
 }
 
 function missionTelemetry(mission) {
