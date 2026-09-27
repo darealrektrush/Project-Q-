@@ -278,16 +278,17 @@ app.post('/campaign-app/api/session', async (req, res) => {
   } catch (err) {
     const unavailable = err.message === 'telegram mini app authentication unavailable';
     const databaseFailure = String(err.message).startsWith('Supabase ');
+    const identityFailure = err.message === 'Oracle campaign identity unavailable';
     // Validation errors contain a fixed reason only; never log initData, its hash, or user fields.
-    if (unavailable || databaseFailure) console.error('campaign Mini App session failed', err.message);
+    if (unavailable || databaseFailure || identityFailure) console.error('campaign Mini App session failed', err.message);
     else {
       const reason = /^(invalid telegram (init data|init data hash|init data signature|user)|duplicate telegram (auth_date|user|query_id|start_param)|expired telegram init data)$/.test(err.message)
         ? err.message : 'unclassified rejection';
       console.warn('campaign Mini App session rejected', reason);
     }
-    return res.status(unavailable || databaseFailure ? 503 : 401).json({
+    return res.status(unavailable || databaseFailure || identityFailure ? 503 : 401).json({
       ok: false,
-      error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
+      error: unavailable || databaseFailure || identityFailure ? 'session unavailable' : 'invalid telegram session',
     });
   }
 });
@@ -1327,6 +1328,9 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`project-q listening on :${PORT}`);
   if (process.env.RENDER_EXTERNAL_HOSTNAME === 'project-q-dev.onrender.com') {
+    console.log('[oracle-identity] dev configuration:',
+      `url=${process.env.ORACLE_PROJECT_Q_IDENTITY_URL ? 'present' : 'missing'}`,
+      `secret=${process.env.ORACLE_PROJECT_Q_EVENT_SECRET ? 'present' : 'missing'}`);
     try {
       const bot = await identifyTelegramBot();
       console.log(bot.configured
