@@ -242,6 +242,39 @@ function statePill(label, tone = 'pending') {
   return `<span class="state-pill ${tone}"><i></i>${escapeHtml(label)}</span>`;
 }
 
+function systemStatusMarkup() {
+  const c = state.campaign || fallbackCampaign;
+
+  if (c.id === 'unavailable') {
+    return `<section class="system-status-banner blocked">
+      <div><span>CONFIGURATION</span><b>Operation data unavailable</b><small>Project Q is keeping campaign actions closed until configuration can be loaded.</small></div>
+      <button data-retry-system>Retry</button>
+    </section>`;
+  }
+
+  if (state.sessionStatus === 'outside') {
+    return `<section class="system-status-banner preview">
+      <div><span>WEB PREVIEW</span><b>Viewing outside Telegram</b><small>Browse the interface here. Open Project Q from the official Telegram Mini App for verified identity and participation.</small></div>
+    </section>`;
+  }
+
+  if (state.sessionStatus === 'error') {
+    return `<section class="system-status-banner blocked">
+      <div><span>IDENTITY SYNC</span><b>Participant session unavailable</b><small>Project Q could not confirm the Telegram session. No identity or reward state is being inferred.</small></div>
+      <button data-retry-session>Retry</button>
+    </section>`;
+  }
+
+  if (!state.runtime || !state.readiness?.available) {
+    return `<section class="system-status-banner syncing">
+      <div><span>CAMPAIGN SYNC</span><b>Live operation state is temporarily unavailable</b><small>Read-only content remains visible. Eligibility and campaign actions stay fail-closed until authoritative state returns.</small></div>
+      <button data-retry-system>Retry</button>
+    </section>`;
+  }
+
+  return '';
+}
+
 function runtimeNow() {
   const serverNow = Date.parse(state.runtime?.serverNow || '');
   if (!Number.isFinite(serverNow) || !state.runtimeLoadedAt) return Date.now();
@@ -1517,7 +1550,11 @@ function render() {
   const screenTitle = state.screen === 'home' ? 'Operations Terminal' : (navTitle || (state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
   document.querySelector('#desktop-nav').innerHTML = navMarkup();
   document.querySelector('#mobile-nav').innerHTML = navMarkup();
-  document.querySelector('#screen').innerHTML = screens[state.screen]();
+  const screen = document.querySelector('#screen');
+  const markup = screens[state.screen]();
+  screen.classList.add('screen-rendering');
+  screen.innerHTML = `${systemStatusMarkup()}${markup}`;
+  requestAnimationFrame(() => screen.classList.remove('screen-rendering'));
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
   document.querySelector('#account-name').textContent = state.profile.telegramVerified ? state.profile.name : `${verifiedCount()}/3 ID`;
@@ -2275,6 +2312,21 @@ function bind() {
     };
   });
   document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
+  document.querySelectorAll('[data-retry-system]').forEach((element) => {
+    element.onclick = async () => {
+      element.disabled = true;
+      await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary()]);
+      render();
+    };
+  });
+  document.querySelectorAll('[data-retry-session]').forEach((element) => {
+    element.onclick = async () => {
+      element.disabled = true;
+      await authenticateTelegram();
+      await loadWalletStatus();
+      render();
+    };
+  });
   document.querySelectorAll('[data-replay-tour]').forEach((element) => { element.onclick = () => showTourWelcome('manual'); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
