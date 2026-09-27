@@ -545,7 +545,11 @@ function home() {
   const countdownState = !state.runtime
     ? 'SYNCING'
     : !hasTarget
-      ? (schedule?.phase === 'PRE_LAUNCH' ? 'TARGET PENDING' : 'SCHEDULE PENDING')
+      ? schedule?.phase === 'PRE_LAUNCH'
+        ? 'TARGET PENDING'
+        : schedule?.phase === 'POST_REVIEW'
+          ? 'REVIEW COMPLETE'
+          : 'SCHEDULE PENDING'
       : diff <= 0
         ? 'UPDATING'
         : null;
@@ -554,7 +558,7 @@ function home() {
     <section class="terminal-campaign-card">
       <div class="terminal-campaign-meta">
         <span>CAMPAIGN ${op}</span>
-        ${runtimePill()}
+        ${terminalOperationPill()}
       </div>
 
       ${c.banner ? `<figure class="terminal-campaign-art"><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
@@ -1100,6 +1104,22 @@ function operationLifecycleState() {
   return { label: campaignState || 'UPCOMING', tone: 'pending' };
 }
 
+function terminalOperationPill() {
+  const lifecycle = operationLifecycleState();
+  const phase = String(state.runtime?.schedule?.phase || '').toUpperCase();
+
+  if (lifecycle.label === 'ACTIVE' || lifecycle.label === 'LAUNCH BLOCKED') {
+    return runtimePill();
+  }
+  if (lifecycle.label === 'UPCOMING' && state.runtime) {
+    return runtimePill();
+  }
+  if (lifecycle.label === 'REVIEWING' && ['HANDOFF','REVIEW','REVIEW_EXTENSION'].includes(phase)) {
+    return runtimePill();
+  }
+  return statePill(lifecycle.label, lifecycle.tone);
+}
+
 function operationPhaseBriefMarkup() {
   const lifecycle = operationLifecycleState();
   const copy = {
@@ -1163,7 +1183,7 @@ function operationPhaseBriefMarkup() {
 function operationLifecycleMarkup() {
   const current = operationLifecycleState();
   const stages = ['UPCOMING','ACTIVE','REVIEWING','DISTRIBUTING','COMPLETED'];
-  const currentIndex = stages.indexOf(current.label);
+  const currentIndex = current.label === 'ARCHIVED' ? stages.length : stages.indexOf(current.label);
   const exception = !stages.includes(current.label) && current.label !== 'ARCHIVED';
   return `<section class="operation-lifecycle ${exception ? 'exception' : ''}" aria-label="Operation lifecycle">
     <div class="operation-lifecycle-head"><span>OPERATION STATE</span>${statePill(current.label, current.tone)}</div>
