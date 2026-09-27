@@ -234,8 +234,8 @@ test('Mini App V3 uses the five-screen command center and canonical Oracle brand
   const index = await readFile(new URL('../index.html', campaignRoot), 'utf8');
   const styles = await readFile(new URL('../styles.css', campaignRoot), 'utf8');
   const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
-  assert.match(app, /Your next actions/);
-  assert.match(app, /View all \$\{c\.missions\.length\}/);
+  assert.match(app, /Choose your next move/);
+  assert.match(app, /All missions →/);
   assert.match(app, /Eight individual lanes/);
   assert.match(app, /kind !== 'COLLECTIVE'/);
   assert.match(app, /XP ledger/);
