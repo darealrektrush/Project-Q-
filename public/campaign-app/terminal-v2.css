@@ -115,3 +115,31 @@
   .q-shell-v2 .mobile-nav .nav-label{font-size:10px!important}
 }
 @media(min-width:861px){.q-shell-v2 main,.q-shell-v2.rail-collapsed main{width:min(1040px,100%);min-width:0}}
+
+/* CrabStar ecosystem connection: gold remains the Project Q action colour. */
+.q-shell-v2{--q-connection:#168fcb;--q-connection-soft:#63b7df}
+.q-shell-v2 .account-control img{border-color:var(--q-connection);box-shadow:0 0 0 2px #168fcb20}
+.q-shell-v2 .account-control .account-copy small,
+.q-shell-v2 .account-chevron{color:#246f9d}
+.q-shell-v2 .top-actions{position:relative}
+.q-shell-v2 .account-control{position:relative}
+.q-shell-v2 .account-control::before{content:"";position:absolute;left:-11px;top:-12px;width:1px;height:calc(100% + 24px);background:linear-gradient(transparent,var(--q-connection),transparent);pointer-events:none}
+.q-shell-v2 .account-control::after{content:"";position:absolute;left:-14px;top:50%;width:7px;height:7px;border:1px solid var(--q-connection);border-radius:50%;background:var(--q-paper);box-shadow:0 0 0 2px #168fcb1f;transform:translateY(-50%);pointer-events:none}
+.terminal-v2 .terminal-countdown-state{border-bottom-color:#8cc9e1}
+.terminal-v2 .terminal-countdown-state small,
+.terminal-v2 .terminal-countdown-strip span{color:#287ea9}
+.terminal-v2 .terminal-countdown-strip{position:relative;border-bottom-color:#8cc9e1}
+.terminal-v2 .terminal-countdown-strip::after{content:"";position:absolute;inset:auto 9% -4px;height:6px;background:radial-gradient(circle at 0 50%,#eefbff 0 2px,var(--q-connection) 2px 3px,transparent 3px),radial-gradient(circle at 33% 50%,#eefbff 0 2px,var(--q-connection) 2px 3px,transparent 3px),radial-gradient(circle at 66% 50%,#eefbff 0 2px,var(--q-connection) 2px 3px,transparent 3px),radial-gradient(circle at 100% 50%,#eefbff 0 2px,var(--q-connection) 2px 3px,transparent 3px);pointer-events:none}
+.terminal-v2 .operation-impact-categories{position:relative;border-left-color:#8cc9e1;color:#286d96}
+.terminal-v2 .operation-impact-categories::before{content:"";position:absolute;left:-4px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--q-paper);border:1px solid var(--q-connection);transform:translateY(-50%)}
+.terminal-v2 .terminal-next-step.oracle-next{border-color:#228abc;box-shadow:inset 0 0 0 1px #1989bd35}
+.terminal-v2 .oracle-next .terminal-identity-art>img{border:1px solid #328fb7}
+.terminal-v2 .terminal-actions small{color:#3a718e}
+.terminal-v2 .terminal-ocean-banner{border:1px solid #77bad7}
+@media(max-width:860px){
+  .q-shell-v2 .mobile-nav{border-top-color:#365768}
+  .q-shell-v2 .mobile-nav .nav-button:not(.active) .nav-icon{color:#8eaed4}
+  .q-shell-v2 .q-footer{position:relative}
+  .q-shell-v2 .q-footer::before{content:"";position:absolute;left:50%;top:-4px;width:6px;height:6px;border:1px solid var(--q-connection);border-radius:50%;background:#b7e8f6;box-shadow:0 0 0 2px #168fcb33;transform:translateX(-50%)}
+}
+@media(max-width:359px){.q-shell-v2 .account-control::before,.q-shell-v2 .account-control::after{display:none}}
