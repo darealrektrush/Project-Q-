@@ -152,6 +152,7 @@ const state = {
   leaderboardMeta: null,
   profile: {
     name: window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Duck Recruit',
+    photoUrl: null,
     telegramVerified: false,
     xVerified: false,
     walletVerified: false,
@@ -203,6 +204,15 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[char]));
+}
+
+function safeHttpsUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function short(value) { return `${value.slice(0, 5)}…${value.slice(-5)}`; }
@@ -1872,7 +1882,7 @@ function profileScreen() {
         <p>Persistent Project Q identity and verified participation history.</p>
       </div>
       <div class="passport-photo">
-        <img src="/campaign-app/assets/system/q-id.webp" alt="Project Q participant identity" />
+        <img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Project Q participant identity" />
         <span class="${fullyVerified ? 'verified' : ''}">${fullyVerified ? 'VERIFIED' : 'PENDING'}</span>
       </div>
       <div class="passport-motto">PEOPLE<br />COMMUNITY<br />DEFI<br />OCEAN IMPACT</div>
@@ -1944,6 +1954,8 @@ function render() {
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
   document.querySelector('#account-name').textContent = state.profile.telegramVerified ? state.profile.name : `${verifiedCount()}/3 ID`;
+  const accountImage = document.querySelector('#account-control img');
+  if (accountImage) accountImage.src = safeHttpsUrl(state.profile.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   document.querySelector('#account-control').classList.toggle('verified', verifiedCount() === 3);
   const railState = document.querySelector('#rail-campaign-state');
   if (railState) railState.textContent = state.runtime?.displayLabel || 'SYNCING';
@@ -2883,6 +2895,7 @@ async function authenticateTelegram() {
     if (!response.ok) { state.sessionStatus = 'error'; return false; }
     const session = await response.json();
     state.profile.name = session.user.firstName || session.user.username || 'Duck Recruit';
+    state.profile.photoUrl = safeHttpsUrl(session.user.photoUrl);
     state.profile.telegramVerified = true;
     state.profile.xVerified = Boolean(session.participant?.xVerified);
     state.profile.walletVerified = Boolean(session.participant?.walletVerified);
