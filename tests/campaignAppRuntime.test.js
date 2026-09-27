@@ -116,6 +116,22 @@ async function loadRuntime() {
       state.operationsView = view;
       return operationsScreen();
     };
+    globalThis.__renderHomeLifecycleWith = (runtime, campaignState = 'DRAFT') => {
+      state.runtime = runtime;
+      state.runtimeLoadedAt = Date.now();
+      state.profile.campaignState = campaignState;
+      state.profile.telegramVerified = true;
+      state.profile.xVerified = true;
+      state.profile.walletVerified = true;
+      return home();
+    };
+    globalThis.__renderOperationOverviewWith = (runtime, campaignState = 'DRAFT') => {
+      state.runtime = runtime;
+      state.runtimeLoadedAt = Date.now();
+      state.profile.campaignState = campaignState;
+      state.operationsView = 'overview';
+      return operationsScreen();
+    };
     globalThis.__operationLifecycleWith = (runtime, campaignState = 'DRAFT') => {
       state.runtime = runtime;
       state.profile.campaignState = campaignState;
@@ -261,6 +277,29 @@ test('operation lifecycle follows authoritative campaign state instead of partic
     databaseState: 'COMPLETED', operational: false,
     schedule: { phase: 'POST_REVIEW' },
   }, 'COMPLETED').label, 'COMPLETED');
+});
+test('Terminal and Operation primary actions follow authoritative lifecycle', async () => {
+  const context = await loadRuntime();
+
+  const upcomingRuntime = { databaseState: 'SCHEDULED', operational: false, schedule: { phase: 'PRE_LAUNCH' } };
+  assert.match(context.__renderHomeLifecycleWith(upcomingRuntime, 'SCHEDULED'), /Prepare for Operation 01/);
+  assert.match(context.__renderOperationOverviewWith(upcomingRuntime, 'SCHEDULED'), /REVIEW MISSION FILES/);
+
+  const activeRuntime = { databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE' } };
+  assert.match(context.__renderHomeLifecycleWith(activeRuntime, 'ACTIVE'), /Enter Mission Files/);
+  assert.match(context.__renderOperationOverviewWith(activeRuntime, 'ACTIVE'), /ENTER MISSION FILES/);
+
+  const reviewRuntime = { databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' } };
+  assert.match(context.__renderHomeLifecycleWith(reviewRuntime, 'VERIFYING'), /Final Review in Progress/);
+  assert.match(context.__renderOperationOverviewWith(reviewRuntime, 'VERIFYING'), /FOLLOW FINAL REVIEW/);
+
+  const distributionRuntime = { databaseState: 'DISTRIBUTING', operational: false, schedule: { phase: 'POST_REVIEW' } };
+  assert.match(context.__renderHomeLifecycleWith(distributionRuntime, 'DISTRIBUTING'), /Track Reward Delivery/);
+  assert.match(context.__renderOperationOverviewWith(distributionRuntime, 'DISTRIBUTING'), /TRACK REWARD DELIVERY/);
+
+  const completedRuntime = { databaseState: 'COMPLETED', operational: false, schedule: { phase: 'POST_REVIEW' } };
+  assert.match(context.__renderHomeLifecycleWith(completedRuntime, 'COMPLETED'), /View Your Permanent Record/);
+  assert.match(context.__renderOperationOverviewWith(completedRuntime, 'COMPLETED'), /VIEW OPERATION RECORD/);
 });
 test('configured mission availability still requires authoritative ACTIVE operation state', async () => {
   const context = await loadRuntime();
