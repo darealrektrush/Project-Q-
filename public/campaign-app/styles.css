@@ -1710,3 +1710,50 @@ a.release-proof { min-height: 44px; }
 @media (max-width: 520px) {
   .home-hero-spacer { min-height: 92px; }
 }
+
+
+/* LIVE PREVIEW POLISH */
+.cycle-rail { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+.mission-title {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.mission-title .state-pill { margin-left: auto; }
+
+.mission-copy,
+.wallet-quickbar > div,
+.reward-summary-grid article,
+.profile-summary-v2 article,
+.home-metric,
+.missions-snapshot article {
+  min-width: 0;
+}
+
+.home-mission-list .mission-copy > small,
+.mission-list-v2 .mission-copy > small,
+.burn-utility em {
+  white-space: normal;
+  text-overflow: clip;
+}
+
+.mobile-nav .nav-button {
+  min-width: 0;
+}
+.mobile-nav .nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-tabs button {
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .cycle-rail { width: 100%; max-width: none; }
+  .mission-title .state-pill { margin-left: 0; }
+  .mobile-nav { column-gap: 2px; }
+  .mobile-nav .nav-label { font-size: 9px; }
+  .profile-tabs { padding-bottom: 5px; }
+}
