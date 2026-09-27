@@ -458,6 +458,9 @@ function nextStatusCard() {
     return `<article class="next-status"><img src="/campaign-app/assets/identity/telegram-verified.webp" alt="" /><div><span>Next status</span><b>Verify Telegram</b><small>Open Project Q from the official bot.</small></div><button class="outline-action" data-screen="profile">Review</button></article>`;
   }
   if (!p.xVerified) {
+    if (!state.runtime?.oracleBotUrl) {
+      return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Oracle Dev setup pending</b><small>X connection will open here when the isolated Oracle flow is ready.</small></div><button class="outline-action" data-screen="profile">Review</button></article>`;
+    }
     return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Connect Oracle X</b><small>Verify your X identity to unlock social missions.</small></div><button class="outline-action" id="oracle-home-link">Connect</button></article>`;
   }
   if (!p.walletVerified) {
@@ -1872,6 +1875,7 @@ function profileIdentity() {
   const p = state.profile;
   const count = verifiedCount();
   const fullyVerified = count === 3;
+  const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
 
   const steps = [
     {
@@ -1886,8 +1890,8 @@ function profileIdentity() {
     {
       label: 'X Identity',
       complete: p.xVerified,
-      locked: !p.telegramVerified,
-      detail: p.xVerified ? `Oracle verified · ${formatProfileDate(p.xVerifiedAt)}` : 'Connect the X account used for eligible social activity.',
+      locked: !p.telegramVerified || !oracleAvailable,
+      detail: p.xVerified ? `Oracle verified · ${formatProfileDate(p.xVerifiedAt)}` : oracleAvailable ? 'Connect the X account used for eligible social activity.' : 'Oracle Dev connection is being prepared.',
       action: p.xVerified ? 'Open Oracle' : 'Connect X',
       actionId: 'oracle-link',
       provider: 'oracle',
@@ -1895,8 +1899,8 @@ function profileIdentity() {
     {
       label: 'Reward Wallet',
       complete: p.walletVerified,
-      locked: !p.telegramVerified,
-      detail: p.walletVerified ? `Oracle verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : 'Verify the one wallet used for eligibility and distributions.',
+      locked: !p.telegramVerified || !oracleAvailable,
+      detail: p.walletVerified ? `Oracle verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : oracleAvailable ? 'Verify the one wallet used for eligibility and distributions.' : 'Oracle Dev connection is being prepared.',
       action: p.walletVerified ? 'Open Oracle' : 'Connect Wallet',
       actionId: 'profile-wallet',
       provider: 'oracle',
@@ -2132,11 +2136,16 @@ function go(screen, { replace = false } = {}) {
 }
 
 function openOracle() {
-  if (typeof window.Telegram?.WebApp?.openTelegramLink === 'function') {
-    window.Telegram.WebApp.openTelegramLink('https://t.me/crabstar_oracle_bot');
+  const url = state.runtime?.oracleBotUrl;
+  if (!/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/.test(url || '')) {
+    toast('Oracle connection is not ready in this environment.');
     return;
   }
-  window.open('https://t.me/crabstar_oracle_bot', '_blank', 'noopener,noreferrer');
+  if (typeof window.Telegram?.WebApp?.openTelegramLink === 'function') {
+    window.Telegram.WebApp.openTelegramLink(url);
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function openExternal(url) {
