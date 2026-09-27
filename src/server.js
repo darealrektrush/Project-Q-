@@ -527,6 +527,10 @@ app.post('/oracle/campaign-identity', async (req, res) => {
   }
   try {
     const identity = oracleIngest.validateOracleIdentityEvent(req.body);
+    await ensureCampaignProfile(supabase, {
+      campaignId: process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID,
+      telegramUserId: identity.telegramUserId,
+    });
     const result = await oracleIngest.linkOracleIdentity(supabase, identity);
     return res.status(200).json({ ok: true, identity: result });
   } catch (err) {
@@ -549,6 +553,10 @@ app.post('/oracle/campaign-wallet', async (req, res) => {
   try {
     const event = validateOracleWalletEvent(req.body);
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    await ensureCampaignProfile(supabase, {
+      campaignId,
+      telegramUserId: event.telegramUserId,
+    });
     const identity = await recordOracleWallet(supabase, event, campaignId);
     return res.status(200).json({ ok: true, identity });
   } catch (err) {
