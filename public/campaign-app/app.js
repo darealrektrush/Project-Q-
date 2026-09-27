@@ -1431,6 +1431,27 @@ function recordTabs() {
   return `<div class="record-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
 }
 
+function recordNextActionMarkup() {
+  const lifecycle = operationLifecycleState();
+
+  if (lifecycle.label === 'ACTIVE') {
+    return '<section class="record-next-action"><div><span>NEXT</span><b>Continue Operation</b><small>Choose another eligible Mission File and keep building your verified Record.</small></div><button data-operation-view="missions">MISSION FILES →</button></section>';
+  }
+  if (lifecycle.label === 'REVIEWING') {
+    return '<section class="record-next-action"><div><span>NEXT</span><b>Follow Final Review</b><small>Your verified Record remains visible while Project Q reconciles final campaign outcomes.</small></div><button data-operation-view="progress">TRACK REVIEW →</button></section>';
+  }
+  if (lifecycle.label === 'DISTRIBUTING') {
+    return '<section class="record-next-action"><div><span>NEXT</span><b>Track Reward Delivery</b><small>Follow finalized allocations through scheduled release and confirmed receipts.</small></div><button data-screen="rewards">REWARDS →</button></section>';
+  }
+  if (['COMPLETED','ARCHIVED'].includes(lifecycle.label)) {
+    return '<section class="record-next-action complete"><div><span>PERMANENT RECORD</span><b>Operation History Finalized</b><small>Review receipts, achievements and verified campaign outcomes at any time.</small></div><button data-screen="rewards">RECEIPTS →</button></section>';
+  }
+  if (['LAUNCH BLOCKED','PAUSED','TERMINATED'].includes(lifecycle.label)) {
+    return '<section class="record-next-action blocked"><div><span>OPERATION STATUS</span><b>Campaign Actions Closed</b><small>Existing verified records remain available while the operation is not accepting activity.</small></div><button data-operation-view="intel">INTEL →</button></section>';
+  }
+  return '<section class="record-next-action"><div><span>NEXT</span><b>Prepare for Operation</b><small>Review clearance and Mission Files before campaign participation opens.</small></div><button data-operation-view="overview">OPERATION →</button></section>';
+}
+
 function recordScreen() {
   const c = state.campaign || fallbackCampaign;
   const p = state.profile;
@@ -1471,6 +1492,8 @@ function recordScreen() {
         <button data-screen="burns">Earn-to-Burn Receipts →</button>
       </div>
     </section>
+
+    ${recordNextActionMarkup()}
 
     ${recordTabs()}
     ${content}
