@@ -791,7 +791,7 @@ function missionCard(mission) {
   const collective = mission.kind === 'COLLECTIVE';
   const image = mission.image;
   const visual = image
-    ? `<img class="mission-art ${oracle ? 'oracle-art' : ''}" src="${image}" alt="" />`
+    ? `<img class="mission-art ${oracle ? 'oracle-art' : ''}" src="${image}" alt="" loading="lazy" decoding="async" />`
     : `<div class="mission-icon">${escapeHtml(mission.icon || 'Q')}</div>`;
   const telemetry = missionTelemetry(mission);
   const missionState = canonicalMissionState(mission, telemetry);
@@ -881,7 +881,7 @@ function activityRow(item) {
 function badgeGallery(badges = []) {
   return `<div class="badge-gallery">${badges.map((badge) => {
     const unlocked = state.profile.achievements.includes(badge.id);
-    return `<article class="achievement ${unlocked ? 'unlocked' : 'locked'}"><img src="${badge.image}" alt="" /><div><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Earn through verified campaign activity')}</p></div><span>${unlocked ? 'Unlocked' : 'Locked'}</span></article>`;
+    return `<article class="achievement ${unlocked ? 'unlocked' : 'locked'}"><img src="${badge.image}" alt="" loading="lazy" decoding="async" /><div><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Earn through verified campaign activity')}</p></div><span>${unlocked ? 'Unlocked' : 'Locked'}</span></article>`;
   }).join('')}</div>`;
 }
 
@@ -1274,7 +1274,7 @@ function operationsScreen() {
       <div class="mission-file-index">${missions.map((mission, index) => `
         <button class="mission-file-row" data-mission-id="${escapeHtml(mission.id)}">
           <span class="file-number">MF ${String(index + 1).padStart(2, '0')}</span>
-          ${mission.image ? `<img src="${mission.image}" alt="" />` : '<i>Q</i>'}
+          ${mission.image ? `<img src="${mission.image}" alt="" loading="lazy" decoding="async" />` : '<i>Q</i>'}
           <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(canonicalMissionState(mission, missionTelemetry(mission)).label)}</small></div>
           <em>OPEN →</em>
         </button>`).join('')}
@@ -1860,7 +1860,7 @@ function profileScreen() {
           <b>${escapeHtml(c.name || 'Bond the Duck')}</b>
           <span>${escapeHtml(c.schedule?.activeLabel || 'Campaign schedule pending')}</span>
         </div>
-        ${c.banner ? `<img src="${c.banner}" alt="" />` : ''}
+        ${c.banner ? `<img src="${c.banner}" alt="" loading="lazy" decoding="async" />` : ''}
         <em>${escapeHtml(operationLifecycleState().label)}</em>
       </button>
       <div class="passport-record-metrics">
