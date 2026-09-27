@@ -116,7 +116,7 @@ h1 { margin: 0; color: var(--text); font-size: 16px; font-weight: 650; letter-sp
 .clock-copy span { color: var(--gold); font-size: 7px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
 .clock-copy strong { margin-top: 6px; color: var(--warm-white); font-size: clamp(21px, 4vw, 30px); font-weight: 560; letter-spacing: .025em; }
 .clock-copy small { margin-top: 4px; color: var(--muted); font-size: 7px; line-height: 1.45; }
-.cycle-rail { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cycle-rail { display: grid; grid-template-columns: repeat(var(--cycle-count, 5), minmax(0, 1fr)); gap: 5px; }
 .cycle-rail i { aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--line-soft); border-radius: 50%; color: #5f5a51; background: #090909; font-size: 7px; font-style: normal; }
 .cycle-rail i.complete { color: var(--success); border-color: rgba(100, 201, 135, .2); background: rgba(100, 201, 135, .05); }
 .cycle-rail i.current { color: #171108; border-color: var(--gold-2); background: var(--gold-2); box-shadow: 0 0 16px rgba(237, 189, 97, .16); }
@@ -629,11 +629,11 @@ h1 { margin: 0; color: var(--text); font-size: 16px; font-weight: 650; letter-sp
   .account-copy { max-width: 56px; }
   .screen { padding-top: 10px; }
   .mobile-nav { position: fixed; inset: auto 0 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); padding: 7px max(5px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(5px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(4, 4, 4, .96); backdrop-filter: blur(18px); }
-  .mobile-nav .nav-button { min-height: 49px; padding: 3px 2px; display: grid; place-items: center; gap: 1px; border-radius: 7px; }
+  .mobile-nav .nav-button { min-height: 54px; padding: 3px 2px; display: grid; place-items: center; gap: 1px; border-radius: 7px; }
   .mobile-nav .nav-button.active { background: linear-gradient(180deg, rgba(201, 139, 45, .08), transparent); }
   .mobile-nav .nav-icon { width: 24px; height: 24px; }
   .mobile-nav .nav-icon svg { width: 20px; height: 20px; stroke-width: 1.75; }
-  .mobile-nav .nav-label { display: block; font-size: 7px; letter-spacing: .03em; text-transform: uppercase; }
+  .mobile-nav .nav-label { display: block; font-size: 10px; letter-spacing: .01em; text-transform: uppercase; }
   .command-hero { height: clamp(205px, 52vw, 310px); }
   .hero-copy { width: 100%; padding: 16px; }
   .readiness-block { inset: auto 16px 18px; }
