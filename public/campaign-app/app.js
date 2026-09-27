@@ -486,21 +486,23 @@ function home() {
     brand: 'q',
   };
   if (p.telegramVerified && !p.xVerified) {
+    const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
     nextMove = {
       label: 'Next Step',
-      title: 'Connect Oracle X',
-      detail: 'Verify your X identity to unlock missions.',
-      action: 'CONNECT',
+      title: oracleAvailable ? 'Connect Oracle X' : 'Oracle Dev setup pending',
+      detail: oracleAvailable ? 'Verify your X identity to unlock missions.' : 'X connection will open when Oracle Dev is ready.',
+      action: oracleAvailable ? 'CONNECT' : 'REVIEW',
       screen: 'profile',
       profileView: 'identity',
       brand: 'oracle',
     };
   } else if (p.telegramVerified && p.xVerified && !p.walletVerified) {
+    const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
     nextMove = {
       label: 'Next Step',
-      title: 'Verify Reward Wallet',
-      detail: 'Connect the wallet used for eligibility and distributions.',
-      action: 'VERIFY',
+      title: oracleAvailable ? 'Verify Reward Wallet' : 'Oracle Dev setup pending',
+      detail: oracleAvailable ? 'Connect the wallet used for eligibility and distributions.' : 'Wallet connection will open when Oracle Dev is ready.',
+      action: oracleAvailable ? 'VERIFY' : 'REVIEW',
       screen: 'profile',
       profileView: 'identity',
       brand: 'oracle',
