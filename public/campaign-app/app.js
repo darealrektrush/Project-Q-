@@ -1704,7 +1704,7 @@ function profileOverview() {
   return `<div class="passport-overview">
     <section class="passport-overview-grid">
       <article class="passport-overview-card">
-        <span>ACTIVE OPERATION</span>
+        <span>${escapeHtml(operationLifecycleState().label)} OPERATION</span>
         <h3>${escapeHtml(c.name || 'Bond the Duck')}</h3>
         <p>${Number(p.completedMissions || 0)} verified missions · ${Number(p.xp || 0).toLocaleString()} XP</p>
         <button data-screen="operations">OPEN OP ${operationNumber()} →</button>
@@ -1958,6 +1958,11 @@ function profileScreen() {
     : missingEligibility?.label || (p.campaignReady ? 'Eligibility Check' : 'Identity Required');
   const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
+  const operationSchedule = !state.runtime
+    ? 'Checking campaign schedule'
+    : state.runtime.schedule?.phase === 'PRE_LAUNCH' && !state.runtime.schedule?.targetAt
+      ? 'Campaign dates pending · 10 active days'
+      : c.schedule?.activeLabel || 'Campaign schedule pending';
 
   return `<div class="passport-ui">
     <section class="participant-passport">
@@ -1988,7 +1993,7 @@ function profileScreen() {
         <div class="passport-record-copy">
           <small>${escapeHtml(c.shortName || 'Operation')}</small>
           <b>${escapeHtml(c.name || 'Bond the Duck')}</b>
-          <span>${escapeHtml(c.schedule?.activeLabel || 'Campaign schedule pending')}</span>
+          <span>${escapeHtml(operationSchedule)}</span>
         </div>
         ${c.banner ? `<img src="${c.banner}" alt="" loading="lazy" decoding="async" />` : ''}
         <em>${escapeHtml(operationLifecycleState().label)}</em>
