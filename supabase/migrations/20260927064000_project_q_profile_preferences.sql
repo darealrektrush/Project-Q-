@@ -10,6 +10,7 @@ alter table public.project_q_profile_preferences enable row level security;
 
 revoke all on table public.project_q_profile_preferences from anon;
 revoke all on table public.project_q_profile_preferences from authenticated;
+grant select, insert, update, delete on table public.project_q_profile_preferences to service_role;
 
 comment on table public.project_q_profile_preferences is
   'Project Q app-level participant preferences keyed by Oracle universal profile_id.';
