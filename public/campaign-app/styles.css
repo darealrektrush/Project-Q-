@@ -985,3 +985,105 @@ h1 { font-size: 17px; letter-spacing: .045em; text-transform: none; }
   .home-metric { padding: 13px; }
   .home-metric strong { font-size: 20px; }
 }
+
+
+/* PROJECT Q EXPLAINER SHEET */
+.section-actions { display: flex; align-items: center; gap: 6px; }
+.info-action {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--gold-2);
+  background: var(--gold-wash);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.info-action:hover { border-color: var(--line-strong); background: rgba(201,139,45,.12); }
+
+.explainer-dialog {
+  width: min(560px, calc(100vw - 24px));
+  max-width: none;
+  max-height: min(78vh, 720px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  color: var(--text-primary);
+  background: var(--surface-modal);
+  box-shadow: 0 28px 90px rgba(0,0,0,.72);
+}
+.explainer-dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(7px); }
+.explainer-sheet { max-height: inherit; padding: 20px; overflow-y: auto; }
+.explainer-handle { display: none; width: 42px; height: 4px; margin: 0 auto 14px; border-radius: 999px; background: rgba(255,255,255,.16); }
+.explainer-sheet header { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: start; }
+.explainer-sheet header h2 { margin: 5px 0 8px; font-size: 25px; line-height: 1.08; }
+.explainer-sheet header p { margin: 0; max-width: 440px; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.explainer-close {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,.025);
+  font-size: 23px;
+  cursor: pointer;
+}
+.explainer-items { margin: 22px 0; display: grid; gap: 10px; }
+.explainer-items article {
+  min-height: 82px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: 44px minmax(0,1fr);
+  gap: 13px;
+  align-items: start;
+  border: 1px solid var(--line-soft);
+  border-radius: 13px;
+  background: var(--surface-2);
+}
+.explainer-items article > i {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #171108;
+  background: linear-gradient(180deg, var(--gold-2), #b87920);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+.explainer-items h3 { margin: 1px 0 5px; font-size: 15px; }
+.explainer-items p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
+.explainer-got-it {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid #e6ad4c;
+  border-radius: 11px;
+  color: #171108;
+  background: linear-gradient(180deg, #efbf63, #b87920);
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  .explainer-dialog {
+    width: 100%;
+    max-height: calc(100vh - 36px);
+    margin: auto 0 0;
+    border-radius: 20px 20px 0 0;
+  }
+  .explainer-sheet { padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .explainer-handle { display: block; }
+  .explainer-sheet header h2 { font-size: 23px; }
+  .explainer-sheet header p { font-size: 13px; }
+  .explainer-items { margin: 18px 0; }
+  .explainer-items article { min-height: 78px; }
+}
