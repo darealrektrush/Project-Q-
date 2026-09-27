@@ -1,5 +1,74 @@
 const ORACLE_LOGO = '/campaign-app/assets/oracle-logo.jpg';
 
+const EXPLAINERS = {
+  campaign: {
+    eyebrow: 'Campaign guide',
+    title: 'How campaigns work',
+    description: 'Project Q turns eligible community activity into verified campaign progress, XP and transparent reward records.',
+    items: [
+      { icon: '01', title: 'Create & Vote', text: 'Participate in campaign activities, voting and community objectives.' },
+      { icon: '02', title: 'Mission Verify', text: 'Complete missions and have eligible activity verified by Project Q or Oracle.' },
+      { icon: '03', title: 'Trending Bots', text: 'Join approved community trending and engagement activity when available.' },
+      { icon: '04', title: 'Earn to Burn', text: 'Verified participation contributes toward transparent ecosystem burn milestones.' },
+    ],
+  },
+  xp: {
+    eyebrow: 'XP guide', title: 'How XP works',
+    description: 'XP records verified participation and campaign contribution.',
+    items: [
+      { icon: '01', title: 'Participate', text: 'Complete eligible campaign and community activity.' },
+      { icon: '02', title: 'Verify', text: 'Project Q confirms accepted activity before XP is settled.' },
+      { icon: '03', title: 'Build Progress', text: 'Settled XP advances your campaign standing and rank progression.' },
+    ],
+  },
+  ranks: {
+    eyebrow: 'Rank guide', title: 'How ranks work',
+    description: 'Ranks turn accumulated verified XP into visible progression.',
+    items: [
+      { icon: '01', title: 'Earn XP', text: 'Verified activity contributes to your cumulative progression.' },
+      { icon: '02', title: 'Advance', text: 'Reach the required XP threshold to move into the next rank.' },
+      { icon: '03', title: 'Keep Building', text: 'Your rank reflects long-term contribution across eligible activity.' },
+    ],
+  },
+  rewards: {
+    eyebrow: 'Rewards guide', title: 'How rewards work',
+    description: 'Rewards are recorded, verified and released through auditable Project Q records.',
+    items: [
+      { icon: '01', title: 'Qualify', text: 'Meet campaign eligibility and identity requirements.' },
+      { icon: '02', title: 'Allocate', text: 'Verified outcomes create a recorded reward allocation.' },
+      { icon: '03', title: 'Release', text: 'Eligible allocations follow the campaign release schedule.' },
+      { icon: '04', title: 'Receipt', text: 'Completed releases remain visible through transparent receipts.' },
+    ],
+  },
+  leaderboard: {
+    eyebrow: 'Leaderboard guide', title: 'How leaderboards work',
+    description: 'Leaderboards show verified campaign contribution using eligible settled activity.',
+    items: [
+      { icon: '01', title: 'Verified Activity', text: 'Only accepted activity contributes to campaign scoring.' },
+      { icon: '02', title: 'Campaign Views', text: 'Different boards can show overall, cycle or mission-specific contribution.' },
+      { icon: '03', title: 'Eligibility', text: 'Campaign rules determine which participants and outcomes qualify.' },
+    ],
+  },
+  profile: {
+    eyebrow: 'Identity guide', title: 'How your profile works',
+    description: 'Your Project Q profile ties campaign activity to one verified identity.',
+    items: [
+      { icon: '01', title: 'Telegram', text: 'Your Telegram identity establishes your Project Q participant profile.' },
+      { icon: '02', title: 'X', text: 'Oracle verifies the X account used for eligible social activity.' },
+      { icon: '03', title: 'Wallet', text: 'One verified reward wallet is used for eligibility and distributions.' },
+    ],
+  },
+  oracle: {
+    eyebrow: 'Oracle guide', title: 'What Oracle does',
+    description: 'Oracle is Project Q’s identity, verification and intelligence partner.',
+    items: [
+      { icon: '01', title: 'Identity', text: 'Maintains canonical X and wallet connections for campaign participation.' },
+      { icon: '02', title: 'Verification', text: 'Supplies verified activity signals used by supported Project Q systems.' },
+      { icon: '03', title: 'Intelligence', text: 'Provides ecosystem guidance and supporting campaign intelligence.' },
+    ],
+  },
+};
+
 const NAV = [
   ['home', 'Home'],
   ['missions', 'Missions'],
@@ -1188,8 +1257,32 @@ function openMission(missionId) {
   else dialog.setAttribute('open', '');
 }
 
+function explainerMarkup(key) {
+  const item = EXPLAINERS[key];
+  if (!item) return '';
+  return `<form method="dialog" class="explainer-sheet">
+    <div class="explainer-handle" aria-hidden="true"></div>
+    <header>
+      <div><span class="label">${escapeHtml(item.eyebrow)}</span><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.description)}</p></div>
+      <button class="explainer-close" value="close" aria-label="Close">×</button>
+    </header>
+    <div class="explainer-items">
+      ${item.items.map(({ icon, title, text }) => `<article><i>${escapeHtml(icon)}</i><div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></div></article>`).join('')}
+    </div>
+    <button class="explainer-got-it" value="close">Got It</button>
+  </form>`;
+}
+
+function openExplainer(key) {
+  const dialog = document.querySelector('#explainer-dialog');
+  if (!dialog || !EXPLAINERS[key]) return;
+  dialog.innerHTML = explainerMarkup(key);
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  state.telegram?.HapticFeedback?.impactOccurred('light');
+}
+
 function bind() {
-  document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });
+  document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });\n  document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
