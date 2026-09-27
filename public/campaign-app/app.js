@@ -1548,6 +1548,18 @@ function tourCardMarkup(step, index) {
   </div>`;
 }
 
+function visibleTourTarget(selector) {
+  const candidates = Array.from(document.querySelectorAll(selector));
+  return candidates.find((node) => {
+    const style = window.getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+    return style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && rect.width > 0
+      && rect.height > 0;
+  }) || candidates[0] || null;
+}
+
 function clearTourTarget() {
   document.querySelectorAll('.tour-target-active').forEach((node) => node.classList.remove('tour-target-active'));
 }
@@ -1585,7 +1597,7 @@ function renderTourStep() {
   clearTourTarget();
 
   requestAnimationFrame(() => {
-    const target = document.querySelector(step.target);
+    const target = visibleTourTarget(step.target);
     if (target) {
       target.classList.add('tour-target-active');
       target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
