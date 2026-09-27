@@ -577,16 +577,92 @@ function missionTelemetry(mission) {
   return null;
 }
 
+function campaignEligibilityRequirements() {
+  const c = state.campaign || fallbackCampaign;
+  const p = state.profile;
+  const minimumUsd = Number(c.eligibility?.minimumFawkqUsd || state.referrals?.minimumPurchaseUsd || 2);
+  return [
+    {
+      key: 'telegram',
+      label: 'Telegram identity',
+      complete: Boolean(p.telegramVerified),
+      detail: p.telegramVerified ? 'Telegram Mini App identity verified.' : 'Open Project Q from the official Telegram bot.',
+      action: p.telegramVerified ? null : { label: 'Open Profile', screen: 'profile', profileView: 'identity' },
+      provider: 'q',
+    },
+    {
+      key: 'x',
+      label: 'X linked through Oracle',
+      complete: Boolean(p.xVerified),
+      detail: p.xVerified ? 'Oracle X identity verified.' : 'Connect the X account used for eligible campaign activity.',
+      action: p.xVerified ? null : { label: 'Connect X', screen: 'profile', profileView: 'identity' },
+      provider: 'oracle',
+    },
+    {
+      key: 'wallet',
+      label: 'Reward wallet',
+      complete: Boolean(p.walletVerified),
+      detail: p.walletVerified ? 'Verified reward wallet connected.' : 'Connect the wallet used for campaign eligibility and distributions.',
+      action: p.walletVerified ? null : { label: 'Verify Wallet', screen: 'profile', profileView: 'identity' },
+      provider: 'oracle',
+    },
+    {
+      key: 'token-account',
+      label: 'FAWKQ token account',
+      complete: Boolean(p.tokenAccountReady),
+      detail: p.tokenAccountReady ? 'FAWKQ token account detected.' : 'A FAWKQ token account must be available on the verified reward wallet.',
+      action: p.tokenAccountReady ? null : { label: 'Check Wallet', screen: 'profile', profileView: 'wallet' },
+      provider: 'q',
+    },
+    {
+      key: 'holder',
+      label: `Minimum ${minimumUsd} FAWKQ`,
+      complete: Boolean(p.holderEligible),
+      detail: p.holderEligible
+        ? `Verified FAWKQ holding meets the ${minimumUsd} minimum.`
+        : `Hold at least ${minimumUsd} of FAWKQ in the verified reward wallet.`,
+      action: p.holderEligible ? null : { label: 'Check Eligibility', screen: 'profile', profileView: 'wallet' },
+      provider: 'q',
+    },
+  ];
+}
+
+function campaignClearanceReady() {
+  return campaignEligibilityRequirements().every(({ complete }) => complete);
+}
+
+function clearanceMarkup({ compact = false } = {}) {
+  const requirements = campaignEligibilityRequirements();
+  const completeCount = requirements.filter(({ complete }) => complete).length;
+  const next = requirements.find(({ complete }) => !complete);
+  return `<section class="clearance-panel ${compact ? 'compact' : ''}">
+    <div class="clearance-head">
+      <div><span>CAMPAIGN CLEARANCE</span><h3>${completeCount === requirements.length ? 'Clearance Complete' : `Complete ${requirements.length - completeCount} Requirement${requirements.length - completeCount === 1 ? '' : 's'}`}</h3></div>
+      <b>${completeCount}/${requirements.length}</b>
+    </div>
+    <div class="clearance-list">
+      ${requirements.map((item) => `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}">
+        <i>${item.complete ? '✓' : '○'}</i>
+        <div><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.detail)}</small></div>
+        ${item.provider === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : ''}
+        ${item.action ? `<button data-screen="${item.action.screen}" data-profile-view="${item.action.profileView}">${escapeHtml(item.action.label)} →</button>` : ''}
+      </article>`).join('')}
+    </div>
+    ${next ? `<div class="clearance-next"><span>NEXT REQUIRED</span><b>${escapeHtml(next.label)}</b></div>` : '<div class="clearance-next complete"><span>STATUS</span><b>READY FOR ELIGIBLE MISSIONS</b></div>'}
+  </section>`;
+}
+
 function canonicalMissionState(mission, telemetry) {
   const verified = Number(telemetry?.verified || 0);
   const pending = Number(telemetry?.pending || 0);
   const rejected = Number(telemetry?.rejected || 0);
   if (verified > 0) return { label: 'VERIFIED', tone: 'success' };
-  if (pending > 0) return { label: 'PENDING', tone: 'pending' };
+  if (pending > 0) return { label: 'VERIFYING', tone: 'pending' };
   if (rejected > 0 && verified === 0 && pending === 0) return { label: 'REJECTED', tone: 'blocked' };
   if (mission.kind === 'COLLECTIVE') return { label: 'COLLECTIVE', tone: 'pending' };
-  if (mission.enabled) return { label: 'READY', tone: 'ready' };
-  return { label: 'GATED', tone: 'pending' };
+  if (mission.enabled && campaignClearanceReady()) return { label: 'AVAILABLE', tone: 'ready' };
+  if (mission.enabled) return { label: 'LOCKED', tone: 'pending' };
+  return { label: 'LOCKED', tone: 'pending' };
 }
 
 function missionCard(mission) {
@@ -937,6 +1013,8 @@ function operationsScreen() {
     content = `<section class="operation-content-panel operation-overview-panel">
       <div class="operation-progress-line"><span>CAMPAIGN PROGRESS</span><strong>${readiness}%</strong></div>
       <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+
+      ${clearanceMarkup({ compact: true })}
 
       <div class="operation-economics">
         <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Reward Pool</small></article>
@@ -1663,7 +1741,7 @@ async function submitWebsiteVoteProofFile(file, button) {
 
 function missionDetailMarkup(mission) {
   const telemetry = missionTelemetry(mission);
-  const actionEnabled = Boolean(mission.enabled || mission.readOnlyAction);
+  const actionEnabled = Boolean((mission.enabled && campaignClearanceReady()) || mission.readOnlyAction);
   const footerActionEnabled = actionEnabled && mission.id !== 'website-voting';
   const requirements = Array.isArray(mission.requirements) ? mission.requirements : [];
   const sourceConfig = state.campaign?.verificationSources || {};
@@ -1758,6 +1836,8 @@ function missionDetailMarkup(mission) {
       <div><span>Status</span><b>${escapeHtml(status)}</b></div>
       <div><span>Progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div>
     </section>
+
+    ${clearanceMarkup({ compact: true })}
 
     ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : 'Readiness Gate Closed')} <span>→</span></button>` : ''}
 
