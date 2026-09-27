@@ -14,7 +14,7 @@
 .notification-control svg{width:23px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .q-shell-v2 .account-control{border:1px solid #d6d4ca;border-radius:9px;padding:4px;gap:5px;background:transparent;min-width:0;min-height:46px;color:#131414}
 .q-shell-v2 .account-control img{width:35px;height:35px;opacity:1;border:1px solid #8b7238;border-radius:50%;object-fit:cover}
-.q-shell-v2 .account-copy{min-width:0;max-width:65px;gap:1px}
+.q-shell-v2 .account-copy{display:grid;min-width:0;max-width:65px;gap:1px}
 .q-shell-v2 .account-copy b{font:700 13px/1.1 var(--q-display);color:#101414;letter-spacing:0;text-transform:none}
 .q-shell-v2 .account-copy small{font:400 11px/1.15 var(--q-display);color:#282b2b}
 .account-chevron{font-size:23px;line-height:1;padding:0 2px}
@@ -97,3 +97,21 @@
 }
 @media(max-width:430px){.q-shell-v2 .topbar{gap:6px;min-height:70px}.q-shell-v2 .compact-brand{width:54px;height:54px;flex-basis:54px}.q-shell-v2 .brand-wordmark>b{font-size:24px}.q-shell-v2 #screen-title{font-size:8px;letter-spacing:.16em}.q-shell-v2 .topbar-identity{gap:7px}.q-shell-v2 .top-actions{gap:3px}.q-shell-v2 .account-control img{width:30px;height:30px}.q-shell-v2 .account-control{gap:4px;padding:3px;min-height:41px}.q-shell-v2 .account-copy b{font-size:12px}.q-shell-v2 .account-copy small{font-size:10px}.notification-control{width:29px;padding:4px}.notification-control svg{width:21px}.q-shell-v2 .account-copy{max-width:52px}.terminal-v2 .terminal-next-step{grid-template-columns:85px minmax(0,1fr) auto;gap:7px;padding:8px}.terminal-identity-art>img{width:46px;height:46px}.identity-channel{width:34px;padding-right:4px}.identity-channel svg{width:28px}.terminal-v2 .terminal-next-step>button{padding:0 11px;min-height:36px;font-size:11px}.terminal-v2 .terminal-next-step>div:nth-child(2)>b{font-size:16px}.operation-summary-heading{gap:6px}.operation-summary-heading>strong{font-size:13px}.operation-summary-heading>button{font-size:9px}}
 @media(max-width:359px){.q-shell-v2 .compact-brand{width:46px;height:46px;flex-basis:46px}.q-shell-v2 .brand-wordmark>b{font-size:21px}.q-shell-v2 #screen-title{font-size:7px;letter-spacing:.1em}.q-terminal .topbar{padding-left:8px;padding-right:8px}.q-shell-v2 .account-control img{width:25px;height:25px}.q-shell-v2 .account-chevron{display:none}.q-shell-v2 .account-copy{max-width:44px}.notification-control{width:25px}.operation-summary-heading>strong{font-size:12px}.operation-summary-heading .state-pill{font-size:9px;padding:4px}.operation-summary-heading>button{font-size:8px}.operation-impact-categories{gap:4px;padding-left:5px;font-size:9px}.operation-impact-categories svg{width:21px}.operation-summary-body{gap:6px}.terminal-v2 .terminal-countdown-state strong{font-size:19px}.terminal-v2 .terminal-next-step{grid-template-columns:64px minmax(0,1fr) auto;gap:6px;min-height:78px}.terminal-identity-art{gap:2px}.terminal-identity-art>img{width:34px;height:34px}.identity-channel{width:28px}.identity-channel svg{width:23px}.terminal-v2 .terminal-next-step>div:nth-child(2)>b{font-size:14px}.terminal-v2 .terminal-next-step>button{padding:0 8px;font-size:10px}.terminal-v2 .terminal-actions>button{padding:8px 6px;grid-template-columns:30px minmax(0,1fr) 7px;gap:4px}.terminal-v2 .terminal-action-icon,.terminal-v2 .terminal-action-icon svg{width:29px}.terminal-v2 .terminal-actions b{font-size:12px}.terminal-v2 .terminal-actions small{font-size:10px}.q-shell-v2 .q-footer{font-size:7px;padding-left:12px;padding-right:12px}}
+/* Final phone geometry after side-by-side review. */
+@media(min-width:360px) and (max-width:430px){
+  .q-shell-v2 .brand-wordmark>b{font-size:28px}
+  .q-shell-v2 .account-copy b{font-size:14px}
+  .q-shell-v2 .account-copy small{font-size:11px}
+  .q-shell-v2 .account-copy{max-width:58px}
+  .terminal-v2 .terminal-actions b{font-size:16px}
+  .terminal-v2 .terminal-actions small{font-size:12px}
+  .terminal-v2 .terminal-next-step>div:nth-child(2)>b{font-size:18px}
+  .operation-summary-heading>strong{font-size:15px}
+  .operation-summary-heading>button{font-size:11px}
+}
+@media(max-width:359px){
+  .q-shell-v2 .account-copy{display:grid}
+  .q-shell-v2 .brand-wordmark>b{font-size:24px}
+  .q-shell-v2 .mobile-nav .nav-label{font-size:10px!important}
+}
+@media(min-width:861px){.q-shell-v2 main,.q-shell-v2.rail-collapsed main{width:min(1040px,100%);min-width:0}}

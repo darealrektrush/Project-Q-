@@ -305,7 +305,7 @@ test('Terminal distinguishes a proposed target from authoritative campaign timin
     displayLabel: 'PRE-LAUNCH', tone: 'pending',
     schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
   });
-  assert.match(pending, /TARGET PENDING/);
+  assert.match(pending, /DATES PENDING/);
   assert.match(pending, /Campaign dates pending/);
   assert.doesNotMatch(pending, /00<\/strong><span>DAYS/);
   const live = context.__renderHomeWithRuntime({
@@ -313,7 +313,7 @@ test('Terminal distinguishes a proposed target from authoritative campaign timin
     displayLabel: 'CYCLE 1 LIVE', tone: 'success',
     schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-10-01T15:00:00.000Z', currentCycle: 1 },
   });
-  assert.match(live, /CYCLE 1 LIVE/);
+  assert.match(live, /state-pill success[^>]*><i><\/i>ACTIVE/);
   assert.match(live, /DAYS/);
   assert.match(live, /HOURS/);
 });
