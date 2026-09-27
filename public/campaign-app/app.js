@@ -1900,7 +1900,10 @@ function profileScreen() {
   const count = verifiedCount();
   const fullyVerified = count === 3;
   const op = operationNumber();
-  const eligibility = p.rewardEligible ? 'Reward Ready' : p.campaignReady ? 'Holder Check' : 'Pending';
+  const missingEligibility = campaignEligibilityRequirements().find(({ complete }) => !complete);
+  const eligibility = p.rewardEligible
+    ? 'Reward Ready'
+    : missingEligibility?.label || (p.campaignReady ? 'Eligibility Check' : 'Identity Required');
   const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
 
