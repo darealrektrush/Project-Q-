@@ -1694,3 +1694,11 @@ a.release-proof { min-height: 44px; }
   .release-track small,
   .commitment-list small { line-height: 1.4; }
 }
+
+
+/* TOUR STACKING QA */
+.mobile-nav:has(.tour-target-active),
+.rail:has(.tour-target-active),
+.topbar:has(.tour-target-active) {
+  z-index: 126;
+}
