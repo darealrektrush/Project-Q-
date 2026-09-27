@@ -485,17 +485,6 @@ function home() {
       profileView: 'identity',
       brand: 'oracle',
     };
-  } else if (identityReady && !campaignClearanceReady()) {
-    const missing = campaignEligibilityRequirements().find(({ complete }) => !complete);
-    nextMove = {
-      label: 'Campaign Clearance',
-      title: missing?.label || 'Complete Eligibility',
-      detail: missing?.detail || 'Complete the remaining campaign eligibility requirement before eligible missions can open.',
-      action: missing?.action?.label ? missing.action.label.toUpperCase() : 'REVIEW',
-      screen: missing?.action?.screen || 'profile',
-      profileView: missing?.action?.profileView || 'wallet',
-      brand: missing?.provider === 'oracle' ? 'oracle' : 'q',
-    };
   } else if (identityReady) {
     const lifecycle = operationLifecycleState();
     if (lifecycle.label === 'ACTIVE') {
@@ -593,7 +582,7 @@ function home() {
     <section class="terminal-campaign-card">
       <div class="terminal-campaign-meta">
         <span>CAMPAIGN ${op}</span>
-        ${terminalOperationPill()}
+        <div class="terminal-state-stack">${terminalOperationPill()}${state.runtime?.displayLabel && state.runtime.displayLabel !== operationLifecycleState().label ? `<small>${escapeHtml(state.runtime.displayLabel)}</small>` : ''}</div>
       </div>
 
       ${c.banner ? `<figure class="terminal-campaign-art"><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
@@ -621,6 +610,11 @@ function home() {
       </div>
       <button ${actionAttrs}>${escapeHtml(nextMove.action)} →</button>
     </section>
+
+    ${identityReady && !campaignClearanceReady() ? `<section class="terminal-clearance-prereq">
+      <div><span>CAMPAIGN CLEARANCE</span><b>${escapeHtml(campaignEligibilityRequirements().find(({ complete }) => !complete)?.label || 'Requirement incomplete')}</b><small>${escapeHtml(campaignEligibilityRequirements().find(({ complete }) => !complete)?.detail || 'Complete the remaining eligibility requirement before eligible missions can open.')}</small></div>
+      <button data-screen="${campaignEligibilityRequirements().find(({ complete }) => !complete)?.action?.screen || 'profile'}" data-profile-view="${campaignEligibilityRequirements().find(({ complete }) => !complete)?.action?.profileView || 'wallet'}">FIX →</button>
+    </section>` : ''}
 
     <section class="terminal-actions">
       <button data-operation-view="missions">
