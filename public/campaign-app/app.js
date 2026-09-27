@@ -85,7 +85,7 @@ const NAV_ICONS = {
   profile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.1-6 7-6s6.2 2 7 6"/></svg>',
 };
 
-const APP_TOUR_VERSION = 1;
+const APP_TOUR_VERSION = 2;
 
 const APP_TOUR_STEPS = [
   { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Operations Terminal', text: 'Your command center shows the active operation, next required action and critical campaign status.' },
@@ -1723,7 +1723,7 @@ function openMission(missionId) {
 
 function tourStorageKey() {
   const id = state.telegram?.initDataUnsafe?.user?.id || 'guest';
-  return `project-q:app-tour:v1:${id}`;
+  return `project-q:app-tour:v2:${id}`;
 }
 
 function hasCompletedTour() {
