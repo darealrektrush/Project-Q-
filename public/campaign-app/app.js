@@ -620,7 +620,7 @@ function home() {
   return `<div class="terminal-ui terminal-mobile-reference terminal-v2">
     <section class="terminal-v2-campaign" aria-label="${escapeHtml(c.name)}">
       ${bondArtwork
-        ? '<figure class="reference-art reference-hero"><img src="/campaign-app/assets/terminal-approved-reference.jpg" alt="Bond the Duck. 10-day verified. Small actions, bigger oceans. The tide rises together." /></figure>'
+        ? '<figure class="reference-art reference-hero"><img src="/campaign-app/assets/terminal-approved-reference.jpg?v=crabstar-blue-1" alt="Bond the Duck. 10-day verified. Small actions, bigger oceans. The tide rises together." /></figure>'
         : c.banner ? `<figure class="terminal-campaign-art"><img src="${escapeHtml(c.banner)}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
       <div class="operation-summary">
         <div class="operation-summary-heading"><strong>OPERATION ${op}</strong>${terminalOperationPill()}<button data-operation-view="overview">VIEW OPERATIONS <span aria-hidden="true">→</span></button></div>
@@ -644,7 +644,7 @@ function home() {
       <button data-screen="rewards"><span class="terminal-action-icon">${NAV_ICONS.rewards}</span><div><b>Your Rewards</b><small>Allocations and<br />delivery receipts</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
       <button data-operation-view="intel"><span class="terminal-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2h16v20H4z" fill="currentColor"/><path d="M8 7h8M8 12h8M8 17h5" stroke="#faf9f4"/></svg></span><div><b>Latest Intel</b><small>Operation info<br />and verification</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
     </section>
-    <button class="terminal-ocean-banner reference-art reference-impact" data-operation-view="intel" aria-label="Explore ocean conservation and Project Q impact"><img src="/campaign-app/assets/terminal-approved-reference.jpg" alt="Cleaner oceans. Brighter tomorrows. Powered by people. Real impact. Lasting change." /></button>
+    <button class="terminal-ocean-banner reference-art reference-impact" data-operation-view="intel" aria-label="Explore ocean conservation and Project Q impact"><img src="/campaign-app/assets/terminal-approved-reference.jpg?v=crabstar-blue-1" alt="Cleaner oceans. Brighter tomorrows. Powered by people. Real impact. Lasting change." /></button>
   </div>`;
 }
 
