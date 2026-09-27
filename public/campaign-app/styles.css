@@ -1221,3 +1221,99 @@ h1 { font-size: 17px; letter-spacing: .045em; text-transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .tour-target-active { scroll-behavior: auto; }
 }
+
+
+/* MISSIONS V2 */
+.missions-v2 { display: grid; gap: 14px; }
+.missions-hero { min-height: 124px; padding: 20px; align-items: center; }
+.missions-hero h2 { margin: 5px 0 7px; font-size: clamp(30px,5vw,44px); }
+.missions-hero p { margin: 0; max-width: 620px; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.missions-snapshot {
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  background: var(--surface-1);
+}
+.missions-snapshot article { min-width: 0; padding: 17px; border-right: 1px solid var(--line-soft); }
+.missions-snapshot article:last-child { border-right: 0; }
+.missions-snapshot span,
+.missions-snapshot small { display: block; color: var(--text-tertiary); }
+.missions-snapshot span { font-size: 10px; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; }
+.missions-snapshot strong { margin: 7px 0 4px; display: block; font-size: 24px; }
+.missions-snapshot small { font-size: 11px; }
+.missions-v2 .section-head { margin-top: 10px; }
+.mission-list-v2 { gap: 10px; }
+.mission-list-v2 .mission-card {
+  min-height: 96px;
+  padding: 13px;
+  grid-template-columns: 54px minmax(0,1fr) auto;
+  gap: 13px;
+  border-color: rgba(255,247,231,.09);
+}
+.mission-list-v2 .mission-card:hover { transform: translateY(-1px); }
+.mission-list-v2 .mission-art,
+.mission-list-v2 .mission-icon { width: 54px; height: 54px; }
+.mission-list-v2 .mission-title b { font-size: 15px; }
+.mission-list-v2 .mission-copy > small { margin-top: 4px; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.mission-list-v2 .mission-meta { margin-top: 7px; }
+.mission-list-v2 .mission-meta em,
+.mission-list-v2 .mission-meta span,
+.mission-list-v2 .mission-evidence i { font-size: 10px; }
+.mission-list-v2 .mission-action {
+  min-width: 62px;
+  min-height: 42px;
+  padding: 0 11px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--gold-2);
+  background: var(--gold-wash);
+  font-size: 11px;
+  font-weight: 850;
+}
+.collective-list .mission-card { border-color: var(--line-strong); background: radial-gradient(circle at 0% 50%, rgba(201,139,45,.08), transparent 35%), var(--surface-1); }
+.missions-oracle {
+  min-height: 84px;
+  margin-top: 2px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: 46px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.missions-oracle img { width: 46px; height: 46px; }
+.missions-oracle b { font-size: 14px; }
+.missions-oracle p { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+
+@media (max-width: 860px) {
+  .missions-snapshot { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .missions-snapshot article { border-bottom: 1px solid var(--line-soft); }
+  .missions-snapshot article:nth-child(2n) { border-right: 0; }
+  .missions-snapshot article:nth-last-child(-n+2) { border-bottom: 0; }
+}
+
+@media (max-width: 520px) {
+  .missions-hero { min-height: 108px; padding: 16px; align-items: flex-start; }
+  .missions-hero { display: grid; grid-template-columns: 1fr auto; }
+  .missions-hero h2 { font-size: 31px; }
+  .missions-hero p { font-size: 13px; }
+  .missions-snapshot article { padding: 14px; }
+  .missions-snapshot strong { font-size: 21px; }
+  .mission-list-v2 .mission-card { min-height: 98px; grid-template-columns: 48px minmax(0,1fr); }
+  .mission-list-v2 .mission-art,
+  .mission-list-v2 .mission-icon { width: 48px; height: 48px; }
+  .mission-list-v2 .mission-action { grid-column: 2; justify-self: start; min-width: 76px; margin-top: 3px; }
+  .mission-list-v2 .mission-title .state-pill { display: inline-flex; }
+  .missions-oracle { grid-template-columns: 42px minmax(0,1fr) auto; }
+  .missions-oracle img { width: 42px; height: 42px; }
+}
+
+@media (max-width: 370px) {
+  .missions-snapshot article { padding: 12px; }
+  .mission-list-v2 .mission-card { grid-template-columns: 44px minmax(0,1fr); }
+  .mission-list-v2 .mission-art,
+  .mission-list-v2 .mission-icon { width: 44px; height: 44px; }
+}
