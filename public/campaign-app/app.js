@@ -1061,26 +1061,129 @@ function profileIdentity() {
   const participationReady = p.telegramVerified && p.xVerified;
   const fullyVerified = participationReady && p.walletVerified;
   const walletEnabled = p.telegramVerified;
-  const telegramDetail = p.telegramVerified ? 'Signed Mini App session verified' : (state.sessionStatus === 'outside' ? 'Open from Project Q in Telegram' : 'Telegram verification required');
-  const xDetail = p.xVerified ? `Oracle verified · ${formatProfileDate(p.xVerifiedAt)}` : 'Required for verified social activity';
-  const walletDetail = p.walletVerified ? `Oracle verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : 'Connect and verify your one payout wallet through Oracle';
-  return `<section class="command-card onboarding-panel"><div class="panel-title"><span>Complete Project Q ID</span><small>${count}/3 VERIFIED</small></div>${identityStepper()}<div class="onboarding-steps">
-    <article class="onboarding-step ${p.telegramVerified ? 'complete' : 'current'}"><span>${p.telegramVerified ? '✓' : '1'}</span><div><b>Telegram</b><p>${telegramDetail}</p></div><strong>${p.telegramVerified ? 'Verified' : 'Required'}</strong></article>
-    <article class="onboarding-step oracle-step ${p.xVerified ? 'complete' : (p.telegramVerified ? 'current' : 'locked')}"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><b>Oracle X</b><p>${xDetail}</p></div><button class="outline-action" id="oracle-link">${p.xVerified ? 'Open Oracle' : 'Connect X'}</button></article>
-    <article class="onboarding-step oracle-step ${p.walletVerified ? 'complete' : (walletEnabled ? 'current' : 'locked')}"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><b>Oracle wallet</b><p>${walletDetail}</p></div><button class="outline-action" id="profile-wallet" ${walletEnabled ? '' : 'disabled'}>${p.walletVerified ? 'Open Oracle' : 'Connect in Oracle'}</button></article>
-  </div>${p.telegramVerified ? '<button class="text-action centered" id="identity-refresh">Refresh verification status</button>' : ''}${fullyVerified ? `<div class="verified-note"><span>✓</span><div><b>Campaign identity complete</b><p>Enrolled ${escapeHtml(formatProfileDate(p.enrolledAt))}. Reward eligibility still follows published rules and token-account snapshots.</p></div></div>` : ''}</section>
-  <section class="command-card privacy-panel"><span class="label">Privacy & security</span><h3>One wallet. Verified by Oracle.</h3><p>Project Q cannot connect, replace or verify wallets. It reads the verified payout-wallet reference supplied by Oracle and never receives a private key or transaction authority.</p></section>`;
+
+  const steps = [
+    {
+      id: 'telegram',
+      label: 'Telegram',
+      icon: 'TG',
+      complete: p.telegramVerified,
+      current: !p.telegramVerified,
+      detail: p.telegramVerified ? 'Telegram Mini App session verified.' : (state.sessionStatus === 'outside' ? 'Open Project Q from the official Telegram bot.' : 'Telegram verification is required.'),
+      action: p.telegramVerified ? 'Verified' : 'Required',
+      actionType: 'status',
+    },
+    {
+      id: 'x',
+      label: 'X identity',
+      icon: 'X',
+      complete: p.xVerified,
+      current: p.telegramVerified && !p.xVerified,
+      locked: !p.telegramVerified,
+      detail: p.xVerified ? `Oracle verified · ${formatProfileDate(p.xVerifiedAt)}` : 'Connect the X account used for eligible social activity.',
+      action: p.xVerified ? 'Open Oracle' : 'Connect X',
+      actionType: 'oracle',
+    },
+    {
+      id: 'wallet',
+      label: 'Reward wallet',
+      icon: 'W',
+      complete: p.walletVerified,
+      current: p.telegramVerified && p.xVerified && !p.walletVerified,
+      locked: !walletEnabled,
+      detail: p.walletVerified ? `Oracle verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : 'Verify the one wallet used for eligibility and campaign distributions.',
+      action: p.walletVerified ? 'Open Oracle' : 'Connect wallet',
+      actionType: 'wallet',
+    },
+  ];
+
+  const rows = steps.map((step, index) => `<article class="identity-connection ${step.complete ? 'complete' : step.current ? 'current' : step.locked ? 'locked' : ''}">
+    <div class="identity-number">${step.complete ? '✓' : index + 1}</div>
+    <div class="identity-connection-copy">
+      <div><span>${escapeHtml(step.label)}</span>${statePill(step.complete ? 'VERIFIED' : step.locked ? 'LOCKED' : 'NEXT', step.complete ? 'success' : 'pending')}</div>
+      <p>${escapeHtml(step.detail)}</p>
+    </div>
+    ${step.actionType === 'oracle' ? `<button class="outline-action" id="oracle-link" ${step.locked ? 'disabled' : ''}>${escapeHtml(step.action)}</button>`
+      : step.actionType === 'wallet' ? `<button class="outline-action" id="profile-wallet" ${step.locked ? 'disabled' : ''}>${escapeHtml(step.action)}</button>`
+      : `<strong>${escapeHtml(step.action)}</strong>`}
+  </article>`).join('');
+
+  return `<div class="identity-v2">
+    <section class="identity-command command-card">
+      <div>
+        <span class="label">Project Q identity</span>
+        <h2>${fullyVerified ? 'Identity complete' : 'Complete your setup'}</h2>
+        <p>${fullyVerified ? 'Your Telegram, X identity and reward wallet are connected to one Project Q participant record.' : 'Complete each connection once so Project Q can safely verify participation and reward eligibility.'}</p>
+      </div>
+      <div class="identity-score"><strong>${count}/3</strong><span>verified</span></div>
+    </section>
+
+    <section class="identity-connections">${rows}</section>
+
+    ${p.telegramVerified ? '<button class="identity-refresh outline-action" id="identity-refresh">Refresh verification status</button>' : ''}
+
+    <section class="identity-eligibility command-card">
+      <div>
+        <span class="label">Eligibility</span>
+        <h3>${p.rewardEligible ? 'Reward ready' : p.campaignReady ? 'Identity ready · holder check remains' : 'Identity setup required'}</h3>
+        <p>${p.rewardEligible ? 'Identity and current campaign eligibility requirements are satisfied.' : p.campaignReady ? 'Your identity is ready. Token holding and campaign-specific rules still determine reward eligibility.' : 'Finish the required identity connections before campaign eligibility can be finalized.'}</p>
+      </div>
+      ${statePill(p.rewardEligible ? 'ELIGIBLE' : p.campaignReady ? 'CHECKING' : 'INCOMPLETE', p.rewardEligible ? 'success' : 'pending')}
+    </section>
+
+    <section class="identity-security-grid">
+      <article class="command-card">
+        <span class="label">Oracle authority</span>
+        <h3>One canonical identity</h3>
+        <p>Oracle remains the source of truth for verified X and wallet connections used by Project Q.</p>
+        <button class="info-action" data-explainer="oracle" aria-label="What Oracle does">?</button>
+      </article>
+      <article class="command-card">
+        <span class="label">Non-custodial</span>
+        <h3>No private keys</h3>
+        <p>Project Q reads verified wallet references and eligibility state. It never receives a seed phrase or signing authority.</p>
+      </article>
+    </section>
+
+    <section class="command-card help-card">
+      <div><span class="label">Help & onboarding</span><h3>Need a refresher?</h3><p>Replay the guided Project Q tour or use contextual explainers anywhere you see the help icon.</p></div>
+      <button class="outline-action" data-replay-tour>Replay App Tour</button>
+    </section>
+  </div>`;
 }
 
 function profileScreen() {
   const p = state.profile;
   const count = verifiedCount();
   const fullyVerified = count === 3;
+  const eligibility = p.rewardEligible ? 'Reward ready' : p.campaignReady ? 'Holder check' : 'Finish identity';
   const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
-  return `<section class="profile-command command-card"><div><span class="label">Project Q participant</span><h2>${escapeHtml(p.name)}</h2><p>Identity, eligibility, verified activity and rewards in one Project Q record.</p>${statePill(`${count}/3 ID`, fullyVerified ? 'success' : 'pending')}</div><img src="/campaign-app/assets/system/q-id.webp" alt="Project Q identity" /></section>
-  <section class="profile-summary">${metric('Verified XP', Number(p.xp || 0).toLocaleString())}${metric('Overall rank', escapeHtml(p.rank))}${metric('Missions', Number(p.completedMissions || 0))}${metric('Eligibility', p.rewardEligible ? 'Reward ready' : p.campaignReady ? 'Holder gate' : 'Identity pending')}</section>
-  ${profileTabs()}${content}`;
+
+  return `<div class="profile-v2">
+    <section class="profile-hero command-card">
+      <div class="profile-hero-copy">
+        <span class="label">Project Q participant</span>
+        <h2>${escapeHtml(p.name)}</h2>
+        <p>One verified identity for campaign access, activity, XP, rewards and receipts.</p>
+        <div class="profile-hero-status">
+          ${statePill(`${count}/3 VERIFIED`, fullyVerified ? 'success' : 'pending')}
+          <button class="info-action" data-explainer="profile" aria-label="How your identity works">?</button>
+        </div>
+      </div>
+      <img src="/campaign-app/assets/system/q-id.webp" alt="Project Q identity" />
+    </section>
+
+    <section class="profile-summary-v2">
+      <article><span>Identity</span><strong>${count}/3</strong><small>${fullyVerified ? 'complete' : 'setup required'}</small></article>
+      <article><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong><small>verified total</small></article>
+      <article><span>Rank</span><strong>${escapeHtml(p.rank || '—')}</strong><small>current standing</small></article>
+      <article><span>Eligibility</span><strong>${escapeHtml(eligibility)}</strong><small>campaign status</small></article>
+    </section>
+
+    ${profileTabs()}
+    ${content}
+  </div>`;
 }
 
 const screens = {
