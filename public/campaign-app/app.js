@@ -85,6 +85,8 @@ const NAV_ICONS = {
   rewards: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v11H4zM3 6.5h18V10H3zM12 6.5V21"/><path d="M12 6.5H8.7A2.7 2.7 0 1 1 12 3.2zm0 0h3.3A2.7 2.7 0 1 0 12 3.2z"/></svg>',
 };
 
+const APP_TOUR_VERSION = 1;
+
 const APP_TOUR_STEPS = [
   { screen: 'home', target: '[data-tour-target="home"]', icon: '⌂', title: 'Home', text: 'Your campaign command center shows what matters now, your progress and your next move.' },
   { screen: 'missions', target: '[data-tour-target="missions"]', icon: '✓', title: 'Missions', text: 'Find eligible campaign actions, see what is available and open mission details from one place.' },
@@ -180,6 +182,7 @@ const state = {
   sessionStatus: 'checking',
   walletManagedByOracle: true,
   websiteVoteReviewEnabled: false,
+  preferences: { appTourVersion: 0, appTourCompletedAt: null },
   tour: { active: false, step: 0, source: 'auto' },
 };
 
@@ -1521,13 +1524,31 @@ function tourStorageKey() {
 }
 
 function hasCompletedTour() {
-  try { return localStorage.getItem(tourStorageKey()) === 'complete'; }
+  if (Number(state.preferences?.appTourVersion || 0) >= APP_TOUR_VERSION) return true;
+  try { return localStorage.getItem(tourStorageKey()) === `complete:v${APP_TOUR_VERSION}`; }
   catch { return false; }
 }
 
-function saveTourCompletion() {
-  try { localStorage.setItem(tourStorageKey(), 'complete'); }
+async function saveTourCompletion() {
+  state.preferences = {
+    appTourVersion: APP_TOUR_VERSION,
+    appTourCompletedAt: new Date().toISOString(),
+  };
+  try { localStorage.setItem(tourStorageKey(), `complete:v${APP_TOUR_VERSION}`); }
   catch {}
+
+  const initData = state.telegram?.initData;
+  if (!initData) return;
+  try {
+    const response = await fetch('/campaign-app/api/preferences/tour', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ initData, version: APP_TOUR_VERSION }),
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (payload?.preferences) state.preferences = payload.preferences;
+  } catch {}
 }
 
 function tourFinishMarkup() {
@@ -1658,7 +1679,7 @@ function finishAppTour() {
     tour.innerHTML = '';
   }
   state.tour.active = false;
-  saveTourCompletion();
+  void saveTourCompletion();
   state.screen = 'home';
   history.replaceState(null, '', '#home');
   render();
