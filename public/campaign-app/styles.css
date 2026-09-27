@@ -4639,3 +4639,74 @@ body.rail-collapsed .rail .nav-icon svg {
     height: var(--tg-viewport-height);
   }
 }
+
+
+/* RECORD HIERARCHY CLEANUP */
+.record-ui .xp-v2,
+.record-ui .leaderboard-v2 {
+  gap: 10px;
+}
+
+.record-ui .progression-hero,
+.record-ui .rank-hero {
+  display: none;
+}
+
+.record-ui .xp-daily,
+.record-ui .community-pulse,
+.record-ui .xp-ledger-section,
+.record-ui .xp-achievement-section,
+.record-ui .rank-list,
+.record-ui .rank-verification-note,
+.record-ui .rank-achievements {
+  margin-top: 0;
+}
+
+.record-ui .xp-daily,
+.record-ui .community-pulse,
+.record-ui .rank-list,
+.record-ui .rank-verification-note {
+  border-color: var(--line);
+  background: rgba(255,250,240,.70);
+}
+
+.record-ui .section-head {
+  margin-top: 4px;
+}
+
+.record-ui .rank-tabs {
+  margin-top: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.58);
+}
+
+.record-ui .rank-tabs button.active {
+  color: #f3dfaa;
+  background: #171612;
+}
+
+@media (max-width: 520px) {
+  .record-header {
+    min-height: 122px;
+  }
+
+  .record-header h2 {
+    font-size: 30px;
+  }
+
+  .record-score {
+    min-width: 82px;
+    padding: 10px;
+  }
+
+  .record-score strong {
+    font-size: 22px;
+  }
+
+  .record-tabs button {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 9px;
+  }
+}
