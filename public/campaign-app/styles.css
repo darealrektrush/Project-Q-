@@ -5834,3 +5834,75 @@ body.rail-collapsed .rail .nav-icon svg {
     margin-top: 7px;
   }
 }
+
+
+/* RECEIPT + WALLET SAFETY DETAILS */
+.reward-destination em {
+  display: block;
+  margin-top: 3px;
+  color: #c7bda9;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.wallet-noncustodial-note {
+  min-height: 70px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 40px minmax(0,1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #1f1d18;
+  border-radius: 7px;
+  color: #f1e9db;
+  background: #151512;
+}
+.wallet-noncustodial-note img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.wallet-noncustodial-note b,
+.wallet-noncustodial-note small { display: block; }
+.wallet-noncustodial-note b {
+  color: #f5ecd9;
+  font-size: 11px;
+}
+.wallet-noncustodial-note small {
+  margin-top: 3px;
+  color: #aaa398;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.receipt-grid {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+}
+.receipt-grid > div:nth-child(3n) {
+  border-right: 1px solid var(--line-soft);
+}
+.receipt-grid > div:nth-child(4n) {
+  border-right: 0;
+}
+.receipt-grid > div:nth-last-child(-n+4) {
+  border-bottom: 0;
+}
+
+@media (max-width: 520px) {
+  .receipt-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .receipt-grid > div:nth-child(4n) {
+    border-right: 1px solid var(--line-soft);
+  }
+  .receipt-grid > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .receipt-grid > div:nth-last-child(-n+4) {
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .receipt-grid > div:nth-last-child(-n+2) {
+    border-bottom: 0;
+  }
+}
