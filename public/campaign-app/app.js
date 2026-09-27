@@ -783,7 +783,7 @@ function render() {
     network.innerHTML = `<i></i> ${escapeHtml(state.runtime?.displayLabel || 'SYNCING')}`;
     network.classList.toggle('live', Boolean(state.runtime?.operational));
   }
-  document.title = `Project Q — ${c.name}`;
+  document.title = `Project Q — ${screenTitle}`;
   bind();
   renderGuide();
 }
@@ -799,6 +799,7 @@ function renderGuide() {
   document.querySelector('#guide-count').textContent = `${state.guideStep + 1} of ${GUIDE_STEPS.length}`;
   document.querySelector('#guide-title').textContent = step.title;
   document.querySelector('#guide-description').textContent = step.description;
+  document.querySelector('#guide-back').disabled = state.guideStep === 0;
   document.querySelector('#guide-next').textContent = state.guideStep === GUIDE_STEPS.length - 1 ? 'Finish' : 'Next';
   const selector = step.screen === 'profile' ? '#account-control'
     : window.matchMedia('(max-width: 860px)').matches
@@ -817,13 +818,16 @@ function closeGuide() {
 
 function startGuide() {
   state.guideStep = 0;
-  go('home');
+  go('home', null, { historyMode: 'replace' });
 }
 
-function go(screen, targetId = null) {
+function go(screen, targetId = null, { historyMode = 'push' } = {}) {
   if (!screens[screen]) return;
+  const changed = state.screen !== screen;
   state.screen = screen;
-  history.replaceState(null, '', `#${screen}`);
+  if (changed || location.hash !== `#${screen}`) {
+    history[historyMode === 'replace' ? 'replaceState' : 'pushState'](null, '', `#${screen}`);
+  }
   render();
   if (targetId) document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   else window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1118,10 +1122,15 @@ function openMission(missionId) {
 function bind() {
   document.querySelector('#guide-control').onclick = startGuide;
   document.querySelector('#guide-skip').onclick = closeGuide;
+  document.querySelector('#guide-back').onclick = () => {
+    if (state.guideStep <= 0) return;
+    state.guideStep -= 1;
+    go(GUIDE_STEPS[state.guideStep].screen, null, { historyMode: 'replace' });
+  };
   document.querySelector('#guide-next').onclick = () => {
     if (state.guideStep === GUIDE_STEPS.length - 1) return closeGuide();
     state.guideStep += 1;
-    go(GUIDE_STEPS[state.guideStep].screen);
+    go(GUIDE_STEPS[state.guideStep].screen, null, { historyMode: 'replace' });
   };
   document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
@@ -1332,13 +1341,21 @@ document.addEventListener?.('keydown', (event) => {
   if (state.guideStep === null) return;
   if (event.key === 'Escape') { event.preventDefault(); closeGuide(); }
   if (event.key === 'Tab') {
-    const buttons = [document.querySelector('#guide-skip'), document.querySelector('#guide-next')];
-    const nextIndex = event.shiftKey ? 0 : 1;
-    if (document.activeElement === buttons[nextIndex]) {
+    const buttons = [document.querySelector('#guide-skip'), document.querySelector('#guide-back'), document.querySelector('#guide-next')].filter((button) => !button.disabled);
+    const edge = event.shiftKey ? buttons[0] : buttons.at(-1);
+    if (document.activeElement === edge) {
       event.preventDefault();
-      buttons[1 - nextIndex]?.focus();
+      (event.shiftKey ? buttons.at(-1) : buttons[0])?.focus();
     }
   }
+});
+
+window.addEventListener('popstate', () => {
+  const screen = location.hash.slice(1);
+  if (!screens[screen] || screen === state.screen) return;
+  state.screen = screen;
+  render();
+  window.scrollTo({ top: 0, behavior: 'instant' });
 });
 
 boot();
