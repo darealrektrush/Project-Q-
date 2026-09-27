@@ -1334,7 +1334,7 @@ function recordScreen() {
 
   return `<div class="record-ui">
     <section class="record-header">
-      <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified participation becomes permanent progression.</p></div>
+      <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified campaign participation becomes an auditable operation record.</p></div>
       <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>CAMPAIGN XP</span><small>RANK ${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
     </section>
     ${recordTabs()}
@@ -1786,7 +1786,7 @@ function profileScreen() {
     </section>
 
     <section class="passport-records">
-      <div class="dossier-heading"><span>Campaign Records</span><b>1 ACTIVE</b></div>
+      <div class="dossier-heading"><span>Campaign Records</span><b>1 OPERATION</b></div>
       <button class="passport-operation-record" data-screen="operations">
         <span class="passport-op">OP<br /><b>${op}</b></span>
         <div class="passport-record-copy">
@@ -1795,7 +1795,7 @@ function profileScreen() {
           <span>${escapeHtml(c.schedule?.activeLabel || 'Campaign schedule pending')}</span>
         </div>
         ${c.banner ? `<img src="${c.banner}" alt="" />` : ''}
-        <em>${escapeHtml(p.campaignState || 'DRAFT')}</em>
+        <em>${escapeHtml(operationLifecycleState().label)}</em>
       </button>
       <div class="passport-record-metrics">
         <div><span>OP XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
