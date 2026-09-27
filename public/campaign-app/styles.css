@@ -6069,3 +6069,67 @@ body.rail-collapsed .rail .nav-icon svg {
   line-height: 1.35;
   text-align: center;
 }
+
+
+/* FINAL ACCESSIBILITY + READABILITY PASS */
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.oracle-service button:focus-visible,
+.oracle-verification button:focus-visible,
+.oracle-passport-card button:focus-visible,
+.oracle-system:focus-visible {
+  outline-color: var(--oracle);
+}
+
+.operation-lifecycle-track span {
+  font-size: 8px;
+}
+
+.mission-status-summary span {
+  font-size: 8px;
+}
+
+@media (max-width: 520px) {
+  .mobile-nav .nav-label {
+    font-size: 9px !important;
+  }
+
+  .operation-lifecycle-track span {
+    font-size: 7px;
+  }
+
+  .mission-status-summary span {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 340px) {
+  .mobile-nav .nav-label {
+    font-size: 8px !important;
+  }
+
+  .operation-lifecycle-track span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
