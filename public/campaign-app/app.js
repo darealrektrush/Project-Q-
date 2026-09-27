@@ -1105,12 +1105,19 @@ function rewardsScreen() {
   const delivery = rewardDeliveryState(rewards);
   const walletLabel = state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected';
 
+  const hasEarnedActivity = Boolean(state.profile.completedMissions > 0 || state.profile.todayXp > 0 || state.profile.xp > 0);
+  const hasVerifiedActivity = Boolean(state.profile.xp > 0 || state.profile.activity?.length);
+  const hasScheduledRelease = actualReleases.length > 0;
+  const hasReleased = actualReleases.some(({ status }) => ['paid','recovered'].includes(status));
+  const hasConfirmed = actualReleases.some(({ transactionSignature }) => isSolanaSignature(transactionSignature));
+
   const stages = [
-    ['01', 'Verified Activity', Boolean(state.profile.xp > 0 || state.profile.completedMissions > 0), 'Accepted participation recorded'],
-    ['02', 'Q Allocation', Boolean(rewards.recorded), rewards.recorded ? 'Allocation recorded' : 'Awaiting finalization'],
-    ['03', 'Squads Authorization', actualReleases.length > 0, actualReleases.length ? 'Release record created' : 'Awaiting authorization'],
-    ['04', 'On-chain Delivery', actualReleases.some(({ status }) => ['paid','recovered'].includes(status)), 'Delivered to verified wallet'],
-    ['05', 'Receipt', actualReleases.some(({ transactionSignature }) => isSolanaSignature(transactionSignature)), 'Finalized proof'],
+    ['01', 'Earned', hasEarnedActivity, hasEarnedActivity ? 'Eligible participation recorded' : 'Complete eligible campaign activity'],
+    ['02', 'Verified', hasVerifiedActivity, hasVerifiedActivity ? 'Activity verified and settled' : 'Awaiting verified Project Q record'],
+    ['03', 'Allocated', Boolean(rewards.recorded), rewards.recorded ? 'Reward allocation recorded' : 'Awaiting campaign allocation'],
+    ['04', 'Scheduled', hasScheduledRelease, hasScheduledRelease ? 'Release schedule created' : 'Awaiting release schedule'],
+    ['05', 'Released', hasReleased, hasReleased ? 'Asset sent to verified wallet' : 'Awaiting treasury-authorized release'],
+    ['06', 'Confirmed', hasConfirmed, hasConfirmed ? 'On-chain receipt confirmed' : 'Awaiting finalized transaction receipt'],
   ];
 
   const receiptCards = actualReleases
@@ -1147,7 +1154,7 @@ function rewardsScreen() {
     </section>
 
     <section class="reward-pipeline">
-      <div class="dossier-heading"><span>Reward Pipeline</span><b>VERIFIED DELIVERY</b></div>
+      <div class="dossier-heading"><span>Reward Pipeline</span><b>EARNED → CONFIRMED</b></div>
       <div class="pipeline-steps">
         ${stages.map(([number,label,complete,detail]) => `<article class="${complete ? 'complete' : ''}">
           <span>${number}</span>
