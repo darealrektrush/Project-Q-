@@ -4492,3 +4492,68 @@ body.rail-collapsed .rail .nav-icon svg {
     font-size: 7px !important;
   }
 }
+
+
+/* CANONICAL STATE SYSTEM */
+.state-pill.ready {
+  color: #6e5317;
+  border-color: rgba(185,135,47,.30);
+  background: rgba(215,168,63,.12);
+}
+.state-pill.ready i { background: var(--gold-2); }
+
+.state-pill.blocked,
+.state-pill.rejected {
+  color: var(--danger);
+  border-color: rgba(166,66,60,.26);
+  background: rgba(166,66,60,.07);
+}
+.state-pill.blocked i,
+.state-pill.rejected i { background: var(--danger); }
+
+.terminal-countdown-state {
+  min-height: 88px;
+  padding: 14px 15px;
+  display: grid;
+  align-content: center;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background: rgba(248,242,230,.90);
+}
+.terminal-countdown-state span,
+.terminal-countdown-state strong,
+.terminal-countdown-state small { display: block; }
+.terminal-countdown-state span {
+  color: #806a3a;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.terminal-countdown-state strong {
+  margin-top: 4px;
+  color: #27231e;
+  font-size: 20px;
+  line-height: 1;
+}
+.terminal-countdown-state small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.mission-card .state-pill.ready,
+.mission-file-sheet .state-pill.ready {
+  color: #6e5317;
+}
+
+@media (max-width: 520px) {
+  .terminal-countdown-state {
+    min-height: 78px;
+    padding: 12px;
+  }
+
+  .terminal-countdown-state strong {
+    font-size: 18px;
+  }
+}
