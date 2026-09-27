@@ -485,6 +485,17 @@ function home() {
       profileView: 'identity',
       brand: 'oracle',
     };
+  } else if (identityReady && !campaignClearanceReady()) {
+    const missing = campaignEligibilityRequirements().find(({ complete }) => !complete);
+    nextMove = {
+      label: 'Campaign Clearance',
+      title: missing?.label || 'Complete Eligibility',
+      detail: missing?.detail || 'Complete the remaining campaign eligibility requirement before eligible missions can open.',
+      action: missing?.action?.label ? missing.action.label.toUpperCase() : 'REVIEW',
+      screen: missing?.action?.screen || 'profile',
+      profileView: missing?.action?.profileView || 'wallet',
+      brand: missing?.provider === 'oracle' ? 'oracle' : 'q',
+    };
   } else if (identityReady) {
     const lifecycle = operationLifecycleState();
     if (lifecycle.label === 'ACTIVE') {
