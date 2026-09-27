@@ -4710,3 +4710,202 @@ body.rail-collapsed .rail .nav-icon svg {
     font-size: 9px;
   }
 }
+
+
+/* IDENTITY JOURNEY V2 */
+.identity-passport-view { display: grid; gap: 10px; }
+
+.identity-status-card {
+  min-height: 118px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(249,242,228,.80);
+}
+.identity-status-card > div:first-child > span {
+  color: #77694d;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.identity-status-card h3 {
+  margin: 5px 0;
+  font-size: 20px;
+}
+.identity-status-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.identity-status-score {
+  min-width: 82px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,250,240,.50);
+  text-align: center;
+}
+.identity-status-score strong,
+.identity-status-score span { display: block; }
+.identity-status-score strong { font-size: 24px; }
+.identity-status-score span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.identity-step-list { display: grid; gap: 7px; }
+
+.identity-passport-step {
+  min-height: 78px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 38px 42px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.62);
+}
+.identity-passport-step.complete {
+  border-color: rgba(47,127,78,.22);
+  background: linear-gradient(90deg,rgba(47,127,78,.06),rgba(255,250,240,.64) 42%);
+}
+.identity-passport-step.current {
+  border-color: rgba(185,135,47,.30);
+  background: linear-gradient(90deg,rgba(215,168,63,.08),rgba(255,250,240,.64) 42%);
+}
+.identity-passport-step.locked { opacity: .60; }
+
+.identity-step-number {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: #6d6253;
+  font-size: 9px;
+  font-weight: 950;
+}
+.identity-passport-step.complete .identity-step-number {
+  color: var(--success);
+  border-color: rgba(47,127,78,.24);
+}
+
+.identity-step-provider {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid rgba(185,135,47,.24);
+  border-radius: 50%;
+  background: #171612;
+}
+.identity-step-provider img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.identity-step-provider.oracle-provider {
+  border-color: rgba(24,136,216,.30);
+  box-shadow: 0 0 0 3px rgba(24,136,216,.04);
+}
+
+.identity-step-copy { min-width: 0; }
+.identity-step-copy > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.identity-step-copy b { font-size: 12px; }
+.identity-step-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.identity-system-note {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 7px;
+}
+.identity-system {
+  min-height: 70px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 38px minmax(0,1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.58);
+}
+.identity-system img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.identity-system b,
+.identity-system small { display: block; }
+.identity-system b { font-size: 11px; }
+.identity-system small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+.oracle-system {
+  border-color: rgba(24,136,216,.22);
+  background: linear-gradient(90deg,rgba(24,136,216,.07),rgba(255,250,240,.60));
+}
+.oracle-system b { color: #146fa9; }
+
+@media (max-width: 520px) {
+  .identity-status-card {
+    min-height: 102px;
+    padding: 13px;
+  }
+
+  .identity-status-card h3 {
+    font-size: 18px;
+  }
+
+  .identity-status-score {
+    min-width: 72px;
+  }
+
+  .identity-passport-step {
+    min-height: 74px;
+    grid-template-columns: 34px 38px minmax(0,1fr);
+    gap: 8px;
+  }
+
+  .identity-step-number {
+    width: 31px;
+    height: 31px;
+  }
+
+  .identity-step-provider {
+    width: 36px;
+    height: 36px;
+  }
+
+  .identity-passport-step > .outline-action {
+    grid-column: 3;
+    justify-self: start;
+    min-height: 38px;
+  }
+
+  .identity-system-note {
+    grid-template-columns: 1fr;
+  }
+}
