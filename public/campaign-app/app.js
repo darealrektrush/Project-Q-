@@ -476,7 +476,7 @@ function home() {
     <section class="home-missions-section">
       <div class="section-head">
         <div><span class="label">Missions for you</span><h2>Your next opportunities</h2></div>
-        <button class="text-action" data-screen="missions">View all ${missions.length}</button>
+        <div class="section-actions"><button class="info-action" data-explainer="campaign" aria-label="How campaigns work">?</button><button class="text-action" data-screen="missions">View all ${missions.length}</button></div>
       </div>
       <div class="quick-actions home-mission-list">
         ${missions.filter(({ kind }) => kind !== 'COLLECTIVE').slice(0, 3).map(missionCard).join('')}
