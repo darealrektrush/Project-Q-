@@ -5253,3 +5253,179 @@ body.rail-collapsed .rail .nav-icon svg {
     font-size: 8px;
   }
 }
+
+
+/* TINY TELEGRAM WIDTH QA */
+@media (max-width: 340px) {
+  main,
+  body.rail-collapsed main {
+    padding-right: 9px !important;
+    padding-left: 9px !important;
+  }
+
+  .eyebrow {
+    display: none !important;
+  }
+
+  #screen-title {
+    max-width: 150px;
+    font-size: 11px;
+  }
+
+  .account-copy {
+    display: none;
+  }
+
+  .account-control {
+    padding-right: 3px;
+  }
+
+  .mobile-nav .nav-button {
+    min-height: 52px !important;
+  }
+
+  .mobile-nav .nav-label {
+    font-size: 7px !important;
+  }
+
+  .terminal-actions > button {
+    min-height: 78px;
+    padding: 9px 8px;
+  }
+
+  .terminal-actions small {
+    font-size: 8px;
+  }
+
+  .terminal-impact p {
+    max-width: 100%;
+  }
+
+  .operation-reference .operation-cover {
+    min-height: 340px;
+  }
+
+  .operation-reference .operation-cover h2 {
+    font-size: 42px;
+  }
+
+  .operation-reference .operation-facts {
+    max-width: 70%;
+  }
+
+  .operation-economics {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .operation-economics article {
+    border-bottom: 1px solid var(--line-soft) !important;
+  }
+
+  .operation-economics article:nth-child(2n) {
+    border-right: 0 !important;
+  }
+
+  .operation-economics article:nth-last-child(-n+2) {
+    border-bottom: 0 !important;
+  }
+
+  .passport-achievements-preview .badge-gallery {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .passport-achievements-preview .achievement {
+    min-height: 78px;
+  }
+
+  .record-header {
+    grid-template-columns: minmax(0,1fr) 70px;
+    gap: 8px;
+    padding: 13px;
+  }
+
+  .record-header h2 {
+    font-size: 26px;
+  }
+
+  .record-score {
+    min-width: 68px;
+    padding: 8px 5px;
+  }
+
+  .record-score strong {
+    font-size: 19px;
+  }
+
+  .record-tabs button,
+  .operation-tabs button {
+    padding: 0 8px;
+    font-size: 8px;
+  }
+
+  .rewards-command h2 {
+    font-size: 34px;
+  }
+
+  .reward-summary-grid strong {
+    font-size: 14px;
+  }
+
+  .identity-status-card {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-status-score {
+    justify-self: start;
+  }
+
+  .identity-passport-step {
+    grid-template-columns: 30px 34px minmax(0,1fr);
+  }
+
+  .clearance-row {
+    grid-template-columns: 24px minmax(0,1fr);
+  }
+
+  .clearance-row > img {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .clearance-row > button {
+    grid-column: 2;
+  }
+
+  .mission-status-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-status-summary > div,
+  .mission-status-summary > div:nth-last-child(2),
+  .mission-status-summary > div:last-child {
+    grid-column: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .mission-status-summary > div:last-child {
+    border-bottom: 0;
+  }
+
+  .system-status-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .system-status-banner > button {
+    justify-self: start;
+  }
+
+  .referral-funnel,
+  .pulse-stats,
+  .delivery-steps,
+  .launch-commitments,
+  .status-grid,
+  .burn-grid,
+  .profile-summary {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+}
