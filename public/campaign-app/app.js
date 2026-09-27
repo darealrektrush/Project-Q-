@@ -85,6 +85,16 @@ const NAV_ICONS = {
   rewards: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v11H4zM3 6.5h18V10H3zM12 6.5V21"/><path d="M12 6.5H8.7A2.7 2.7 0 1 1 12 3.2zm0 0h3.3A2.7 2.7 0 1 0 12 3.2z"/></svg>',
 };
 
+const APP_TOUR_STEPS = [
+  { screen: 'home', target: '[data-tour-target="home"]', icon: '⌂', title: 'Home', text: 'Your campaign command center shows what matters now, your progress and your next move.' },
+  { screen: 'missions', target: '[data-tour-target="missions"]', icon: '✓', title: 'Missions', text: 'Find eligible campaign actions, see what is available and open mission details from one place.' },
+  { screen: 'xp', target: '[data-tour-target="xp"]', icon: 'XP', title: 'XP & Ranks', text: 'Track verified XP, daily progress and how your campaign contribution advances your rank.' },
+  { screen: 'rewards', target: '[data-tour-target="rewards"]', icon: '◆', title: 'Rewards', text: 'Review recorded allocations, release schedules and transparent reward receipts.' },
+  { screen: 'leaderboard', target: '[data-tour-target="leaderboard"]', icon: '↗', title: 'Leaderboards', text: 'See verified campaign contribution across overall, cycle and mission-specific views.' },
+  { screen: 'profile', target: '#account-control', icon: 'ID', title: 'Profile & Identity', text: 'Your Telegram, X and reward wallet connect to one Project Q participant profile.' },
+  { screen: 'home', target: '[data-tour-target="oracle"]', icon: 'Q', title: 'Oracle & Help', text: 'Oracle supports identity, verification and ecosystem intelligence whenever Project Q needs deeper context.' },
+];
+
 const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
 
 const READINESS_GROUPS = [
@@ -170,6 +180,7 @@ const state = {
   sessionStatus: 'checking',
   walletManagedByOracle: true,
   websiteVoteReviewEnabled: false,
+  tour: { active: false, step: 0, source: 'auto' },
 };
 
 const fallbackCampaign = {
@@ -196,7 +207,7 @@ function verifiedCount() {
 }
 
 function navMarkup() {
-  return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id ? 'active' : ''}" data-screen="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
+  return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id ? 'active' : ''}" data-screen="${id}" data-tour-target="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
 }
 
 function statePill(label, tone = 'pending') {
@@ -491,7 +502,7 @@ function home() {
 
     <section class="ecosystem-strip home-ecosystem" aria-label="Project Q ecosystem">
       <div><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Participation · XP · rewards</small></span></div>
-      <div class="oracle-brand"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Identity · verification · intelligence</small></span></div>
+      <div class="oracle-brand" data-tour-target="oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Identity · verification · intelligence</small></span></div>
     </section>
 
     <details class="home-advanced">
@@ -826,7 +837,7 @@ function profileOverview() {
     <article class="command-card profile-card branded-card oracle-card"><div class="panel-title"><span>Community Pulse</span>${statePill(pulse?.eligible ? 'QUALIFIED' : 'PENDING', pulse?.eligible ? 'success' : 'pending')}</div><h3>${pulse ? `${Number(pulse.xp_awarded || 0)} XP today` : 'No daily score yet'}</h3><p>Daily recognition rewards meaningful participation across time—not raw message volume.</p><div class="profile-detail-list"><div><span>Qualifying days</span><b>${state.community?.history?.filter(({ eligible }) => eligible).length || 0}</b></div><div><span>Today rank</span><b>${pulse?.daily_rank ? `#${Number(pulse.daily_rank)}` : '—'}</b></div></div><img class="profile-card-art oracle-profile-art" src="${ORACLE_LOGO}" alt="Oracle" /></article>
   </section>
   <section class="command-card cycle-panel"><div class="panel-title"><span>48H XP cycles</span><small>Settled ledger totals</small></div><div class="cycle-strip">${cycleRows}</div></section>
-  <section class="command-card profile-card next-profile-card"><div><span class="label">Your Project Q record</span><h3>One identity. Every verified contribution.</h3><p>Mission XP, Community Pulse, referrals, Buy-to-Earn and future reward receipts settle into this participant record.</p></div><button class="outline-action" data-profile-view="activity">Open activity</button></section>`;
+  <section class="command-card profile-card next-profile-card"><div><span class="label">Your Project Q record</span><h3>One identity. Every verified contribution.</h3><p>Mission XP, Community Pulse, referrals, Buy-to-Earn and future reward receipts settle into this participant record.</p></div><button class="outline-action" data-profile-view="activity">Open activity</button></section><section class="command-card profile-card help-card"><div><span class="label">Help & onboarding</span><h3>Need a refresher?</h3><p>Replay the guided Project Q tour or open contextual explainers anywhere you see the help icon.</p></div><button class="outline-action" data-replay-tour>Replay App Tour</button></section>`;
 }
 
 function profileActivity() {
@@ -1257,6 +1268,130 @@ function openMission(missionId) {
   else dialog.setAttribute('open', '');
 }
 
+function tourStorageKey() {
+  const id = state.telegram?.initDataUnsafe?.user?.id || 'guest';
+  return `project-q:app-tour:v1:${id}`;
+}
+
+function hasCompletedTour() {
+  try { return localStorage.getItem(tourStorageKey()) === 'complete'; }
+  catch { return false; }
+}
+
+function saveTourCompletion() {
+  try { localStorage.setItem(tourStorageKey(), 'complete'); }
+  catch {}
+}
+
+function tourCardMarkup(step, index) {
+  const last = index === APP_TOUR_STEPS.length - 1;
+  return `<div class="tour-card" role="dialog" aria-label="Project Q app tour">
+    <div class="tour-progress"><span>${index + 1} of ${APP_TOUR_STEPS.length}</span><button type="button" data-tour-skip>Skip Guide</button></div>
+    <div class="tour-icon">${escapeHtml(step.icon)}</div>
+    <h2>${escapeHtml(step.title)}</h2>
+    <p>${escapeHtml(step.text)}</p>
+    <div class="tour-actions">
+      <button type="button" class="tour-secondary" data-tour-back ${index === 0 ? 'disabled' : ''}>Back</button>
+      <button type="button" class="tour-primary" data-tour-next>${last ? 'You’re Ready' : 'Next'}</button>
+    </div>
+  </div>`;
+}
+
+function clearTourTarget() {
+  document.querySelectorAll('.tour-target-active').forEach((node) => node.classList.remove('tour-target-active'));
+}
+
+function positionTourCard(target) {
+  const tour = document.querySelector('#app-tour');
+  const card = tour?.querySelector('.tour-card');
+  if (!tour || !card || !target) return;
+  const rect = target.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  const margin = 14;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  let left = Math.max(margin, Math.min(viewportWidth - cardRect.width - margin, rect.left + (rect.width - cardRect.width) / 2));
+  let top = rect.bottom + margin;
+  if (top + cardRect.height > viewportHeight - margin) top = Math.max(margin, rect.top - cardRect.height - margin);
+  card.style.left = `${Math.round(left)}px`;
+  card.style.top = `${Math.round(top)}px`;
+}
+
+function renderTourStep() {
+  const tour = document.querySelector('#app-tour');
+  if (!tour || !state.tour.active) return;
+  const index = Math.max(0, Math.min(APP_TOUR_STEPS.length - 1, state.tour.step));
+  const step = APP_TOUR_STEPS[index];
+
+  if (state.screen !== step.screen) {
+    state.screen = step.screen;
+    history.replaceState(null, '', `#${step.screen}`);
+    render();
+  }
+
+  tour.hidden = false;
+  tour.innerHTML = `<div class="tour-scrim"></div>${tourCardMarkup(step, index)}`;
+  clearTourTarget();
+
+  requestAnimationFrame(() => {
+    const target = document.querySelector(step.target);
+    if (target) {
+      target.classList.add('tour-target-active');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      setTimeout(() => positionTourCard(target), 220);
+    } else {
+      const card = tour.querySelector('.tour-card');
+      if (card) {
+        card.style.left = '50%';
+        card.style.top = '50%';
+        card.style.transform = 'translate(-50%, -50%)';
+      }
+    }
+
+    tour.querySelector('[data-tour-back]')?.addEventListener('click', () => {
+      if (state.tour.step > 0) {
+        state.tour.step -= 1;
+        renderTourStep();
+      }
+    });
+    tour.querySelector('[data-tour-next]')?.addEventListener('click', () => {
+      if (state.tour.step >= APP_TOUR_STEPS.length - 1) {
+        finishAppTour();
+      } else {
+        state.tour.step += 1;
+        renderTourStep();
+      }
+    });
+    tour.querySelector('[data-tour-skip]')?.addEventListener('click', finishAppTour);
+  });
+}
+
+function startAppTour(source = 'manual') {
+  state.tour = { active: true, step: 0, source };
+  renderTourStep();
+}
+
+function finishAppTour() {
+  clearTourTarget();
+  const tour = document.querySelector('#app-tour');
+  if (tour) {
+    tour.hidden = true;
+    tour.innerHTML = '';
+  }
+  state.tour.active = false;
+  saveTourCompletion();
+  state.screen = 'home';
+  history.replaceState(null, '', '#home');
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('Project Q guide complete.');
+}
+
+function maybeStartAppTour() {
+  if (hasCompletedTour()) return;
+  setTimeout(() => startAppTour('auto'), 350);
+}
+
 function explainerMarkup(key) {
   const item = EXPLAINERS[key];
   if (!item) return '';
@@ -1284,6 +1419,7 @@ function openExplainer(key) {
 function bind() {
   document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });
   document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
+  document.querySelectorAll('[data-replay-tour]').forEach((element) => { element.onclick = () => startAppTour('manual'); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
@@ -1480,7 +1616,7 @@ async function boot() {
   setInterval(updateCountdownLabels, 1000);
   setInterval(async () => { await Promise.all([loadCampaignRuntime(), loadCampaignReadiness()]); render(); }, 60000);
   const remaining = Math.max(0, 650 - (performance.now() - splashStarted));
-  setTimeout(() => document.body.classList.remove('loading'), remaining);
+  setTimeout(() => { document.body.classList.remove('loading'); maybeStartAppTour(); }, remaining);
 }
 
 boot();
