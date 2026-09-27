@@ -850,30 +850,71 @@ function rewardsScreen() {
   const walletBalance = state.walletStatus.available
     ? formatBaseUnits(state.walletStatus.balanceBaseUnits, state.walletStatus.decimals)
     : '—';
-  const commitmentRows = commitments.campaignRewards ? [
-    ['Campaign reward pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Existing missions and campaign rewards'],
-    ['Diamond Duck bonus', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Planned from Squads community vault · within the 17.5M FAWKQ campaign reserve'],
-    ['Top Duck prize', `${escapeHtml(commitments.topContributorPrize.amountSol)} SOL`, 'Top overall Bond the Duck contributor'],
-    ['Earn to Burn reserve', `${formatBaseUnits(commitments.earnToBurn.amountBaseUnits)} FAWKQ`, 'Additional creator-wallet reserve · burn only'],
-  ] : [];
+  const walletLabel = state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected';
   const releaseTrack = actualReleases.length
     ? actualReleases.map(participantReleaseRow).join('')
     : plan.map((release) => `<article><span>${Number(release.percent)}%</span><div><b>${escapeHtml(release.label)}</b><small>${escapeHtml(release.detail)} · planned</small></div><i>○</i></article>`).join('');
+
+  const commitmentRows = commitments.campaignRewards ? [
+    ['Campaign reward pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Campaign rewards'],
+    ['Diamond Duck bonus', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Separate campaign bonus'],
+    ['Top Duck prize', `${escapeHtml(commitments.topContributorPrize.amountSol)} SOL`, 'Top overall contributor'],
+    ['Earn to Burn reserve', `${formatBaseUnits(commitments.earnToBurn.amountBaseUnits)} FAWKQ`, 'Separate burn reserve'],
+  ] : [];
+
   const notice = failed > 0n
-    ? `<div><b>One or more releases require recovery review</b><p>${formatBaseUnits(failed.toString())} FAWKQ is recorded in failed release state. No balance is represented as distributed until recovery is recorded.</p></div>`
+    ? `<div><b>Release recovery review required</b><p>${formatBaseUnits(failed.toString())} FAWKQ is recorded in failed release state. Nothing is shown as distributed until recovery is finalized.</p></div>`
     : rewards.recorded
-      ? '<div><b>Participant reward record loaded</b><p>Campaign rewards are delivered automatically from the founder-controlled Squads treasury. No claim transaction or private key is requested by Project Q.</p></div>'
-      : '<div><b>No participant allocation exists yet</b><p>Reward balances remain blank until review and finalized allocation records exist.</p></div>';
-  return `<section class="reward-vault command-card"><div><span class="label">Project Q Reward Vault</span><strong>${allocation}</strong><em>FAWKQ allocated</em>${statePill(delivery.label, delivery.tone)}</div><img src="/campaign-app/assets/system/q-vault.webp" alt="Project Q reward vault" /></section>
-  <section class="wallet-quickbar"><div><img src="/campaign-app/assets/system/q-wallet.webp" alt="" /><span><small>Verified reward wallet</small><b>${state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected'}</b></span></div><div><small>Current wallet balance</small><b>${walletBalance} FAWKQ</b></div><button class="text-action" id="open-wallet-profile">Open wallet →</button></section>
-  <section class="reward-balances four"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div><div><span>Outstanding</span><b>${outstanding}</b></div></section>
-  ${automaticDeliveryRail(rewards)}
-  <div class="section-head compact-head"><div><span class="label">${actualReleases.length ? 'Participant payout record' : 'Payout plan'}</span><h2>Verified campaign rewards</h2></div><span>${actualReleases.length ? `${actualReleases.length} recorded releases` : 'No releases recorded'}</span></div>
-  <section class="release-track">${releaseTrack}</section>
-  <button class="receipt-action" id="reward-profile"><span>Open reward profile</span><i>→</i></button>
-  <div class="section-head"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
-  <section class="commitment-list">${commitmentRows.map(([label, amount, detail]) => `<article><div><b>${label}</b><small>${detail}</small></div><strong>${amount}</strong></article>`).join('')}</section>
-  <div class="notice-surface">${notice}<button class="outline-action" data-screen="profile">Check identity</button></div>`;
+      ? '<div><b>Your reward record is live</b><p>Allocations and releases are shown only from finalized Project Q records.</p></div>'
+      : '<div><b>No allocation has been finalized yet</b><p>Your reward totals will appear after campaign review and allocation records are created.</p></div>';
+
+  return `<div class="rewards-v2">
+    <section class="reward-hero command-card">
+      <div>
+        <span class="label">Your rewards</span>
+        <div class="reward-hero-value"><strong>${allocation}</strong><em>FAWKQ</em></div>
+        <p>${rewards.recorded ? 'Finalized allocation recorded for this campaign.' : 'No finalized participant allocation yet.'}</p>
+        ${statePill(delivery.label, delivery.tone)}
+      </div>
+      <div class="progression-actions">
+        <button class="info-action" data-explainer="rewards" aria-label="How rewards work">?</button>
+        <button class="outline-action" id="reward-profile">Open reward profile</button>
+      </div>
+    </section>
+
+    <section class="reward-summary-grid">
+      <article><span>Allocated</span><strong>${allocation}</strong><small>recorded total</small></article>
+      <article><span>Scheduled</span><strong>${scheduled}</strong><small>release plan</small></article>
+      <article class="distributed"><span>Distributed</span><strong>${distributed}</strong><small>on-chain</small></article>
+      <article><span>Outstanding</span><strong>${outstanding}</strong><small>remaining</small></article>
+    </section>
+
+    <section class="wallet-quickbar reward-wallet-bar">
+      <div><img src="/campaign-app/assets/system/q-wallet.webp" alt="" /><span><small>Verified reward wallet</small><b>${walletLabel}</b></span></div>
+      <div><small>Current wallet balance</small><b>${walletBalance} FAWKQ</b></div>
+      <button class="text-action" id="open-wallet-profile">Open wallet →</button>
+    </section>
+
+    ${automaticDeliveryRail(rewards)}
+
+    <section class="reward-release-section">
+      <div class="section-head compact-head">
+        <div><span class="label">${actualReleases.length ? 'Your payout record' : 'Release plan'}</span><h2>Reward timeline</h2></div>
+        <span>${actualReleases.length ? `${actualReleases.length} recorded releases` : 'Planned schedule'}</span>
+      </div>
+      <section class="release-track reward-release-track">${releaseTrack}</section>
+    </section>
+
+    <section class="reward-transparency">
+      <div class="section-head">
+        <div><span class="label">Transparency</span><h2>Campaign commitments</h2></div>
+        <span>Separated by purpose</span>
+      </div>
+      <section class="commitment-list reward-commitments">${commitmentRows.map(([label, amount, detail]) => `<article><div><b>${label}</b><small>${detail}</small></div><strong>${amount}</strong></article>`).join('')}</section>
+    </section>
+
+    <div class="notice-surface reward-notice">${notice}<button class="outline-action" data-screen="profile">Check identity</button></div>
+  </div>`;
 }
 
 function burnsScreen() {
