@@ -475,15 +475,56 @@ function home() {
       brand: 'oracle',
     };
   } else if (identityReady) {
-    nextMove = {
-      label: 'Next Step',
-      title: 'Enter Mission Files',
-      detail: 'Your identity is ready. Choose your next mission.',
-      action: 'ENTER',
-      screen: 'operations',
-      operationsView: 'missions',
-      brand: 'q',
-    };
+    const lifecycle = operationLifecycleState();
+    if (lifecycle.label === 'ACTIVE') {
+      nextMove = {
+        label: 'Next Step',
+        title: 'Enter Mission Files',
+        detail: 'The operation is active. Choose your next eligible mission.',
+        action: 'ENTER',
+        screen: 'operations',
+        operationsView: 'missions',
+        brand: 'q',
+      };
+    } else if (lifecycle.label === 'REVIEWING') {
+      nextMove = {
+        label: 'Operation Status',
+        title: 'Final Review in Progress',
+        detail: 'Verified activity is being reconciled before final allocations and release records.',
+        action: 'FOLLOW',
+        screen: 'operations',
+        operationsView: 'progress',
+        brand: 'q',
+      };
+    } else if (lifecycle.label === 'DISTRIBUTING') {
+      nextMove = {
+        label: 'Reward Status',
+        title: 'Track Reward Delivery',
+        detail: 'Follow scheduled releases through on-chain delivery and confirmed receipts.',
+        action: 'TRACK',
+        screen: 'rewards',
+        brand: 'q',
+      };
+    } else if (['COMPLETED','ARCHIVED'].includes(lifecycle.label)) {
+      nextMove = {
+        label: 'Operation Complete',
+        title: 'View Your Permanent Record',
+        detail: 'Review your verified participation, XP, outcomes and campaign history.',
+        action: 'VIEW',
+        screen: 'record',
+        brand: 'q',
+      };
+    } else {
+      nextMove = {
+        label: 'Next Step',
+        title: 'Prepare for Operation 01',
+        detail: 'Your identity is ready. Review the operation dossier and mission requirements before launch.',
+        action: 'REVIEW',
+        screen: 'operations',
+        operationsView: 'overview',
+        brand: 'q',
+      };
+    }
   }
 
   const actionAttrs = nextMove.screen === 'operations'
