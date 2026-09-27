@@ -746,7 +746,16 @@ function communityPulsePanel() {
 
 function activityRow(item) {
   const oracle = String(item.label || '').toLowerCase().includes('oracle');
-  return `<article class="ledger-row"><span class="ledger-icon ${oracle ? 'oracle' : ''}">${oracle ? `<img src="${ORACLE_LOGO}" alt="" />` : escapeHtml(item.icon || 'Q')}</span><div><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.timestamp)}</small></div><strong>+${Number(item.xp || 0)} XP</strong>${statePill('Verified', 'success')}</article>`;
+  return `<article class="ledger-row record-receipt-row">
+    <span class="ledger-icon ${oracle ? 'oracle' : ''}">${oracle ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : escapeHtml(item.icon || 'Q')}</span>
+    <div class="record-receipt-copy">
+      <span>PROJECT Q // XP RECORD</span>
+      <b>${escapeHtml(item.label)}</b>
+      <small>${escapeHtml(item.timestamp)}</small>
+    </div>
+    <strong>+${Number(item.xp || 0)} XP</strong>
+    ${statePill('VERIFIED', 'success')}
+  </article>`;
 }
 
 function badgeGallery(badges = []) {
