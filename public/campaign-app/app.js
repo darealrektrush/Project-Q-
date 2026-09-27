@@ -781,6 +781,7 @@ function canonicalMissionState(mission, telemetry) {
   const verified = Number(telemetry?.verified || 0);
   const pending = Number(telemetry?.pending || 0);
   const rejected = Number(telemetry?.rejected || 0);
+  const target = Number(telemetry?.target || 0);
 
   if (mission.id === 'website-voting') {
     const sourceStates = (state.websiteVotes?.sources || []).map(({ status }) => status);
@@ -795,17 +796,21 @@ function canonicalMissionState(mission, telemetry) {
     }
   }
 
+  if (target > 0 && verified >= target) return { label: 'COMPLETE', tone: 'success' };
   if (verified > 0) return { label: 'VERIFIED', tone: 'success' };
   if (pending > 0) return { label: 'VERIFYING', tone: 'pending' };
   if (rejected > 0 && verified === 0 && pending === 0) return { label: 'REJECTED', tone: 'blocked' };
+
   if (mission.kind === 'COLLECTIVE') {
     return operationLifecycleState().label === 'ACTIVE'
       ? { label: 'COLLECTIVE', tone: 'pending' }
       : { label: 'LOCKED', tone: 'pending' };
   }
+
   if (operationLifecycleState().label === 'ACTIVE' && mission.enabled && campaignClearanceReady()) {
     return { label: 'AVAILABLE', tone: 'ready' };
   }
+
   return { label: 'LOCKED', tone: 'pending' };
 }
 
@@ -1319,7 +1324,8 @@ function operationsScreen() {
         <button class="mission-file-row" data-mission-id="${escapeHtml(mission.id)}">
           <span class="file-number">MF ${String(index + 1).padStart(2, '0')}</span>
           ${mission.image ? `<img src="${mission.image}" alt="" loading="lazy" decoding="async" />` : '<i>Q</i>'}
-          <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(canonicalMissionState(mission, missionTelemetry(mission)).label)}</small></div>
+          <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(missionTelemetry(mission)?.detail || mission.frequency || 'Campaign')}</small></div>
+          <span class="mission-file-state">${statePill(canonicalMissionState(mission, missionTelemetry(mission)).label, canonicalMissionState(mission, missionTelemetry(mission)).tone)}</span>
           <em>OPEN →</em>
         </button>`).join('')}
       </div>
