@@ -1139,7 +1139,10 @@ function operationsScreen() {
   const duckBonus = commitments.diamondDuckBonus ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '2.5M';
   const burnReserve = commitments.earnToBurn ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '15M';
   const topPrize = commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '1 SOL';
-  const readiness = state.readiness?.available ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0))) : 0;
+  const readinessAvailable = Boolean(state.readiness?.available);
+  const readiness = readinessAvailable ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0))) : null;
+  const readinessLabel = readiness == null ? 'SYNCING' : `${readiness}%`;
+  const readinessWidth = readiness == null ? 0 : readiness;
 
   let content = '';
 
@@ -1160,9 +1163,9 @@ function operationsScreen() {
     </section>`;
   } else if (state.operationsView === 'progress') {
     content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>OPERATION PROGRESS</span><h3>Verified campaign movement.</h3></div><b>${readiness}%</b></div>
-      <div class="operation-progress-line"><span>Campaign Progress</span><strong>${readiness}%</strong></div>
-      <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+      <div class="operation-section-head"><div><span>OPERATION PROGRESS</span><h3>Verified campaign movement.</h3></div><b>${escapeHtml(readinessLabel)}</b></div>
+      <div class="operation-progress-line"><span>Campaign Progress</span><strong>${escapeHtml(readinessLabel)}</strong></div>
+      <div class="operation-progress-bar"><i style="width:${readinessWidth}%"></i></div>
       <div class="operation-cycle-summary"><span>5 × 48H CYCLES</span><b>${escapeHtml(state.runtime?.schedule?.label || 'Readiness mode')}</b></div>
       <button class="operation-burn-link" data-screen="burns">Earn to Burn <span>Collective progress & public receipts →</span></button>
     </section>`;
@@ -1189,8 +1192,8 @@ function operationsScreen() {
     </section>`;
   } else {
     content = `<section class="operation-content-panel operation-overview-panel">
-      <div class="operation-progress-line"><span>CAMPAIGN PROGRESS</span><strong>${readiness}%</strong></div>
-      <div class="operation-progress-bar"><i style="width:${readiness}%"></i></div>
+      <div class="operation-progress-line"><span>CAMPAIGN PROGRESS</span><strong>${escapeHtml(readinessLabel)}</strong></div>
+      <div class="operation-progress-bar"><i style="width:${readinessWidth}%"></i></div>
 
       ${clearanceMarkup({ compact: true })}
 
@@ -1390,6 +1393,14 @@ function burnsScreen() {
     const explorer = `https://solscan.io/tx/${encodeURIComponent(receipt.signature)}`;
     return `<article class="burn-receipt${selected}"><div><span class="label">${escapeHtml(receipt.receiptCode)}</span><h3>${formatBaseUnits(receipt.amountBaseUnits, b.decimals)} FAWKQ</h3><p>${escapeHtml(receipt.burnType)} · ${escapeHtml(receipt.blockTime)}</p></div><a class="outline-action" href="${explorer}" target="_blank" rel="noopener noreferrer">On-chain proof</a></article>`;
   }).join('');
+  if (b.unavailable) {
+    return `<div class="burns-unavailable">
+      <section class="screen-intro"><div><span class="label">Collective mission</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div>${statePill('SYNCING', 'pending')}</section>
+      <section class="system-status-banner syncing"><div><span>BURN LEDGER</span><b>Verified burn state is temporarily unavailable</b><small>Project Q is not inferring supply, burned totals, milestone completion or receipt counts while the authoritative ledger is unavailable.</small></div><button data-retry-system>Retry</button></section>
+      <section class="record-panel"><div class="dossier-heading"><span>Configured Plan</span><b>READ-ONLY</b></div><div class="burn-plan">${milestonePlan || '<div class="empty compact"><b>Milestone configuration unavailable</b><p>No burn state is being inferred.</p></div>'}</div></section>
+    </div>`;
+  }
+
   return `<section class="screen-intro"><div><span class="label">Collective mission</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div>${statePill(b.state)}</section>
   <section class="burn-grid">${metric('Reference supply', formatBaseUnits(b.originalSupplyBaseUnits, b.decimals), 'FAWKQ')}${metric('Confirmed burned', formatBaseUnits(b.totalBurnedBaseUnits, b.decimals), `${formatPercentBps(b.supplyRemovedBps)} removed`)}${metric('Observed supply', formatBaseUnits(b.currentSupplyBaseUnits, b.decimals), 'Last verified state')}${metric('Receipts', Number(b.burnCount || 0), 'On-chain confirmed')}</section>
   <section class="command-card burn-milestone"><div class="panel-title"><span>Opening commitment</span><small>${escapeHtml(configured.openingBurnStatus || 'PLANNED')}</small></div><strong>${formatBaseUnits(configured.openingBurnBaseUnits, b.decimals)} FAWKQ</strong><p>Additional 1.5% from the FAWKQ creator wallet. It does not reduce the campaign reward pool, Diamond Duck bonus or 1 SOL prize.</p></section>
