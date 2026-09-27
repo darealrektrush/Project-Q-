@@ -5167,3 +5167,89 @@ body.rail-collapsed .rail .nav-icon svg {
     justify-self: start;
   }
 }
+
+
+/* SYSTEM STATUS + RENDER TRANSITIONS */
+.screen {
+  transition: opacity .14s ease, transform .14s ease;
+}
+.screen.screen-rendering {
+  opacity: .985;
+  transform: translateY(1px);
+}
+
+.system-status-banner {
+  min-height: 60px;
+  margin-bottom: 10px;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255,250,240,.72);
+}
+.system-status-banner > div span,
+.system-status-banner > div b,
+.system-status-banner > div small {
+  display: block;
+}
+.system-status-banner > div span {
+  color: #7f6d4d;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.system-status-banner > div b {
+  margin-top: 2px;
+  font-size: 11px;
+}
+.system-status-banner > div small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+.system-status-banner > button {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: #5f513b;
+  background: rgba(255,255,255,.32);
+  font-size: 8px;
+  font-weight: 900;
+}
+.system-status-banner.preview {
+  border-color: rgba(24,136,216,.18);
+  background: linear-gradient(90deg,rgba(24,136,216,.055),rgba(255,250,240,.72));
+}
+.system-status-banner.preview > div span {
+  color: var(--oracle);
+}
+.system-status-banner.syncing {
+  border-color: rgba(185,135,47,.22);
+  background: linear-gradient(90deg,rgba(215,168,63,.06),rgba(255,250,240,.72));
+}
+.system-status-banner.blocked {
+  border-color: rgba(166,66,60,.22);
+  background: linear-gradient(90deg,rgba(166,66,60,.055),rgba(255,250,240,.72));
+}
+.system-status-banner.blocked > div span {
+  color: var(--danger);
+}
+
+@media (max-width: 520px) {
+  .system-status-banner {
+    min-height: 56px;
+    grid-template-columns: 1fr auto;
+    padding: 9px 10px;
+  }
+  .system-status-banner > div b {
+    font-size: 10px;
+  }
+  .system-status-banner > div small {
+    font-size: 8px;
+  }
+}
