@@ -52,6 +52,18 @@ async function loadRuntime() {
       state.profile.holderEligible = true;
       return missionDetailMarkup(mission);
     };
+    globalThis.__missionStateWith = (id, runtime, campaignState = 'DRAFT', clearance = true) => {
+      state.runtime = runtime;
+      state.runtimeLoadedAt = Date.now();
+      state.profile.campaignState = campaignState;
+      state.profile.telegramVerified = clearance;
+      state.profile.xVerified = clearance;
+      state.profile.walletVerified = clearance;
+      state.profile.tokenAccountReady = clearance;
+      state.profile.holderEligible = clearance;
+      const mission = state.campaign.missions.find((item) => item.id === id);
+      return canonicalMissionState(mission, missionTelemetry(mission));
+    };
     globalThis.__renderWebsiteVoteDetail = (websiteVotes, flow = null) => {
       state.profile.telegramVerified = true;
       state.profile.xVerified = true;
@@ -249,6 +261,28 @@ test('operation lifecycle follows authoritative campaign state instead of partic
     databaseState: 'COMPLETED', operational: false,
     schedule: { phase: 'POST_REVIEW' },
   }, 'COMPLETED').label, 'COMPLETED');
+});
+test('configured mission availability still requires authoritative ACTIVE operation state', async () => {
+  const context = await loadRuntime();
+  assert.equal(context.__missionStateWith('bagwork', {
+    databaseState: 'SCHEDULED', operational: false, schedule: { phase: 'PRE_LAUNCH' },
+  }, 'SCHEDULED', true).label, 'LOCKED');
+
+  assert.equal(context.__missionStateWith('bagwork', {
+    databaseState: 'READINESS_BLOCKED', operational: false, schedule: { phase: 'ACTIVE' },
+  }, 'READINESS_BLOCKED', true).label, 'LOCKED');
+
+  assert.equal(context.__missionStateWith('bagwork', {
+    databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE' },
+  }, 'ACTIVE', true).label, 'AVAILABLE');
+
+  assert.equal(context.__missionStateWith('bagwork', {
+    databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE' },
+  }, 'ACTIVE', false).label, 'LOCKED');
+
+  assert.equal(context.__missionStateWith('bagwork', {
+    databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' },
+  }, 'VERIFYING', true).label, 'LOCKED');
 });
 test('campaign standings communicate live review and finalized lifecycle states', async () => {
   const context = await loadRuntime();
