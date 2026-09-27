@@ -80,7 +80,13 @@ app.get('/campaign-app/api/runtime', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
     const runtime = await campaignService.getCampaignRuntime(supabase);
-    return res.status(200).json({ ok: true, runtime });
+    const configuredBot = process.env.ORACLE_PROJECT_Q_BOT_URL;
+    const oracleBotUrl = /^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/.test(configuredBot ?? '')
+      ? configuredBot
+      : process.env.RENDER_EXTERNAL_HOSTNAME === 'project-q-8k3a.onrender.com'
+        ? 'https://t.me/crabstar_oracle_bot'
+        : null;
+    return res.status(200).json({ ok: true, runtime: { ...runtime, oracleBotUrl } });
   } catch (err) {
     console.error('public campaign runtime unavailable', err.message);
     return res.status(503).json({ ok: false, error: 'campaign runtime unavailable' });
