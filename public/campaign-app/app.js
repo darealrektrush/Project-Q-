@@ -1282,7 +1282,8 @@ function openExplainer(key) {
 }
 
 function bind() {
-  document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });\n  document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
+  document.querySelectorAll('[data-screen]').forEach((element) => { element.onclick = () => go(element.dataset.screen); });
+  document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
