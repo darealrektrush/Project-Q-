@@ -50,6 +50,15 @@ async function loadRuntime() {
       state.profile.walletVerified = true;
       state.profile.tokenAccountReady = true;
       state.profile.holderEligible = true;
+      state.profile.campaignState = 'ACTIVE';
+      state.runtime = {
+        databaseState: 'ACTIVE',
+        operational: true,
+        displayLabel: 'CYCLE 1 LIVE',
+        tone: 'success',
+        schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-10-01T15:00:00.000Z', currentCycle: 1 },
+      };
+      state.runtimeLoadedAt = Date.now();
       return missionDetailMarkup(mission);
     };
     globalThis.__missionStateWith = (id, runtime, campaignState = 'DRAFT', clearance = true) => {
@@ -70,6 +79,15 @@ async function loadRuntime() {
       state.profile.walletVerified = true;
       state.profile.tokenAccountReady = true;
       state.profile.holderEligible = true;
+      state.profile.campaignState = 'ACTIVE';
+      state.runtime = {
+        databaseState: 'ACTIVE',
+        operational: true,
+        displayLabel: 'CYCLE 1 LIVE',
+        tone: 'success',
+        schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-10-01T15:00:00.000Z', currentCycle: 1 },
+      };
+      state.runtimeLoadedAt = Date.now();
       state.websiteVotes = websiteVotes;
       state.websiteVoteFlow = flow;
       const mission = { ...state.campaign.missions.find(({ id }) => id === 'website-voting'), enabled: true };
