@@ -1340,32 +1340,56 @@ function profileOverview() {
 
 function profileActivity() {
   const p = state.profile;
-  const buckets = p.xpByBucket || {};
   const rows = p.activity || [];
-  return `<section class="profile-summary profile-subsummary">${metric('Today', `${Number(p.todayXp || 0)} XP`)}${metric('Missions', `${Number(buckets.mission || 0)} XP`)}${metric('Participation', `${Number(buckets.participation || 0)} XP`)}${metric('Other', `${Number(buckets.other || 0)} XP`)}</section>
-  <div class="section-head compact-head"><div><span class="label">Activity ledger</span><h2>Verified contributions</h2></div><span>Latest 25 settled records</span></div>
-  <section class="profile-ledger">${rows.length ? rows.map((item) => `<article class="profile-ledger-row"><span class="ledger-icon">Q</span><div><b>${escapeHtml(missionName(item.missionCode, item.source))}</b><small>${escapeHtml(item.source || 'verified')} · Cycle ${Number(item.cycleId || 0)} · ${escapeHtml(formatProfileDate(item.awardedAt))}</small></div><strong>+${Number(item.amount || 0)} XP</strong>${statePill('Verified', 'success')}</article>`).join('') : '<div class="empty command-card"><b>No verified activity yet</b><p>Accepted actions appear here only after Project Q settles them into the append-only XP ledger.</p></div>'}</section>`;
+  return `<div class="passport-activity-view">
+    <section class="passport-activity-summary">
+      <div><span>TODAY</span><b>${Number(p.todayXp || 0)} XP</b></div>
+      <div><span>TOTAL</span><b>${Number(p.xp || 0).toLocaleString()} XP</b></div>
+      <div><span>RECORDS</span><b>${rows.length}</b></div>
+    </section>
+
+    <section class="record-panel">
+      <div class="dossier-heading"><span>Verified Contributions</span><b>PROJECT Q XP RECORDS</b></div>
+      <section class="ledger">${rows.length
+        ? rows.map((item) => activityRow({
+            label: missionName(item.missionCode, item.source),
+            timestamp: `${item.source || 'verified'} · Cycle ${Number(item.cycleId || 0)} · ${formatProfileDate(item.awardedAt)}`,
+            xp: Number(item.amount || 0),
+            icon: 'Q',
+          })).join('')
+        : '<div class="empty compact"><b>Awaiting verified activity</b><p>Accepted actions appear here only after Project Q settles them into the append-only XP ledger.</p></div>'}</section>
+    </section>
+  </div>`;
 }
 
 function profileRewards() {
   const p = state.profile;
-  const allocation = p.allocation == null ? '—' : formatBaseUnits(p.allocation);
-  const buy = p.buyToEarn;
   const rewards = p.rewards || {};
-  const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : '—';
-  const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '—';
-  const outstanding = rewards.recorded
-    ? formatBaseUnits(subtractBaseUnits(rewards.allocatedBaseUnits, rewards.distributedBaseUnits || '0'))
-    : '—';
-  const allocationRows = Object.entries(p.allocationByCategory || {});
-  return `<section class="command-card profile-reward-card"><div><span class="label">Recorded allocation</span><strong>${allocation}</strong><small>FAWKQ</small></div>${statePill(p.allocation == null ? 'NOT FINALIZED' : 'RECORDED', p.allocation == null ? 'pending' : 'success')}<img src="/campaign-app/assets/system/q-vault.webp" alt="" /></section>
-  <section class="reward-balances four profile-reward-balances"><div><span>Allocated</span><b>${allocation}</b></div><div><span>Scheduled</span><b>${scheduled}</b></div><div class="distributed"><span>Distributed</span><b>${distributed}</b></div><div><span>Outstanding</span><b>${outstanding}</b></div></section>
-  <section class="profile-overview-grid">
-    <article class="command-card profile-card"><div class="panel-title"><span>Reward wallet</span>${statePill(p.walletVerified ? 'VERIFIED' : 'PENDING', p.walletVerified ? 'success' : 'pending')}</div><h3>${state.wallet ? escapeHtml(short(state.wallet)) : 'No verified wallet'}</h3><p>${p.tokenAccountReady ? 'FAWKQ token-account eligibility is recorded.' : 'Token-account eligibility remains pending.'}</p><button class="text-action" data-profile-view="identity">Manage identity →</button></article>
-    <article class="command-card profile-card"><div class="panel-title"><span>Buy-to-Earn</span>${statePill(buy?.eligible ? 'ELIGIBLE' : 'PENDING', buy?.eligible ? 'success' : 'pending')}</div><h3>${buy?.tier ? `Tier ${Number(buy.tier)}` : 'No finalized position'}</h3><p>${buy ? `Snapshot value ${buy.snapshot_usd == null ? 'pending' : `$${Number(buy.snapshot_usd).toFixed(2)}`}. Weight ${Number(buy.weight || 0)}.` : 'Verified purchase and snapshot data will appear here once recorded.'}</p></article>
-  </section>
-  <section class="command-card allocation-panel"><div class="panel-title"><span>Allocation breakdown</span><small>Finalized records only</small></div>${allocationRows.length ? allocationRows.map(([category, amount]) => `<div><span>${escapeHtml(category.replaceAll('_', ' '))}</span><b>${formatBaseUnits(amount)} FAWKQ</b></div>`).join('') : '<div class="profile-empty-line"><span>Campaign rewards</span><b>No participant allocation exists yet</b></div>'}</section>
-  <div class="notice-surface"><div><b>Rewards remain evidence-bound</b><p>Allocated, scheduled and distributed totals appear only when Project Q records exist.</p></div><button class="outline-action" data-screen="rewards">Campaign commitments</button></div>`;
+  const allocation = p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation);
+  const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : 'NOT SCHEDULED';
+  const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '0';
+  const receiptCount = Number(rewards.receiptCount || 0);
+
+  return `<div class="passport-rewards-view">
+    <section class="passport-economic-summary">
+      <div><span>ALLOCATION</span><strong>${allocation}</strong><small>FAWKQ</small></div>
+      ${statePill(p.allocation == null ? 'PENDING' : 'RECORDED', p.allocation == null ? 'pending' : 'success')}
+    </section>
+
+    <section class="passport-economic-grid">
+      <article><span>Scheduled</span><b>${scheduled}</b></article>
+      <article><span>Distributed</span><b>${distributed}</b></article>
+      <article><span>Receipts</span><b>${receiptCount}</b></article>
+      <article><span>Wallet</span><b>${p.walletVerified ? 'VERIFIED' : 'REQUIRED'}</b></article>
+    </section>
+
+    <section class="passport-economic-note">
+      <span>ECONOMIC RECORD</span>
+      <h3>No reward should disappear into a backend process.</h3>
+      <p>The full Rewards system shows where each eligible reward sits from earned activity through allocation, release and confirmed receipt.</p>
+      <button data-screen="rewards">OPEN REWARD PIPELINE →</button>
+    </section>
+  </div>`;
 }
 
 function profileWallet() {
@@ -1373,21 +1397,59 @@ function profileWallet() {
   const status = state.walletStatus || {};
   const wallet = state.wallet && isSolanaAddress(state.wallet) ? state.wallet : null;
   const tokenAccount = p.tokenAccount && isSolanaAddress(p.tokenAccount) ? p.tokenAccount : null;
-  const balance = status.available ? formatBaseUnits(status.balanceBaseUnits, status.decimals) : '—';
+  const balance = status.available ? formatBaseUnits(status.balanceBaseUnits, status.decimals) : 'SYNC PENDING';
   const observed = status.observedAt ? formatProfileDate(status.observedAt) : 'Awaiting on-chain sync';
   const allocationLocked = Boolean(p.rewards?.recorded);
-  const treasuryReady = readinessGate('funding') && readinessGate('registry');
-  return `<section class="wallet-cockpit command-card"><header><div><span class="label">Wallet cockpit</span><h2>${balance}</h2><p>FAWKQ · Solana Mainnet · Token-2022</p></div>${statePill(status.available ? 'ON-CHAIN SYNCED' : wallet ? 'SYNC PENDING' : 'NOT CONNECTED', status.available ? 'success' : 'pending')}</header><div class="wallet-ledger">
-    <article><span>Reward wallet</span><code>${wallet ? escapeHtml(wallet) : 'No verified reward wallet'}</code><button class="text-action" id="copy-wallet" ${wallet ? '' : 'disabled'}>Copy</button></article>
-    <article><span>FAWKQ token account</span><code>${tokenAccount ? escapeHtml(tokenAccount) : (p.tokenAccountReady ? 'Recorded by Project Q' : 'Created at payout if required')}</code><button class="text-action" id="copy-token-account" ${tokenAccount ? '' : 'disabled'}>Copy</button></article>
-    <article><span>Asset contract</span><code>${escapeHtml(status.mint || state.campaign?.earnToBurn?.mint || 'Unavailable')}</code><small>6 decimals · Token-2022</small></article>
-  </div><footer><span>Observed ${escapeHtml(observed)} · ${Number(status.tokenAccountCount || 0)} matching token account${Number(status.tokenAccountCount || 0) === 1 ? '' : 's'}</span><button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh balance</button></footer></section>
-  <section class="wallet-security-grid">
-    <article class="command-card"><span class="label">Ownership</span><h3>${p.walletVerified ? 'Oracle verified' : 'Verification pending'}</h3><p>${p.walletVerified ? `Verified by Oracle ${escapeHtml(formatProfileDate(p.walletVerifiedAt))}. Project Q holds only the campaign payout reference.` : 'Open Oracle to connect and verify the single wallet used across CrabStar.'}</p><button class="text-action" data-profile-view="identity">Open identity →</button></article>
-    <article class="command-card"><span class="label">Destination protection</span><h3>${allocationLocked ? 'Locked after allocation' : 'Changeable before allocation'}</h3><p>${allocationLocked ? 'Self-service wallet replacement is blocked because an allocation already exists. Any recovery requires founder review.' : 'A newly verified wallet replaces the destination and resets token-account readiness before allocations are recorded.'}</p>${statePill(allocationLocked ? 'PROTECTED' : 'PRE-ALLOCATION', allocationLocked ? 'success' : 'pending')}</article>
-    <article class="command-card"><span class="label">Reward delivery</span><h3>Founder-controlled Squads</h3><p>Project Q calculates and records. Founders approve the exact manifest in Squads. The campaign treasury sends FAWKQ directly to this wallet.</p>${statePill(treasuryReady ? 'TREASURY READY' : 'SETUP PENDING', treasuryReady ? 'success' : 'pending')}</article>
-  </section>
-  <section class="command-card wallet-boundary"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><div><b>Non-custodial by design.</b><p>Project Q cannot withdraw from this wallet, cannot sign for the Squads treasury and never stores a seed phrase or private key.</p></div></section>`;
+  const holderReady = Boolean(p.holderEligible);
+  const tokenReady = Boolean(p.tokenAccountReady);
+  const walletReady = Boolean(p.walletVerified && wallet);
+
+  return `<div class="passport-wallet-view">
+    <section class="passport-wallet-hero">
+      <div>
+        <span>VERIFIED REWARD DESTINATION</span>
+        <h3>${walletReady ? escapeHtml(short(wallet)) : 'No Verified Wallet'}</h3>
+        <p>${walletReady
+          ? 'This wallet is the current Project Q destination for campaign eligibility and distributions.'
+          : 'Verify one reward wallet through Oracle before campaign rewards can be finalized.'}</p>
+      </div>
+      ${statePill(walletReady ? 'VERIFIED' : 'REQUIRED', walletReady ? 'success' : 'pending')}
+    </section>
+
+    <section class="passport-wallet-balance">
+      <div><span>FAWKQ BALANCE</span><strong>${balance}</strong><small>Observed ${escapeHtml(observed)}</small></div>
+      <button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh</button>
+    </section>
+
+    <section class="passport-wallet-records">
+      <article>
+        <span>Reward Wallet</span>
+        <code>${wallet ? escapeHtml(wallet) : 'Not connected'}</code>
+        <button class="text-action" id="copy-wallet" ${wallet ? '' : 'disabled'}>Copy</button>
+      </article>
+      <article>
+        <span>FAWKQ Token Account</span>
+        <code>${tokenAccount ? escapeHtml(tokenAccount) : tokenReady ? 'Recorded by Project Q' : 'Requirement incomplete'}</code>
+        <button class="text-action" id="copy-token-account" ${tokenAccount ? '' : 'disabled'}>Copy</button>
+      </article>
+    </section>
+
+    <section class="wallet-requirement-strip">
+      <div class="${walletReady ? 'complete' : ''}"><span>01</span><b>Wallet</b><small>${walletReady ? 'Verified' : 'Required'}</small></div>
+      <div class="${tokenReady ? 'complete' : ''}"><span>02</span><b>Token Account</b><small>${tokenReady ? 'Ready' : 'Pending'}</small></div>
+      <div class="${holderReady ? 'complete' : ''}"><span>03</span><b>FAWKQ Holding</b><small>${holderReady ? 'Eligible' : 'Incomplete'}</small></div>
+    </section>
+
+    <section class="identity-system-note wallet-system-note">
+      <div class="identity-system oracle-system"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle Ownership</b><small>Oracle verifies the canonical reward-wallet connection.</small></span></div>
+      <div class="identity-system q-system"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" /><span><b>Project Q Destination</b><small>Q uses the verified wallet for eligibility, allocations and releases.</small></span></div>
+    </section>
+
+    <section class="wallet-protection-note">
+      <div><span>DESTINATION PROTECTION</span><b>${allocationLocked ? 'Locked after allocation' : 'Changeable before allocation'}</b><small>${allocationLocked ? 'Any wallet recovery requires controlled review because a reward allocation already exists.' : 'A newly verified wallet becomes the campaign destination before allocations are finalized.'}</small></div>
+      ${statePill(allocationLocked ? 'PROTECTED' : 'PRE-ALLOCATION', allocationLocked ? 'success' : 'pending')}
+    </section>
+  </div>`;
 }
 
 function profileReferrals() {
