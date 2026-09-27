@@ -4,7 +4,7 @@ const NAV = [
   ['home', 'Home'],
   ['missions', 'Missions'],
   ['xp', 'XP'],
-  ['leaderboard', 'Rank'],
+  ['leaderboard', 'Ranks'],
   ['rewards', 'Rewards'],
 ];
 
@@ -300,34 +300,147 @@ function nextStatusCard() {
 function home() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
+  const missions = Array.isArray(c.missions) ? c.missions : [];
   const count = verifiedCount();
   const identityReady = count === 3;
-  const nextScreen = identityReady ? 'missions' : 'profile';
   const allocation = p.allocation == null ? '—' : formatBaseUnits(p.allocation);
   const readiness = state.readiness?.available
     ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0)))
     : null;
   const readinessLabel = readiness == null ? '—' : `${readiness}%`;
   const heroStyle = c.banner ? ` style="--campaign-art:url('${c.banner}')"` : '';
-  return `<section class="command-hero"${heroStyle}>
-    <div class="hero-copy">
-      <div class="campaign-line"><span>${escapeHtml(c.sequence)}</span>${runtimePill()}</div>
-      <h2 class="sr-only">Bond the Duck</h2>
-      <p class="sr-only">${Number(c.activeDays || 10)}-day verified campaign</p>
-    </div>
-    <div class="readiness-block"><div><span>Campaign readiness</span><b>${readinessLabel}</b></div><div class="progress hero-progress" role="progressbar" aria-label="Campaign readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readiness}"`}><span style="width:${readiness ?? 0}%"></span></div></div>
-  </section>
-  ${campaignClockMarkup(c)}
-  <section class="campaign-schedule" aria-label="Campaign schedule"><div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div><i></i><div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div></section>
-  ${readinessDetailsMarkup()}
-  <button class="gold-action" data-screen="${nextScreen}"><span><b>${nextIdentityAction()}</b><small>${state.runtime?.operational ? (identityReady ? 'Verified campaign operations' : 'Complete identity for rewards') : (identityReady ? 'Explore the campaign before launch' : 'Prepare identity for launch')}</small></span><i>→</i></button>
-  <section class="status-panel"><div class="panel-label">Your status</div><div class="status-grid">${metric('ID', `${count}/3`)}${metric('XP', Number(p.xp || 0).toLocaleString())}${metric('Rank', escapeHtml(p.rank))}${metric('Rewards', allocation)}</div></section>
-  ${nextStatusCard()}
-  <div class="section-head compact-head"><div><span class="label">Campaign operations</span><h2>Your next actions</h2></div><button class="text-action" data-screen="missions">View all ${c.missions.length}</button></div>
-  <div class="quick-actions">${c.missions.filter(({ kind }) => kind !== 'COLLECTIVE').slice(0, 3).map(missionCard).join('')}</div>
-  <button class="burn-utility" data-screen="burns"><img src="/campaign-app/assets/missions/v3-earn-to-burn.webp" alt="" /><span><small>Collective mission</small><b>Earn to Burn</b><em>Public milestones and on-chain receipts</em></span><i>→</i></button>
-  <section class="ecosystem-strip" aria-label="Project Q ecosystem"><div><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Proves · operates · distributes</small></span></div><div class="oracle-brand"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Guides · verifies · executes</small></span></div></section>
-  ${c.banner ? `<details class="campaign-details"><summary>Full campaign details <span>View artwork</span></summary><figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || `${c.name} campaign banner`)}" /></figure></details>` : ''}`;
+
+  let nextMove = {
+    eyebrow: 'Complete your setup',
+    title: 'Verify Telegram',
+    detail: 'Open Project Q from the official Telegram bot to establish your campaign identity.',
+    action: 'Review profile',
+    screen: 'profile',
+  };
+  if (p.telegramVerified && !p.xVerified) {
+    nextMove = {
+      eyebrow: 'Complete your setup',
+      title: 'Connect your X identity',
+      detail: 'Verify X through Oracle to unlock eligible social and campaign activity.',
+      action: 'Connect with Oracle',
+      screen: 'profile',
+    };
+  } else if (p.telegramVerified && p.xVerified && !p.walletVerified) {
+    nextMove = {
+      eyebrow: 'One step remaining',
+      title: 'Verify your reward wallet',
+      detail: 'Connect the wallet Project Q will use for eligibility, allocations and verified releases.',
+      action: 'Verify wallet',
+      screen: 'profile',
+    };
+  } else if (identityReady && state.runtime?.operational) {
+    nextMove = {
+      eyebrow: 'You are campaign ready',
+      title: 'Choose your next mission',
+      detail: 'Complete eligible activity, build XP and progress through the active campaign.',
+      action: 'Explore missions',
+      screen: 'missions',
+    };
+  } else if (identityReady) {
+    nextMove = {
+      eyebrow: 'Identity ready',
+      title: 'Explore the campaign',
+      detail: 'Review missions, rewards and campaign mechanics while Project Q prepares the next active phase.',
+      action: 'Explore missions',
+      screen: 'missions',
+    };
+  }
+
+  return `<div class="home-v2">
+    <section class="command-hero home-hero"${heroStyle}>
+      <div class="hero-copy">
+        <div class="campaign-line"><span>${escapeHtml(c.sequence)}</span>${runtimePill()}</div>
+        <div class="home-hero-title">
+          <span class="label">Project Q Campaign</span>
+          <h2>${escapeHtml(c.name || 'Bond the Duck')}</h2>
+          <p>${escapeHtml(c.tagline || c.description || 'Verified participation. Transparent rewards.')}</p>
+        </div>
+      </div>
+      <div class="readiness-block home-readiness">
+        <div><span>Campaign readiness</span><b>${readinessLabel}</b></div>
+        <div class="progress hero-progress" role="progressbar" aria-label="Campaign readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readiness}"`}>
+          <span style="width:${readiness ?? 0}%"></span>
+        </div>
+      </div>
+    </section>
+
+    ${campaignClockMarkup(c)}
+
+    <section class="home-next-move command-card">
+      <div class="home-next-copy">
+        <span class="label">${escapeHtml(nextMove.eyebrow)}</span>
+        <h2>${escapeHtml(nextMove.title)}</h2>
+        <p>${escapeHtml(nextMove.detail)}</p>
+      </div>
+      <button class="home-primary-cta" data-screen="${nextMove.screen}">
+        <span>${escapeHtml(nextMove.action)}</span><i>→</i>
+      </button>
+    </section>
+
+    <section class="home-progress-section">
+      <div class="section-head compact-head">
+        <div><span class="label">Your progress</span><h2>Campaign snapshot</h2></div>
+        <button class="text-action" data-screen="profile">View profile</button>
+      </div>
+      <div class="home-progress-grid">
+        <article class="home-metric"><span>XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong><small>Campaign XP</small></article>
+        <article class="home-metric"><span>Rank</span><strong>${escapeHtml(p.rank || '—')}</strong><small>Current standing</small></article>
+        <article class="home-metric"><span>Missions</span><strong>${Number(p.completedMissions || 0).toLocaleString()}</strong><small>Completed</small></article>
+        <article class="home-metric"><span>Rewards</span><strong>${allocation}</strong><small>Recorded allocation</small></article>
+      </div>
+      <div class="home-identity-strip">
+        <div><span>Identity</span><b>${count}/3 verified</b></div>
+        <div class="home-identity-progress" aria-label="${count} of 3 identity steps verified">
+          <i class="${p.telegramVerified ? 'complete' : ''}"></i>
+          <i class="${p.xVerified ? 'complete' : ''}"></i>
+          <i class="${p.walletVerified ? 'complete' : ''}"></i>
+        </div>
+        <button class="text-action" data-screen="profile">${identityReady ? 'Review' : 'Finish setup'} →</button>
+      </div>
+    </section>
+
+    <section class="home-missions-section">
+      <div class="section-head">
+        <div><span class="label">Missions for you</span><h2>Your next opportunities</h2></div>
+        <button class="text-action" data-screen="missions">View all ${missions.length}</button>
+      </div>
+      <div class="quick-actions home-mission-list">
+        ${missions.filter(({ kind }) => kind !== 'COLLECTIVE').slice(0, 3).map(missionCard).join('')}
+      </div>
+    </section>
+
+    <button class="burn-utility home-burn-card" data-screen="burns">
+      <img src="/campaign-app/assets/missions/v3-earn-to-burn.webp" alt="" />
+      <span><small>Collective campaign mechanic</small><b>Earn to Burn</b><em>Community participation advances transparent ecosystem burn milestones.</em></span>
+      <i>→</i>
+    </button>
+
+    <section class="ecosystem-strip home-ecosystem" aria-label="Project Q ecosystem">
+      <div><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Participation · XP · rewards</small></span></div>
+      <div class="oracle-brand"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Identity · verification · intelligence</small></span></div>
+    </section>
+
+    <details class="home-advanced">
+      <summary>
+        <span><small>Campaign transparency</small><b>Advanced campaign details</b></span>
+        <em>View details</em>
+      </summary>
+      <div class="home-advanced-body">
+        <section class="campaign-schedule" aria-label="Campaign schedule">
+          <div><span>Active campaign</span><b>${escapeHtml(c.schedule?.activeLabel || 'Final dates pending · 10 active days')}</b><small>${Number(c.schedule?.cycles?.length || 5)} campaign cycles of 48 hours</small></div>
+          <i></i>
+          <div><span>Final review</span><b>${escapeHtml(c.schedule?.reviewLabel || '48–72 hours after campaign handoff')}</b><small>48-hour checkpoint · 72-hour maximum</small></div>
+        </section>
+        ${readinessDetailsMarkup()}
+        ${c.banner ? `<details class="campaign-details"><summary>Campaign artwork <span>View artwork</span></summary><figure><img src="${c.banner}" alt="${escapeHtml(c.bannerAlt || `${c.name} campaign banner`)}" /></figure></details>` : ''}
+      </div>
+    </details>
+  </div>`;
 }
 
 function missionTelemetry(mission) {
