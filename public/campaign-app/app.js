@@ -2202,7 +2202,7 @@ function missionDetailMarkup(mission) {
     <details class="mission-file-disclosure">
       <summary>Proof & Verification <span>⌄</span></summary>
       <div class="mission-file-disclosure-body">
-        <p>Only finalized Project Q records count toward XP, rank or campaign rewards. Opening a destination alone never guarantees credit.</p>
+        <p>Only verified Project Q records count toward XP, rank or campaign rewards. Finalized Project Q settlement remains the source of truth; opening a destination alone never guarantees credit.</p>
       </div>
     </details>
 
