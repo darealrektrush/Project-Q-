@@ -191,7 +191,7 @@ function campaignClockMarkup(campaign) {
     const status = number <= completedCycles ? 'complete' : number === cycle ? 'current' : '';
     return `<i class="${status}" title="Cycle ${number}">${number}</i>`;
   }).join('');
-  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(awaitingTargetApproval ? 'Campaign target awaiting approval' : schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
+  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(awaitingTargetApproval ? 'Campaign target awaiting approval' : schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" style="--cycle-count:${cycleCount}" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
 }
 
 function updateCountdownLabels() {
@@ -762,7 +762,7 @@ function toast(message) {
 
 function render() {
   const c = state.campaign || fallbackCampaign;
-  const navTitle = NAV.find(([id]) => id === state.screen)?.[2];
+  const navTitle = NAV.find(([id]) => id === state.screen)?.[1];
   const screenTitle = state.screen === 'home' ? 'Project Q' : (navTitle || (state.screen === 'profile' ? 'Profile' : state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
   document.querySelector('#desktop-nav').innerHTML = navMarkup();
   document.querySelector('#mobile-nav').innerHTML = navMarkup();
