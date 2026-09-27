@@ -187,6 +187,7 @@ const state = {
   websiteVoteReviewEnabled: false,
   preferences: { appTourVersion: 0, appTourCompletedAt: null },
   tour: { active: false, step: 0, source: 'auto' },
+  navigationStack: ['home'],
 };
 
 const fallbackCampaign = {
@@ -1459,11 +1460,43 @@ function render() {
   bind();
 }
 
-function go(screen) {
+function updateTelegramBackButton() {
+  const backButton = state.telegram?.BackButton;
+  if (!backButton) return;
+  const dialogOpen = Boolean(document.querySelector('#mission-dialog')?.open);
+  const shouldShow = dialogOpen || state.screen !== 'home' || state.navigationStack.length > 1;
+  if (shouldShow) backButton.show?.();
+  else backButton.hide?.();
+}
+
+function navigateBack() {
+  const dialog = document.querySelector('#mission-dialog');
+  if (dialog?.open) {
+    closeMission();
+    updateTelegramBackButton();
+    return;
+  }
+
+  const previous = state.navigationStack.pop();
+  if (previous && screens[previous]) {
+    state.screen = previous;
+  } else {
+    state.navigationStack = ['home'];
+    state.screen = 'home';
+  }
+  history.replaceState(null, '', `#${state.screen}`);
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  state.telegram?.HapticFeedback?.impactOccurred('light');
+}
+
+function go(screen, { replace = false } = {}) {
   if (!screens[screen]) return;
+  if (!replace && state.screen !== screen) state.navigationStack.push(state.screen);
   state.screen = screen;
   history.replaceState(null, '', `#${screen}`);
   render();
+  updateTelegramBackButton();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
@@ -1780,6 +1813,7 @@ function closeMission() {
   const dialog = document.querySelector('#mission-dialog');
   state.activeMissionId = null;
   if (dialog?.open) dialog.close();
+  updateTelegramBackButton();
 }
 
 function executeMissionAction(missionId) {
@@ -1807,6 +1841,7 @@ function openMission(missionId) {
   bindMissionDialog(dialog, missionId);
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
+  updateTelegramBackButton();
 }
 
 function tourStorageKey() {
@@ -2122,10 +2157,10 @@ function bind() {
     element.onclick = () => { state.profileView = element.dataset.profileView; render(); };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
-    element.onclick = () => { state.operationsView = element.dataset.operationView; state.screen = 'operations'; render(); };
+    element.onclick = () => { state.operationsView = element.dataset.operationView; go('operations'); };
   });
   document.querySelectorAll('[data-record-view]').forEach((element) => {
-    element.onclick = () => { state.recordView = element.dataset.recordView; state.screen = 'record'; render(); };
+    element.onclick = () => { state.recordView = element.dataset.recordView; go('record'); };
   });
   document.querySelector('#rail-toggle')?.addEventListener('click', toggleRail);
   applyRailPreference();
@@ -2311,11 +2346,14 @@ async function boot() {
   state.telegram?.setHeaderColor?.('#e9e2d3');
   state.telegram?.setBackgroundColor?.('#e9e2d3');
   state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); await loadWalletStatus(); render(); });
+  state.telegram?.BackButton?.onClick?.(navigateBack);
   state.screen = location.hash.slice(1) in screens ? location.hash.slice(1) : 'home';
+  state.navigationStack = state.screen === 'home' ? ['home'] : ['home'];
   await Promise.all([loadCampaign(), loadCampaignRuntime(), loadCampaignReadiness(), loadBurnSummary(), authenticateTelegram()]);
   await loadWalletStatus();
   restoreWebsiteVoteFlow();
   render();
+  updateTelegramBackButton();
   setInterval(updateCountdownLabels, 1000);
   setInterval(async () => { await Promise.all([loadCampaignRuntime(), loadCampaignReadiness()]); render(); }, 60000);
   const remaining = Math.max(0, 650 - (performance.now() - splashStarted));
