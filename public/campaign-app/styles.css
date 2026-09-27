@@ -5429,3 +5429,327 @@ body.rail-collapsed .rail .nav-icon svg {
     grid-template-columns: repeat(2,minmax(0,1fr)) !important;
   }
 }
+
+
+/* PASSPORT SUBVIEWS LOCK */
+.passport-wallet-view,
+.passport-rewards-view,
+.passport-activity-view {
+  display: grid;
+  gap: 10px;
+}
+
+.passport-wallet-hero,
+.passport-economic-summary {
+  min-height: 112px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(249,242,228,.80);
+}
+.passport-wallet-hero span,
+.passport-economic-summary span {
+  color: #7a6949;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.passport-wallet-hero h3 {
+  margin: 5px 0;
+  font-size: 18px;
+}
+.passport-wallet-hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.passport-wallet-balance {
+  min-height: 74px;
+  padding: 11px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #1f1d18;
+  border-radius: 7px;
+  color: #f3ecdf;
+  background: #151512;
+}
+.passport-wallet-balance span,
+.passport-wallet-balance strong,
+.passport-wallet-balance small {
+  display: block;
+}
+.passport-wallet-balance span {
+  color: var(--gold-3);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .07em;
+}
+.passport-wallet-balance strong {
+  margin-top: 3px;
+  font-size: 21px;
+}
+.passport-wallet-balance small {
+  margin-top: 3px;
+  color: #aaa398;
+  font-size: 8px;
+}
+
+.passport-wallet-records {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.62);
+}
+.passport-wallet-records article {
+  min-height: 60px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: 120px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.passport-wallet-records article:last-child {
+  border-bottom: 0;
+}
+.passport-wallet-records span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.passport-wallet-records code {
+  overflow: hidden;
+  color: #3e3932;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallet-requirement-strip {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.58);
+}
+.wallet-requirement-strip > div {
+  min-width: 0;
+  padding: 10px;
+  border-right: 1px solid var(--line-soft);
+}
+.wallet-requirement-strip > div:last-child { border-right: 0; }
+.wallet-requirement-strip span,
+.wallet-requirement-strip b,
+.wallet-requirement-strip small {
+  display: block;
+}
+.wallet-requirement-strip span {
+  color: #8a7c67;
+  font-size: 8px;
+  font-weight: 950;
+}
+.wallet-requirement-strip b {
+  margin-top: 4px;
+  font-size: 10px;
+}
+.wallet-requirement-strip small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+}
+.wallet-requirement-strip > div.complete {
+  background: rgba(47,127,78,.05);
+}
+
+.wallet-protection-note {
+  min-height: 76px;
+  padding: 11px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.62);
+}
+.wallet-protection-note span,
+.wallet-protection-note b,
+.wallet-protection-note small {
+  display: block;
+}
+.wallet-protection-note span {
+  color: #7c6c4d;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .07em;
+}
+.wallet-protection-note b {
+  margin-top: 3px;
+  font-size: 11px;
+}
+.wallet-protection-note small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.passport-economic-summary strong {
+  display: block;
+  margin-top: 3px;
+  color: #29251f;
+  font-size: clamp(30px,6vw,48px);
+  line-height: 1;
+}
+.passport-economic-summary small {
+  display: block;
+  margin-top: 4px;
+  color: #8d6921;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.passport-economic-grid,
+.passport-activity-summary {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255,250,240,.60);
+}
+.passport-economic-grid article,
+.passport-activity-summary > div {
+  min-width: 0;
+  padding: 10px;
+  border-right: 1px solid var(--line-soft);
+}
+.passport-economic-grid article:last-child,
+.passport-activity-summary > div:last-child { border-right: 0; }
+.passport-economic-grid span,
+.passport-economic-grid b,
+.passport-activity-summary span,
+.passport-activity-summary b {
+  display: block;
+}
+.passport-economic-grid span,
+.passport-activity-summary span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.passport-economic-grid b,
+.passport-activity-summary b {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+
+.passport-economic-note {
+  min-height: 132px;
+  padding: 15px;
+  border: 1px solid #1f1d18;
+  border-radius: 8px;
+  color: #f2eadb;
+  background: #151512;
+}
+.passport-economic-note > span {
+  color: var(--gold-3);
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.passport-economic-note h3 {
+  margin: 5px 0 6px;
+  color: #fff8e9;
+  font-size: 17px;
+}
+.passport-economic-note p {
+  margin: 0;
+  color: #aaa398;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.passport-economic-note button {
+  min-height: 40px;
+  margin-top: 11px;
+  padding: 0 10px;
+  border: 1px solid rgba(215,168,63,.28);
+  border-radius: 5px;
+  color: #e7c46d;
+  background: rgba(215,168,63,.06);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+@media (max-width: 520px) {
+  .passport-wallet-hero,
+  .passport-economic-summary {
+    min-height: 98px;
+    padding: 12px;
+  }
+
+  .passport-wallet-records article {
+    grid-template-columns: 1fr auto;
+  }
+
+  .passport-wallet-records article > span {
+    grid-column: 1 / -1;
+  }
+
+  .passport-wallet-records code {
+    max-width: 100%;
+  }
+
+  .wallet-requirement-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-requirement-strip > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .wallet-requirement-strip > div:last-child {
+    border-bottom: 0;
+  }
+
+  .wallet-protection-note {
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-protection-note .state-pill {
+    justify-self: start;
+  }
+
+  .passport-economic-grid,
+  .passport-activity-summary {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .passport-economic-grid article,
+  .passport-activity-summary > div {
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .passport-economic-grid article:nth-child(2n),
+  .passport-activity-summary > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .passport-economic-grid article:nth-last-child(-n+2),
+  .passport-activity-summary > div:nth-last-child(-n+2) {
+    border-bottom: 0;
+  }
+}
