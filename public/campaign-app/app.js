@@ -89,11 +89,11 @@ const APP_TOUR_VERSION = 2;
 
 const APP_TOUR_STEPS = [
   { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Operations Terminal', text: 'Your command center shows the active operation, next required action and critical campaign status.' },
-  { screen: 'operations', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Operations', text: 'Open campaign dossiers, mission files, progress, rewards and operational intel.' },
-  { screen: 'record', target: '[data-tour-target="record"]', icon: 'R', title: 'Your Record', text: 'Verified XP, rank, achievements and accepted activity become your permanent Project Q record.' },
+  { screen: 'operations', operationsView: 'overview', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Operations', text: 'Open campaign dossiers, mission files, progress, rewards and operational intel.' },
+  { screen: 'record', recordView: 'xp', target: '[data-tour-target="record"]', icon: 'R', title: 'Your Record', text: 'Verified XP, rank, achievements and accepted activity become your permanent Project Q record.' },
   { screen: 'rewards', target: '[data-tour-target="rewards"]', icon: '◆', title: 'Rewards', text: 'Follow allocations through authorization, on-chain delivery and final receipts.' },
-  { screen: 'profile', target: '[data-tour-target="profile"]', icon: 'ID', title: 'Participant Passport', text: 'Your identity, connections and operation history live in one persistent Project Q participant record.' },
-  { screen: 'operations', target: '[data-tour-target="oracle"]', icon: 'O', title: 'Oracle Verification', text: 'Oracle keeps its own blue identity whenever it verifies people, evidence or supported activity.' },
+  { screen: 'profile', profileView: 'overview', target: '[data-tour-target="profile"]', icon: 'ID', title: 'Participant Passport', text: 'Your identity, connections and operation history live in one persistent Project Q participant record.' },
+  { screen: 'operations', operationsView: 'intel', target: '[data-tour-target="oracle"]', icon: 'O', title: 'Oracle Verification', text: 'Oracle keeps its own blue identity whenever it verifies people, evidence or supported activity.' },
   { screen: 'home', target: '[data-tour-target="home"]', icon: '✓', title: 'Enter the Operation', text: 'Participate. Verify. Build your record. Small actions. Bigger oceans.' },
 ];
 
@@ -698,7 +698,7 @@ function xpScreen() {
       </div>
       <div class="progression-actions">
         <button class="info-action" data-explainer="xp" aria-label="How XP works">?</button>
-        <button class="outline-action" data-screen="leaderboard">View standing</button>
+        <button class="outline-action" data-record-view="rank">View standing</button>
       </div>
     </section>
 
@@ -1947,7 +1947,11 @@ function renderTourStep() {
   const index = Math.max(0, Math.min(APP_TOUR_STEPS.length - 1, state.tour.step));
   const step = APP_TOUR_STEPS[index];
 
-  if (state.screen !== step.screen) {
+  if (step.operationsView) state.operationsView = step.operationsView;
+  if (step.recordView) state.recordView = step.recordView;
+  if (step.profileView) state.profileView = step.profileView;
+
+  if (state.screen !== step.screen || step.operationsView || step.recordView || step.profileView) {
     state.screen = step.screen;
     history.replaceState(null, '', `#${step.screen}`);
     render();
