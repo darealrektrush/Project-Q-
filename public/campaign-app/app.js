@@ -1496,6 +1496,9 @@ function rewardsScreen() {
   const actualReleases = rewards.releases || [];
   const delivery = rewardDeliveryState(rewards);
   const walletLabel = state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected';
+  const failedBaseUnits = String(rewards.failedBaseUnits || '0');
+  const hasFailedRelease = hasPositiveBaseUnits(failedBaseUnits)
+    || actualReleases.some(({ status }) => status === 'failed');
 
   const hasEarnedActivity = Boolean(state.profile.completedMissions > 0 || state.profile.todayXp > 0 || state.profile.xp > 0);
   const hasVerifiedActivity = Boolean(state.profile.xp > 0 || state.profile.activity?.length);
@@ -1546,6 +1549,17 @@ function rewardsScreen() {
         <b>${walletLabel}</b>
       </div>
     </section>
+
+    ${hasFailedRelease ? `<section class="reward-recovery-alert">
+      <div>
+        <span>RELEASE RECOVERY</span>
+        <h3>Recovery Review Required</h3>
+        <p>${hasPositiveBaseUnits(failedBaseUnits) ? `${formatBaseUnits(failedBaseUnits)} FAWKQ is recorded in failed release state. ` : ''}Project Q does not count a failed release as distributed. The record remains visible until a treasury-authorized recovery is finalized.</p>
+        <small>No claim transaction or private-key action is required from the participant.</small>
+      </div>
+      ${statePill('RECOVERY REVIEW', 'blocked')}
+      <button data-operation-view="intel">OPEN OPERATION INTEL →</button>
+    </section>` : ''}
 
     <section class="reward-pipeline">
       <div class="dossier-heading"><span>Reward Pipeline</span><b>EARNED → CONFIRMED</b></div>
