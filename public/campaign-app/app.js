@@ -690,12 +690,25 @@ function canonicalMissionState(mission, telemetry) {
   const verified = Number(telemetry?.verified || 0);
   const pending = Number(telemetry?.pending || 0);
   const rejected = Number(telemetry?.rejected || 0);
+
+  if (mission.id === 'website-voting') {
+    const sourceStates = (state.websiteVotes?.sources || []).map(({ status }) => status);
+    if (state.websiteVoteFlow?.attempt || sourceStates.includes('IN_PROGRESS')) {
+      return { label: 'IN PROGRESS', tone: 'ready' };
+    }
+    if (sourceStates.includes('PENDING_REVIEW')) {
+      return { label: 'SUBMITTED', tone: 'pending' };
+    }
+    if (sourceStates.length && sourceStates.every((status) => ['ON_COOLDOWN','COMMUNITY_ONLY','SOURCE_UNAVAILABLE','PENDING_CERTIFICATION'].includes(status))) {
+      return { label: 'COOLDOWN', tone: 'pending' };
+    }
+  }
+
   if (verified > 0) return { label: 'VERIFIED', tone: 'success' };
   if (pending > 0) return { label: 'VERIFYING', tone: 'pending' };
   if (rejected > 0 && verified === 0 && pending === 0) return { label: 'REJECTED', tone: 'blocked' };
   if (mission.kind === 'COLLECTIVE') return { label: 'COLLECTIVE', tone: 'pending' };
   if (mission.enabled && campaignClearanceReady()) return { label: 'AVAILABLE', tone: 'ready' };
-  if (mission.enabled) return { label: 'LOCKED', tone: 'pending' };
   return { label: 'LOCKED', tone: 'pending' };
 }
 
@@ -1018,7 +1031,7 @@ function operationsScreen() {
         <button class="mission-file-row" data-mission-id="${escapeHtml(mission.id)}">
           <span class="file-number">MF ${String(index + 1).padStart(2, '0')}</span>
           ${mission.image ? `<img src="${mission.image}" alt="" />` : '<i>Q</i>'}
-          <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(mission.enabled ? 'Available' : mission.status)}</small></div>
+          <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(canonicalMissionState(mission, missionTelemetry(mission)).label)}</small></div>
           <em>OPEN →</em>
         </button>`).join('')}
       </div>
@@ -1822,7 +1835,15 @@ function missionStatusSummaryMarkup(mission, telemetry) {
     nextWindow = 'Whenever a certified bot cooldown resets';
   }
 
-  const instruction = mission.actionLabel || (mission.readOnlyAction ? 'Review your verified record' : 'Complete the mission through its official flow');
+  const instruction = stateInfo.label === 'LOCKED'
+    ? 'Complete campaign clearance'
+    : stateInfo.label === 'VERIFYING' || stateInfo.label === 'SUBMITTED'
+      ? 'Wait for verification'
+      : stateInfo.label === 'VERIFIED'
+        ? 'Review your verified record'
+        : stateInfo.label === 'COOLDOWN'
+          ? 'Wait for the next eligible window'
+          : mission.actionLabel || (mission.readOnlyAction ? 'Review your verified record' : 'Complete the mission through its official flow');
 
   return `<section class="mission-status-summary">
     <div><span>WHAT DO I DO?</span><b>${escapeHtml(instruction)}</b></div>
