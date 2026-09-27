@@ -1301,6 +1301,20 @@ function formatOperationDate(value) {
   }).toUpperCase();
 }
 
+function operationStartFact() {
+  const schedule = state.runtime?.schedule;
+  if (!schedule) return { label: 'START', date: 'PENDING' };
+  if (schedule.phase === 'PRE_LAUNCH' && !schedule.targetAt) {
+    const proposed = state.campaign?.schedule?.activeOpensAt;
+    return Date.parse(proposed || '') > runtimeNow()
+      ? { label: 'TARGET', date: formatOperationDate(proposed) }
+      : { label: 'START', date: 'PENDING' };
+  }
+  const start = schedule.phase === 'PRE_LAUNCH' ? schedule.targetAt
+    : state.campaign?.schedule?.activeOpensAt;
+  return { label: 'START', date: formatOperationDate(start) };
+}
+
 function operationNumber() {
   const sequence = String(state.campaign?.sequence || '01').match(/\d+/)?.[0] || '01';
   return sequence.padStart(2, '0');
@@ -1340,6 +1354,7 @@ function operationTabs() {
 
 function operationsScreen() {
   const c = state.campaign || fallbackCampaign;
+  const startFact = operationStartFact();
   const missions = Array.isArray(c.missions) ? c.missions : [];
   const op = operationNumber();
   const commitments = c.campaignCommitments || {};
@@ -1430,7 +1445,7 @@ function operationsScreen() {
         <p>MISSION // ${escapeHtml(c.tagline || 'Small actions. Bigger oceans.')}</p>
 
         <div class="operation-facts">
-          <div><span>START</span><b>${escapeHtml(formatOperationDate(c.schedule?.activeOpensAt))}</b></div>
+          <div><span>${startFact.label}</span><b>${escapeHtml(startFact.date)}</b></div>
           <div><span>DURATION</span><b>10 DAYS</b></div>
           <div><span>CYCLES</span><b>5 × 48H</b></div>
           <div><span>FINAL REVIEW</span><b>48–72H</b></div>
