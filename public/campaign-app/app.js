@@ -732,15 +732,22 @@ function clearanceMarkup({ compact = false } = {}) {
 }
 
 function missionLockReason(mission) {
+  const lifecycle = operationLifecycleState();
+
+  if (lifecycle.label !== 'ACTIVE') {
+    const copy = lifecycle.label === 'UPCOMING'
+      ? ['Operation has not opened this mission yet', 'Wait for operation activation', 'Operation activation']
+      : lifecycle.label === 'LAUNCH BLOCKED'
+        ? ['Launch gates are not cleared', 'Review operation status', 'Launch clearance']
+        : lifecycle.label === 'REVIEWING'
+          ? ['Campaign scoring is closed for final review', 'Follow final review', 'Final review']
+          : lifecycle.label === 'DISTRIBUTING'
+            ? ['Campaign scoring is closed', 'Track reward delivery', 'Reward distribution']
+            : ['Mission is not open in this operation state', 'Review operation record', lifecycle.label];
+    return { title: copy[0], action: copy[1], remains: copy[2] };
+  }
+
   if (!mission.enabled) {
-    const campaignState = String(state.profile?.campaignState || state.campaign?.status || 'DRAFT').toUpperCase();
-    if (['DRAFT','PRE_LAUNCH'].includes(campaignState)) {
-      return {
-        title: 'Operation has not opened this mission yet',
-        action: 'Wait for operation activation',
-        remains: 'Mission readiness gate',
-      };
-    }
     return {
       title: 'Mission is currently unavailable',
       action: 'Review operation status',
@@ -781,8 +788,14 @@ function canonicalMissionState(mission, telemetry) {
   if (verified > 0) return { label: 'VERIFIED', tone: 'success' };
   if (pending > 0) return { label: 'VERIFYING', tone: 'pending' };
   if (rejected > 0 && verified === 0 && pending === 0) return { label: 'REJECTED', tone: 'blocked' };
-  if (mission.kind === 'COLLECTIVE') return { label: 'COLLECTIVE', tone: 'pending' };
-  if (mission.enabled && campaignClearanceReady()) return { label: 'AVAILABLE', tone: 'ready' };
+  if (mission.kind === 'COLLECTIVE') {
+    return operationLifecycleState().label === 'ACTIVE'
+      ? { label: 'COLLECTIVE', tone: 'pending' }
+      : { label: 'LOCKED', tone: 'pending' };
+  }
+  if (operationLifecycleState().label === 'ACTIVE' && mission.enabled && campaignClearanceReady()) {
+    return { label: 'AVAILABLE', tone: 'ready' };
+  }
   return { label: 'LOCKED', tone: 'pending' };
 }
 
@@ -1238,6 +1251,27 @@ function operationNumber() {
   return sequence.padStart(2, '0');
 }
 
+function operationPrimaryActionMarkup() {
+  const lifecycle = operationLifecycleState();
+
+  if (lifecycle.label === 'ACTIVE') {
+    return '<button class="q-primary-action" data-operation-view="missions">ENTER MISSION FILES →</button>';
+  }
+  if (lifecycle.label === 'REVIEWING') {
+    return '<button class="q-primary-action" data-operation-view="progress">FOLLOW FINAL REVIEW →</button>';
+  }
+  if (lifecycle.label === 'DISTRIBUTING') {
+    return '<button class="q-primary-action" data-screen="rewards">TRACK REWARD DELIVERY →</button>';
+  }
+  if (['COMPLETED','ARCHIVED','TERMINATED'].includes(lifecycle.label)) {
+    return '<button class="q-primary-action" data-screen="record">VIEW OPERATION RECORD →</button>';
+  }
+  if (['LAUNCH BLOCKED','PAUSED'].includes(lifecycle.label)) {
+    return '<button class="q-primary-action" data-operation-view="intel">REVIEW OPERATION STATUS →</button>';
+  }
+  return '<button class="q-primary-action" data-operation-view="missions">REVIEW MISSION FILES →</button>';
+}
+
 function operationTabs() {
   const tabs = [
     ['overview', 'Overview'],
@@ -1328,7 +1362,7 @@ function operationsScreen() {
         <div><b>A cleaner ocean. A brighter tomorrow.</b><span>Powered by community.</span></div>
       </div>
 
-      <button class="q-primary-action" data-operation-view="missions">VIEW MISSION FILES →</button>
+      ${operationPrimaryActionMarkup()}
     </section>`;
   }
 
@@ -2214,7 +2248,7 @@ function missionStatusSummaryMarkup(mission, telemetry) {
 
 function missionDetailMarkup(mission) {
   const telemetry = missionTelemetry(mission);
-  const actionEnabled = Boolean((mission.enabled && campaignClearanceReady()) || mission.readOnlyAction);
+  const actionEnabled = Boolean((operationLifecycleState().label === 'ACTIVE' && mission.enabled && campaignClearanceReady()) || mission.readOnlyAction);
   const footerActionEnabled = actionEnabled && mission.id !== 'website-voting';
   const requirements = Array.isArray(mission.requirements) ? mission.requirements : [];
   const sourceConfig = state.campaign?.verificationSources || {};
