@@ -435,7 +435,8 @@
 
 /* Campaign Dossier: current operation, backed by verified campaign records. */
 .q-shell-v2 .passport-ui{font-family:var(--q-display);color:var(--q-ink);gap:9px}
-.q-shell-v2 .participant-passport{min-height:160px;padding:16px;border:1px solid #d2c6a8;border-radius:10px;box-shadow:none;background:linear-gradient(135deg,#f8f5eb,#eae1ca)}
+.q-shell-v2 .participant-passport{min-height:160px;padding:16px;grid-template-columns:112px minmax(0,1fr) 95px;border:1px solid #d2c6a8;border-radius:10px;box-shadow:none;background:linear-gradient(135deg,#f8f5eb,#eae1ca)}
+.q-shell-v2 .passport-photo{order:-1}
 .q-shell-v2 .passport-kicker{font:700 11px/1 var(--q-display);letter-spacing:.1em;color:#6e582c}
 .q-shell-v2 .passport-copy h2{font:700 clamp(30px,6vw,44px)/1 var(--q-display);margin:7px 0 3px;overflow-wrap:anywhere}
 .q-shell-v2 .passport-copy>p{font:400 13px/1.2 var(--q-display);color:#3c4c55;max-width:none;margin:8px 0 0}
@@ -491,7 +492,7 @@
 .q-shell-v2 .dossier-requirement b{margin-left:auto;font:700 10px/1 var(--q-display);color:#526b79}
 .q-shell-v2 .dossier-identity-actions{display:flex;flex-wrap:wrap;gap:7px}
 @media(max-width:520px){
- .q-shell-v2 .participant-passport{min-height:150px;padding:12px;grid-template-columns:minmax(0,1fr) 86px;gap:9px}
+ .q-shell-v2 .participant-passport{min-height:150px;padding:12px;grid-template-columns:86px minmax(0,1fr);gap:9px}
  .q-shell-v2 .passport-copy h2{font-size:32px}
  .q-shell-v2 .passport-photo img{width:75px;height:75px}
  .q-shell-v2 .dossier-metrics strong{font-size:17px}
