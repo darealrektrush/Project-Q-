@@ -286,3 +286,53 @@
  .q-shell-v2 .mission-file-filters button{font-size:11px}
  .q-shell-v2 .mission-file-row .mission-file-chips>*{font-size:9px;padding:2px 4px}
 }
+
+/* Participant Record uses the same terminal primitives without changing ledger data. */
+.q-shell-v2 .record-ui{gap:9px;font-family:var(--q-display);color:#0a1215}
+.q-shell-v2 .record-header{min-height:135px;padding:17px;gap:12px;border:1px solid #27556b;border-radius:10px;background:linear-gradient(130deg,#060e13,#102937);box-shadow:none;color:#f8f6ee}
+.q-shell-v2 .record-header::after{display:none}
+.q-shell-v2 .record-header span{color:#8ac5dd;font:700 11px/1 var(--q-display);letter-spacing:.12em}
+.q-shell-v2 .record-header h2{margin:6px 0;font:700 clamp(30px,6vw,42px)/.98 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .record-header p{max-width:330px;color:#b6cdd6;font:400 13px/1.18 var(--q-display)}
+.q-shell-v2 .record-score{min-width:95px;padding:10px 7px;border:1px solid #5e8da0;border-radius:7px;background:#0b1d27}
+.q-shell-v2 .record-score strong{color:#f2cc6f;font:700 32px/1 var(--q-display)}
+.q-shell-v2 .record-score span{margin-top:3px;color:#e6bd58;font-size:10px}
+.q-shell-v2 .record-score small{margin-top:5px;color:#a1c6d9;font:400 11px/1 var(--q-display)}
+.q-shell-v2 .record-operation-context{border-color:var(--q-border);border-radius:9px;background:#fafaf7}
+.q-shell-v2 .record-operation-context>button{min-height:72px;color:#0a1215}
+.q-shell-v2 .record-operation-context>button>span{border-color:#abd1dc;color:#267ba3;font:700 13px/1 var(--q-display)}
+.q-shell-v2 .record-operation-context>button b{font:700 19px/1 var(--q-display)}
+.q-shell-v2 .record-operation-context>button small{color:#527386;font:400 12px/1.15 var(--q-display)}
+.q-shell-v2 .record-operation-context>button i{color:#8c6721;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .record-proof-links{border-color:var(--q-border)}
+.q-shell-v2 .record-proof-links button{min-height:39px;color:#346f91;background:#f0f5f5;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .record-proof-links button+button{border-color:var(--q-border)}
+.q-shell-v2 .record-next-action{min-height:77px;border:1px solid #276d91;border-radius:9px;background:linear-gradient(110deg,#061117,#112b38);box-shadow:none;color:#f8f7f0}
+.q-shell-v2 .record-next-action>div span{color:#7cbddd;font:700 10px/1 var(--q-display)}
+.q-shell-v2 .record-next-action>div b{font:700 19px/1 var(--q-display)}
+.q-shell-v2 .record-next-action>div small{color:#b9d0d8;font:400 12px/1.16 var(--q-display)}
+.q-shell-v2 .record-next-action>button{min-height:36px;border:1px solid #b68c30;border-radius:20px;padding:0 12px;color:#0c1314;background:#ecc35f;font:700 12px/1 var(--q-display);white-space:nowrap}
+.q-shell-v2 .record-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:4px;border:1px solid #264252;border-radius:9px;background:#071218}
+.q-shell-v2 .record-tabs button{min-width:0;min-height:40px;padding:0 4px;border:0;border-radius:6px;background:transparent;color:#acc7d4;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .record-tabs button.active{color:#111;background:linear-gradient(135deg,#f4d275,#e0ad3c)}
+.q-shell-v2 .record-ui .xp-daily,.q-shell-v2 .record-ui .community-pulse,.q-shell-v2 .record-ui .record-panel,.q-shell-v2 .record-ui .rank-list,.q-shell-v2 .record-ui .rank-verification-note{border:1px solid var(--q-border);border-radius:9px;background:#fafaf7;box-shadow:none}
+.q-shell-v2 .record-ui .panel-title>span,.q-shell-v2 .record-ui .section-head .label,.q-shell-v2 .record-ui .dossier-heading>span{color:#287da3}
+.q-shell-v2 .record-ui .xp-progress-list .progress span{background:#299aca}
+@media(max-width:520px){
+ .q-shell-v2 .record-header{min-height:130px;padding:13px}
+ .q-shell-v2 .record-header h2{font-size:31px}
+ .q-shell-v2 .record-score{min-width:80px}
+ .q-shell-v2 .record-operation-context>button{grid-template-columns:40px minmax(0,1fr);gap:7px}
+ .q-shell-v2 .record-operation-context>button i{grid-column:2}
+ .q-shell-v2 .record-next-action{grid-template-columns:minmax(0,1fr) auto}
+}
+@media(max-width:359px){
+ .q-shell-v2 .record-header h2{font-size:27px}
+ .q-shell-v2 .record-header p{font-size:11px}
+ .q-shell-v2 .record-score{min-width:70px}
+ .q-shell-v2 .record-next-action{grid-template-columns:1fr}
+ .q-shell-v2 .record-next-action>button{justify-self:start}
+ .q-shell-v2 .record-tabs button{font-size:10px}
+ .q-shell-v2 .record-proof-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .q-shell-v2 .record-proof-links button+button{border-left:1px solid var(--q-border);border-top:0}
+}
