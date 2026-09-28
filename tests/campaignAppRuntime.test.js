@@ -581,9 +581,12 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
   const context = await loadRuntime();
   assert.equal(Object.keys(context.__missionDetails).length, 9);
   for (const detail of Object.values(context.__missionDetails)) {
-    assert.match(detail, /Mission Details/);
-    assert.match(detail, /Rules &amp; Guidelines|Rules & Guidelines/);
-    assert.match(detail, /Only verified Project Q records count/);
+    assert.match(detail, /CURRENT ORDER/);
+    assert.match(detail, /<summary>Objective /);
+    assert.match(detail, /<summary>Verification /);
+    assert.match(detail, /<summary>Reward /);
+    assert.match(detail, /Opening a destination alone does not create verified credit/);
+    assert.match(detail, /View all requirements/);
   }
   assert.match(context.__missionDetails['website-voting'], /1 XP per accepted source/);
   assert.match(context.__missionDetails['website-voting'], /available-source completion/);

@@ -145,6 +145,7 @@ const state = {
   },
   profileView: 'overview',
   operationsView: 'overview',
+  missionFilter: 'all',
   recordView: 'xp',
   activeMissionId: null,
   leaderboardView: 'overall',
@@ -727,7 +728,7 @@ function campaignEligibilityRequirements() {
       complete: Boolean(p.walletVerified),
       detail: p.walletVerified ? 'Verified reward wallet connected.' : 'Connect the wallet used for campaign eligibility and distributions.',
       action: p.walletVerified ? null : { label: 'Verify Wallet', screen: 'profile', profileView: 'identity' },
-      provider: 'oracle',
+      provider: 'q',
     });
   }
 
@@ -1354,6 +1355,29 @@ function operationTabs() {
   return `<div class="operation-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
 }
 
+function missionListCopy(mission) {
+  const copy = {
+    'oracle-raids': ['Complete verified X activity', mission.reward, 'DAILY'],
+    'website-voting': ['Vote through certified sources', mission.reward.startsWith('1 XP per accepted source') ? '1 XP / SOURCE + BONUS' : mission.reward, 'PER SOURCE'],
+    'trending-bots': ['Make verified trending pushes', mission.reward.includes('20 XP daily') ? 'UP TO 20 XP / DAY' : mission.reward, 'COOLDOWN'],
+    bagwork: ['Complete approved platform tasks', mission.reward, 'PER TASK'],
+    'buy-to-earn': ['Build an eligible net buy position', mission.reward.includes('Weighted draw advantage') ? 'DRAW WEIGHT' : mission.reward, 'SNAPSHOT'],
+    'participation-xp': ['Track your settled campaign XP', 'XP LEDGER', 'DAILY'],
+    'community-pulse': ['Participate in the FAWKQ community', mission.reward, 'DAILY'],
+    'verified-referrals': ['Invite qualified new contributors', mission.reward.includes('10 XP per qualified referral') ? '10 XP / REFERRAL' : mission.reward, 'PER REFERRAL'],
+    'earn-to-burn': ['Track the collective burn milestones', mission.reward, 'CAMPAIGN'],
+  };
+  return copy[mission.id] || [mission.description, mission.reward, mission.frequency || 'CAMPAIGN'];
+}
+
+function missionListCategory(mission, telemetry) {
+  const label = canonicalMissionState(mission, telemetry).label;
+  if (label === 'AVAILABLE') return 'available';
+  if (label === 'COMPLETE') return 'completed';
+  if (['IN PROGRESS', 'VERIFYING', 'SUBMITTED', 'VERIFIED'].includes(label)) return 'active';
+  return 'locked';
+}
+
 function operationsScreen() {
   const c = state.campaign || fallbackCampaign;
   const startFact = operationStartFact();
@@ -1372,19 +1396,29 @@ function operationsScreen() {
   let content = '';
 
   if (state.operationsView === 'missions') {
+    const missionRows = missions.map((mission, index) => ({ mission, index, telemetry: missionTelemetry(mission) }));
+    const availableCount = missionRows.filter(({ mission, telemetry }) => missionListCategory(mission, telemetry) === 'available').length;
+    const remaining = campaignEligibilityRequirements().filter(({ complete }) => !complete).length;
+    const filteredRows = missionRows.filter(({ mission, telemetry }) => state.missionFilter === 'all' || missionListCategory(mission, telemetry) === state.missionFilter);
     content = `<section class="operation-content-panel">
       <div class="operation-section-head">
         <div><span>MISSION FILES</span><h3>Choose your next objective.</h3></div>
-        <b>${missions.length} FILES</b>
       </div>
-      <div class="mission-file-index">${missions.map((mission, index) => `
-        <button class="mission-file-row" data-mission-id="${escapeHtml(mission.id)}">
-          <span class="file-number">MF ${String(index + 1).padStart(2, '0')}</span>
-          ${mission.image ? `<img src="${mission.image}" alt="" loading="lazy" decoding="async" />` : '<i>Q</i>'}
-          <div><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(mission.reward)} · ${escapeHtml(missionTelemetry(mission)?.detail || mission.frequency || 'Campaign')}</small></div>
-          <span class="mission-file-state">${statePill(canonicalMissionState(mission, missionTelemetry(mission)).label, canonicalMissionState(mission, missionTelemetry(mission)).tone)}</span>
-          <em>OPEN →</em>
-        </button>`).join('')}
+      <div class="mission-file-stats"><span><b>${missions.length}</b> MISSION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> REQUIREMENTS LEFT</span></div>
+      <div class="mission-file-filters" role="group" aria-label="Filter mission files">${[['all','All'],['available','Available'],['active','Active'],['completed','Completed']].map(([key,label])=>`<button type="button" data-mission-filter="${key}" class="${state.missionFilter === key ? 'active' : ''}" aria-pressed="${state.missionFilter === key}">${label}</button>`).join('')}</div>
+      <div class="mission-file-index">${filteredRows.length ? filteredRows.map(({ mission, index, telemetry }) => {
+        const [instruction, reward, frequency] = missionListCopy(mission);
+        const missionState = canonicalMissionState(mission, telemetry);
+        const category = missionListCategory(mission, telemetry);
+        const actionable = category === 'available' && operationLifecycleState().label === 'ACTIVE';
+        return `<button type="button" class="mission-file-row mission-file-${category} ${mission.id === 'oracle-raids' ? 'oracle-file' : ''} ${mission.id === 'earn-to-burn' || mission.id === 'buy-to-earn' ? 'reward-file' : ''}" data-mission-id="${escapeHtml(mission.id)}" aria-label="${escapeHtml(`Mission file ${index + 1}: ${mission.title}. ${missionState.label}. ${actionable ? 'Start mission' : 'View requirements and details'}`)}">
+          <span class="file-number">MF-${String(index + 1).padStart(2, '0')}</span><span class="mission-file-state">${statePill(missionState.label, missionState.tone)}</span>
+          ${mission.image ? `<img src="${escapeHtml(mission.image)}" alt="" loading="lazy" decoding="async" />` : '<i>Q</i>'}
+          <span class="mission-file-copy"><b>${escapeHtml(mission.title)}</b><small>${escapeHtml(instruction)}</small></span>
+          <span class="mission-file-chips"><strong>${escapeHtml(reward)}</strong><span>${escapeHtml(frequency)}</span>${Number(telemetry?.target || 0) > 0 && Number(telemetry?.verified || 0) > 0 ? `<span>${Number(telemetry.verified)} / ${Number(telemetry.target)} VERIFIED</span>` : ''}</span>
+          <span class="mission-file-cta">${actionable ? 'START MISSION' : '›'}</span>
+        </button>`;
+      }).join('') : '<p class="mission-filter-empty">No mission files in this state yet. Try All to see every objective.</p>'}
       </div>
     </section>`;
   } else if (state.operationsView === 'progress') {
@@ -2242,6 +2276,17 @@ async function refreshWebsiteVoteState() {
 
 function bindMissionDialog(dialog, missionId) {
   dialog.querySelector('[data-mission-action]')?.addEventListener('click', () => executeMissionAction(missionId));
+  dialog.querySelector('[data-view-requirements]')?.addEventListener('click', () => {
+    const section = dialog.querySelector('.mission-clearance');
+    section?.querySelector('details')?.setAttribute('open', '');
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  dialog.querySelector('[data-view-sources]')?.addEventListener('click', () => dialog.querySelector('.mission-file-sources')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  dialog.querySelectorAll('[data-screen]').forEach((button) => button.addEventListener('click', () => {
+    if (button.dataset.profileView) state.profileView = button.dataset.profileView;
+    closeMission();
+    go(button.dataset.screen);
+  }));
   dialog.querySelectorAll('[data-vote-source-key]').forEach((button) => {
     button.addEventListener('click', () => startWebsiteVote(button.dataset.voteSourceKey));
   });
@@ -2336,58 +2381,43 @@ function missionStatusSummaryMarkup(mission, telemetry) {
   const stateInfo = canonicalMissionState(mission, telemetry);
   const verified = Number(telemetry?.verified || 0);
   const pending = Number(telemetry?.pending || 0);
-  const rejected = Number(telemetry?.rejected || 0);
   const target = Number(telemetry?.target || 0);
-
-  let counted = 'No verified activity yet';
-  if (verified > 0) counted = `${verified} verified`;
-  else if (pending > 0) counted = `${pending} verifying`;
-  else if (rejected > 0) counted = `${rejected} rejected`;
-
   const lockReason = stateInfo.label === 'LOCKED' ? missionLockReason(mission) : null;
+  const order = lockReason?.title
+    || (['VERIFYING', 'SUBMITTED'].includes(stateInfo.label) ? 'Your activity is under verification.'
+      : stateInfo.label === 'COOLDOWN' ? 'Wait for the next eligible source window.'
+      : stateInfo.label === 'COMPLETE' ? 'Mission target verified. Review your record.'
+      : mission.readOnlyAction ? (mission.actionLabel || 'Review your campaign record.')
+      : missionListCopy(mission)[0] + '.');
+  const canAct = operationLifecycleState().label === 'ACTIVE' && mission.enabled && campaignClearanceReady();
+  const viewOnly = mission.readOnlyAction && !canAct;
+  const button = canAct && mission.id === 'website-voting'
+    ? '<button type="button" data-view-sources>VIEW CERTIFIED SOURCES →</button>'
+    : canAct || viewOnly
+      ? `<button type="button" data-mission-action="${escapeHtml(mission.id)}">${escapeHtml(mission.actionLabel || 'Start Mission')} →</button>`
+      : '<button type="button" data-view-requirements>VIEW REQUIREMENTS →</button>';
+  return `<section class="mission-current-order">
+    <span>CURRENT ORDER</span><h3>${escapeHtml(order)}</h3>
+    ${target > 0 ? `<div class="mission-order-progress"><span>VERIFIED PROGRESS</span><b>${verified} / ${target} verified${pending ? ` · ${pending} pending` : ''}</b></div><div class="mission-order-track"><i style="width:${Math.min(100, Math.round(verified / target * 100))}%"></i></div>` : telemetry?.detail ? `<small>${escapeHtml(telemetry.detail)}</small>` : ''}
+    ${button}
+  </section>`;
+}
 
-  let remains = 'Complete an eligible action';
-  if (stateInfo.label === 'LOCKED') remains = lockReason?.remains || 'Mission requirements';
-  else if (target > 0) remains = `${Math.max(0, target - verified)} of ${target} remaining`;
-  else if (stateInfo.label === 'VERIFIED') remains = 'Verified activity recorded';
-
-  let nextWindow = mission.frequency || 'Campaign';
-  if (mission.id === 'website-voting') {
-    const cooldowns = (state.websiteVotes?.sources || [])
-      .filter(({ status, nextAvailableAt }) => status === 'ON_COOLDOWN' && nextAvailableAt)
-      .map(({ nextAvailableAt }) => new Date(nextAvailableAt).getTime())
-      .filter(Number.isFinite);
-    if (cooldowns.length) nextWindow = `Next source ${formatProfileDate(new Date(Math.min(...cooldowns)).toISOString())}`;
-    else nextWindow = 'Per verified source cooldown';
-  } else if (mission.id === 'trending-bots') {
-    nextWindow = 'Whenever a certified bot cooldown resets';
-  }
-
-  const instruction = stateInfo.label === 'LOCKED' && mission.readOnlyAction
-    ? (mission.actionLabel || 'Review the read-only campaign record')
-    : stateInfo.label === 'LOCKED'
-      ? (lockReason?.action || 'Review mission requirements')
-      : stateInfo.label === 'VERIFYING' || stateInfo.label === 'SUBMITTED'
-        ? 'Wait for verification'
-        : stateInfo.label === 'VERIFIED'
-          ? 'Review your verified record'
-          : stateInfo.label === 'COOLDOWN'
-            ? 'Wait for the next eligible window'
-            : mission.actionLabel || (mission.readOnlyAction ? 'Review your verified record' : 'Complete the mission through its official flow');
-
-  return `<section class="mission-status-summary">
-    <div><span>WHAT DO I DO?</span><b>${escapeHtml(instruction)}</b></div>
-    <div><span>WHAT DOES IT EARN?</span><b>${escapeHtml(mission.reward)}</b></div>
-    <div><span>DID IT COUNT?</span><b>${escapeHtml(counted)}</b></div>
-    <div><span>WHEN AGAIN?</span><b>${escapeHtml(nextWindow)}</b></div>
-    <div><span>WHAT REMAINS?</span><b>${escapeHtml(remains)}</b></div>
+function missionClearanceMarkup() {
+  const requirements = campaignEligibilityRequirements();
+  const complete = requirements.filter(({ complete: done }) => done).length;
+  const next = requirements.find(({ complete: done }) => !done);
+  return `<section class="mission-clearance">
+    <div class="mission-clearance-head"><div><span>CAMPAIGN CLEARANCE</span><b>${complete} OF ${requirements.length} COMPLETE</b></div><strong>${complete}/${requirements.length}</strong></div>
+    <div class="mission-clearance-track">${requirements.map(({ complete: done })=>`<i class="${done ? 'complete' : ''}"></i>`).join('')}</div>
+    ${next ? `<div class="mission-next-requirement"><span>NEXT REQUIREMENT</span><b>${escapeHtml(next.label)}</b><small>${escapeHtml(next.detail)}</small>${next.action ? `<button type="button" data-screen="${next.action.screen}" data-profile-view="${next.action.profileView}">CONTINUE SETUP →</button>` : ''}</div>` : '<p>Eligibility requirements complete. Mission availability also depends on the operation state.</p>'}
+    <details><summary>View all requirements <span>⌄</span></summary><div class="mission-clearance-all">${requirements.map((item)=>`<div><i>${item.complete ? '✓' : '○'}</i><span>${escapeHtml(item.label)}</span></div>`).join('')}</div></details>
   </section>`;
 }
 
 function missionDetailMarkup(mission) {
   const telemetry = missionTelemetry(mission);
   const actionEnabled = Boolean((operationLifecycleState().label === 'ACTIVE' && mission.enabled && campaignClearanceReady()) || mission.readOnlyAction);
-  const footerActionEnabled = actionEnabled && mission.id !== 'website-voting';
   const requirements = Array.isArray(mission.requirements) ? mission.requirements : [];
   const sourceConfig = state.campaign?.verificationSources || {};
   const configuredSources = mission.id === 'website-voting'
@@ -2456,14 +2486,16 @@ function missionDetailMarkup(mission) {
   const providerName = oracleMission ? 'Oracle' : 'Project Q';
   const providerLogo = oracleMission ? ORACLE_LOGO : '/campaign-app/assets/project-q-app-icon.webp';
   const status = canonicalMissionState(mission, telemetry).label;
+  const fileIndex = (state.campaign?.missions || []).findIndex(({ id }) => id === mission.id) + 1;
+  const [, shortReward, shortFrequency] = missionListCopy(mission);
 
   return `<form method="dialog" class="mission-sheet mission-file-sheet">
     <button class="mission-sheet-close" value="close" aria-label="Close mission file">×</button>
 
     <header class="mission-file-header">
       <div class="mission-file-heading">
-        <span>MISSION FILE</span>
-        <small>${escapeHtml(state.campaign?.name || 'Operation')} › ${escapeHtml(mission.title)}</small>
+        <span>MISSION FILE // MF-${String(fileIndex).padStart(2,'0')}</span>
+        <small>${escapeHtml(state.campaign?.name || 'Operation')}</small>
       </div>
       <div class="mission-file-title-row">
         <div class="mission-file-provider ${oracleMission ? 'oracle-provider' : ''}">
@@ -2471,47 +2503,35 @@ function missionDetailMarkup(mission) {
         </div>
         <div>
           <h2>${escapeHtml(mission.title)}</h2>
-          <p>${escapeHtml(mission.description)}</p>
+          <p>${escapeHtml(missionListCopy(mission)[0])}</p>
         </div>
       </div>
     </header>
 
-    <section class="mission-file-facts">
-      <div><span>Reward</span><b>${escapeHtml(mission.reward)}</b></div>
-      <div><span>Status</span><b>${escapeHtml(status)}</b></div>
-      <div><span>Progress</span><b>${escapeHtml(telemetry?.detail || mission.status)}</b></div>
-    </section>
+    <section class="mission-file-facts" aria-label="Mission status, reward and frequency"><span class="mission-fact-status">${escapeHtml(status)}</span><span class="mission-fact-reward">${escapeHtml(shortReward)}</span><span>${escapeHtml(shortFrequency)}</span></section>
 
     ${missionStatusSummaryMarkup(mission, telemetry)}
 
-    ${clearanceMarkup({ compact: true })}
-
-    ${mission.id !== 'website-voting' ? `<button type="button" class="mission-start-action ${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? 'read-only' : ''}" data-mission-action="${escapeHtml(mission.id)}" ${footerActionEnabled ? '' : 'disabled'}>${escapeHtml(footerActionEnabled ? (mission.actionLabel || 'Start Mission') : (missionLockReason(mission)?.title || 'Mission Locked'))} <span>→</span></button>${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? '<small class="mission-read-only-note">Read-only access · no new campaign credit is created from this action.</small>' : ''}` : ''}
+    ${missionClearanceMarkup()}
+    ${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? '<small class="mission-read-only-note">Read-only access · no new campaign credit is created from this action.</small>' : ''}
 
     ${mission.id === 'website-voting' ? `<section class="mission-file-sources"><div class="mission-file-section-title">Choose a verified source</div>${sourceList}${websiteVoteFlowMarkup()}</section>` : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
 
     <details class="mission-file-disclosure" open>
-      <summary>Mission Details <span>⌄</span></summary>
+      <summary>Objective <span>⌄</span></summary>
       <div class="mission-file-disclosure-body">
-        <p>${escapeHtml(mission.verification || 'Verification rules will be published before this mission opens.')}</p>
+        <p>${escapeHtml(mission.description)}</p><ol>${requirements.map((requirement) => `<li>${escapeHtml(requirement)}</li>`).join('')}</ol>
       </div>
     </details>
 
     <details class="mission-file-disclosure">
-      <summary>Accepted Activity <span>⌄</span></summary>
-      <div class="mission-file-disclosure-body">${evidence}</div>
+      <summary>Verification <span>⌄</span></summary>
+      <div class="mission-file-disclosure-body"><p>${escapeHtml(mission.verification || 'Verification rules will be published before this mission opens.')}</p>${evidence}<p>Opening a destination alone does not create verified credit.</p></div>
     </details>
 
     <details class="mission-file-disclosure">
-      <summary>Rules & Guidelines <span>⌄</span></summary>
-      <div class="mission-file-disclosure-body"><ol>${requirements.map((requirement) => `<li>${escapeHtml(requirement)}</li>`).join('')}</ol></div>
-    </details>
-
-    <details class="mission-file-disclosure">
-      <summary>Proof & Verification <span>⌄</span></summary>
-      <div class="mission-file-disclosure-body">
-        <p>Only verified Project Q records count toward XP, rank or campaign rewards. Finalized Project Q settlement remains the source of truth; opening a destination alone never guarantees credit.</p>
-      </div>
+      <summary>Reward <span>⌄</span></summary>
+      <div class="mission-file-disclosure-body"><p>${escapeHtml(mission.reward)} · ${escapeHtml(mission.frequency || 'Campaign')}</p><p>Accepted outcomes settle into your Project Q record, subject to the configured campaign caps.</p></div>
     </details>
 
     <section class="verification-provider ${oracleMission ? 'oracle-verification' : 'q-verification'}">
@@ -2894,6 +2914,9 @@ function bind() {
   });
   document.querySelectorAll('[data-replay-tour]').forEach((element) => { element.onclick = () => showTourWelcome('manual'); });
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
+  document.querySelectorAll('[data-mission-filter]').forEach((element) => {
+    element.onclick = () => { state.missionFilter = element.dataset.missionFilter; render(); };
+  });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
   });
