@@ -18,16 +18,16 @@ const EXPLAINERS = {
     items: [
       { icon: '01', title: 'Participate', text: 'Complete eligible campaign and community activity.' },
       { icon: '02', title: 'Verify', text: 'Project Q confirms accepted activity before XP is settled.' },
-      { icon: '03', title: 'Build Progress', text: 'Settled XP advances your campaign standing and rank progression.' },
+      { icon: '03', title: 'Build Progress', text: 'Settled campaign XP contributes to campaign standings. Crab Army XP and level are separate Oracle records.' },
     ],
   },
   ranks: {
-    eyebrow: 'Rank guide', title: 'How ranks work',
-    description: 'Ranks turn accumulated verified XP into visible progression.',
+    eyebrow: 'Standing guide', title: 'How campaign standings work',
+    description: 'Your standing is your position on a Project Q campaign leaderboard. It is separate from your Crab Army rank.',
     items: [
       { icon: '01', title: 'Earn XP', text: 'Verified activity contributes to your cumulative progression.' },
-      { icon: '02', title: 'Advance', text: 'Reach the required XP threshold to move into the next rank.' },
-      { icon: '03', title: 'Keep Building', text: 'Your rank reflects long-term contribution across eligible activity.' },
+      { icon: '02', title: 'Compare', text: 'Settled campaign XP determines your position under published campaign rules.' },
+      { icon: '03', title: 'Keep Building', text: 'Oracle owns lifetime Crab Army XP and the one ecosystem rank.' },
     ],
   },
   rewards: {
@@ -88,13 +88,9 @@ const NAV_ICONS = {
 const APP_TOUR_VERSION = 2;
 
 const APP_TOUR_STEPS = [
-  { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Operations Terminal', text: 'Your command center shows the active operation, next required action and critical campaign status.' },
-  { screen: 'operations', operationsView: 'overview', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Operations', text: 'Open campaign dossiers, mission files, progress, rewards and operational intel.' },
-  { screen: 'record', recordView: 'xp', target: '[data-tour-target="record"]', icon: 'R', title: 'Your Record', text: 'Verified XP, rank, achievements and accepted activity become your permanent Project Q record.' },
-  { screen: 'rewards', target: '[data-tour-target="rewards"]', icon: '◆', title: 'Rewards', text: 'Follow allocations through authorization, on-chain delivery and final receipts.' },
-  { screen: 'profile', profileView: 'overview', target: '[data-tour-target="profile"]', icon: 'ID', title: 'Participant Passport', text: 'Your identity, connections and operation history live in one persistent Project Q participant record.' },
-  { screen: 'operations', operationsView: 'intel', target: '[data-tour-target="oracle"]', icon: 'O', title: 'Oracle Verification', text: 'Oracle keeps its own blue identity whenever it verifies people, evidence or supported activity.' },
-  { screen: 'home', target: '[data-tour-target="home"]', icon: '✓', title: 'Enter the Operation', text: 'Participate. Verify. Build your record. Small actions. Bigger oceans.' },
+  { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Your Terminal', text: 'See the current operation and the next action you can take.' },
+  { screen: 'operations', operationsView: 'missions', target: '[data-tour-target="mission-files"]', icon: 'OP', title: 'Choose a Mission', text: 'Open Mission Files to see objectives, requirements and verified campaign rewards.' },
+  { screen: 'record', recordView: 'xp', target: '[data-tour-target="record"]', icon: 'R', title: 'Track Your Record', text: 'Review campaign XP, standing and verified activity. Rewards and identity have their own screens.' },
 ];
 
 const WEBSITE_VOTE_FLOW_SESSION_KEY = 'project-q:website-vote-flow';
@@ -153,6 +149,8 @@ const state = {
   leaderboardMeta: null,
   profile: {
     name: telegramDisplayName(window.Telegram?.WebApp?.initDataUnsafe?.user),
+    username: null,
+    profileId: null,
     photoUrl: null,
     telegramVerified: false,
     xVerified: false,
@@ -951,8 +949,7 @@ function activityRow(item) {
 
 function badgeGallery(badges = []) {
   return `<div class="badge-gallery">${badges.map((badge) => {
-    const unlocked = state.profile.achievements.includes(badge.id);
-    return `<article class="achievement ${unlocked ? 'unlocked' : 'locked'}"><img src="${badge.image}" alt="" loading="lazy" decoding="async" /><div><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Earn through verified campaign activity')}</p></div><span>${unlocked ? 'Unlocked' : 'Locked'}</span></article>`;
+    return `<article class="achievement locked"><img src="${escapeHtml(badge.image)}" alt="" loading="lazy" decoding="async" /><div><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Earn through verified campaign activity')}</p></div><span>Planned</span></article>`;
   }).join('')}</div>`;
 }
 
@@ -1002,8 +999,8 @@ function xpScreen() {
 
     <section class="xp-achievement-section">
       <div class="section-head">
-        <div><span class="label">Progression</span><h2>Achievements</h2></div>
-        <button class="info-action" data-explainer="ranks" aria-label="How ranks work">?</button>
+        <div><span class="label">Campaign milestones</span><h2>Planned badges</h2></div>
+        <button class="info-action" data-explainer="ranks" aria-label="How standings work">?</button>
       </div>
       ${badgeGallery(c.xpBadges)}
     </section>
@@ -1065,7 +1062,7 @@ function leaderboardScreen() {
       </div>
       <div class="progression-actions">
         <button class="info-action" data-explainer="leaderboard" aria-label="How leaderboards work">?</button>
-        <button class="outline-action" data-explainer="ranks">How ranks work</button>
+        <button class="outline-action" data-explainer="ranks">How standings work</button>
       </div>
     </section>
 
@@ -1083,7 +1080,7 @@ function leaderboardScreen() {
 
     <section class="rank-achievements">
       <div class="section-head">
-        <div><span class="label">Campaign rank</span><h2>Performance badges</h2></div>
+        <div><span class="label">Campaign standing</span><h2>Planned campaign badges</h2></div>
         <span>Verified campaign standings only</span>
       </div>
       ${badgeGallery(c.leaderboardBadges)}
@@ -1400,7 +1397,7 @@ function operationsScreen() {
     const availableCount = missionRows.filter(({ mission, telemetry }) => missionListCategory(mission, telemetry) === 'available').length;
     const remaining = campaignEligibilityRequirements().filter(({ complete }) => !complete).length;
     const filteredRows = missionRows.filter(({ mission, telemetry }) => state.missionFilter === 'all' || missionListCategory(mission, telemetry) === state.missionFilter);
-    content = `<section class="operation-content-panel">
+    content = `<section class="operation-content-panel" data-tour-target="mission-files">
       <div class="operation-section-head">
         <div><span>MISSION FILES</span><h3>Choose your next objective.</h3></div>
       </div>
@@ -1423,8 +1420,8 @@ function operationsScreen() {
     </section>`;
   } else if (state.operationsView === 'progress') {
     content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>OPERATION PROGRESS</span><h3>Verified campaign movement.</h3></div><b>${escapeHtml(readinessLabel)}</b></div>
-      <div class="operation-progress-line"><span>Campaign Progress</span><strong>${escapeHtml(readinessLabel)}</strong></div>
+      <div class="operation-section-head"><div><span>LAUNCH READINESS</span><h3>Operational gates before launch.</h3></div><b>${escapeHtml(readinessLabel)}</b></div>
+      <div class="operation-progress-line"><span>Launch Readiness</span><strong>${escapeHtml(readinessLabel)}</strong></div>
       <div class="operation-progress-bar"><i style="width:${readinessWidth}%"></i></div>
       <div class="operation-cycle-summary"><span>5 × 48H CYCLES</span><b>${escapeHtml(state.runtime?.schedule?.label || 'Readiness mode')}</b></div>
       <button class="operation-burn-link" data-screen="burns">Earn to Burn <span>Collective progress & public receipts →</span></button>
@@ -1476,7 +1473,7 @@ function operationsScreen() {
   const bondCover = String(c.name || '').trim().toLowerCase() === 'bond the duck';
   const coverImage = bondCover ? '/campaign-app/assets/bond-the-duck-terminal-hero-20260927.jpg' : c.banner;
   return `<div class="operations-ui operation-reference">
-    <section class="operation-cover ${bondCover ? 'bond-cover' : ''}">
+    ${state.operationsView === 'overview' ? `<section class="operation-cover ${bondCover ? 'bond-cover' : ''}">
       ${coverImage ? `<img src="${escapeHtml(coverImage)}" alt="${escapeHtml(bondCover ? 'Bond the Duck. 10-day verified. Small actions, bigger oceans.' : c.bannerAlt || c.name)}" />` : ''}
       <div class="operation-cover-copy">
         <div class="operation-cover-heading"><span class="operation-kicker">OPERATION ${op}</span>${statePill(operationLifecycleState().label, operationLifecycleState().tone)}</div>
@@ -1490,11 +1487,10 @@ function operationsScreen() {
           <div><span>FINAL REVIEW</span><b>48–72H</b></div>
         </div>
       </div>
-    </section>
+    </section>` : `<section class="operation-compact-context"><div><span>OPERATION ${op}</span><h2>${escapeHtml(c.name || 'Bond the Duck')}</h2><small>${escapeHtml(operationLifecycleState().label)} · ${state.operationsView === 'missions' ? `${missions.length} MISSION FILES` : 'CAMPAIGN DOSSIER'}</small></div><button data-operation-view="overview">OVERVIEW →</button></section>`}
 
     ${operationTabs()}
-    ${operationLifecycleMarkup()}
-    ${operationPhaseBriefMarkup()}
+    ${state.operationsView === 'overview' ? `${operationLifecycleMarkup()}${operationPhaseBriefMarkup()}` : ''}
     ${content}
   </div>`;
 }
@@ -1533,7 +1529,7 @@ function recordScreen() {
     content = leaderboardScreen();
   } else if (state.recordView === 'achievements') {
     content = `<section class="record-panel">
-      <div class="dossier-heading"><span>Achievements</span><b>VERIFIED PERFORMANCE</b></div>
+      <div class="dossier-heading"><span>Campaign Badges</span><b>AWARD RULES PENDING</b></div>
       ${badgeGallery([...(c.xpBadges || []), ...(c.leaderboardBadges || [])])}
     </section>`;
   } else if (state.recordView === 'activity') {
@@ -1661,8 +1657,8 @@ function rewardsScreen() {
       <button data-operation-view="intel">OPEN OPERATION INTEL →</button>
     </section>` : ''}
 
-    <details class="reward-pipeline">
-      <summary><span>Reward Pipeline <b>${escapeHtml(delivery.label)}</b></span><em>VIEW ALL 6 STAGES <i aria-hidden="true">⌄</i></em></summary>
+    <details class="reward-pipeline" data-persist-open="reward-pipeline">
+      <summary data-persist-focus="reward-pipeline"><span>Reward Pipeline <b>${escapeHtml(delivery.label)}</b></span><em>VIEW ALL 6 STAGES <i aria-hidden="true">⌄</i></em></summary>
       <div class="pipeline-steps">
         ${stages.map(([number,label,complete,detail]) => `<article class="${complete ? 'complete' : ''}">
           <span>${number}</span>
@@ -1755,48 +1751,71 @@ function missionName(code, source) {
 }
 
 function profileTabs() {
-  const tabs = [['overview', 'Overview'], ['wallet', 'Wallet'], ['rewards', 'Rewards'], ['activity', 'Activity']];
+  const tabs = [['overview', 'Dossier'], ['activity', 'Activity'], ['rewards', 'Rewards'], ['identity', 'Identity']];
   return `<div class="profile-tabs passport-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
 }
 
 function profileOverview() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
-  const pulse = state.community?.today;
-  const count = verifiedCount();
+  const requirements = campaignEligibilityRequirements();
+  const completedRequirements = requirements.filter(({ complete }) => complete).length;
+  const cycleCount = Number(c.schedule?.cycles?.length || 5);
+  const cycle = Number(state.runtime?.schedule?.currentCycle || 0);
+  const currentCycle = cycle > 0 && cycle <= cycleCount ? `${cycle} / ${cycleCount}` : 'PENDING';
+  const scheduledRelease = (p.rewards?.releases || [])
+    .filter(({ status, scheduledAt }) => ['scheduled', 'proposed', 'reserve'].includes(status) && Number.isFinite(Date.parse(scheduledAt || '')))
+    .sort((a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt))[0];
+  const nextRelease = scheduledRelease ? formatProfileDate(scheduledRelease.scheduledAt) : 'NOT SCHEDULED';
+  const rewards = p.rewards || {};
+  const activity = p.xpByBucket || {};
+  const xpCategories = [
+    ['Participation', activity.participation],
+    ['Project Q missions', activity.mission],
+    ['Trending & voting', activity.trending],
+    ['Other verified activity', activity.other],
+  ];
+  const maxCategory = Math.max(1, ...xpCategories.map(([, amount]) => Number(amount || 0)));
 
   return `<div class="passport-overview">
-    <section class="passport-overview-grid">
-      <article class="passport-overview-card">
-        <span>${escapeHtml(operationLifecycleState().label)} OPERATION</span>
-        <h3>${escapeHtml(c.name || 'Bond the Duck')}</h3>
-        <p>${Number(p.completedMissions || 0)} verified missions · ${Number(p.xp || 0).toLocaleString()} XP</p>
-        <button data-screen="operations">OPEN OP ${operationNumber()} →</button>
-      </article>
-
-      <article class="passport-overview-card oracle-passport-card">
-        <span>IDENTITY</span>
-        <h3>${count}/3 Verified</h3>
-        <p>Telegram, Oracle X and reward wallet form your Project Q identity.</p>
-        <button data-profile-view="identity">MANAGE IDENTITY →</button>
-      </article>
+    <section class="dossier-clearance">
+      <div><span>CAMPAIGN CLEARANCE</span><strong>${completedRequirements} / ${requirements.length}</strong></div>
+      <div class="dossier-clearance-track" aria-label="${completedRequirements} of ${requirements.length} campaign requirements complete">${requirements.map(({ complete }) => `<i class="${complete ? 'complete' : ''}"></i>`).join('')}</div>
+      <small>${completedRequirements} verified · ${requirements.length - completedRequirements} pending</small>
+      <button data-profile-view="identity">${completedRequirements === requirements.length ? 'VIEW CLEARANCE' : 'COMPLETE CLEARANCE'} →</button>
     </section>
 
-    <section class="passport-secondary-actions">
-      <button data-profile-view="identity"><span>Identity & Verification</span><b>${count}/3</b></button>
-      <button data-profile-view="referrals"><span>Verified Referrals</span><b>${Number(state.referrals?.counts?.qualified || 0)}</b></button>
-      <button data-replay-tour><span>Project Q Guide</span><b>REPLAY</b></button>
+    <section class="dossier-live-record">
+      <header><span>${escapeHtml(c.name || 'Operation')} // CAMPAIGN RECORD</span>${statePill(operationLifecycleState().label, operationLifecycleState().tone)}</header>
+      <div class="dossier-metrics">
+        <div><span>Campaign XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></div>
+        <div><span>Standing</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></div>
+        <div><span>Mission Files</span><strong>${Number(p.completedMissions || 0)} / ${Number(c.missions?.length || 0)}</strong></div>
+        <div><span>Current Cycle</span><strong>${currentCycle}</strong></div>
+        <div><span>Verified Activity</span><strong>${Number(p.activity?.length || 0)} RECENT</strong></div>
+        <div><span>Next Release</span><strong>${escapeHtml(nextRelease)}</strong></div>
+      </div>
+      <div class="dossier-contributions"><div class="dossier-subheading"><span>CONTRIBUTION BREAKDOWN</span><small>CAMPAIGN XP</small></div>
+        ${xpCategories.map(([label, amount]) => `<div class="dossier-contribution-row"><span>${label}</span><div><i style="width:${Math.min(100, Math.max(0, Number(amount || 0)) / maxCategory * 100)}%"></i></div><b>${Number(amount || 0).toLocaleString()}</b></div>`).join('')}
+      </div>
     </section>
 
-    <section class="passport-achievements-preview">
-      <div class="dossier-heading"><span>Achievements</span><button data-record-view="achievements">VIEW ALL →</button></div>
-      ${badgeGallery((c.xpBadges || []).slice(0,4))}
+    <section class="dossier-reward-position">
+      <div class="dossier-subheading"><span>CAMPAIGN REWARDS</span><small>FAWKQ</small></div>
+      <div class="dossier-reward-values"><div><span>Allocated</span><b>${rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : 'PENDING'}</b></div><div><span>Scheduled</span><b>${rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : 'NOT SCHEDULED'}</b></div><div><span>Distributed</span><b>${rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '0'}</b></div></div>
+      <button data-screen="rewards">VIEW REWARD RECORD →</button>
     </section>
 
-    <section class="passport-impact-stamp">
-      <span>SMALL ACTIONS.</span>
-      <b>BIGGER OCEANS.</b>
-      <small>Every verified contribution becomes part of your permanent Project Q record.</small>
+    <section class="dossier-reputation">
+      <span>REPUTATION IN PROGRESS</span>
+      <b>${Number(p.activity?.length || 0) ? 'Verified campaign activity recorded' : 'Awaiting verified campaign activity'}</b>
+      <small>Qualifying contributions reach the Universal Record only after review, settlement and Oracle confirmation. No lifetime score is inferred here.</small>
+    </section>
+
+    <section class="dossier-impact">
+      <span>CAMPAIGN IMPACT</span><b>Receipts before claims.</b>
+      <p>Individual and campaign-wide conservation outcomes will appear with confirmed evidence. Earn-to-Burn progress is recorded separately.</p>
+      <button data-screen="burns">VIEW EARN-TO-BURN RECORD →</button>
     </section>
   </div>`;
 }
@@ -1940,6 +1959,7 @@ function profileIdentity() {
   const count = verifiedCount();
   const fullyVerified = count === 3;
   const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
+  const campaignRequirements = campaignEligibilityRequirements();
 
   const steps = [
     {
@@ -1975,6 +1995,10 @@ function profileIdentity() {
   const nextLabel = nextIndex >= 0 ? steps[nextIndex].label : 'Complete';
 
   return `<div class="identity-passport-view">
+    <section class="dossier-identity-clearance">
+      <div class="dossier-subheading"><span>CAMPAIGN CLEARANCE</span><strong>${campaignRequirements.filter(({ complete }) => complete).length} / ${campaignRequirements.length}</strong></div>
+      ${campaignRequirements.map(({ label, complete }) => `<div class="dossier-requirement"><i class="${complete ? 'complete' : ''}">${complete ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${complete ? 'VERIFIED' : 'PENDING'}</b></div>`).join('')}
+    </section>
     <section class="identity-status-card">
       <div>
         <span>PROJECT Q IDENTITY</span>
@@ -2007,6 +2031,7 @@ function profileIdentity() {
       <div class="identity-system oracle-system"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Verifies canonical X and reward-wallet connections.</small></span></div>
     </section>
 
+    <div class="dossier-identity-actions"><button data-profile-view="wallet">VIEW REWARD WALLET →</button><button data-profile-view="referrals">VERIFIED REFERRALS →</button><button data-replay-tour>REPLAY GUIDE →</button></div>
     ${p.telegramVerified ? '<button class="identity-refresh outline-action" id="identity-refresh">Refresh Verification Status</button>' : ''}
   </div>`;
 }
@@ -2017,10 +2042,6 @@ function profileScreen() {
   const count = verifiedCount();
   const fullyVerified = count === 3;
   const op = operationNumber();
-  const missingEligibility = campaignEligibilityRequirements().find(({ complete }) => !complete);
-  const eligibility = p.rewardEligible
-    ? 'Reward Ready'
-    : missingEligibility?.label || (p.campaignReady ? 'Eligibility Check' : 'Identity Required');
   const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
   const content = (views[state.profileView] || profileOverview)();
   const operationSchedule = !state.runtime
@@ -2032,10 +2053,11 @@ function profileScreen() {
   return `<div class="passport-ui">
     <section class="participant-passport">
       <div class="passport-copy">
-        <span class="passport-kicker">CRAB ARMY PARTICIPANT</span>
+        <span class="passport-kicker">PROJECT Q // CAMPAIGN DOSSIER</span>
         <h2>${escapeHtml(p.name)}</h2>
-        <div class="passport-id-line"><span>ID</span><b>${count}/3</b>${statePill(fullyVerified ? 'VERIFIED' : 'PENDING', fullyVerified ? 'success' : 'pending')}</div>
-        <p>Persistent Project Q identity and verified participation history.</p>
+        ${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}
+        <div class="passport-id-line"><span>UNIVERSAL ID</span>${statePill('RANK SYNC PENDING', 'pending')}</div>
+        <p><b>${escapeHtml(c.name || 'Bond the Duck')}</b> · ${fullyVerified ? 'Campaign Operator' : 'Campaign access pending'}${Number(state.runtime?.schedule?.currentCycle || 0) ? ` · CYCLE ${Number(state.runtime.schedule.currentCycle)}` : ''}</p>
       </div>
       <div class="passport-photo">
         <img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Project Q participant identity" />
@@ -2044,14 +2066,10 @@ function profileScreen() {
       <div class="passport-motto">PEOPLE<br />COMMUNITY<br />DEFI<br />OCEAN IMPACT</div>
     </section>
 
-    <section class="passport-stats">
-      <article><span>OP Rank</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></article>
-      <article><span>OP XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
-      <article><span>Missions</span><strong>${Number(p.completedMissions || 0)}</strong></article>
-      <article><span>Eligibility</span><strong>${escapeHtml(eligibility)}</strong></article>
-    </section>
+    ${profileTabs()}
+    ${content}
 
-    <section class="passport-records">
+    ${state.profileView === 'overview' ? `<section class="passport-records">
       <div class="dossier-heading"><span>Campaign Records</span><b>1 OPERATION</b></div>
       <button class="passport-operation-record" data-screen="operations">
         <span class="passport-op">OP<br /><b>${op}</b></span>
@@ -2060,19 +2078,10 @@ function profileScreen() {
           <b>${escapeHtml(c.name || 'Bond the Duck')}</b>
           <span>${escapeHtml(operationSchedule)}</span>
         </div>
-        ${c.banner ? `<img src="${c.banner}" alt="" loading="lazy" decoding="async" />` : ''}
+        ${c.banner ? `<img src="${escapeHtml(c.banner)}" alt="" loading="lazy" decoding="async" />` : ''}
         <em>${escapeHtml(operationLifecycleState().label)}</em>
       </button>
-      <div class="passport-record-metrics">
-        <div><span>OP XP</span><b>${Number(p.xp || 0).toLocaleString()}</b></div>
-        <div><span>Campaign Rank</span><b>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</b></div>
-        <div><span>Missions</span><b>${Number(p.completedMissions || 0)}</b></div>
-        <div><span>Rewards</span><b>${p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation)}</b></div>
-      </div>
-    </section>
-
-    ${profileTabs()}
-    ${content}
+    </section>` : ''}
   </div>`;
 }
 
@@ -2100,13 +2109,32 @@ function render() {
   const c = state.campaign || fallbackCampaign;
   const navTitle = NAV.find(([id]) => id === state.screen)?.[1];
   const screenTitle = state.screen === 'home' ? 'Operations Terminal' : (navTitle || (state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
-  document.querySelector('#desktop-nav').innerHTML = navMarkup();
-  document.querySelector('#mobile-nav').innerHTML = navMarkup();
+  const nav = navMarkup();
+  for (const selector of ['#desktop-nav', '#mobile-nav']) {
+    const container = document.querySelector(selector);
+    if (container.dataset.currentScreen !== state.screen) {
+      container.innerHTML = nav;
+      container.dataset.currentScreen = state.screen;
+    }
+  }
   const screen = document.querySelector('#screen');
+  const sameScreen = screen.dataset.currentScreen === state.screen;
+  const openPanels = sameScreen
+    ? [...screen.querySelectorAll('details[open][data-persist-open]')].map((panel) => panel.dataset.persistOpen)
+    : [];
+  const focusedControl = sameScreen && screen.contains(document.activeElement)
+    ? document.activeElement.getAttribute('data-persist-focus') : null;
   const markup = screens[state.screen]();
   screen.classList.add('screen-rendering');
   document.body.classList.toggle('q-terminal', state.screen === 'home');
   screen.innerHTML = state.screen === 'home' ? `${markup}${systemStatusMarkup()}` : `${systemStatusMarkup()}${markup}`;
+  screen.dataset.currentScreen = state.screen;
+  screen.querySelectorAll('details[data-persist-open]').forEach((panel) => {
+    if (openPanels.includes(panel.dataset.persistOpen)) panel.open = true;
+  });
+  if (focusedControl) screen.querySelectorAll('[data-persist-focus]').forEach((control) => {
+    if (control.dataset.persistFocus === focusedControl) control.focus({ preventScroll: true });
+  });
   requestAnimationFrame(() => screen.classList.remove('screen-rendering'));
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
@@ -2629,8 +2657,8 @@ function tourWelcomeMarkup(source = 'auto') {
     <span class="label">${replay ? 'Project Q Guide' : 'Welcome to Project Q'}</span>
     <h2>${replay ? 'Replay the Operations Tour' : 'Enter the Operation'}</h2>
     <p>${replay
-      ? 'Run through Terminal, Operations, Record, Rewards and your Participant Passport again.'
-      : 'Project Q is your verified participation layer. Learn where to operate, how missions work and where your permanent record is built.'}</p>
+      ? 'Replay the short guide to Terminal, Mission Files and your campaign Record.'
+      : 'Project Q is your verified participation layer. Take a quick look at your next action, missions and campaign Record.'}</p>
     <div class="tour-welcome-path">
       <span>TERMINAL</span><i>→</i><span>OPERATIONS</span><i>→</i><span>RECORD</span>
     </div>
@@ -2987,7 +3015,7 @@ async function loadCampaign() {
     const record = registry.campaigns.find((campaign) => campaign.id === requested && campaign.visible);
     if (!record) { state.campaign = fallbackCampaign; return; }
     state.campaignRecord = record;
-    state.campaign = await fetch(`/campaign-app/campaigns/${record.file}`).then((response) => response.json());
+    state.campaign = await fetch(`/campaign-app/campaigns/${record.file}?v=20260927-dossier-1`).then((response) => response.json());
     if (record.archived) { state.campaign.status = 'ARCHIVED'; state.campaign.statusLabel = 'CAMPAIGN ARCHIVE'; }
     if (!record.enabled && !record.archived) state.campaign.status = 'DRAFT';
   } catch { state.campaign = fallbackCampaign; }
@@ -3072,6 +3100,7 @@ async function authenticateTelegram() {
         const pending = await response.json();
         if (pending.telegramUser) {
           state.profile.name = telegramDisplayName(pending.telegramUser);
+          state.profile.username = pending.telegramUser.username || null;
           state.profile.photoUrl = safeHttpsUrl(pending.telegramUser.photoUrl);
           state.profile.telegramVerified = false;
           state.profile.xVerified = false;
@@ -3085,6 +3114,8 @@ async function authenticateTelegram() {
     }
     const session = await response.json();
     state.profile.name = telegramDisplayName(session.user);
+    state.profile.username = session.user.username || null;
+    state.profile.profileId = session.participant?.profileId || null;
     state.profile.photoUrl = safeHttpsUrl(session.user.photoUrl);
     state.profile.telegramVerified = true;
     state.profile.xVerified = Boolean(session.participant?.xVerified);

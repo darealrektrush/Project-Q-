@@ -113,6 +113,13 @@ async function loadRuntime() {
       state.profileView = 'rewards';
       return { screen: rewardsScreen(), profile: profileScreen() };
     };
+    globalThis.__renderDossierWith = (profilePatch = {}, runtime = null) => {
+      Object.assign(state.profile, profilePatch);
+      state.runtime = runtime;
+      state.runtimeLoadedAt = runtime ? Date.now() : null;
+      state.profileView = 'overview';
+      return profileScreen();
+    };
     globalThis.__renderWalletWith = ({ wallet, tokenAccount, status, recorded = false }) => {
       state.wallet = wallet;
       state.walletStatus = status;
@@ -290,6 +297,36 @@ test('Operations UI renders from the real Bond campaign config', async () => {
   assert.match(context.__profiles.rewards, /ECONOMIC RECORD/);
   assert.match(context.__profiles.referrals, /\$2 buy pending/);
 });
+
+test('Campaign Dossier keeps campaign standing and planned badges separate from universal rank', async () => {
+  const context = await loadRuntime();
+  const profile = context.__renderDossierWith({
+    name: 'RektRush', username: 'darealrektrush', xp: 680, rank: '#14',
+    completedMissions: 6, xpByBucket: { participation: 80, mission: 65, trending: 50, other: 0 },
+  }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
+  assert.match(profile, /PROJECT Q \/\/ CAMPAIGN DOSSIER/);
+  assert.match(profile, /@darealrektrush/);
+  assert.match(profile, /Campaign XP/);
+  assert.match(profile, /#14/);
+  assert.match(profile, /2 \/ 5/);
+  assert.match(profile, /CAMPAIGN CLEARANCE/);
+  assert.match(profile, /RANK SYNC PENDING/);
+  assert.doesNotMatch(profile, /Sergeant Major|4-day streak|27 verified actions/);
+  assert.match(context.__rendered.record, />Planned<\/span>/);
+  assert.doesNotMatch(context.__rendered.record, /Rank Up|Level Up/);
+});
+
+test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {
+  const context = await loadRuntime();
+  const missions = context.__renderOperationsWithReadiness({ available: true, percent: 55 }, 'missions');
+  assert.match(missions, /operation-compact-context/);
+  assert.match(missions, /data-tour-target="mission-files"/);
+  assert.doesNotMatch(missions, /operation-cover bond-cover/);
+  const progress = context.__renderOperationsWithReadiness({ available: true, percent: 55 }, 'progress');
+  assert.match(progress, /Launch Readiness/);
+  assert.doesNotMatch(progress, />Campaign Progress</);
+});
+
 test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {
   const context = await loadRuntime();
   const voting = context.__missionDetails['website-voting'];
@@ -663,7 +700,7 @@ test('Rewards renders exact participant allocation and release records without c
   assert.match(rendered.screen, /Activity rewards · CYCLE 1/);
   assert.match(rendered.screen, /Release Schedule/);
   assert.match(rendered.screen, /SCHEDULED<\/span>/);
-  assert.match(rendered.screen, /<summary><span>Reward Pipeline/);
+  assert.match(rendered.screen, /<summary[^>]*><span>Reward Pipeline/);
   assert.match(rendered.screen, /Participation/);
   assert.match(rendered.screen, /PAID/);
   assert.match(rendered.screen, /No claim transaction required/);

@@ -34,18 +34,6 @@
       "label": "XP Master",
       "description": "Reach the published campaign XP threshold",
       "image": "/campaign-app/assets/progression/xp-master.webp"
-    },
-    {
-      "id": "level-up",
-      "label": "Level Up",
-      "description": "Advance through verified participation",
-      "image": "/campaign-app/assets/progression/level-up.webp"
-    },
-    {
-      "id": "rank-up",
-      "label": "Rank Up",
-      "description": "Enter a published ranking tier",
-      "image": "/campaign-app/assets/progression/rank-up.webp"
     }
   ],
   "leaderboardBadges": [

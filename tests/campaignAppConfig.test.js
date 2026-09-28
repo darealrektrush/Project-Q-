@@ -26,7 +26,7 @@ test('campaign registry points to a valid reusable default campaign', async () =
     ['ARCHIVED','COMPLETED','DISABLED','LOCKED']);
   assert.deepEqual(Object.keys(campaign.identityBadges).sort(),
     ['collective','full','fullHero','rewards','telegram','wallet','x']);
-  assert.equal(campaign.xpBadges.length, 4);
+  assert.deepEqual(campaign.xpBadges.map(({ id }) => id), ['xp-earned', 'xp-master']);
   assert.equal(campaign.leaderboardBadges.length, 6);
   assert.ok(Array.isArray(campaign.missions));
   assert.equal(campaign.earnToBurn.status, 'DRAFT');
