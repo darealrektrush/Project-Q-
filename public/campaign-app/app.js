@@ -1590,14 +1590,15 @@ function rewardsScreen() {
   const hasFailedRelease = hasPositiveBaseUnits(failedBaseUnits)
     || actualReleases.some(({ status }) => status === 'failed');
 
-  const hasEarnedActivity = Boolean(state.profile.completedMissions > 0 || state.profile.todayXp > 0 || state.profile.xp > 0);
+  const hasCampaignActivity = Boolean(state.profile.completedMissions > 0 || state.profile.todayXp > 0 || state.profile.xp > 0);
   const hasVerifiedActivity = Boolean(state.profile.xp > 0 || state.profile.activity?.length);
   const hasScheduledRelease = actualReleases.length > 0;
   const hasReleased = actualReleases.some(({ status }) => ['paid','recovered'].includes(status));
-  const hasConfirmed = actualReleases.some(({ transactionSignature }) => isSolanaSignature(transactionSignature));
+  const hasConfirmed = actualReleases.some(({ status, transactionSignature }) =>
+    ['paid', 'recovered'].includes(status) && isSolanaSignature(transactionSignature));
 
   const stages = [
-    ['01', 'Earned', hasEarnedActivity, hasEarnedActivity ? 'Eligible participation recorded' : 'Complete eligible campaign activity'],
+    ['01', 'Participation', hasCampaignActivity, hasCampaignActivity ? 'Campaign activity recorded' : 'Complete eligible campaign activity'],
     ['02', 'Verified', hasVerifiedActivity, hasVerifiedActivity ? 'Activity verified and settled' : 'Awaiting verified Project Q record'],
     ['03', 'Allocated', Boolean(rewards.recorded), rewards.recorded ? 'Reward allocation recorded' : 'Awaiting campaign allocation'],
     ['04', 'Scheduled', hasScheduledRelease, hasScheduledRelease ? 'Release schedule created' : 'Awaiting release schedule'],
@@ -1625,13 +1626,22 @@ function rewardsScreen() {
       </article>`;
     }).join('');
 
+  const releaseRows = actualReleases.map((release) => {
+    const status = String(release.status || 'pending').toUpperCase();
+    const failed = release.status === 'failed';
+    return `<article class="release-row${failed ? ' release-failed' : ''}">
+      <div><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · CYCLE ${Number(release.cycleId)}` : ''}</b><small>${escapeHtml(formatProfileDate(release.scheduledAt))} · ${Number(release.percent || 0)}% release</small></div>
+      <div class="release-row-result"><strong>${formatBaseUnits(release.amountBaseUnits)} FAWKQ</strong><span>${escapeHtml(status)}</span></div>
+    </article>`;
+  }).join('');
+
   return `<div class="rewards-operations-ui">
     <section class="rewards-command">
       <div>
         <span>PROJECT Q REWARDS</span>
-        <h2>${allocation}</h2>
-        <b>FAWKQ ALLOCATED</b>
-        <p>Verified participation moves through a transparent allocation and delivery pipeline.</p>
+        <h2>${rewards.recorded ? allocation : 'Awaiting allocation'}</h2>
+        <b>${rewards.recorded ? 'FAWKQ ALLOCATED' : 'CAMPAIGN REWARDS'}</b>
+        <p>${rewards.recorded ? 'Your recorded allocation moves through the release schedule.' : 'Allocation appears here after eligible participation is verified and campaign rewards are finalized.'}</p>
       </div>
       <div class="reward-status-card">
         ${statePill(delivery.label, delivery.tone)}
@@ -1651,8 +1661,8 @@ function rewardsScreen() {
       <button data-operation-view="intel">OPEN OPERATION INTEL →</button>
     </section>` : ''}
 
-    <section class="reward-pipeline">
-      <div class="dossier-heading"><span>Reward Pipeline</span><b>EARNED → CONFIRMED</b></div>
+    <details class="reward-pipeline">
+      <summary><span>Reward Pipeline <b>${escapeHtml(delivery.label)}</b></span><em>VIEW ALL 6 STAGES <i aria-hidden="true">⌄</i></em></summary>
       <div class="pipeline-steps">
         ${stages.map(([number,label,complete,detail]) => `<article class="${complete ? 'complete' : ''}">
           <span>${number}</span>
@@ -1660,7 +1670,7 @@ function rewardsScreen() {
           <i>${complete ? '✓' : '○'}</i>
         </article>`).join('')}
       </div>
-    </section>
+    </details>
 
     <section class="reward-summary-grid">
       <article><span>Allocated</span><strong>${allocation}</strong><small>recorded total</small></article>
@@ -1673,6 +1683,8 @@ function rewardsScreen() {
       <div><span>DESTINATION</span><b>Verified Reward Wallet</b><small>${walletLabel}</small><em>No claim transaction required.</em></div>
       <button data-screen="profile" data-profile-view="wallet">OPEN WALLET →</button>
     </section>
+
+    ${releaseRows ? `<section class="release-schedule"><div class="dossier-heading"><span>Release Schedule</span><b>${actualReleases.length} RECORD${actualReleases.length === 1 ? '' : 'S'}</b></div><div class="release-rows">${releaseRows}</div></section>` : ''}
 
     ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${actualReleases.length} RELEASE RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No allocation receipt yet.</h3><p>Your receipt appears after Project Q finalizes an allocation and the release reaches verified on-chain delivery.</p></section>`}
 

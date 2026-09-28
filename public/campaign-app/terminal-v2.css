@@ -336,3 +336,74 @@
  .q-shell-v2 .record-proof-links{grid-template-columns:repeat(2,minmax(0,1fr))}
  .q-shell-v2 .record-proof-links button+button{border-left:1px solid var(--q-border);border-top:0}
 }
+
+/* Rewards: campaign allocations and delivery records. */
+.q-shell-v2 .rewards-operations-ui{font-family:var(--q-display);color:var(--q-ink);gap:9px}
+.q-shell-v2 .rewards-command{min-height:0;padding:16px;gap:12px;border:1px solid #343434;border-radius:11px;background:#0a0d0e;color:#f9f8f2;box-shadow:none}
+.q-shell-v2 .rewards-command>div:first-child>span{font:700 11px/1 var(--q-display);letter-spacing:.16em;color:#e4bc58}
+.q-shell-v2 .rewards-command h2{font:700 clamp(32px,5vw,52px)/.98 var(--q-display);letter-spacing:.01em;margin:7px 0 0;overflow-wrap:anywhere}
+.q-shell-v2 .rewards-command>div:first-child>b{font:700 12px/1.1 var(--q-display);letter-spacing:.12em;color:#edc661;margin-top:5px}
+.q-shell-v2 .rewards-command p{font:400 13px/1.35 var(--q-display);color:#bec9cf;max-width:42ch;margin-top:9px}
+.q-shell-v2 .reward-status-card{border:1px solid #334754;background:#101d23;border-radius:8px;min-width:170px}
+.q-shell-v2 .reward-status-card small{font-size:11px;color:#8dbbd0}
+.q-shell-v2 .reward-status-card b{font-size:15px;color:#fff;overflow-wrap:anywhere}
+.q-shell-v2 .reward-pipeline,.q-shell-v2 .release-schedule,.q-shell-v2 .receipt-section,.q-shell-v2 .receipt-empty{padding:13px;border:1px solid var(--q-border);border-radius:10px;background:#fafaf7;box-shadow:none}
+.q-shell-v2 .reward-pipeline summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:33px}
+.q-shell-v2 .reward-pipeline summary::-webkit-details-marker{display:none}
+.q-shell-v2 .reward-pipeline summary>span{display:grid;gap:3px;color:#287da3;font:700 10px/1 var(--q-display);letter-spacing:.12em}
+.q-shell-v2 .reward-pipeline summary b{font:700 16px/1.1 var(--q-display);letter-spacing:0;color:#101414}
+.q-shell-v2 .reward-pipeline summary em{font:700 10px/1 var(--q-display);letter-spacing:.05em;font-style:normal;color:#485d67;white-space:nowrap}
+.q-shell-v2 .reward-pipeline summary i{display:inline-block;font:700 18px/1 var(--q-display);vertical-align:middle;transition:transform .18s}
+.q-shell-v2 .reward-pipeline[open] summary i{transform:rotate(180deg)}
+.q-shell-v2 .reward-pipeline .pipeline-steps{margin-top:12px}
+.q-shell-v2 .pipeline-steps article{min-height:51px;padding:7px 9px;border-color:var(--q-border);background:#fff;box-shadow:none}
+.q-shell-v2 .pipeline-steps article.complete{border-color:#b9d9e5;background:#f0f8fa}
+.q-shell-v2 .pipeline-steps article.complete>span,.q-shell-v2 .pipeline-steps article.complete>i{color:#247c9c}
+.q-shell-v2 .pipeline-steps article b{font-size:15px}
+.q-shell-v2 .pipeline-steps article small{font-size:11px;color:var(--q-copy)}
+.q-shell-v2 .reward-summary-grid{border-color:var(--q-border);border-radius:10px;background:#fafaf7;box-shadow:none}
+.q-shell-v2 .reward-summary-grid article{border-color:var(--q-border)}
+.q-shell-v2 .reward-summary-grid span{font:700 11px/1 var(--q-display);color:#526b79}
+.q-shell-v2 .reward-summary-grid strong{font:700 23px/1 var(--q-display);color:#111;white-space:normal;overflow-wrap:anywhere}
+.q-shell-v2 .reward-summary-grid .distributed strong{color:#157d9f}
+.q-shell-v2 .reward-summary-grid small{font:400 11px/1.1 var(--q-display);color:#657985}
+.q-shell-v2 .reward-destination{border-radius:10px;background:#0d1113;border-color:#1e2b30}
+.q-shell-v2 .reward-destination span{font:700 11px/1 var(--q-display);color:#edc661}
+.q-shell-v2 .reward-destination b{font:700 17px/1 var(--q-display)}
+.q-shell-v2 .reward-destination small,.q-shell-v2 .reward-destination em{font:400 12px/1.25 var(--q-display);color:#a8bec8}
+.q-shell-v2 .reward-destination button,.q-shell-v2 .reward-transparency-link button{font:700 12px/1.1 var(--q-display);letter-spacing:.04em;border-radius:7px}
+.q-shell-v2 .release-rows{display:grid;gap:6px}
+.q-shell-v2 .release-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:10px;border:1px solid var(--q-border);border-radius:7px;background:#fff}
+.q-shell-v2 .release-row>div{min-width:0}
+.q-shell-v2 .release-row b,.q-shell-v2 .release-row strong{display:block;font:700 14px/1.1 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .release-row small{display:block;margin-top:3px;font:400 11px/1.2 var(--q-display);color:var(--q-copy)}
+.q-shell-v2 .release-row-result{text-align:right;flex:0 0 auto}
+.q-shell-v2 .release-row-result span{display:inline-block;margin-top:5px;font:700 10px/1 var(--q-display);letter-spacing:.05em;color:#276d88}
+.q-shell-v2 .release-failed .release-row-result span{color:#9a403b}
+.q-shell-v2 .receipt-empty h3{font:700 21px/1 var(--q-display)}
+.q-shell-v2 .receipt-empty p{font:400 13px/1.3 var(--q-display);color:var(--q-copy)}
+.q-shell-v2 .reward-transparency-link button{background:#fafaf7;border-color:var(--q-border);color:#252d32}
+@media(max-width:520px){
+ .q-shell-v2 .rewards-command{grid-template-columns:1fr;padding:15px}
+ .q-shell-v2 .rewards-command h2{font-size:37px}
+ .q-shell-v2 .reward-status-card{min-width:0;padding:9px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:11px;row-gap:2px;align-items:center}
+ .q-shell-v2 .reward-status-card .state-pill{grid-row:1/3}
+ .q-shell-v2 .reward-status-card small{margin:0}
+ .q-shell-v2 .reward-status-card b{margin:0}
+ .q-shell-v2 .reward-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .q-shell-v2 .reward-summary-grid article{padding:12px}
+ .q-shell-v2 .reward-summary-grid strong{font-size:20px}
+ .q-shell-v2 .reward-destination{grid-template-columns:minmax(0,1fr) auto}
+ .q-shell-v2 .reward-destination button{justify-self:end}
+ .q-shell-v2 .reward-transparency-link{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:359px){
+ .q-shell-v2 .reward-status-card .state-pill{grid-row:auto;grid-column:1/-1;justify-self:start}
+ .q-shell-v2 .reward-status-card small{grid-column:1/-1}
+ .q-shell-v2 .reward-status-card b{grid-column:1/-1}
+ .q-shell-v2 .rewards-command h2{font-size:32px}
+ .q-shell-v2 .reward-destination{grid-template-columns:1fr}
+ .q-shell-v2 .reward-destination button{justify-self:start}
+ .q-shell-v2 .reward-transparency-link{grid-template-columns:1fr}
+ .q-shell-v2 .release-row-result strong{font-size:12px}
+}

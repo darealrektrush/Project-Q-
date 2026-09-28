@@ -661,6 +661,10 @@ test('Rewards renders exact participant allocation and release records without c
   assert.match(rendered.screen, /42,000/);
   assert.match(rendered.screen, /18,000/);
   assert.match(rendered.screen, /Activity rewards · CYCLE 1/);
+  assert.match(rendered.screen, /Release Schedule/);
+  assert.match(rendered.screen, /SCHEDULED<\/span>/);
+  assert.match(rendered.screen, /<summary><span>Reward Pipeline/);
+  assert.match(rendered.screen, /Participation/);
   assert.match(rendered.screen, /PAID/);
   assert.match(rendered.screen, /No claim transaction required/);
   assert.match(rendered.screen, new RegExp(`solscan\\.io/tx/${'5'.repeat(88)}`));
