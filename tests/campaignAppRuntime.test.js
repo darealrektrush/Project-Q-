@@ -278,6 +278,8 @@ test('Operations UI renders from the real Bond campaign config', async () => {
   assert.match(context.__rendered.operations, /Reward Pool/);
   assert.match(context.__rendered.record, /PROJECT Q RECORD/);
   assert.match(context.__rendered.record, /CAMPAIGN XP/);
+  assert.match(context.__rendered.record, /STANDING UNRANKED/);
+  assert.match(context.__rendered.record, />Standing<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation receipt yet/);
   assert.match(context.__profiles.identity, /oracle-logo\.jpg/);

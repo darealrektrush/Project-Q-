@@ -1500,7 +1500,7 @@ function operationsScreen() {
 }
 
 function recordTabs() {
-  const tabs = [['xp', 'XP'], ['rank', 'Rank'], ['achievements', 'Achievements'], ['activity', 'Activity']];
+  const tabs = [['xp', 'XP'], ['rank', 'Standing'], ['achievements', 'Achievements'], ['activity', 'Activity']];
   return `<div class="record-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
 }
 
@@ -1551,7 +1551,7 @@ function recordScreen() {
   return `<div class="record-ui">
     <section class="record-header">
       <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified campaign participation becomes an auditable operation record.</p></div>
-      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>CAMPAIGN XP</span><small>RANK ${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
+      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>CAMPAIGN XP</span><small>STANDING ${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
     </section>
 
     <section class="record-operation-context">
