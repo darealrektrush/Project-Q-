@@ -113,6 +113,10 @@ async function loadRuntime() {
       state.profileView = 'rewards';
       return { screen: rewardsScreen(), profile: profileScreen() };
     };
+    globalThis.__renderRecordWith = (view) => {
+      state.recordView = view;
+      return recordScreen();
+    };
     globalThis.__renderBurnsWith = (summary) => {
       state.burns = summary;
       return burnsScreen();
@@ -293,7 +297,8 @@ test('Operations UI renders from the real Bond campaign config', async () => {
   assert.match(context.__rendered.record, /STANDING UNRANKED/);
   assert.match(context.__rendered.record, />Standing<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
-  assert.match(context.__rendered.rewards, /No allocation receipt yet/);
+  assert.match(context.__rendered.rewards, /No allocation recorded yet/);
+  assert.doesNotMatch(context.__rendered.rewards, /Verified Reward Wallet/);
   assert.match(context.__profiles.identity, /oracle-logo\.jpg/);
   assert.match(context.__profiles.overview, /Campaign Records/);
   assert.match(context.__profiles.wallet, /VERIFIED REWARD DESTINATION/);
@@ -317,8 +322,27 @@ test('Campaign Dossier keeps campaign standing and planned badges separate from 
   assert.match(profile, /CAMPAIGN CLEARANCE/);
   assert.match(profile, /RANK SYNC PENDING/);
   assert.doesNotMatch(profile, /Sergeant Major|4-day streak|27 verified actions/);
-  assert.match(context.__rendered.record, />Planned<\/span>/);
+  assert.match(context.__renderRecordWith('achievements'), />Planned<\/span>/);
+  const xpRecord = context.__renderRecordWith('xp');
+  assert.doesNotMatch(xpRecord, /Planned badges|progression-hero|xp-ledger-section/);
+  assert.equal((xpRecord.match(/CAMPAIGN XP<\/span>/g) || []).length, 1);
+  assert.match(xpRecord, /data-record-view="activity"/);
+  assert.match(xpRecord, /data-record-view="achievements"/);
+  assert.match(profile, /<details class="dossier-deep-record"/);
+  assert.match(profile, /No allocation recorded yet/);
   assert.doesNotMatch(context.__rendered.record, /Rank Up|Level Up/);
+});
+
+test('Rewards pending state directs identity setup without suggesting a verified wallet or receipt', async () => {
+  const context = await loadRuntime();
+  const { screen, profile } = context.__renderRewardsWith({ recorded: false, releaseCount: 0, releases: [] });
+  assert.match(screen, /Recognize your identity/);
+  assert.match(screen, /data-profile-view="identity"/);
+  assert.match(screen, /Reward Wallet Pending/);
+  assert.match(screen, /No allocation recorded yet/);
+  assert.doesNotMatch(screen, /reward-summary-grid|allocation-receipt|Verified Reward Wallet/);
+  assert.match(profile, /No allocation recorded yet/);
+  assert.doesNotMatch(profile, /RECORDED<\/span>/);
 });
 
 test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {
@@ -452,7 +476,7 @@ test('Operations UI never fabricates participant results', async () => {
   const { __rendered: rendered } = await loadRuntime();
   const all = Object.values(rendered).join('\n');
   assert.doesNotMatch(all, /184,250|1,240 XP|@AlphaDuck|@TideBuilder/);
-  assert.match(rendered.rewards, /NOT ALLOCATED/);
+  assert.match(rendered.rewards, /No allocation recorded yet/);
   assert.match(rendered.leaderboard, /Rankings open with verified activity/);
   assert.doesNotMatch(rendered.home, /42%/);
 });

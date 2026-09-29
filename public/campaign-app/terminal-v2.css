@@ -680,3 +680,50 @@
  .q-shell-v2 .burn-plan-row .burn-plan-amount strong{font-size:18px}
  .q-shell-v2 .burn-plan-row .burn-plan-amount small{font-size:10px}
 }
+
+/* Record, Rewards and Profile share one decision-first campaign hierarchy. */
+.q-shell-v2 .record-tabs button,.q-shell-v2 .passport-tabs button{min-height:44px}
+.q-shell-v2 .record-tabs button:focus-visible,.q-shell-v2 .passport-tabs button:focus-visible,.q-shell-v2 .record-ui button:focus-visible,.q-shell-v2 .rewards-operations-ui button:focus-visible,.q-shell-v2 .passport-ui button:focus-visible{outline:2px solid #298ab4;outline-offset:2px}
+.q-shell-v2 .record-xp-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.q-shell-v2 .record-xp-shortcuts button{min-height:44px;padding:0 11px;border:1px solid #c1cfcf;border-radius:7px;background:#f5f8f5;color:#205e79;font:700 12px/1.15 var(--q-display);text-align:left}
+.q-shell-v2 .record-xp-shortcuts button:first-child{border-color:#bd993f;background:#16242a;color:#f1cf70}
+.q-shell-v2 .reward-exact-amount{display:block;margin-top:7px;color:#b7cbd1;font:400 12px/1 var(--q-display)}
+.q-shell-v2 .reward-next-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid #2e596e;border-left:3px solid #3992b7;border-radius:9px;background:linear-gradient(110deg,#091820,#15303c);color:#f8f7ed}
+.q-shell-v2 .reward-next-action>div{min-width:0}
+.q-shell-v2 .reward-next-action span,.q-shell-v2 .reward-next-action b,.q-shell-v2 .reward-next-action small{display:block}
+.q-shell-v2 .reward-next-action span{color:#81c9e1;font:700 11px/1 var(--q-display);letter-spacing:.08em}
+.q-shell-v2 .reward-next-action b{margin:5px 0;color:#f5f4eb;font:700 21px/1.1 var(--q-display)}
+.q-shell-v2 .reward-next-action small{color:#b9d0d7;font:400 12px/1.35 var(--q-display)}
+.q-shell-v2 .reward-next-action button{flex:0 0 auto;min-height:42px;padding:0 12px;border:1px solid #c19a42;border-radius:6px;background:#eccb6d;color:#141e20;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .reward-awaiting{padding:15px;border:1px solid var(--q-border);border-radius:9px;background:#fafaf6}
+.q-shell-v2 .reward-awaiting b{font:700 20px/1.1 var(--q-display)}
+.q-shell-v2 .reward-awaiting p{margin:6px 0 0;color:#536b78;font:400 12px/1.35 var(--q-display)}
+.q-shell-v2 .reward-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:visible;border:0;background:transparent}
+.q-shell-v2 .reward-summary-grid article{min-width:0;padding:12px;border:1px solid var(--q-border);border-radius:8px;background:#fafaf6}
+.q-shell-v2 .reward-summary-grid strong{font-size:27px;overflow-wrap:anywhere}
+.q-shell-v2 .reward-summary-grid small{margin-top:6px;line-height:1.3;overflow-wrap:anywhere}
+.q-shell-v2 .dossier-deep-record{margin-top:10px;border:1px solid #3b5869;border-radius:7px;background:#10252e}
+.q-shell-v2 .dossier-deep-record summary{display:flex;align-items:center;justify-content:space-between;min-height:42px;padding:0 11px;cursor:pointer;list-style:none;color:#94ccdf;font:700 11px/1 var(--q-display);letter-spacing:.05em}
+.q-shell-v2 .dossier-deep-record summary::-webkit-details-marker{display:none}
+.q-shell-v2 .dossier-deep-record summary:focus-visible{outline:2px solid #7bc8e8;outline-offset:2px}
+.q-shell-v2 .dossier-deep-record[open] summary span{transform:rotate(180deg)}
+.q-shell-v2 .dossier-secondary-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 10px 7px}
+.q-shell-v2 .dossier-secondary-metrics>div{min-width:0;padding:9px;border:1px solid #355867;border-radius:6px;background:#0d1d26}
+.q-shell-v2 .dossier-secondary-metrics span,.q-shell-v2 .dossier-secondary-metrics b{display:block}
+.q-shell-v2 .dossier-secondary-metrics span{color:#9ac6d5;font:400 11px/1.1 var(--q-display)}
+.q-shell-v2 .dossier-secondary-metrics b{margin-top:5px;color:#f6d479;font:700 16px/1.1 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .dossier-deep-record .dossier-contributions{margin:0;padding:8px 10px 10px;border-top:1px solid #2b4755}
+.q-shell-v2 .dossier-reward-values small{display:block;margin-top:4px;color:#526b79;font:400 10px/1.15 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .dossier-reward-pending{margin:10px 0;color:#4e6975;font:400 13px/1.35 var(--q-display)}
+.q-shell-v2 .passport-economic-summary strong{overflow-wrap:anywhere}
+@media(max-width:520px){
+ .q-shell-v2 .reward-next-action{align-items:stretch;flex-direction:column}
+ .q-shell-v2 .reward-next-action button{align-self:flex-start}
+ .q-shell-v2 .reward-summary-grid strong{font-size:22px}
+ .q-shell-v2 .dossier-secondary-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:359px){
+ .q-shell-v2 .record-xp-shortcuts{grid-template-columns:1fr}
+ .q-shell-v2 .reward-summary-grid{grid-template-columns:1fr}
+ .q-shell-v2 .dossier-secondary-metrics{grid-template-columns:1fr}
+}

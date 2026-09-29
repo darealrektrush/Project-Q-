@@ -953,7 +953,7 @@ function badgeGallery(badges = []) {
   }).join('')}</div>`;
 }
 
-function xpScreen() {
+function xpScreen({ embedded = false } = {}) {
   const c = state.campaign || fallbackCampaign;
   const caps = c.xpCaps || fallbackCampaign.xpCaps;
   const otherCap = Math.max(0, caps.overallDaily - caps.participationDaily - caps.projectQDaily - caps.trendingBotsDaily);
@@ -964,7 +964,7 @@ function xpScreen() {
   const rank = state.profile.rank && state.profile.rank !== '—' ? state.profile.rank : 'UNRANKED';
 
   return `<div class="xp-v2">
-    <section class="progression-hero command-card">
+    ${embedded ? '' : `<section class="progression-hero command-card">
       <div class="progression-copy">
         <span class="label">Campaign progression</span>
         <div class="progression-value"><strong>${totalXp.toLocaleString()}</strong><em>CAMPAIGN XP</em></div>
@@ -975,7 +975,7 @@ function xpScreen() {
         <button class="info-action" data-explainer="xp" aria-label="How XP works">?</button>
         <button class="outline-action" data-record-view="rank">View standing</button>
       </div>
-    </section>
+    </section>`}
 
     <section class="xp-daily command-card">
       <div class="panel-title"><span>Today’s XP</span><small>Overall cap ${Number(caps.overallDaily || 0)} XP</small></div>
@@ -989,21 +989,21 @@ function xpScreen() {
 
     ${communityPulsePanel()}
 
-    <section class="xp-ledger-section">
+    ${embedded ? `<section class="record-xp-shortcuts"><button data-record-view="activity">VIEW VERIFIED ACTIVITY →</button><button data-record-view="achievements">CAMPAIGN BADGES →</button></section>` : `<section class="xp-ledger-section">
       <div class="section-head compact-head">
         <div><span class="label">Verified activity</span><h2>XP ledger</h2></div>
         <span>Source · status · time</span>
       </div>
       <section class="ledger xp-ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>XP entries appear here after eligible activity is verified and settled by Project Q.</p></div>'}</section>
-    </section>
+    </section>`}
 
-    <section class="xp-achievement-section">
+    ${embedded ? '' : `<section class="xp-achievement-section">
       <div class="section-head">
         <div><span class="label">Campaign milestones</span><h2>Planned badges</h2></div>
         <button class="info-action" data-explainer="ranks" aria-label="How standings work">?</button>
       </div>
       ${badgeGallery(c.xpBadges)}
-    </section>
+    </section>`}
   </div>`;
 }
 
@@ -1586,7 +1586,7 @@ function operationsScreen() {
 
 function recordTabs() {
   const tabs = [['xp', 'XP'], ['rank', 'Standing'], ['achievements', 'Achievements'], ['activity', 'Activity']];
-  return `<div class="record-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
+  return `<div class="record-tabs" role="tablist" aria-label="Campaign record sections">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
 }
 
 function recordNextActionMarkup() {
@@ -1627,11 +1627,11 @@ function recordScreen() {
       <section class="ledger">${p.activity?.length ? p.activity.map(activityRow).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>Your permanent activity record begins when Project Q accepts and settles eligible participation.</p></div>'}</section>
     </section>`;
   } else {
-    content = xpScreen();
+    content = xpScreen({ embedded: true });
   }
 
   const lifecycle = operationLifecycleState();
-  const allocation = p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation);
+  const allocation = p.rewards?.recorded ? ` · ${formatBaseUnits(p.rewards.allocatedBaseUnits)} FAWKQ allocated` : '';
 
   return `<div class="record-ui">
     <section class="record-header">
@@ -1642,7 +1642,7 @@ function recordScreen() {
     <section class="record-operation-context">
       <button data-screen="operations">
         <span>OP ${operationNumber()}</span>
-        <div><b>${escapeHtml(c.name || 'Operation')}</b><small>${escapeHtml(lifecycle.label)} · ${Number(p.completedMissions || 0)} missions · ${escapeHtml(allocation)} FAWKQ</small></div>
+        <div><b>${escapeHtml(c.name || 'Operation')}</b><small>${escapeHtml(lifecycle.label)} · ${Number(p.completedMissions || 0)} missions${escapeHtml(allocation)}</small></div>
         <i>OPEN DOSSIER →</i>
       </button>
       <div class="record-proof-links">
@@ -1670,7 +1670,8 @@ function rewardsScreen() {
   const outstanding = outstandingBaseUnits == null ? 'PENDING' : formatBaseUnits(outstandingBaseUnits);
   const actualReleases = rewards.releases || [];
   const delivery = rewardDeliveryState(rewards);
-  const walletLabel = state.wallet && isSolanaAddress(state.wallet) ? escapeHtml(short(state.wallet)) : 'Not connected';
+  const walletReady = Boolean(state.profile.walletVerified && state.wallet && isSolanaAddress(state.wallet));
+  const walletLabel = walletReady ? escapeHtml(short(state.wallet)) : 'Not connected';
   const failedBaseUnits = String(rewards.failedBaseUnits || '0');
   const hasFailedRelease = hasPositiveBaseUnits(failedBaseUnits)
     || actualReleases.some(({ status }) => status === 'failed');
@@ -1681,6 +1682,18 @@ function rewardsScreen() {
   const hasReleased = actualReleases.some(({ status }) => ['paid','recovered'].includes(status));
   const hasConfirmed = actualReleases.some(({ status, transactionSignature }) =>
     ['paid', 'recovered'].includes(status) && isSolanaSignature(transactionSignature));
+  const missingClearance = campaignEligibilityRequirements().find(({ complete }) => !complete);
+  const next = hasFailedRelease
+    ? ['Recovery review', 'A failed release remains under review. Track the operation status while the record is reconciled.', 'OPERATION INTEL →', 'data-operation-view="intel"']
+    : missingClearance?.label === 'Telegram identity'
+      ? ['Recognize your identity', 'Open Project Q inside Telegram to establish your campaign identity.', 'VIEW IDENTITY →', 'data-profile-view="identity"']
+      : !walletReady
+        ? ['Verify your reward wallet', 'Your verified wallet is required before any campaign release can be delivered.', 'OPEN WALLET →', 'data-profile-view="wallet"']
+        : !rewards.recorded
+          ? [operationLifecycleState().label === 'ACTIVE' ? 'Build verified activity' : 'Prepare for the operation', 'Allocations are determined from eligible, verified campaign participation.', 'VIEW MISSION FILES →', 'data-operation-view="missions"']
+          : !rewards.releaseCount
+            ? ['Follow allocation review', 'Your allocation is recorded. A release schedule has not been created yet.', 'VIEW YOUR RECORD →', 'data-record-view="activity"']
+            : ['Follow your release record', 'Scheduled releases and confirmed transaction receipts appear below.', 'VIEW RECORD →', 'data-profile-view="rewards"'];
 
   const stages = [
     ['01', 'Participation', hasCampaignActivity, hasCampaignActivity ? 'Campaign activity recorded' : 'Complete eligible campaign activity'],
@@ -1691,8 +1704,8 @@ function rewardsScreen() {
     ['06', 'Confirmed', hasConfirmed, hasConfirmed ? 'On-chain receipt confirmed' : 'Awaiting finalized transaction receipt'],
   ];
 
-  const receiptCards = actualReleases
-    .filter(({ status, transactionSignature }) => ['paid','recovered'].includes(status) || isSolanaSignature(transactionSignature))
+  const receiptReleases = actualReleases.filter(({ status, transactionSignature }) => ['paid','recovered'].includes(status) || isSolanaSignature(transactionSignature));
+  const receiptCards = receiptReleases
     .map((release) => {
       const sig = isSolanaSignature(release.transactionSignature) ? release.transactionSignature : null;
       return `<article class="allocation-receipt">
@@ -1724,16 +1737,19 @@ function rewardsScreen() {
     <section class="rewards-command">
       <div>
         <span>PROJECT Q REWARDS</span>
-        <h2>${rewards.recorded ? allocation : 'Awaiting allocation'}</h2>
+        <h2>${rewards.recorded ? escapeHtml(compactPoolAmount(allocation)) : 'Awaiting allocation'}</h2>
         <b>${rewards.recorded ? 'FAWKQ ALLOCATED' : 'CAMPAIGN REWARDS'}</b>
+        ${rewards.recorded ? `<small class="reward-exact-amount">${escapeHtml(allocation)} FAWKQ recorded</small>` : ''}
         <p>${rewards.recorded ? 'Your recorded allocation moves through the release schedule.' : 'Allocation appears here after eligible participation is verified and campaign rewards are finalized.'}</p>
       </div>
       <div class="reward-status-card">
         ${statePill(delivery.label, delivery.tone)}
-        <small>Verified wallet</small>
+        <small>${walletReady ? 'Verified wallet' : 'Reward wallet needed'}</small>
         <b>${walletLabel}</b>
       </div>
     </section>
+
+    <section class="reward-next-action"><div><span>NEXT STEP</span><b>${escapeHtml(next[0])}</b><small>${escapeHtml(next[1])}</small></div><button ${next[3]}>${escapeHtml(next[2])}</button></section>
 
     ${hasFailedRelease ? `<section class="reward-recovery-alert">
       <div>
@@ -1757,21 +1773,21 @@ function rewardsScreen() {
       </div>
     </details>
 
-    <section class="reward-summary-grid">
-      <article><span>Allocated</span><strong>${allocation}</strong><small>recorded total</small></article>
-      <article><span>Scheduled</span><strong>${scheduled}</strong><small>release plan</small></article>
-      <article class="distributed"><span>Distributed</span><strong>${distributed}</strong><small>on-chain</small></article>
-      <article><span>Outstanding</span><strong>${outstanding}</strong><small>remaining</small></article>
-    </section>
+    ${rewards.recorded ? `<section class="reward-summary-grid" aria-label="Your recorded reward amounts">
+      <article><span>Allocated</span><strong>${escapeHtml(compactPoolAmount(allocation))}</strong><small>${escapeHtml(allocation)} FAWKQ · recorded</small></article>
+      <article><span>Scheduled</span><strong>${escapeHtml(compactPoolAmount(scheduled))}</strong><small>${rewards.releaseCount ? `${escapeHtml(scheduled)} FAWKQ · release plan` : 'No release plan yet'}</small></article>
+      <article class="distributed"><span>Distributed</span><strong>${escapeHtml(compactPoolAmount(distributed))}</strong><small>${escapeHtml(distributed)} FAWKQ · on-chain</small></article>
+      <article><span>Outstanding</span><strong>${escapeHtml(compactPoolAmount(outstanding))}</strong><small>${escapeHtml(outstanding)} FAWKQ · remaining</small></article>
+    </section>` : '<section class="reward-awaiting"><b>No allocation recorded yet.</b><p>Your reward amounts appear after participation is verified and the campaign allocation is finalized.</p></section>'}
 
     <section class="reward-destination">
-      <div><span>DESTINATION</span><b>Verified Reward Wallet</b><small>${walletLabel}</small><em>No claim transaction required.</em></div>
+      <div><span>DESTINATION</span><b>${walletReady ? 'Verified Reward Wallet' : 'Reward Wallet Pending'}</b><small>${walletLabel}</small><em>No claim transaction required.</em></div>
       <button data-screen="profile" data-profile-view="wallet">OPEN WALLET →</button>
     </section>
 
     ${releaseRows ? `<section class="release-schedule"><div class="dossier-heading"><span>Release Schedule</span><b>${actualReleases.length} RECORD${actualReleases.length === 1 ? '' : 'S'}</b></div><div class="release-rows">${releaseRows}</div></section>` : ''}
 
-    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${actualReleases.length} RELEASE RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No allocation receipt yet.</h3><p>Your receipt appears after Project Q finalizes an allocation and the release reaches verified on-chain delivery.</p></section>`}
+    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${receiptReleases.length} RECEIPT RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : rewards.recorded ? `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No confirmed receipt yet.</h3><p>On-chain proof appears when an approved release reaches your verified wallet.</p></section>` : ''}
 
     <section class="reward-transparency-link">
       <button data-operation-view="rewards">VIEW OPERATION ECONOMICS →</button>
@@ -1846,7 +1862,7 @@ function missionName(code, source) {
 
 function profileTabs() {
   const tabs = [['overview', 'Dossier'], ['activity', 'Activity'], ['rewards', 'Rewards'], ['identity', 'Identity']];
-  return `<div class="profile-tabs passport-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
+  return `<div class="profile-tabs passport-tabs" role="tablist" aria-label="Campaign dossier sections">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
 }
 
 function profileOverview() {
@@ -1885,18 +1901,18 @@ function profileOverview() {
         <div><span>Campaign XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></div>
         <div><span>Standing</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></div>
         <div><span>Mission Files</span><strong>${Number(p.completedMissions || 0)} / ${Number(c.missions?.length || 0)}</strong></div>
-        <div><span>Current Cycle</span><strong>${currentCycle}</strong></div>
-        <div><span>Verified Activity</span><strong>${Number(p.activity?.length || 0)} RECENT</strong></div>
-        <div><span>Next Release</span><strong>${escapeHtml(nextRelease)}</strong></div>
       </div>
-      <div class="dossier-contributions"><div class="dossier-subheading"><span>CONTRIBUTION BREAKDOWN</span><small>CAMPAIGN XP</small></div>
-        ${xpCategories.map(([label, amount]) => `<div class="dossier-contribution-row"><span>${label}</span><div><i style="width:${Math.min(100, Math.max(0, Number(amount || 0)) / maxCategory * 100)}%"></i></div><b>${Number(amount || 0).toLocaleString()}</b></div>`).join('')}
-      </div>
+      <details class="dossier-deep-record" data-persist-open="dossier-deep-record"><summary data-persist-focus="dossier-deep-record">VIEW CAMPAIGN DETAILS <span>⌄</span></summary>
+        <div class="dossier-secondary-metrics"><div><span>Current Cycle</span><b>${currentCycle}</b></div><div><span>Recent Activity</span><b>${Number(p.activity?.length || 0)} ENTRIES</b></div><div><span>Next Release</span><b>${escapeHtml(nextRelease)}</b></div></div>
+        <div class="dossier-contributions"><div class="dossier-subheading"><span>CONTRIBUTION BREAKDOWN</span><small>CAMPAIGN XP</small></div>
+          ${xpCategories.map(([label, amount]) => `<div class="dossier-contribution-row"><span>${label}</span><div><i style="width:${Math.min(100, Math.max(0, Number(amount || 0)) / maxCategory * 100)}%"></i></div><b>${Number(amount || 0).toLocaleString()}</b></div>`).join('')}
+        </div>
+      </details>
     </section>
 
     <section class="dossier-reward-position">
       <div class="dossier-subheading"><span>CAMPAIGN REWARDS</span><small>FAWKQ</small></div>
-      <div class="dossier-reward-values"><div><span>Allocated</span><b>${rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : 'PENDING'}</b></div><div><span>Scheduled</span><b>${rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : 'NOT SCHEDULED'}</b></div><div><span>Distributed</span><b>${rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '0'}</b></div></div>
+      ${rewards.recorded ? `<div class="dossier-reward-values"><div><span>Allocated</span><b>${escapeHtml(compactPoolAmount(formatBaseUnits(rewards.allocatedBaseUnits)))}</b><small>${formatBaseUnits(rewards.allocatedBaseUnits)} FAWKQ</small></div><div><span>Scheduled</span><b>${rewards.releaseCount ? escapeHtml(compactPoolAmount(formatBaseUnits(rewards.scheduledBaseUnits))) : 'NOT SCHEDULED'}</b></div><div><span>Distributed</span><b>${rewards.releaseCount ? escapeHtml(compactPoolAmount(formatBaseUnits(rewards.distributedBaseUnits))) : '0'}</b></div></div>` : '<p class="dossier-reward-pending">No allocation recorded yet. Reward amounts appear after verified participation and campaign review.</p>'}
       <button data-screen="rewards">VIEW REWARD RECORD →</button>
     </section>
 
@@ -1941,20 +1957,20 @@ function profileActivity() {
 function profileRewards() {
   const p = state.profile;
   const rewards = p.rewards || {};
-  const allocation = p.allocation == null ? 'NOT ALLOCATED' : formatBaseUnits(p.allocation);
+  const allocation = rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : 'NOT ALLOCATED';
   const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : 'NOT SCHEDULED';
   const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '0';
   const receiptCount = Number(rewards.receiptCount || 0);
 
   return `<div class="passport-rewards-view">
     <section class="passport-economic-summary">
-      <div><span>ALLOCATION</span><strong>${allocation}</strong><small>FAWKQ</small></div>
-      ${statePill(p.allocation == null ? 'PENDING' : 'RECORDED', p.allocation == null ? 'pending' : 'success')}
+      <div><span>ALLOCATION</span><strong>${escapeHtml(compactPoolAmount(allocation))}</strong><small>${rewards.recorded ? `${allocation} FAWKQ recorded` : 'No allocation recorded yet'}</small></div>
+      ${statePill(rewards.recorded ? 'RECORDED' : 'PENDING', rewards.recorded ? 'success' : 'pending')}
     </section>
 
     <section class="passport-economic-grid">
-      <article><span>Scheduled</span><b>${scheduled}</b></article>
-      <article><span>Distributed</span><b>${distributed}</b></article>
+      <article><span>Scheduled</span><b>${escapeHtml(compactPoolAmount(scheduled))}</b></article>
+      <article><span>Distributed</span><b>${escapeHtml(compactPoolAmount(distributed))}</b></article>
       <article><span>Receipts</span><b>${receiptCount}</b></article>
       <article><span>Wallet</span><b>${p.walletVerified ? 'VERIFIED' : 'REQUIRED'}</b></article>
     </section>
@@ -3132,7 +3148,12 @@ function bind() {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
   });
   document.querySelectorAll('[data-profile-view]').forEach((element) => {
-    element.onclick = () => { state.profileView = element.dataset.profileView; go('profile'); };
+    element.onclick = () => {
+      const isTab = element.getAttribute('role') === 'tab';
+      state.profileView = element.dataset.profileView;
+      go('profile');
+      if (isTab) document.querySelector('.passport-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
+    };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
     element.onclick = () => {
@@ -3142,7 +3163,12 @@ function bind() {
     };
   });
   document.querySelectorAll('[data-record-view]').forEach((element) => {
-    element.onclick = () => { state.recordView = element.dataset.recordView; go('record'); };
+    element.onclick = () => {
+      const isTab = element.getAttribute('role') === 'tab';
+      state.recordView = element.dataset.recordView;
+      go('record');
+      if (isTab) document.querySelector('.record-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
+    };
   });
   document.querySelector('#rail-toggle')?.addEventListener('click', toggleRail);
   applyRailPreference();
