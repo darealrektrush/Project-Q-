@@ -1797,32 +1797,37 @@ function burnsScreen() {
   const milestone = b.nextMilestone || milestones.find(({ state: milestoneState }) =>
     !['CONFIRMED', 'CANCELLED'].includes(milestoneState)
   );
-  const milestonePlan = milestones.map((item) => `<article class="burn-plan-row ${item.state === 'CONFIRMED' ? 'complete' : ''}">
-    <span>${Number(item.sequence)}</span><div><b>${escapeHtml(item.label)}</b><small>${Number(item.progressTargetUnits).toLocaleString()} verified XP</small></div>
-    <strong>${formatBaseUnits(item.burnAmountBaseUnits, b.decimals)} FAWKQ</strong>${statePill(item.state || 'PLANNED', item.state === 'CONFIRMED' ? 'success' : 'pending')}
-  </article>`).join('');
+  const reserveAmount = formatBaseUnits(configured.openingBurnBaseUnits, b.decimals);
+  const milestonePlan = milestones.map((item, index) => {
+    const exact = formatBaseUnits(item.burnAmountBaseUnits, b.decimals);
+    return `<article class="burn-plan-row ${item.state === 'CONFIRMED' ? 'complete' : ''}">
+      <div class="burn-plan-row-head"><span>UNLOCK ${String(Number(item.sequence) || index + 1).padStart(2, '0')} / ${String(milestones.length).padStart(2, '0')}</span>${statePill(item.state || 'PLANNED', item.state === 'CONFIRMED' ? 'success' : 'pending')}</div>
+      <div class="burn-plan-row-main"><div><b>${escapeHtml(item.label)}</b><small>${Number(item.progressTargetUnits).toLocaleString()} verified campaign XP</small></div><div class="burn-plan-amount"><strong>${escapeHtml(compactPoolAmount(exact))} <span>FAWKQ</span></strong><small>${escapeHtml(exact)} FAWKQ</small></div></div>
+    </article>`;
+  }).join('');
   const requested = new URLSearchParams(location.search).get('receipt');
   const receipts = (b.receipts || []).map((receipt) => {
     const selected = requested === receipt.receiptCode ? ' selected' : '';
     const explorer = `https://solscan.io/tx/${encodeURIComponent(receipt.signature)}`;
-    return `<article class="burn-receipt${selected}"><div><span class="label">${escapeHtml(receipt.receiptCode)}</span><h3>${formatBaseUnits(receipt.amountBaseUnits, b.decimals)} FAWKQ</h3><p>${escapeHtml(receipt.burnType)} · ${escapeHtml(receipt.blockTime)}</p></div><a class="outline-action" href="${explorer}" target="_blank" rel="noopener noreferrer">On-chain proof</a></article>`;
+    return `<article class="burn-receipt${selected}"><div><span class="label">CONFIRMED // ${escapeHtml(receipt.receiptCode)}</span><h3>${formatBaseUnits(receipt.amountBaseUnits, b.decimals)} FAWKQ</h3><p>${escapeHtml(receipt.burnType)} · ${escapeHtml(receipt.blockTime)}</p></div><a class="outline-action" href="${explorer}" target="_blank" rel="noopener noreferrer">VIEW ON-CHAIN PROOF →</a></article>`;
   }).join('');
+  const header = `<section class="burn-dossier-header"><button class="burn-back" data-operation-view="rewards">← OPERATION ECONOMICS</button><div class="burn-header-content"><div><span>PROJECT Q // COLLECTIVE MISSION</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div><div class="burn-reserve"><span>CONFIGURED BURN RESERVE</span><strong>${escapeHtml(compactPoolAmount(reserveAmount))} <small>FAWKQ</small></strong><em>${escapeHtml(reserveAmount)} FAWKQ · creator wallet</em></div></div></section>`;
+  const plan = `<section class="burn-plan-panel"><header><div><span>FIVE COLLECTIVE UNLOCKS</span><h3>Milestone plan</h3><p>Verified campaign XP advances each milestone. A planned burn is not a confirmed transaction.</p></div><b>${milestones.length} FILES</b></header><div class="burn-plan">${milestonePlan || '<div class="burn-empty"><b>Milestone configuration unavailable</b><p>No burn state is being inferred.</p></div>'}</div></section>`;
+  const authorization = `<details class="burn-execution-note"><summary>HOW BURNS ARE AUTHORIZED <span>⌄</span></summary><p>Two founder approvals are recorded before Project Q prepares the exact burn. The creator wallet signs the irreversible transaction; Project Q never stores its private key.</p></details>`;
   if (b.unavailable) {
-    return `<div class="burns-unavailable">
-      <section class="screen-intro"><div><span class="label">Collective mission</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div>${statePill('SYNCING', 'pending')}</section>
-      <section class="system-status-banner syncing"><div><span>BURN LEDGER</span><b>Verified burn state is temporarily unavailable</b><small>Project Q is not inferring supply, burned totals, milestone completion or receipt counts while the authoritative ledger is unavailable.</small></div><button data-retry-system>Retry</button></section>
-      <section class="record-panel"><div class="dossier-heading"><span>Configured Plan</span><b>READ-ONLY</b></div><div class="burn-plan">${milestonePlan || '<div class="empty compact"><b>Milestone configuration unavailable</b><p>No burn state is being inferred.</p></div>'}</div></section>
-    </div>`;
+    return `<div class="burn-dossier burns-unavailable">${header}<section class="burn-ledger-status unavailable"><div><span>VERIFIED LEDGER // SYNCING</span><h3>Burn record temporarily unavailable</h3><p>Confirmed burns, supply changes and receipts need the authoritative ledger. The milestones below are the configured plan only.</p></div><button data-retry-system>RETRY SYNC →</button></section>${plan}${authorization}</div>`;
   }
-
-  return `<section class="screen-intro"><div><span class="label">Collective mission</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div>${statePill(b.state)}</section>
-  <section class="burn-grid">${metric('Reference supply', formatBaseUnits(b.originalSupplyBaseUnits, b.decimals), 'FAWKQ')}${metric('Confirmed burned', formatBaseUnits(b.totalBurnedBaseUnits, b.decimals), `${formatPercentBps(b.supplyRemovedBps)} removed`)}${metric('Observed supply', formatBaseUnits(b.currentSupplyBaseUnits, b.decimals), 'Last verified state')}${metric('Receipts', Number(b.burnCount || 0), 'On-chain confirmed')}</section>
-  <section class="command-card burn-milestone"><div class="panel-title"><span>Opening commitment</span><small>${escapeHtml(configured.openingBurnStatus || 'PLANNED')}</small></div><strong>${formatBaseUnits(configured.openingBurnBaseUnits, b.decimals)} FAWKQ</strong><p>Additional 1.5% from the FAWKQ creator wallet. It does not reduce the campaign reward pool, Diamond Duck bonus or 1 SOL prize.</p></section>
-  <section class="command-card burn-milestone"><div class="panel-title"><span>Next collective milestone</span><small>${milestone ? escapeHtml(milestone.state) : 'NOT CONFIGURED'}</small></div>${milestone ? `<strong>${escapeHtml(milestone.label)}</strong><div class="progress"><span style="width:${Math.min(100, Number(milestone.progressBps || 0) / 100)}%"></span></div><p>${Number(milestone.progressTargetUnits).toLocaleString()} verified campaign XP unlocks a ${formatBaseUnits(milestone.burnAmountBaseUnits, b.decimals)} FAWKQ burn. Two founder approvals and one creator-wallet execution signature are required.</p>` : '<div class="empty compact">The live burn program has not been provisioned.</div>'}</section>
-  <div class="section-head compact-head"><div><span class="label">Locked milestone plan</span><h2>Five verified unlocks</h2></div><span>15,000,000 FAWKQ total</span></div>
-  <section class="burn-plan">${milestonePlan || '<div class="empty compact">The milestone plan is unavailable.</div>'}</section>
-  <div class="section-head"><div><span class="label">Burn receipts</span><h2>Immutable evidence</h2></div></div><div class="burn-receipts">${receipts || '<div class="empty command-card"><b>No confirmed burn receipts</b><p>No Earn to Burn transaction has been executed or confirmed.</p></div>'}</div>
-  <section class="oracle-note"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" /><div><b>Founder-authorized execution</b><p>The locked execution flow records both founder approvals before Project Q prepares the exact burn. The creator wallet signs the irreversible transaction; Project Q never stores its private key.</p></div></section>`;
+  const burned = formatBaseUnits(b.totalBurnedBaseUnits, b.decimals);
+  const observed = formatBaseUnits(b.currentSupplyBaseUnits, b.decimals);
+  const progress = milestone ? Math.max(0, Math.min(100, Number(milestone.progressBps || 0) / 100)) || 0 : 0;
+  return `<div class="burn-dossier">${header}
+    <section class="burn-ledger-status verified"><div><span>AUTHORITATIVE BURN LEDGER</span><h3>Verified record</h3><p>Only confirmed on-chain burns appear in the totals and receipts below.</p></div>${statePill(b.state || 'AVAILABLE', 'success')}</section>
+    <section class="burn-live-summary" aria-label="Verified burn activity"><article><span>CONFIRMED BURNED</span><strong>${escapeHtml(compactPoolAmount(burned))}</strong><small>${escapeHtml(burned)} FAWKQ · ${escapeHtml(formatPercentBps(b.supplyRemovedBps))} of reference supply</small></article><article><span>ON-CHAIN RECEIPTS</span><strong>${Number(b.burnCount || 0).toLocaleString()}</strong><small>Confirmed transactions</small></article><article><span>OBSERVED SUPPLY</span><strong>${escapeHtml(compactPoolAmount(observed))}</strong><small>${escapeHtml(observed)} FAWKQ · last verified state</small></article></section>
+    <section class="burn-next-milestone"><div><span>NEXT COLLECTIVE UNLOCK</span><h3>${milestone ? escapeHtml(milestone.label) : 'No next milestone recorded'}</h3><p>${milestone ? `${Number(b.progressUnits || 0).toLocaleString()} of ${Number(milestone.progressTargetUnits).toLocaleString()} verified campaign XP · ${formatBaseUnits(milestone.burnAmountBaseUnits, b.decimals)} FAWKQ planned` : 'The ledger has no further milestone to advance.'}</p></div>${milestone ? `<div class="burn-progress" role="progressbar" aria-label="Next burn milestone" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div>` : ''}</section>
+    ${plan}
+    <section class="burn-receipt-panel"><header><div><span>ON-CHAIN EVIDENCE</span><h3>Burn receipts</h3></div><b>${Number(b.burnCount || 0)} CONFIRMED</b></header><div class="burn-receipts">${receipts || '<div class="burn-empty"><b>No confirmed burn receipts</b><p>No Earn to Burn transaction has been executed or confirmed.</p></div>'}</div></section>
+    ${authorization}
+  </div>`;
 }
 
 function formatProfileDate(value) {

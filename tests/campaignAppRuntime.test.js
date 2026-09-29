@@ -113,6 +113,10 @@ async function loadRuntime() {
       state.profileView = 'rewards';
       return { screen: rewardsScreen(), profile: profileScreen() };
     };
+    globalThis.__renderBurnsWith = (summary) => {
+      state.burns = summary;
+      return burnsScreen();
+    };
     globalThis.__renderDossierWith = (profilePatch = {}, runtime = null) => {
       Object.assign(state.profile, profilePatch);
       state.runtime = runtime;
@@ -376,6 +380,37 @@ test('Operations pool and Intel disclose verification state without asserting un
   const intel = context.__renderOperationsWithReadiness({ available: false }, 'intel');
   assert.match(intel, /Signed Telegram access is needed/);
   assert.doesNotMatch(intel, /LIVE SOURCES/);
+});
+
+test('Earn to Burn shows planned milestones without inventing ledger progress when unavailable', async () => {
+  const context = await loadRuntime();
+  const unavailable = context.__renderBurnsWith(null);
+  assert.match(unavailable, /CONFIGURED BURN RESERVE[\s\S]*15M/);
+  assert.match(unavailable, /Burn record temporarily unavailable/);
+  assert.match(unavailable, /The milestones below are the configured plan only/);
+  assert.equal((unavailable.match(/class="burn-plan-row /g) || []).length, 5);
+  assert.match(unavailable, /3M[\s\S]*3,000,000 FAWKQ/);
+  assert.doesNotMatch(unavailable, /ON-CHAIN RECEIPTS|CONFIRMED BURNED/);
+  assert.match(unavailable, /data-operation-view="rewards"/);
+});
+
+test('Earn to Burn separates verified totals, the next unlock and on-chain receipts', async () => {
+  const context = await loadRuntime();
+  const live = context.__renderBurnsWith({
+    unavailable: false, state: 'ENABLED', decimals: 6, originalSupplyBaseUnits: '1000000000000000',
+    currentSupplyBaseUnits: '997000000000000', totalBurnedBaseUnits: '3000000000000',
+    supplyRemovedBps: 30, burnCount: 1, progressUnits: '2500',
+    milestones: [{ sequence: 1, label: 'Burn Milestone 1', state: 'CONFIRMED', progressTargetUnits: '2000', burnAmountBaseUnits: '3000000000000' }, { sequence: 2, label: 'Burn Milestone 2', state: 'LOCKED', progressTargetUnits: '5000', burnAmountBaseUnits: '3000000000000' }],
+    nextMilestone: { label: 'Burn Milestone 2', state: 'LOCKED', progressTargetUnits: '5000', burnAmountBaseUnits: '3000000000000', progressBps: 5000 },
+    receipts: [{ receiptCode: 'BURN-01', amountBaseUnits: '3000000000000', burnType: 'MILESTONE', blockTime: '2026-09-29T15:00:00Z', signature: 'validSignature' }],
+  });
+  assert.match(live, /AUTHORITATIVE BURN LEDGER/);
+  assert.match(live, /CONFIRMED BURNED[\s\S]*3M/);
+  assert.match(live, /2,500 of 5,000 verified campaign XP/);
+  assert.match(live, /aria-label="Next burn milestone"[\s\S]*aria-valuenow="50"/);
+  assert.match(live, /CONFIRMED \/\/ BURN-01/);
+  assert.match(live, /https:\/\/solscan\.io\/tx\/validSignature/);
+  assert.doesNotMatch(live, /Burn record temporarily unavailable/);
 });
 
 test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {

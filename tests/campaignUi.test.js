@@ -87,9 +87,9 @@ test('Bond the Duck hub can expose the reusable Mini App without changing callba
 
 test('Mini App publishes the locked five-step burn plan without exposing a signer', async () => {
   const app = await readFile(new URL('../public/campaign-app/app.js', import.meta.url), 'utf8');
-  assert.match(app, /Locked milestone plan/);
-  assert.match(app, /Five verified unlocks/);
-  assert.match(app, /one creator-wallet execution signature/);
+  assert.match(app, /FIVE COLLECTIVE UNLOCKS/);
+  assert.match(app, /A planned burn is not a confirmed transaction/);
+  assert.match(app, /Two founder approvals are recorded/);
   assert.doesNotMatch(app, /CREATOR_WALLET_SECRET|privateKey|secretKey/);
 });
 

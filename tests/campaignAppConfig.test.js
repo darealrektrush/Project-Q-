@@ -269,7 +269,7 @@ test('Mini App uses the five-screen Operations architecture and canonical Oracle
 });
 test('Mini App exposes a read-only Earn to Burn ledger without signer controls', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
-  assert.match(app, /Collective mission/);
+  assert.match(app, /COLLECTIVE MISSION/);
   assert.match(app, /No Earn to Burn transaction has been executed or confirmed/);
   assert.match(app, /Project Q never stores its private key/);
   assert.match(app, /loadBurnSummary/);
