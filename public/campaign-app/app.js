@@ -2259,8 +2259,52 @@ function websiteVoteStatusCopy(source) {
   if (source.status === 'PENDING_REVIEW') return 'Proof submitted · review pending';
   if (source.status === 'ON_COOLDOWN') return `Next vote ${formatProfileDate(source.nextAvailableAt)}`;
   if (source.status === 'COMMUNITY_ONLY') return 'Community signal only · no individual XP';
-  if (source.status === 'PENDING_CERTIFICATION') return 'Source certification pending · no XP';
-  return 'Source unavailable · no XP';
+  if (source.status === 'PENDING_CERTIFICATION') return 'Verification pending · no XP yet';
+  return 'Individual XP unavailable';
+}
+
+function websiteVoteSourcesMarkup(sources, actionEnabled) {
+  const cards = sources.map(({ sourceKey, name, url, verificationMode, individualXpEligible }) => {
+    let safeUrl = null;
+    try {
+      const candidate = new URL(String(url || ''));
+      if (candidate.protocol === 'https:') safeUrl = candidate.href;
+    } catch {}
+    const source = websiteVoteSourceState(sourceKey);
+    const status = source?.status || (verificationMode === 'AGGREGATE_ONLY' ? 'COMMUNITY_ONLY' : 'UNAVAILABLE');
+    const eligible = Boolean(individualXpEligible && verificationMode === 'SCREENSHOT_REVIEW');
+    const canStart = Boolean(actionEnabled && safeUrl && status === 'AVAILABLE');
+    const description = status === 'COMMUNITY_ONLY' ? 'Community signal · no individual XP'
+      : status === 'PENDING_CERTIFICATION' ? 'Proof verification pending · no XP yet'
+        : status === 'PENDING_REVIEW' ? 'Your proof is under review'
+          : status === 'IN_PROGRESS' ? 'Your vote attempt is in progress'
+            : status === 'ON_COOLDOWN' ? websiteVoteStatusCopy(source)
+              : status === 'AVAILABLE' ? 'Verified vote · 1 XP after review'
+                : verificationMode === 'PENDING_LIVE_TEST' ? 'Live test pending · no individual XP'
+                  : 'Individual XP unavailable';
+    const card = `<article class="vote-source-card${canStart ? ' vote-source-ready' : ''}">
+      <div class="vote-source-heading"><div><h4>${escapeHtml(name)}</h4><p>${escapeHtml(description)}</p></div><span class="vote-source-tag${eligible ? ' vote-source-tag-proof' : ''}">${eligible ? 'PROOF SOURCE' : 'COMMUNITY / INFO'}</span></div>
+      <div class="vote-source-actions">${safeUrl ? `<a href="${escapeHtml(safeUrl)}" data-external-vote-link target="_blank" rel="noopener noreferrer" aria-label="Visit ${escapeHtml(name)} website">Visit website ↗</a>` : '<span>Website link unavailable</span>'}
+      ${canStart ? `<button type="button" data-vote-source-key="${escapeHtml(sourceKey || '')}">Start verified vote →</button>` : ''}</div>
+    </article>`;
+    return { card, eligible };
+  });
+  const proofSources = cards.filter(({ eligible }) => eligible);
+  const otherSources = cards.filter(({ eligible }) => !eligible);
+  const locked = !actionEnabled;
+  const activeFlow = Boolean(state.websiteVoteFlow?.attempt);
+  return `<section class="mission-file-sources" aria-label="Website voting sources">
+    <div class="mission-file-section-title">Website voting</div>
+    <p class="vote-source-intro">Choose an official FAWKQ listing. Visiting a website does not earn XP; verified votes require an open mission, a certified source and accepted proof.</p>
+    ${activeFlow ? websiteVoteFlowMarkup() : ''}
+    <details class="vote-source-group" ${locked || activeFlow ? '' : 'open'}>
+      <summary>Verified vote sources <span>${proofSources.length} sites · ${locked ? 'mission locked' : 'check status'} ⌄</span></summary>
+      <div class="vote-source-grid">${proofSources.map(({ card }) => card).join('')}</div>
+    </details>
+    <details class="vote-source-group"><summary>Other websites <span>${otherSources.length} sites · visit anytime ⌄</span></summary>
+      <div class="vote-source-grid">${otherSources.map(({ card }) => card).join('')}</div>
+    </details>
+  </section>`;
 }
 
 function websiteVoteFlowMarkup() {
@@ -2329,6 +2373,12 @@ function bindMissionDialog(dialog, missionId) {
   }));
   dialog.querySelectorAll('[data-vote-source-key]').forEach((button) => {
     button.addEventListener('click', () => startWebsiteVote(button.dataset.voteSourceKey));
+  });
+  dialog.querySelectorAll('[data-external-vote-link]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      openExternal(link.href);
+    });
   });
   const picker = dialog.querySelector('#website-vote-proof-file');
   const submit = dialog.querySelector('#website-vote-proof-submit');
@@ -2473,7 +2523,7 @@ function missionDetailMarkup(mission) {
       : [];
 
   const sourceList = configuredSources.length
-    ? `<div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, individualXpEligible }) => {
+    ? mission.id === 'website-voting' ? websiteVoteSourcesMarkup(configuredSources, actionEnabled) : `<div class="mission-source-list">${configuredSources.map(({ sourceKey, name, url, cooldownSeconds, cooldownCertification, verificationMode, individualXpEligible }) => {
       let safeUrl = null;
       try {
         const candidate = new URL(String(url || ''));
@@ -2555,7 +2605,7 @@ function missionDetailMarkup(mission) {
     ${missionClearanceMarkup()}
     ${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? '<small class="mission-read-only-note">Read-only access · no new campaign credit is created from this action.</small>' : ''}
 
-    ${mission.id === 'website-voting' ? `<section class="mission-file-sources"><div class="mission-file-section-title">Choose a verified source</div>${sourceList}${websiteVoteFlowMarkup()}</section>` : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
+    ${mission.id === 'website-voting' ? sourceList : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
 
     <details class="mission-file-disclosure" open>
       <summary>Objective <span>⌄</span></summary>

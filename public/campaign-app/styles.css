@@ -3116,6 +3116,36 @@ h1 { color: var(--text); }
 }
 .mission-source-list small { color: var(--muted) !important; }
 
+/* Voting sources are destinations first; eligibility for XP is a separate action. */
+.vote-source-intro { margin: 0 0 13px; color: #514c43; font-size: 13px; line-height: 1.5; }
+.vote-source-group { margin-top: 9px; overflow: hidden; border: 1px solid #d6cdbf; border-radius: 9px; background: #fffdf8; }
+.vote-source-group > summary { min-height: 54px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; list-style: none; cursor: pointer; color: #171914; font-size: 14px; font-weight: 850; }
+.vote-source-group > summary::-webkit-details-marker { display: none; }
+.vote-source-group > summary span { color: #4a6372; font-size: 11px; font-weight: 650; text-align: right; }
+.vote-source-grid { display: grid; gap: 10px; padding: 0 10px 10px; }
+.vote-source-card { padding: 14px; border: 1px solid #ded5c7; border-radius: 9px; background: #f9f6ef; }
+.vote-source-ready { border-left: 3px solid #d5a231; }
+.vote-source-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.vote-source-heading h4 { margin: 0; color: #101c21; font-size: 17px; line-height: 1.2; }
+.vote-source-heading p { margin: 5px 0 0; color: #425b6a; font-size: 12px; line-height: 1.4; }
+.vote-source-tag { flex: 0 0 auto; padding: 5px 7px; border-radius: 4px; color: #52616a; background: #e7ebed; font-size: 9px; font-weight: 900; letter-spacing: .04em; }
+.vote-source-tag-proof { color: #705018; background: #f4e7c7; }
+.vote-source-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.vote-source-actions > a, .vote-source-actions > button { min-height: 44px; padding: 10px 13px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #849eac; border-radius: 6px; color: #12394f; background: #e7f1f5; font: inherit; font-size: 12px; font-weight: 850; text-decoration: none; cursor: pointer; }
+.vote-source-actions > button { border-color: #bf8e27; color: #171309; background: #efc866; }
+.vote-source-actions > a:focus-visible, .vote-source-actions > button:focus-visible, .vote-source-group > summary:focus-visible { outline: 3px solid #1678ac; outline-offset: 2px; }
+.mission-file-sources .vote-proof-flow { margin: 0 0 14px; padding: 16px; border-color: #b88b35; background: #0a1b24; color: #f6f1e7; }
+.mission-file-sources .vote-proof-flow > header small, .mission-file-sources .vote-proof-code span, .mission-file-sources .vote-proof-expiry span { color: #9fc5d8; font-size: 11px; }
+.mission-file-sources .vote-proof-flow > header b { font-size: 18px; }
+.mission-file-sources .vote-proof-code { background: #09131a; }
+.mission-file-sources .vote-proof-code strong { font-size: 20px; }
+.mission-file-sources .vote-proof-code small, .mission-file-sources .vote-proof-privacy { color: #bed0d9; font-size: 11px; }
+.mission-file-sources .vote-proof-flow ol { color: #f6f1e7; font-size: 13px; }
+.mission-file-sources .vote-proof-expiry b { font-size: 14px; }
+.mission-file-sources .vote-proof-picker b { color: #f6f1e7; font-size: 13px; }
+.mission-file-sources .vote-proof-picker small { color: #bed0d9; font-size: 11px; }
+@media (max-width: 370px) { .vote-source-heading { flex-direction: column; } .vote-source-actions > a, .vote-source-actions > button { width: 100%; } }
+
 .verification-provider {
   min-height: 86px;
   margin-top: 12px;

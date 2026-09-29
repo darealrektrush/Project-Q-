@@ -330,9 +330,11 @@ test('Mission Files are accessible below a compact campaign heading and readines
 test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {
   const context = await loadRuntime();
   const voting = context.__missionDetails['website-voting'];
-  assert.match(voting, /CoinBuzzer<\/b><small>[^<]*Source not certified for individual XP/);
-  assert.doesNotMatch(voting, /CoinBuzzer<\/b><small>[^<]*offline/);
-  assert.match(voting, /<button[^>]*data-vote-source-key="web:coinbuzzer"[^>]*disabled/);
+  assert.match(voting, /Other websites/);
+  assert.match(voting, /CoinBuzzer[\s\S]*Individual XP unavailable/);
+  assert.match(voting, /href="https:\/\/coinbuzzer\.me\/coin\/860"[^>]*data-external-vote-link/);
+  assert.doesNotMatch(voting, /data-vote-source-key="web:coinbuzzer"/);
+  assert.doesNotMatch(voting, /CoinBuzzer[\s\S]*offline/);
 });
 
 test('Launch Readiness screen groups all public gates and exposes only the report fingerprint', async () => {
@@ -629,7 +631,7 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
   }
   assert.match(context.__missionDetails['website-voting'], /1 XP per accepted source/);
   assert.match(context.__missionDetails['website-voting'], /available-source completion/);
-  assert.match(context.__missionDetails['website-voting'], /Choose a verified source|Registered Sources/);
+  assert.match(context.__missionDetails['website-voting'], /Verified vote sources/);
   assert.match(context.__missionDetails['website-voting'], /GeckoTerminal/);
   assert.match(context.__missionDetails['website-voting'], /CoinScope/);
   assert.match(context.__missionDetails['trending-bots'], /drokiatrendsbot/);
@@ -651,10 +653,12 @@ test('website voting renders source-specific readiness and the private proof wor
       { sourceKey: 'web:geckoterminal', status: 'COMMUNITY_ONLY', nextAvailableAt: null },
     ],
   });
-  assert.match(sources, /data-vote-source-key="web:coinmooner"[^>]*>[^]*START/);
-  assert.match(sources, /GemFinder[^]*Proof submitted · review pending[^]*PENDING/);
+  assert.match(sources, /data-vote-source-key="web:coinmooner"[^>]*>Start verified vote/);
+  assert.match(sources, /GemFinder[^]*Your proof is under review/);
   assert.match(sources, /CoinMun[^]*Next vote/);
-  assert.match(sources, /GeckoTerminal[^]*Community signal only · no individual XP/);
+  assert.match(sources, /GeckoTerminal[^]*Community signal · no individual XP/);
+  assert.match(sources, /href="https:\/\/coinmooner\.com\/coins\/fawk-q-fawkq"[^>]*data-external-vote-link/);
+  assert.doesNotMatch(sources, /data-vote-source-key="web:geckoterminal"/);
 
   const active = context.__renderWebsiteVoteDetail({ available: true, enabled: true, sources: [] }, {
     challenge: 'a'.repeat(64),
