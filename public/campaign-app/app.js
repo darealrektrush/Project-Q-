@@ -2274,7 +2274,8 @@ function websiteVoteSourcesMarkup(sources, actionEnabled) {
     const status = source?.status || (verificationMode === 'AGGREGATE_ONLY' ? 'COMMUNITY_ONLY' : 'UNAVAILABLE');
     const eligible = Boolean(individualXpEligible && verificationMode === 'SCREENSHOT_REVIEW');
     const canStart = Boolean(actionEnabled && safeUrl && status === 'AVAILABLE');
-    const description = status === 'COMMUNITY_ONLY' ? 'Community signal · no individual XP'
+    const description = !source && eligible ? 'Open in Telegram to check verification status'
+      : status === 'COMMUNITY_ONLY' ? 'Community signal · no individual XP'
       : status === 'PENDING_CERTIFICATION' ? 'Proof verification pending · no XP yet'
         : status === 'PENDING_REVIEW' ? 'Your proof is under review'
           : status === 'IN_PROGRESS' ? 'Your vote attempt is in progress'

@@ -636,6 +636,7 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
   assert.match(context.__missionDetails['website-voting'], /Verified vote sources/);
   assert.match(context.__missionDetails['website-voting'], /GeckoTerminal/);
   assert.match(context.__missionDetails['website-voting'], /CoinScope/);
+  assert.match(context.__missionDetails['website-voting'], /Open in Telegram to check verification status/);
   assert.match(context.__missionDetails['trending-bots'], /drokiatrendsbot/);
   assert.match(context.__missionDetails['website-voting'], /LOCKED|Operation has not opened this mission yet/);
   const bagworkReady = context.__renderMissionDetailWithClearance(context.__missionById('bagwork'));
