@@ -121,6 +121,10 @@ async function loadRuntime() {
       state.oceanVault = snapshot;
       return oceanImpactScreen();
     };
+    globalThis.__renderOceanView = (view) => {
+      state.oceanView = view;
+      return oceanImpactScreen();
+    };
     globalThis.__renderOceanProofWith = (proof) => {
       state.oceanProof = proof;
       state.profile.walletVerified = true;
@@ -378,7 +382,21 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(ocean, /CONTRIBUTED/);
   assert.match(ocean, /COMMITTED/);
   assert.match(ocean, /DOCUMENTED/);
-  assert.match(ocean, /In-app contributions are not open yet/);
+  assert.match(ocean, /In-app transfers are not open yet/);
+  assert.match(ocean, /aria-label="Ocean Impact sections"/);
+  assert.match(ocean, /data-ocean-view="mission" aria-current="page"/);
+  assert.match(ocean, /id="ocean-contribute" hidden/);
+  const contributeView = context.__renderOceanView('contribute');
+  assert.match(contributeView, /data-ocean-view="contribute" aria-current="page"/);
+  assert.match(contributeView, /id="ocean-contribute"[^>]*>/);
+  assert.doesNotMatch(contributeView, /id="ocean-contribute" hidden/);
+  assert.match(contributeView, /id="ocean-vault" hidden/);
+  assert.match(contributeView, /data-profile-view="identity"/);
+  const impactView = context.__renderOceanView('impact');
+  assert.match(impactView, /id="ocean-work"[^>]*>/);
+  assert.doesNotMatch(impactView, /id="ocean-work" hidden/);
+  assert.match(impactView, /Named initiative and allocation record pending/);
+  context.__renderOceanView('mission');
   assert.match(ocean, /CHECK AN EXISTING TRANSFER/);
   assert.match(ocean, /CHECK TRANSFER →<\/button>/);
   assert.match(ocean, /Community recognition pending/);

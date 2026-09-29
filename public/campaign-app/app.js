@@ -138,6 +138,7 @@ const state = {
   oceanDraftMode: null,
   oceanDraftAlias: null,
   oceanPreferenceError: null,
+  oceanView: 'mission',
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
   missionEvidence: { available: false, oracleRaids: null, websiteVoting: null, trendingBots: null },
@@ -2206,6 +2207,8 @@ function profileScreen() {
 }
 
 function oceanImpactScreen() {
+  const oceanView = ['mission', 'contribute', 'vault', 'impact', 'community'].includes(state.oceanView)
+    ? state.oceanView : 'mission';
   const vault = state.oceanVault?.available && state.oceanVault?.vault === OCEAN_CONSERVATION_VAULT
     && state.oceanVault?.network === 'mainnet-beta' ? state.oceanVault : null;
   const recognition = state.oceanRecognition?.status === 'PROPOSED' ? state.oceanRecognition : null;
@@ -2233,39 +2236,41 @@ function oceanImpactScreen() {
         ? `<div class="ocean-proof-result" role="status"><b>CHECK UNAVAILABLE</b><p>${escapeHtml(proof.message)}</p></div>` : '';
   return `<div class="ocean-impact-ui">
     <button type="button" class="ocean-back" data-screen="home">← BACK TO TERMINAL</button>
-    <div class="ocean-impact-hero"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact: cleaner oceans, brighter tomorrows, community-powered conservation" /></div>
+    <button type="button" class="ocean-impact-hero" data-ocean-view="mission" aria-label="Explore the CrabStar Ocean Impact mission"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact: cleaner oceans, brighter tomorrows, community-powered conservation" /></button>
     <header class="ocean-impact-intro">
-      <span>CRABSTAR // OCEAN IMPACT</span>
-      <h2>One mission. A global community behind it.</h2>
-      <p>CrabStar leads the ocean conservation mission. FAWKQ opens the door. Project Q will connect verified participation and on-chain contributions to a lasting record.</p>
-      <button type="button" data-ocean-section="ocean-contribute">EXPLORE CONTRIBUTIONS <span aria-hidden="true">→</span></button>
+      <div><span>CRABSTAR // OCEAN IMPACT</span><h2>One mission. A global community behind it.</h2><p>CrabStar leads the ocean conservation mission. FAWKQ opens the door; Project Q verifies the contributions.</p></div>
+      <div class="ocean-intro-actions"><button type="button" data-ocean-view="contribute">CHECK A CONTRIBUTION <span aria-hidden="true">→</span></button><button type="button" data-ocean-view="vault">VERIFY THE VAULT ↗</button></div>
     </header>
-    <section class="ocean-impact-principle" aria-label="How contribution becomes impact">
+    <nav class="ocean-view-nav" aria-label="Ocean Impact sections">
+      ${[['mission','MISSION'],['contribute','CONTRIBUTE'],['vault','VAULT'],['impact','IMPACT'],['community','COMMUNITY']].map(([key,label]) => `<button type="button" data-ocean-view="${key}" ${oceanView === key ? 'aria-current="page"' : ''}>${label}</button>`).join('')}
+    </nav>
+    <section class="ocean-impact-principle" aria-label="How contribution becomes impact" ${oceanView === 'mission' ? '' : 'hidden'}>
       <div><b>01 / CONTRIBUTED</b><p>A finalized transfer to the approved vault.</p></div>
       <div><b>02 / COMMITTED</b><p>Funds assigned to a named conservation initiative.</p></div>
       <div><b>03 / DOCUMENTED</b><p>Work completed with evidence and public updates.</p></div>
     </section>
-    <section class="ocean-impact-panel" id="ocean-mission">
+    <section class="ocean-impact-panel" id="ocean-mission" ${oceanView === 'mission' ? '' : 'hidden'}>
       <span class="ocean-section-label">01 / OUR MISSION</span>
       <h3>Community participation with a purpose.</h3>
-      <p>CrabStar and FAWKQ support the same conservation mission. Project Q can show what people contributed and what the community accomplished, with separate proof for each step.</p>
+      <p>CrabStar and FAWKQ fund the same conservation mission. A verified deposit is a contribution; commitments and completed ocean work get their own evidence.</p>
+      <div class="ocean-mission-actions"><button type="button" data-ocean-view="contribute">HOW TO CONTRIBUTE →</button><button type="button" data-ocean-view="impact">FOLLOW THE WORK →</button></div>
     </section>
-    <section class="ocean-impact-panel ocean-contribute" id="ocean-contribute">
+    <section class="ocean-impact-panel ocean-contribute" id="ocean-contribute" ${oceanView === 'contribute' ? '' : 'hidden'}>
       <div class="ocean-section-head"><span class="ocean-section-label">02 / CONTRIBUTE</span><b>TRANSFER FLOW IN REVIEW</b></div>
       <h3>A clear route to the vault.</h3>
       <p>CrabStar has confirmed the conservation Squads vault. SOL, native Solana USDC and FAWKQ transfer flows will open separately after the wallet integration, token destinations and finalization checks pass.</p>
       <div class="ocean-asset-list"><span>SOL <small>TRANSFER IN REVIEW</small></span><span>USDC <small>${usdc?.available ? 'ACCOUNT OBSERVED' : 'ACCOUNT NOT READY'}</small></span><span>FAWKQ <small>${fawkq?.available ? 'ACCOUNT OBSERVED' : 'ACCOUNT NOT VERIFIED'}</small></span></div>
-      <div class="ocean-impact-notice"><b>In-app contributions are not open yet.</b><p>The public vault is shown below for transparency. This screen cannot request a wallet signature or issue contribution credit.</p></div>
+      <div class="ocean-impact-notice"><b>In-app transfers are not open yet.</b><p>Use the Vault view to verify the destination. This screen does not request a wallet signature or award contribution credit.</p><button type="button" data-ocean-view="vault">VERIFY VAULT DETAILS →</button></div>
       <form class="ocean-proof-form" id="ocean-proof-form">
         <label for="ocean-transaction-signature">CHECK AN EXISTING TRANSFER</label>
         <p>Already sent SOL, native USDC or FAWKQ from your Oracle verified wallet? Check its finalized transaction against the approved vault.</p>
         <div><input id="ocean-transaction-signature" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="90" placeholder="Solana transaction signature" aria-label="Solana transaction signature" required /><button type="submit" ${state.profile.walletVerified ? '' : 'disabled'}>CHECK TRANSFER →</button></div>
-        ${state.profile.walletVerified ? '' : '<small>Verify your wallet in Oracle to check a transfer.</small>'}
+        ${state.profile.walletVerified ? '' : '<div class="ocean-proof-setup"><small>Verify your wallet in Oracle to check a transfer.</small><button type="button" data-screen="profile" data-profile-view="identity">VIEW IDENTITY →</button></div>'}
         ${proofResult}
       </form>
       ${state.telegram?.initData && state.profile.walletVerified ? `<div class="ocean-receipt-history"><h4>YOUR SAVED RECEIPTS</h4>${savedReceipts.length ? savedReceipts.map((receipt) => `<div class="ocean-receipt-row"><div><strong>${escapeHtml(formatBaseUnits(receipt.amountBaseUnits, receipt.decimals))} ${escapeHtml(receipt.asset)}</strong><small>${escapeHtml(new Date(receipt.blockTime).toLocaleDateString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }))} UTC · VERIFIED DEPOSIT${receipt.founderDeposit ? ' · PROJECT / FOUNDER' : ''}</small></div><a href="https://solscan.io/tx/${escapeHtml(receipt.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer" aria-label="View saved ${escapeHtml(receipt.asset)} receipt on Solscan">VIEW PROOF ↗</a></div>`).join('') : '<p>Saved contributions will appear here after a verified receipt is recorded.</p>'}</div>` : ''}
     </section>
-    <section class="ocean-impact-panel" id="ocean-vault">
+    <section class="ocean-impact-panel" id="ocean-vault" ${oceanView === 'vault' ? '' : 'hidden'}>
       <div class="ocean-section-head"><span class="ocean-section-label">03 / THE VAULT</span><b>MAINNET · SQUADS V4</b></div>
       <h3>CrabStar conservation vault.</h3>
       <p>Founder-confirmed destination. The public explorer identifies this vault as governed by a 2-of-3 Squads V4 multisig. The Bond the Duck reward vault is separate.</p>
@@ -2273,12 +2278,13 @@ function oceanImpactScreen() {
       ${snapshot}
       <small class="ocean-vault-note">Observed vault balances are not contribution totals or documented conservation spending. No campaign XP or impact outcome follows from a balance alone.</small>
     </section>
-    <section class="ocean-impact-panel" id="ocean-work">
+    <section class="ocean-impact-panel" id="ocean-work" ${oceanView === 'impact' ? '' : 'hidden'}>
       <span class="ocean-section-label">04 / IMPACT IN ACTION</span>
       <h3>Follow the work, not just the balance.</h3>
-      <p>Initiatives will show funds received, funds committed, spending evidence and completed work as distinct records. Conservation outcomes remain pending until the team publishes supporting proof.</p>
+      <p>Each stage has its own evidence. A vault deposit is a contribution; it does not mean conservation work has been funded or completed.</p>
+      <div class="ocean-impact-evidence"><div><b>01 / RECEIVED</b><span>Vault balance observable on Solana</span><button type="button" data-ocean-view="vault">VERIFY VAULT →</button></div><div><b>02 / COMMITTED</b><span>Named initiative and allocation record pending</span></div><div><b>03 / DOCUMENTED</b><span>Spending proof and work update pending</span></div></div>
     </section>
-    <section class="ocean-impact-panel" id="ocean-community">
+    <section class="ocean-impact-panel" id="ocean-community" ${oceanView === 'community' ? '' : 'hidden'}>
       <span class="ocean-section-label">05 / COMMUNITY IMPACT</span>
       <h3>Every verified contributor has a place.</h3>
       <p>Participation builds an Ocean Impact record alongside Project Q campaigns. Every verified contributor counts; recognition is optional, and project or founder deposits stay separate from community rankings.</p>
@@ -2286,12 +2292,12 @@ function oceanImpactScreen() {
       ${personalRecognition ? `<div class="ocean-personal-progress"><div><span>YOUR PRIVATE CONTRIBUTION PROGRESS</span><strong>${contributionDays} verified ${contributionDays === 1 ? 'day' : 'days'}</strong><small>${Number(personalRecognition.progress.contributions)} verified asset receipts · ${Number(personalRecognition.progress.founderReceipts)} founder/project receipts tracked separately</small></div><p>${recognition ? (nextTier ? `${escapeHtml(nextTier.title)} proposed threshold: ${Number(nextTier.days)} days` : 'Proposed tier day thresholds met') : 'Tier rules currently unavailable'} · No tier or badge has been awarded.</p></div>` : ''}
       ${recognition ? `<div class="ocean-recognition-head"><div><span>THE RECOGNITION PROGRAM</span><h4>Build a record across campaigns.</h4></div><em>RULES PROPOSED</em></div>
       <div class="ocean-tier-grid">${recognition.tiers.map((tier, index) => `<article class="ocean-tier"><span>0${index + 1} / OCEAN IMPACT</span><h5>${escapeHtml(tier.title)}</h5><p>${Number(tier.days)} distinct verified contribution ${Number(tier.days) === 1 ? 'day' : 'days'}</p><small>AWARD PENDING ACTIVATION</small></article>`).join('')}</div>
-      <div class="ocean-program-grid">
+      <details class="ocean-program-details"><summary>VIEW PROPOSED XP, BADGES & BOARDS</summary><div class="ocean-program-grid">
         <article><span>CAMPAIGN XP // PROPOSED</span><h5>Capped, not bought.</h5><p>One qualifying contribution per day could earn ${Number(recognition.campaignXp.base)} base XP; repeat participation could earn ${Number(recognition.campaignXp.repeat)} or ${Number(recognition.campaignXp.consistent)} XP. A ${Number(recognition.campaignXp.campaignCap)} XP campaign cap protects the general leaderboard. Minimum value, pricing evidence and campaign rules still need approval.</p><small>Crab Army lifetime XP remains an Oracle record with separate settlement.</small></article>
         <article><span>OCEAN BADGES // PROPOSED</span><h5>Proof of participation.</h5><p>${recognition.badges.map((badge) => escapeHtml(badge.title)).join(' · ')}. Badges follow verified receipts, never a pasted link alone.</p><small>Milestone and top-contributor distinctions require published rules.</small></article>
         <article><span>COMMUNITY BOARDS // PROPOSED</span><h5>Participation and contribution.</h5><p>All-time and current-campaign counts would include every verified community contributor. A top-value board across SOL, USDC and FAWKQ requires recorded USD pricing at the time of each transfer.</p><small>No currency conversion or rankings are estimated from live vault balances.</small></article>
         <article><span>SHOUT-OUTS // OPT-IN</span><h5>Your identity, your choice.</h5><p>Choose public name, alias or anonymous before recognition goes live. A daily community roll-up can thank opted-in contributors; milestones can earn individual spotlights.</p><small>Nothing posts automatically while this program is in review.</small></article>
-      </div>
+      </div></details>
       ${personalRecognition && state.telegram?.initData ? `<form id="ocean-privacy-form" class="ocean-privacy-form"><span>YOUR FUTURE DISPLAY PREFERENCE</span><p>Choose how you would appear if community recognition opens. This choice is private now; no public board or social post is active.</p><label for="ocean-display-mode">DISPLAY AS</label><select id="ocean-display-mode" name="displayMode"><option value="ANONYMOUS" ${draftMode === 'ANONYMOUS' ? 'selected' : ''}>Anonymous</option><option value="PUBLIC" ${draftMode === 'PUBLIC' ? 'selected' : ''}>Telegram display name</option><option value="ALIAS" ${draftMode === 'ALIAS' ? 'selected' : ''}>Alias</option></select>${draftMode === 'ALIAS' ? `<label for="ocean-display-alias">ALIAS</label><input id="ocean-display-alias" name="alias" maxlength="30" minlength="3" required pattern="[A-Za-z0-9_ .-]{3,30}" value="${escapeHtml(draftAlias)}" placeholder="Choose a name for future recognition" />` : ''}<button type="submit">SAVE PRIVACY CHOICE →</button>${state.oceanPreferenceError ? `<small role="alert">${escapeHtml(state.oceanPreferenceError)}</small>` : ''}<small>Shout-outs are off. This preference alone cannot publish your profile or issue XP.</small></form>` : `<div class="ocean-privacy-preview"><span>RECOGNITION CHOICES IN REVIEW</span><b>Public profile</b><b>Alias</b><b>Anonymous</b><small>Saved receipts are private by default. Display controls require a verified Telegram identity.</small></div>`}` : '<div class="ocean-vault-unavailable">Recognition rules are temporarily unavailable. No tiers, XP or public rankings are active.</div>'}
     </section>
     <footer class="ocean-impact-footer"><strong>CRABSTAR</strong><span>THE MISSION</span><i aria-hidden="true">✦</i><strong>PROJECT Q</strong><span>THE CAMPAIGN ENGINE</span></footer>
@@ -3323,8 +3329,14 @@ function bind() {
   document.querySelectorAll('[data-mission-filter]').forEach((element) => {
     element.onclick = () => { state.missionFilter = element.dataset.missionFilter; render(); };
   });
-  document.querySelectorAll('[data-ocean-section]').forEach((element) => {
-    element.onclick = () => document.getElementById(element.dataset.oceanSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('[data-ocean-view]').forEach((element) => {
+    element.onclick = () => {
+      state.oceanView = element.dataset.oceanView;
+      render();
+      const nav = document.querySelector('.ocean-view-nav');
+      nav?.querySelector('[aria-current="page"]')?.focus({ preventScroll: true });
+      nav?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
   });
   document.querySelectorAll('[data-external-ocean-link]').forEach((link) => {
     link.onclick = (event) => { event.preventDefault(); openExternal(link.href); };
