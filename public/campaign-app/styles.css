@@ -43,6 +43,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--s4); background: #000; opacity: 1; visibility: visible; transition: opacity .32s ease, visibility .32s ease; }
 .splash img { display: block; width: min(100%, 1080px); max-height: 100vh; object-fit: contain; }
+.splash-art { position: relative; width: min(100%, 1080px, 150vh); }
+.splash-art img { width: 100%; height: auto; max-height: min(100vh, 100dvh); }
+.splash-meter { position: absolute; left: 28%; right: 28%; top: 80.7%; display: flex; align-items: center; gap: 10px; }
+.splash-meter-track { height: clamp(5px, 1vw, 11px); flex: 1; overflow: hidden; border: 1px solid rgba(219, 163, 67, .55); border-radius: 99px; background: rgba(4, 4, 4, .88); box-shadow: 0 0 10px rgba(219, 163, 67, .13); }
+.splash-meter-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #a56519, #ffdf83); box-shadow: 0 0 12px rgba(255, 186, 62, .8); transition: width .2s ease; }
+.splash-meter-value { min-width: 3ch; color: #e5b85a; font-size: clamp(9px, 1.3vw, 14px); font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .splash { padding: 0; } .splash-art { width: 100%; } .splash-meter { left: 21%; right: 21%; gap: 6px; } }
+@media (prefers-reduced-motion: reduce) { .splash-meter-fill { transition: none; } }
 body:not(.loading) .splash { opacity: 0; visibility: hidden; pointer-events: none; }
 body.loading .app-shell { visibility: hidden; }
 

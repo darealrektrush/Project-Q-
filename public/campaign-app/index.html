@@ -6,13 +6,19 @@
   <meta name="theme-color" content="#050505" />
   <title>Project Q — Operations Terminal</title>
   <link rel="icon" type="image/webp" href="/campaign-app/assets/project-q-app-icon.webp" />
-  <link rel="stylesheet" href="/campaign-app/styles.css?v=20260929-source-icons-1" />
+  <link rel="stylesheet" href="/campaign-app/styles.css?v=20260929-splash-progress-1" />
   <link rel="stylesheet" href="/campaign-app/terminal-v2.css?v=ocean-flow-1" />
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 </head>
 <body class="loading q-shell-v2">
   <div id="splash" class="splash" role="status" aria-label="Project Q is loading">
-    <img src="/campaign-app/assets/project-q-splash.webp" alt="Project Q — Built Different. Signal Only. Powering the FAWKQ ecosystem." />
+    <div class="splash-art">
+      <img src="/campaign-app/assets/project-q-splash-economic-layer.webp" alt="Project Q — Built Different. Economic Layer. Powering the FAWKQ ecosystem." />
+      <div class="splash-meter" role="progressbar" aria-label="Loading Operations Terminal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="splash-meter-track"><div id="splash-meter-fill" class="splash-meter-fill"></div></div>
+        <span id="splash-meter-value" class="splash-meter-value">0%</span>
+      </div>
+    </div>
   </div>
   <div class="noise" aria-hidden="true"></div>
   <div class="app-shell">
@@ -50,6 +56,6 @@
   <div id="app-tour" class="app-tour" hidden aria-live="polite"></div>
   <dialog id="updates-dialog" class="updates-dialog" aria-label="Campaign updates"></dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script type="module" src="/campaign-app/app.js?v=20260929-ocean-flow-1"></script>
+  <script type="module" src="/campaign-app/app.js?v=20260929-splash-progress-1"></script>
 </body>
 </html>

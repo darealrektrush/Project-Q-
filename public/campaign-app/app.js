@@ -3609,7 +3609,17 @@ async function authenticateTelegram() {
 }
 
 async function boot() {
+  const splashMeter = document.querySelector('.splash-meter');
+  const splashFill = document.getElementById('splash-meter-fill');
+  const splashValue = document.getElementById('splash-meter-value');
+  const markStartup = (percent) => {
+    if (!splashMeter || !splashFill || !splashValue) return;
+    splashMeter.setAttribute('aria-valuenow', String(percent));
+    splashFill.style.width = `${percent}%`;
+    splashValue.textContent = `${percent}%`;
+  };
   const splashStarted = performance.now();
+  markStartup(10);
   state.telegram?.ready();
   state.telegram?.expand();
   syncTelegramViewport();
@@ -3626,11 +3636,14 @@ async function boot() {
   if (requestedScreen && requestedScreen !== state.screen) {
     history.replaceState(null, '', `#${state.screen}`);
   }
+  markStartup(25);
 
   // Phase 1: load campaign presentation first so the Terminal can paint quickly.
   await loadCampaign();
+  markStartup(75);
   render();
   updateTelegramBackButton();
+  markStartup(100);
 
   const splashRemaining = Math.max(0, 500 - (performance.now() - splashStarted));
   await new Promise((resolve) => setTimeout(resolve, splashRemaining));

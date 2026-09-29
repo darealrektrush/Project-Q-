@@ -249,7 +249,8 @@ test('Mini App uses the five-screen Operations architecture and canonical Oracle
   assert.match(app, /participant-passport/);
   assert.match(app, /oracle-logo\.jpg/);
   assert.match(app, /const NAV_ICONS =/);
-  assert.match(index, /class="splash"[\s\S]*project-q-splash\.webp/);
+  assert.match(index, /class="splash"[\s\S]*project-q-splash-economic-layer\.webp/);
+  assert.match(index, /role="progressbar"[^>]*aria-valuenow="0"/);
   assert.match(index, /project-q-horizontal-banner-v3\.jpg/);
   assert.match(index, /id="rail-toggle"/);
   assert.match(index, /id="mission-dialog"/);
