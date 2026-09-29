@@ -126,6 +126,12 @@ async function loadRuntime() {
       state.profile.walletVerified = true;
       return oceanImpactScreen();
     };
+    globalThis.__renderOceanHistoryWith = (receipts) => {
+      state.telegram = { initData: 'signed-fixture' };
+      state.profile.walletVerified = true;
+      state.oceanReceipts = receipts;
+      return oceanImpactScreen();
+    };
     globalThis.__renderOceanRecognitionWith = (program) => {
       state.oceanRecognition = program;
       return oceanImpactScreen();
@@ -396,6 +402,11 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(matched, /FINALIZED TRANSFER MATCHED/);
   assert.match(matched, /1\.2 SOL/);
   assert.match(matched, /Save its receipt to add it to your private record/);
+  const history = context.__renderOceanHistoryWith([{ asset: 'FAWKQ', amountBaseUnits: '2300000', decimals: 6,
+    blockTime: '2026-09-29T11:00:00Z', signature: 'test-signature', founderDeposit: false }]);
+  assert.match(history, /YOUR SAVED RECEIPTS/);
+  assert.match(history, /2\.3 FAWKQ/);
+  assert.match(history, /solscan\.io\/tx\/test-signature/);
   assert.match(context.__renderOceanProofWith({ status: 'NO_MATCH' }), /NO MATCH FOUND/);
   const proposed = context.__renderOceanRecognitionWith({ status: 'PROPOSED',
     tiers: [{ title: 'Ocean Supporter', days: 1 }, { title: 'Ocean Steward', days: 25 }],

@@ -5,6 +5,21 @@ export function oceanReceiptsEnabled(env = process.env) {
     String(env.SUPABASE_URL || '').replace(/\/$/, '') === 'https://awouccxagxglpvvuznxo.supabase.co';
 }
 
+export async function listOceanContributions(client, { campaignId, telegramUserId }) {
+  const identities = await client.select('identity_links',
+    `?campaign_id=eq.${encodeURIComponent(campaignId)}&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +
+    '&select=profile_id&limit=1');
+  const profileId = identities[0]?.profile_id;
+  if (!profileId) throw new Error('Oracle verified profile required');
+  const rows = await client.rpc('list_ocean_contribution_receipts', { p_profile_id: profileId });
+  if (!Array.isArray(rows)) throw new Error('ocean receipt history unavailable');
+  return rows.map((row) => ({
+    id: row.id, asset: row.asset, amountBaseUnits: row.amount_base_units,
+    decimals: row.decimals, signature: row.transaction_signature,
+    blockTime: row.block_time, founderDeposit: row.founder_deposit,
+  }));
+}
+
 export async function recordOceanContribution(client, connection, { campaignId, telegramUserId, signature }) {
   const identities = await client.select('identity_links',
     `?campaign_id=eq.${encodeURIComponent(campaignId)}&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +

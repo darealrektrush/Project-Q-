@@ -34,7 +34,7 @@ import {
 import * as walletStatus from './campaign/walletStatus.js';
 import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
 import { verifyOceanContribution } from './campaign/oceanContributionProof.js';
-import { oceanReceiptsEnabled, recordOceanContribution } from './campaign/oceanReceipts.js';
+import { oceanReceiptsEnabled, recordOceanContribution, listOceanContributions } from './campaign/oceanReceipts.js';
 import { OCEAN_RECOGNITION_VERSION, OCEAN_TIERS, OCEAN_BADGES } from './campaign/oceanRecognition.js';
 import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
@@ -183,6 +183,23 @@ app.post('/campaign-app/api/ocean/record-transfer', async (req, res) => {
     if (error.message === 'Oracle verified profile and wallet required') return res.status(409).json({ ok: false, error: error.message });
     console.error('ocean receipt unavailable', error.message);
     return res.status(503).json({ ok: false, error: 'receipt recording unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/ocean/my-receipts', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!oceanReceiptsEnabled()) return res.status(503).json({ ok: false, error: 'contribution receipts unavailable' });
+  let session;
+  try { session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN); }
+  catch { return res.status(401).json({ ok: false, error: 'valid Telegram session required' }); }
+  try {
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const receipts = await listOceanContributions(supabase, { campaignId, telegramUserId: session.user.id });
+    return res.json({ ok: true, receipts });
+  } catch (error) {
+    if (error.message === 'Oracle verified profile required') return res.status(409).json({ ok: false, error: error.message });
+    console.error('ocean receipt history unavailable', error.message);
+    return res.status(503).json({ ok: false, error: 'receipt history unavailable' });
   }
 });
 

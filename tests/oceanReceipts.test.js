@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import bs58 from 'bs58';
 import { Keypair, SystemProgram } from '@solana/web3.js';
 import { OCEAN_VAULT } from '../src/campaign/oceanVaultStatus.js';
-import { oceanReceiptsEnabled, recordOceanContribution } from '../src/campaign/oceanReceipts.js';
+import { oceanReceiptsEnabled, recordOceanContribution, listOceanContributions } from '../src/campaign/oceanReceipts.js';
 
 const wallet = Keypair.generate().publicKey.toBase58();
 const signature = bs58.encode(Buffer.alloc(64, 7));
@@ -56,4 +56,19 @@ test('receipt recording is restricted to the exact isolated Dev service and data
   assert.equal(oceanReceiptsEnabled({ RENDER_SERVICE_NAME: 'project-q-dev', SUPABASE_URL: 'https://awouccxagxglpvvuznxo.supabase.co' }), true);
   assert.equal(oceanReceiptsEnabled({ RENDER_SERVICE_NAME: 'project-q', SUPABASE_URL: 'https://awouccxagxglpvvuznxo.supabase.co' }), false);
   assert.equal(oceanReceiptsEnabled({ RENDER_SERVICE_NAME: 'project-q-dev', SUPABASE_URL: 'https://nspqztseiovkkdmqindu.supabase.co' }), false);
+});
+
+test('private history uses canonical profile and preserves full integer units', async () => {
+  const rows = await listOceanContributions({
+    select: async () => [{ profile_id: profile }],
+    rpc: async (name, args) => {
+      assert.equal(name, 'list_ocean_contribution_receipts');
+      assert.equal(args.p_profile_id, profile);
+      return [{ id: 3, asset: 'FAWKQ', amount_base_units: '18446744073709551615', decimals: 6,
+        transaction_signature: signature, block_time: '2026-09-29T11:00:00Z', founder_deposit: false }];
+    },
+  }, { campaignId: 'bond-the-duck-2026', telegramUserId: 42 });
+  assert.equal(rows[0].amountBaseUnits, '18446744073709551615');
+  await assert.rejects(listOceanContributions({ select: async () => [], rpc: async () => { throw Error('must not query'); } },
+    { campaignId: 'bond-the-duck-2026', telegramUserId: 42 }), /verified profile/);
 });

@@ -132,6 +132,7 @@ const state = {
   burns: null,
   oceanVault: null,
   oceanProof: null,
+  oceanReceipts: null,
   oceanRecognition: null,
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
@@ -2214,6 +2215,7 @@ function oceanImpactScreen() {
       </div><small class="ocean-vault-observed">Finalized Solana slot ${Number(vault.slot)} · observed ${escapeHtml(new Date(vault.observedAt).toLocaleString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))} UTC. Balances can change.</small>`
     : '<div class="ocean-vault-unavailable">Live vault observation is unavailable. Check the public explorer for current account information.</div>';
   const proof = state.oceanProof;
+  const savedReceipts = Array.isArray(state.oceanReceipts) ? state.oceanReceipts : [];
   const proofResult = proof?.status === 'MATCHED' || proof?.status === 'RECORDED'
     ? `<div class="ocean-proof-result matched" role="status"><b>${proof.status === 'RECORDED' ? 'VERIFIED DEPOSIT RECEIPT SAVED' : 'FINALIZED TRANSFER MATCHED'}</b><p>${proof.status === 'RECORDED' ? 'Your original asset and amount are saved to your CrabStar ID record. No campaign XP, badge or conservation expenditure has been issued.' : 'A transfer from your Oracle verified wallet to the conservation vault was found. Save its receipt to add it to your private record.'}</p>${proof.transfers.map((entry) => `<div class="ocean-proof-transfer"><strong>${escapeHtml(formatBaseUnits(entry.amountBaseUnits, entry.decimals))} ${escapeHtml(entry.asset)}</strong><span>Finalized slot ${Number(proof.slot)}</span></div>`).join('')}${proof.status === 'MATCHED' && location.hostname === 'project-q-dev.onrender.com' ? '<button type="button" id="ocean-save-receipt">SAVE VERIFIED RECEIPT →</button>' : ''}<a href="https://solscan.io/tx/${escapeHtml(proof.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW TRANSACTION ↗</a></div>`
     : proof?.status === 'NO_MATCH'
@@ -2252,6 +2254,7 @@ function oceanImpactScreen() {
         ${state.profile.walletVerified ? '' : '<small>Verify your wallet in Oracle to check a transfer.</small>'}
         ${proofResult}
       </form>
+      ${state.telegram?.initData && state.profile.walletVerified ? `<div class="ocean-receipt-history"><h4>YOUR SAVED RECEIPTS</h4>${savedReceipts.length ? savedReceipts.map((receipt) => `<div class="ocean-receipt-row"><div><strong>${escapeHtml(formatBaseUnits(receipt.amountBaseUnits, receipt.decimals))} ${escapeHtml(receipt.asset)}</strong><small>${escapeHtml(new Date(receipt.blockTime).toLocaleDateString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }))} UTC · VERIFIED DEPOSIT${receipt.founderDeposit ? ' · PROJECT / FOUNDER' : ''}</small></div><a href="https://solscan.io/tx/${escapeHtml(receipt.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer" aria-label="View saved ${escapeHtml(receipt.asset)} receipt on Solscan">VIEW PROOF ↗</a></div>`).join('') : '<p>Saved contributions will appear here after a verified receipt is recorded.</p>'}</div>` : ''}
     </section>
     <section class="ocean-impact-panel" id="ocean-vault">
       <div class="ocean-section-head"><span class="ocean-section-label">03 / THE VAULT</span><b>MAINNET · SQUADS V4</b></div>
@@ -2279,7 +2282,7 @@ function oceanImpactScreen() {
         <article><span>COMMUNITY BOARDS // PROPOSED</span><h5>Participation and contribution.</h5><p>All-time and current-campaign counts would include every verified community contributor. A top-value board across SOL, USDC and FAWKQ requires recorded USD pricing at the time of each transfer.</p><small>No currency conversion or rankings are estimated from live vault balances.</small></article>
         <article><span>SHOUT-OUTS // OPT-IN</span><h5>Your identity, your choice.</h5><p>Choose public name, alias or anonymous before recognition goes live. A daily community roll-up can thank opted-in contributors; milestones can earn individual spotlights.</p><small>Nothing posts automatically while this program is in review.</small></article>
       </div>
-      <div class="ocean-privacy-preview"><span>RECOGNITION CHOICES AT LAUNCH</span><b>Public profile</b><b>Alias</b><b>Anonymous</b><small>Privacy selection opens with persistent receipts. Anonymous contributions still count in community totals.</small></div>` : '<div class="ocean-vault-unavailable">Recognition rules are temporarily unavailable. No tiers, XP or public rankings are active.</div>'}
+      <div class="ocean-privacy-preview"><span>RECOGNITION CHOICES IN REVIEW</span><b>Public profile</b><b>Alias</b><b>Anonymous</b><small>Saved receipts are private by default. Public recognition controls will open after consent and moderation are tested.</small></div>` : '<div class="ocean-vault-unavailable">Recognition rules are temporarily unavailable. No tiers, XP or public rankings are active.</div>'}
     </section>
     <footer class="ocean-impact-footer"><strong>CRABSTAR</strong><span>THE MISSION</span><i aria-hidden="true">✦</i><strong>PROJECT Q</strong><span>THE CAMPAIGN ENGINE</span></footer>
   </div>`;
@@ -2437,7 +2440,7 @@ function go(screen, { replace = false } = {}) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
-    Promise.allSettled([loadOceanVaultStatus(), loadOceanRecognition()]).then(() => {
+    Promise.allSettled([loadOceanVaultStatus(), loadOceanRecognition(), loadOceanReceipts()]).then(() => {
       if (state.screen === 'ocean') render();
     });
   }
@@ -3224,6 +3227,7 @@ function bind() {
       state.oceanProof = response.ok ? { ...result.proof, status: 'RECORDED', receipts: result.receipts } : {
         status: 'ERROR', message: result.error || 'Receipt unavailable. Try again later.',
       };
+      if (response.ok) await loadOceanReceipts();
     } catch { state.oceanProof = { status: 'ERROR', message: 'Receipt unavailable. Try again later.' }; }
     if (state.screen === 'ocean') render();
   });
@@ -3414,6 +3418,18 @@ async function loadOceanRecognition() {
   } catch { state.oceanRecognition = null; }
 }
 
+async function loadOceanReceipts() {
+  if (!state.telegram?.initData || !state.profile.walletVerified) return;
+  try {
+    const response = await fetch('/campaign-app/api/ocean/my-receipts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+      body: JSON.stringify({ initData: state.telegram.initData }),
+    });
+    const payload = await response.json();
+    state.oceanReceipts = response.ok && Array.isArray(payload.receipts) ? payload.receipts : null;
+  } catch { state.oceanReceipts = null; }
+}
+
 async function loadWalletStatus() {
   const initData = state.telegram?.initData;
   if (!initData || !state.profile.walletVerified || !state.wallet) {
@@ -3566,6 +3582,7 @@ async function boot() {
     authenticateTelegram(),
   ]);
   await loadWalletStatus();
+  if (state.screen === 'ocean') await loadOceanReceipts();
   restoreWebsiteVoteFlow();
   render();
   updateTelegramBackButton();
