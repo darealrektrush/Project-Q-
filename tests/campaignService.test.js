@@ -150,6 +150,10 @@ test('participant status derives verification readiness and sums XP', async () =
   assert.equal(status.completedMissionCount, 3);
   assert.equal(status.allocationBaseUnits, '4000000');
   assert.deepEqual(status.allocationByCategory, { activity: '1500000', buy_to_earn: '2500000' });
+  assert.deepEqual(status.rewards.allocations.map(item => item.id), ['2', '3']);
+  assert.equal(status.rewards.allocations[0].amountBaseUnits, '1500000');
+  assert.equal(status.rewards.allocations[0].createdAt, '2026-08-25T12:00:00Z');
+  assert.doesNotMatch(JSON.stringify(status.rewards.allocations), /reward_wallet|payment_key|eligibility_status/);
   assert.equal(status.rewards.allocatedBaseUnits, '4000000');
   assert.equal(status.rewards.scheduledBaseUnits, '1750000');
   assert.equal(status.rewards.distributedBaseUnits, '375000');

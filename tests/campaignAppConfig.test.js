@@ -203,7 +203,7 @@ test('Mini App escapes Telegram display names and delegates wallet connection to
   assert.match(app, /escapeHtml\(p\.name\)/);
   assert.match(app, /Oracle Ownership/);
   assert.match(app, /oracle-logo\.jpg/);
-  assert.match(app, /Connect X|Verify Wallet/);
+  assert.match(app, /data-clearance-action/);
   assert.doesNotMatch(app, /wallet\/challenge|wallet\/verify|provider\.connect|signMessage/);
 });
 test('Mini App exposes an intentional guided onboarding path without activating participation', async () => {
@@ -211,10 +211,10 @@ test('Mini App exposes an intentional guided onboarding path without activating 
   assert.match(app, /tourWelcomeMarkup/);
   assert.match(app, /Begin Tour/);
   assert.match(app, /Explore on my own/);
-  assert.match(app, /PROJECT Q IDENTITY/);
-  assert.match(app, /Refresh Verification Status/);
+  assert.match(app, /YOUR IDENTITY/);
+  assert.match(app, /REFRESH VERIFICATION/);
   assert.match(app, /Telegram/);
-  assert.match(app, /X Identity/);
+  assert.match(app, /participantClearance/);
   assert.match(app, /Reward Wallet/);
   assert.match(app, /walletManagedByOracle/);
   assert.match(app, /Non-custodial by design/);
@@ -244,7 +244,7 @@ test('Mini App uses the five-screen Operations architecture and canonical Oracle
   assert.match(app, /\['rewards', 'Rewards'\]/);
   assert.match(app, /\['profile', 'Profile'\]/);
   assert.match(app, /Mission Files/);
-  assert.match(app, /PROJECT Q RECORD/);
+  assert.match(app, /YOUR RECORD/);
   assert.match(app, /Reward Pipeline/);
   assert.match(app, /participant-passport/);
   assert.match(app, /oracle-logo\.jpg/);
@@ -270,7 +270,7 @@ test('Mini App uses the five-screen Operations architecture and canonical Oracle
 });
 test('Mini App exposes a read-only Earn to Burn ledger without signer controls', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
-  assert.match(app, /COLLECTIVE MISSION/);
+  assert.match(app, /COLLECTIVE PROGRESS/);
   assert.match(app, /No Earn to Burn transaction has been executed or confirmed/);
   assert.match(app, /Project Q never stores its private key/);
   assert.match(app, /loadBurnSummary/);

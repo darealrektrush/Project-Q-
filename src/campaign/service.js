@@ -413,6 +413,7 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     rewards: {
       recorded: allocationRows.length > 0,
       allocatedBaseUnits: allocationBaseUnits,
+      allocations: allocationRows.map(row => ({ id: String(row.id), category: row.category, cycleId: row.cycle_id == null ? null : Number(row.cycle_id), amountBaseUnits: String(row.gross_base_units), createdAt: row.created_at })),
       scheduledBaseUnits: releaseRows.length ? sumBaseUnits(scheduledReleases) : null,
       distributedBaseUnits: releaseRows.length ? sumBaseUnits(distributedReleases) : null,
       failedBaseUnits: releaseRows.length ? sumBaseUnits(failedReleases) : null,

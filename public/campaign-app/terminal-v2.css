@@ -873,3 +873,67 @@
  .q-shell-v2 .reward-summary-grid{grid-template-columns:1fr}
  .q-shell-v2 .dossier-secondary-metrics{grid-template-columns:1fr}
 }
+
+/* One destination per job: the approved identity with a simpler hierarchy. */
+.q-shell-v2 .operation-tabs,.q-shell-v2 .record-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;overflow:visible;padding:5px}
+.q-shell-v2 .operation-tabs button,.q-shell-v2 .record-tabs button{width:auto;min-width:0;min-height:44px;padding:0 6px;font-size:14px;white-space:normal}
+.terminal-snapshot{margin:4px 8px;padding:12px;border:1px solid var(--q-border);border-radius:10px;background:var(--q-paper)}
+.terminal-snapshot header{display:flex;justify-content:space-between;gap:12px;padding-bottom:9px;color:var(--q-copy);font-size:12px;letter-spacing:.05em}
+.terminal-snapshot header b{max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--q-ink)}
+.terminal-snapshot>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.terminal-snapshot article{display:grid;gap:3px;min-width:0;border-left:1px solid var(--q-border);padding-left:10px}
+.terminal-snapshot article:first-child{border:0;padding-left:0}
+.terminal-snapshot article span{font-size:12px;color:var(--q-copy)}
+.terminal-snapshot article strong{font:700 21px/1.1 var(--q-display);color:var(--q-ink);overflow-wrap:anywhere}
+.briefing-clearance,.cycle-result-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--q-border)}
+.briefing-clearance>span{font-size:12px;color:var(--q-copy);font-weight:700}
+.briefing-clearance button{min-height:44px;padding:0 12px;border:1px solid var(--q-border);border-radius:8px;background:var(--q-paper);font-weight:700}
+.briefing-story{padding:14px 0}
+.briefing-story h3{margin:0 0 8px;font:700 24px var(--q-display)}
+.briefing-story p,.briefing-rules p,.economics-treasury p,.pool-detail p{color:var(--q-copy);font-size:14px;line-height:1.55}
+.briefing-rules,.economics-treasury,.profile-settings{padding:14px;border:1px solid var(--q-border);border-radius:10px;background:var(--q-paper);margin:8px 0}
+.briefing-rules summary,.economics-treasury summary,.profile-settings summary{display:flex;justify-content:space-between;gap:12px;min-height:32px;align-items:center;font-weight:700;cursor:pointer}
+.q-shell-v2 .operation-current-order{margin:0 0 12px;padding:14px}
+.operation-progress-line strong{font-size:13px!important;max-width:65%;text-align:right;overflow-wrap:anywhere}
+.pool-detail header{display:grid;gap:6px;margin:16px 0}
+.pool-detail header>span{font-size:11px;letter-spacing:.08em;color:var(--q-copy)}
+.pool-detail header h3{margin:0;font:700 30px var(--q-display)}
+.pool-detail header strong{font:700 36px var(--q-display);color:var(--q-ink)}
+.pool-detail header small{font-size:13px;color:var(--q-copy)}
+.q-shell-v2 .record-header-compact{padding:16px;gap:12px;align-items:center}
+.q-shell-v2 .record-header-compact h2{font-size:28px;line-height:1.05;margin:5px 0}
+.q-shell-v2 .record-header-compact p{font-size:12px;margin:0}
+.q-shell-v2 .record-header-compact .record-score{min-width:76px;padding:10px}
+.q-shell-v2 .record-header-compact .record-score strong{font-size:28px}
+.q-shell-v2 .record-header-compact .record-score span{font-size:10px}
+.standing-filter{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1px solid var(--q-border);border-radius:10px;background:var(--q-paper);font-size:12px;color:var(--q-copy)}
+.standing-filter select{min-height:44px;min-width:150px;max-width:65%;padding:0 12px;border:1px solid #aac4d5;border-radius:8px;background:#fff;color:var(--q-ink);font:700 16px var(--q-display)}
+.cycle-results small,.past-operations p{color:var(--q-copy);font-size:13px;line-height:1.5}
+.past-operations button{min-height:44px;border:0;background:transparent;text-align:left;color:var(--q-ink)}
+.q-shell-v2 .profile-compact-header{grid-template-columns:minmax(0,1fr) 74px;min-height:0;padding:16px;gap:12px}
+.q-shell-v2 .profile-compact-header .passport-copy h2{font-size:30px;line-height:1.05;overflow-wrap:anywhere}
+.q-shell-v2 .profile-compact-header .passport-photo{width:74px;height:74px;align-self:start}
+.q-shell-v2 .profile-compact-header .passport-photo img{width:74px;height:74px}
+.profile-compact-header .passport-photo span{font-size:9px;white-space:nowrap}
+.profile-compact-header .passport-copy>small{color:var(--q-copy);font-size:12px;line-height:1.4;display:block;margin-top:7px}
+.profile-compact-header .passport-id-line{flex-wrap:wrap;gap:5px;font-size:11px;overflow-wrap:anywhere}
+.profile-clearance{padding:16px;border:1px solid var(--q-border);border-radius:12px;background:var(--q-paper)}
+.profile-clearance .clearance-head{align-items:center;gap:8px}
+.profile-clearance .clearance-head h3{font:700 23px var(--q-display);margin:5px 0 10px}
+.profile-clearance .clearance-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid var(--q-border)}
+.profile-clearance .clearance-row>div{min-width:0}
+.profile-clearance .clearance-row b{font-size:14px;line-height:1.25}
+.profile-clearance .clearance-row small{font-size:12px;line-height:1.45;margin-top:4px;color:var(--q-copy)}
+.profile-clearance .clearance-row>button{min-height:44px;max-width:106px;padding:8px;border-radius:8px;font:700 12px var(--q-display);white-space:normal;background:#e7bd53;border:1px solid #ac8a38;color:#111}
+.profile-clearance .clearance-row>button:disabled{opacity:.48;cursor:not-allowed}
+.clearance-observation{display:block;padding-top:12px;color:var(--q-copy);font-size:12px;line-height:1.5}
+.profile-utilities{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.profile-utilities button,.profile-wallet-entry{min-height:44px;white-space:normal}
+.wallet-eligibility-note{display:grid;gap:5px;padding:14px;border:1px solid var(--q-border);border-radius:10px;background:var(--q-paper);font-size:13px}
+.wallet-eligibility-note small{color:var(--q-copy);line-height:1.5}
+.q-shell-v2 .mission-clearance .outline-action{margin-top:10px;min-height:44px}
+.mission-file-sheet .referral-funnel{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mission-file-sheet .referral-panel{margin:12px 0;padding:14px}
+.mission-file-sheet .referral-head{display:block}
+.mission-file-sheet .referral-brand-copy h2{font-size:22px}
+@media(max-width:359px){.profile-clearance{padding:12px}.profile-clearance .clearance-row{gap:6px;grid-template-columns:16px minmax(0,1fr) auto}.profile-clearance .clearance-row>button{max-width:85px;font-size:11px}.terminal-snapshot article strong{font-size:18px}.q-shell-v2 .profile-compact-header{padding:12px;grid-template-columns:minmax(0,1fr) 64px}.q-shell-v2 .profile-compact-header .passport-photo,.q-shell-v2 .profile-compact-header .passport-photo img{width:64px;height:64px}.q-shell-v2 .profile-compact-header .passport-copy h2{font-size:26px}}

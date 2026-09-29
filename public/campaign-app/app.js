@@ -1,3 +1,5 @@
+import { participantClearance, participantNextStep } from './participant-guidance.js?v=20260929-ia-1';
+
 const ORACLE_LOGO = '/campaign-app/assets/oracle-logo.jpg';
 const OCEAN_CONSERVATION_VAULT = 'J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p';
 const OCEAN_CONSERVATION_EXPLORER = `https://solscan.io/account/${OCEAN_CONSERVATION_VAULT}`;
@@ -91,7 +93,7 @@ const APP_TOUR_VERSION = 2;
 
 const APP_TOUR_STEPS = [
   { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Your Terminal', text: 'See the current operation and the next action you can take.' },
-  { screen: 'operations', operationsView: 'missions', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Choose a Mission', text: 'Mission Files live inside Operations. Browse objectives here, then use Overview to return to the operation.' },
+  { screen: 'operations', operationsView: 'missions', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Choose a Mission', text: 'Mission Files live inside Operations. Browse objectives here, use Briefing for its rules and Economics for its pools.' },
   { screen: 'record', recordView: 'xp', target: '[data-tour-target="record"]', icon: 'R', title: 'Track Your Record', text: 'Review campaign XP, standing and verified activity. Rewards and identity have their own screens.' },
 ];
 
@@ -240,7 +242,7 @@ function verifiedCount() {
 }
 
 function navMarkup() {
-  return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id || (state.screen === 'ocean' && id === 'home') ? 'active' : ''}" data-screen="${id}" data-tour-target="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
+  return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id || (['burns', 'readiness'].includes(state.screen) && id === 'operations') || (state.screen === 'ocean' && id === 'home') ? 'active' : ''}" data-screen="${id}" data-tour-target="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
 }
 
 function railCollapsedPreference() {
@@ -376,35 +378,11 @@ function updateCountdownLabels() {
   });
 }
 
-function readinessDetailsMarkup() {
-  const readiness = state.readiness;
-  const available = Boolean(readiness?.available && readiness.totalCount);
-  const status = available
-    ? readiness.ready ? 'All launch gates verified' : `${Number(readiness.readyCount)} / ${Number(readiness.totalCount)} verified`
-    : 'Readiness temporarily unavailable';
-  const checks = available ? readiness.checks.map(({ key, label, ready }) =>
-    `<article class="readiness-gate ${ready ? 'complete' : 'pending'}" data-readiness-key="${escapeHtml(key)}"><i>${ready ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${ready ? 'Verified' : 'Pending'}</b></article>`
-  ).join('') : '<div class="readiness-empty"><b>No launch state is being inferred.</b><p>Project Q will retry the authoritative readiness service automatically.</p></div>';
-  return `<details class="readiness-details"><summary><span><small>Public launch gates</small><b>${escapeHtml(status)}</b></span><em>${available ? 'Review gates' : 'Retrying'}</em></summary><div class="readiness-gates">${checks}</div><footer><span>Read-only readiness · no activation or treasury controls</span><button class="text-action" data-screen="readiness">Open launch status →</button></footer></details>`;
-}
-
 function readinessGroupMarkup(group, checks) {
   const groupChecks = group.keys.map((key) => checks.find((check) => check.key === key)).filter(Boolean);
   const complete = groupChecks.length > 0 && groupChecks.every(({ ready }) => ready);
   const passed = groupChecks.filter(({ ready }) => ready).length;
   return `<article class="launch-group ${complete ? 'complete' : 'pending'}"><header><span>${escapeHtml(group.number)}</span><div><small>${escapeHtml(group.id)}</small><h3>${escapeHtml(group.label)}</h3><p>${escapeHtml(group.description)}</p></div>${statePill(complete ? 'VERIFIED' : `${passed}/${groupChecks.length} READY`, complete ? 'success' : 'pending')}</header><div class="launch-gates">${groupChecks.map(({ key, label, ready }) => `<div class="${ready ? 'complete' : 'pending'}" data-readiness-key="${escapeHtml(key)}"><i>${ready ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${ready ? 'Verified' : 'Pending'}</b></div>`).join('')}</div></article>`;
-}
-
-function readinessCommitmentsMarkup(campaign) {
-  const commitments = campaign.campaignCommitments || {};
-  if (!commitments.campaignRewards) return '';
-  const rows = [
-    ['Campaign pool', `${formatBaseUnits(commitments.campaignRewards.amountBaseUnits)} FAWKQ`, 'Funded before launch'],
-    ['Diamond Duck', `${formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits)} FAWKQ`, 'Separate post-unlock bonus'],
-    ['Top Duck', `${escapeHtml(commitments.topContributorPrize.amountSol)} SOL`, 'Top overall contributor'],
-    ['Earn to Burn', `${formatBaseUnits(commitments.earnToBurn.amountBaseUnits)} FAWKQ`, 'Separate creator-wallet reserve'],
-  ];
-  return `<section class="launch-commitments">${rows.map(([label, amount, detail]) => `<article><span>${label}</span><strong>${amount}</strong><small>${detail}</small></article>`).join('')}</section>`;
 }
 
 function readinessScreen() {
@@ -419,15 +397,15 @@ function readinessScreen() {
   const groups = available
     ? READINESS_GROUPS.map((group) => readinessGroupMarkup(group, checks)).join('')
     : '<section class="command-card launch-unavailable"><b>No launch state is being inferred.</b><p>Project Q will retry the authoritative readiness service. Every operational action remains disabled.</p></section>';
-  return `<section class="launch-command command-card"><div><span class="label">Campaign 01 · Launch control</span><h2>${launchState}</h2><p>${available ? `${Number(readiness.readyCount)} of ${Number(readiness.totalCount)} public gates are verified.` : 'The readiness service is unavailable.'} The campaign cannot open from this screen.</p>${statePill(launchState, launchTone)}</div><img src="/campaign-app/assets/system/q-campaigns.webp" alt="Project Q campaigns" /></section>
+  return `<section class="launch-command command-card"><div><span class="label">Operation 01 · Public launch readiness</span><h2>${launchState}</h2><p>${available ? `${Number(readiness.readyCount)} of ${Number(readiness.totalCount)} public gates are verified.` : 'The readiness service is unavailable.'} The campaign cannot open from this screen.</p>${statePill(launchState, launchTone)}</div><img src="/campaign-app/assets/system/q-campaigns.webp" alt="Project Q campaigns" /></section>
   <section class="launch-progress command-card"><div><span>Public readiness</span><strong>${available ? `${percent}%` : '—'}</strong></div><div class="progress" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${available ? `aria-valuenow="${percent}"` : ''}><span style="width:${percent}%"></span></div><small>${readiness.ready ? 'All public gates verified. Two founder approvals are still required for activation.' : 'Fail-closed until every required gate passes.'}</small></section>
   <div class="section-head compact-head"><div><span class="label">Launch sequence</span><h2>Three controlled layers</h2></div><span>Evidence-bound</span></div>
   <section class="launch-groups">${groups}</section>
   <div class="section-head"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
-  ${readinessCommitmentsMarkup(c)}
+  <button class="outline-action" data-operation-view="economics">SEE OPERATION ECONOMICS →</button>
   <section class="readiness-fingerprint command-card"><div><span class="label">Readiness fingerprint</span><h3>${reportHash ? 'Exact reviewed state' : 'Report unavailable'}</h3><p>${reportHash ? 'This SHA-256 fingerprint changes whenever the readiness evidence or an operational gate changes.' : 'A fingerprint appears only when Project Q can build the authoritative readiness report.'}</p></div><code>${reportHash || 'No report hash available'}</code><small>${escapeHtml(readiness.reportVersion || 'readiness report pending')}</small></section>
   <section class="launch-safety"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="" /><div><b>Founder approval remains outside this public screen.</b><p>Project Q may calculate, verify and publish status. It cannot activate the campaign, hold a treasury signer or execute a transfer from this interface.</p></div></section>
-  <button class="outline-action launch-back" data-screen="home">← Back to campaign home</button>`;
+  <button class="outline-action launch-back" data-operation-view="overview">← Back to Briefing</button>`;
 }
 
 function metric(label, value, detail = '') {
@@ -482,122 +460,9 @@ function nextStatusCard() {
 function home() {
   const p = state.profile;
   const c = state.campaign || fallbackCampaign;
-  const count = verifiedCount();
   const op = operationNumber();
-  const identityReady = count === 3;
-
-  let nextMove = {
-    label: 'Next Step',
-    title: 'Verify Telegram',
-    detail: 'Open the official Mini App to verify your identity.',
-    action: 'OPEN',
-    screen: 'profile',
-    profileView: 'identity',
-    brand: 'q',
-  };
-  if (p.telegramVerified && !p.xVerified) {
-    const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
-    nextMove = {
-      label: 'Next Step',
-      title: oracleAvailable ? 'Connect Oracle X' : 'Oracle Dev setup pending',
-      detail: oracleAvailable ? 'Verify your X identity to unlock missions.' : 'X connection will open when Oracle Dev is ready.',
-      action: oracleAvailable ? 'CONNECT' : 'REVIEW',
-      screen: 'profile',
-      profileView: 'identity',
-      brand: 'oracle',
-    };
-  } else if (p.telegramVerified && p.xVerified && !p.walletVerified) {
-    const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
-    nextMove = {
-      label: 'Next Step',
-      title: oracleAvailable ? 'Verify Reward Wallet' : 'Oracle Dev setup pending',
-      detail: oracleAvailable ? 'Connect the wallet used for eligibility and distributions.' : 'Wallet connection will open when Oracle Dev is ready.',
-      action: oracleAvailable ? 'VERIFY' : 'REVIEW',
-      screen: 'profile',
-      profileView: 'identity',
-      brand: 'oracle',
-    };
-  } else if (identityReady) {
-    const lifecycle = operationLifecycleState();
-    if (lifecycle.label === 'ACTIVE') {
-      nextMove = {
-        label: 'Next Step',
-        title: 'Enter Mission Files',
-        detail: 'The operation is active. Choose your next eligible mission.',
-        action: 'ENTER',
-        screen: 'operations',
-        operationsView: 'missions',
-        brand: 'q',
-      };
-    } else if (lifecycle.label === 'REVIEWING') {
-      nextMove = {
-        label: 'Operation Status',
-        title: 'Final Review in Progress',
-        detail: 'Verified activity is being reconciled before final allocations and release records.',
-        action: 'FOLLOW',
-        screen: 'operations',
-        operationsView: 'progress',
-        brand: 'q',
-      };
-    } else if (lifecycle.label === 'DISTRIBUTING') {
-      nextMove = {
-        label: 'Reward Status',
-        title: 'Track Reward Delivery',
-        detail: 'Follow scheduled releases through on-chain delivery and confirmed receipts.',
-        action: 'TRACK',
-        screen: 'rewards',
-        brand: 'q',
-      };
-    } else if (['COMPLETED','ARCHIVED'].includes(lifecycle.label)) {
-      nextMove = {
-        label: 'Operation Complete',
-        title: 'View Your Permanent Record',
-        detail: 'Review your verified participation, XP, outcomes and campaign history.',
-        action: 'VIEW',
-        screen: 'record',
-        recordView: 'activity',
-        brand: 'q',
-      };
-    } else if (['PAUSED','TERMINATED','LAUNCH BLOCKED'].includes(lifecycle.label)) {
-      nextMove = {
-        label: 'Operation Status',
-        title: lifecycle.label === 'PAUSED' ? 'Operation Paused' : lifecycle.label === 'TERMINATED' ? 'Operation Closed' : 'Launch Gate Incomplete',
-        detail: 'Campaign actions remain closed. Review Operation Intel for the current verified status and readiness state.',
-        action: 'CHECK',
-        screen: 'operations',
-        operationsView: 'intel',
-        brand: 'q',
-      };
-    } else {
-      nextMove = {
-        label: 'Next Step',
-        title: 'Prepare for Operation 01',
-        detail: 'Your identity is ready. Review the operation dossier and mission requirements before launch.',
-        action: 'REVIEW',
-        screen: 'operations',
-        operationsView: 'overview',
-        brand: 'q',
-      };
-    }
-  }
-
-  if (state.sessionStatus === 'identity-unavailable') {
-    nextMove = {
-      label: 'Identity Sync', title: 'Sync Oracle Identity',
-      detail: 'Telegram is confirmed. Your campaign record is temporarily unavailable.',
-      action: 'RETRY', brand: 'q',
-    };
-  }
-
-  const actionAttrs = state.sessionStatus === 'identity-unavailable'
-    ? 'data-retry-session'
-    : nextMove.screen === 'operations'
-    ? `data-operation-view="${nextMove.operationsView}"`
-    : nextMove.screen === 'record' && nextMove.recordView
-      ? `data-record-view="${nextMove.recordView}"`
-      : nextMove.profileView
-        ? `data-screen="${nextMove.screen}" data-profile-view="${nextMove.profileView}"`
-        : `data-screen="${nextMove.screen}"`;
+  const nextMove = currentNextStep();
+  const actionAttrs = nextStepActionAttrs(nextMove);
 
   const schedule = state.runtime?.schedule;
   const target = schedule?.targetAt ? Date.parse(schedule.targetAt) : null;
@@ -646,7 +511,7 @@ function home() {
       <div><span>${escapeHtml(nextMove.label)}</span><b>${escapeHtml(nextMove.title)}</b><small>${escapeHtml(nextMove.detail)}</small></div>
       <button ${actionAttrs}>${escapeHtml(nextMove.action)} <span aria-hidden="true">→</span></button>
     </section>
-    ${identityReady && !campaignClearanceReady() ? `<section class="terminal-clearance-prereq"><div><span>CAMPAIGN CLEARANCE</span><b>${escapeHtml(campaignEligibilityRequirements().find(({complete})=>!complete)?.label || 'Requirement incomplete')}</b></div><button data-screen="profile" data-profile-view="wallet">REVIEW →</button></section>` : ''}
+    ${terminalSnapshotMarkup()}
     <button class="terminal-ocean-banner ocean-impact-entry" data-screen="ocean" aria-label="Explore the CrabStar Ocean Impact mission"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact. Cleaner oceans. Brighter tomorrows. Community-powered conservation. Explore the mission." /></button>
   </div>`;
 }
@@ -691,98 +556,52 @@ function missionTelemetry(mission) {
 }
 
 function campaignEligibilityRequirements() {
-  const c = state.campaign || fallbackCampaign;
+  return participantClearance(state.profile, (state.campaign || fallbackCampaign).eligibility);
+}
+
+function currentNextStep() {
+  return participantNextStep({ profile: state.profile, eligibility: (state.campaign || fallbackCampaign).eligibility,
+    lifecycle: operationLifecycleState().label, sessionStatus: state.sessionStatus,
+    oracleAvailable: Boolean(state.runtime?.oracleBotUrl) });
+}
+
+function nextStepActionAttrs(next) {
+  if (next.retry) return 'data-retry-session';
+  if (next.screen === 'operations') return `data-operation-view="${next.operationsView || 'overview'}"`;
+  if (next.screen === 'profile') return `data-profile-view="${next.profileView || 'overview'}"`;
+  return `data-screen="${next.screen}"`;
+}
+
+function clearanceCountLabel() {
+  const checks = campaignEligibilityRequirements();
+  return `${checks.filter(item => item.complete).length}/${checks.length}`;
+}
+
+function terminalSnapshotMarkup() {
   const p = state.profile;
-  const config = c.eligibility || {};
-  const minimumUsd = Number(config.minimumFawkqUsd ?? state.referrals?.minimumPurchaseUsd ?? 0);
-  const requiresTelegram = config.telegramRequired !== false;
-  const requiresX = config.oracleXRequired !== false;
-  const requiresWallet = config.walletRequiredForRewards !== false || minimumUsd > 0;
-  const requiresTokenAccount = requiresWallet && minimumUsd > 0;
-  const requirements = [];
+  return `<section class="terminal-snapshot" aria-label="Your snapshot"><header><span>YOUR SNAPSHOT</span><b>${escapeHtml(p.name)}</b></header><div>
+    <article><span>Clearance</span><strong>${clearanceCountLabel()}</strong></article>
+    <article><span>Operation XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
+    <article><span>Standing</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></article>
+  </div></section>`;
+}
 
-  if (requiresTelegram) {
-    requirements.push({
-      key: 'telegram',
-      label: 'Telegram identity',
-      complete: Boolean(p.telegramVerified),
-      detail: p.telegramVerified ? 'Telegram Mini App identity verified.' : 'Open Project Q from the official Telegram bot.',
-      action: p.telegramVerified ? null : { label: 'Open Profile', screen: 'profile', profileView: 'identity' },
-      provider: 'q',
-    });
-  }
-
-  if (requiresX) {
-    requirements.push({
-      key: 'x',
-      label: 'X linked through Oracle',
-      complete: Boolean(p.xVerified),
-      detail: p.xVerified ? 'Oracle X identity verified.' : 'Connect the X account used for eligible campaign activity.',
-      action: p.xVerified ? null : { label: 'Connect X', screen: 'profile', profileView: 'identity' },
-      provider: 'oracle',
-    });
-  }
-
-  if (requiresWallet) {
-    requirements.push({
-      key: 'wallet',
-      label: 'Reward wallet',
-      complete: Boolean(p.walletVerified),
-      detail: p.walletVerified ? 'Verified reward wallet connected.' : 'Connect the wallet used for campaign eligibility and distributions.',
-      action: p.walletVerified ? null : { label: 'Verify Wallet', screen: 'profile', profileView: 'identity' },
-      provider: 'q',
-    });
-  }
-
-  if (requiresTokenAccount) {
-    requirements.push({
-      key: 'token-account',
-      label: 'FAWKQ token account',
-      complete: Boolean(p.tokenAccountReady),
-      detail: p.tokenAccountReady ? 'FAWKQ token account detected.' : 'A FAWKQ token account must be available on the verified reward wallet.',
-      action: p.tokenAccountReady ? null : { label: 'Check Wallet', screen: 'profile', profileView: 'wallet' },
-      provider: 'q',
-    });
-  }
-
-  if (minimumUsd > 0) {
-    requirements.push({
-      key: 'holder',
-      label: `Minimum $${minimumUsd} FAWKQ`,
-      complete: Boolean(p.holderEligible),
-      detail: p.holderEligible
-        ? `Verified FAWKQ holding meets the $${minimumUsd} minimum.`
-        : `Hold at least $${minimumUsd} of FAWKQ in the verified reward wallet.`,
-      action: p.holderEligible ? null : { label: 'Check Eligibility', screen: 'profile', profileView: 'wallet' },
-      provider: 'q',
-    });
-  }
-
-  return requirements;
+function actionableMissionFiles() {
+  return (state.campaign?.missions || []).filter(({ id }) => !['participation-xp', 'earn-to-burn'].includes(id));
 }
 
 function campaignClearanceReady() {
   return campaignEligibilityRequirements().every(({ complete }) => complete);
 }
 
-function clearanceMarkup({ compact = false } = {}) {
-  const requirements = campaignEligibilityRequirements();
-  const completeCount = requirements.filter(({ complete }) => complete).length;
-  const next = requirements.find(({ complete }) => !complete);
-  return `<section class="clearance-panel ${compact ? 'compact' : ''}">
-    <div class="clearance-head">
-      <div><span>CAMPAIGN CLEARANCE</span><h3>${completeCount === requirements.length ? 'Clearance Complete' : `Complete ${requirements.length - completeCount} Requirement${requirements.length - completeCount === 1 ? '' : 's'}`}</h3></div>
-      <b>${completeCount}/${requirements.length}</b>
-    </div>
-    <div class="clearance-list">
-      ${requirements.map((item) => `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}">
-        <i>${item.complete ? '✓' : '○'}</i>
-        <div><b>${escapeHtml(item.label)}</b><small>${escapeHtml(item.detail)}</small></div>
-        ${item.provider === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : ''}
-        ${item.action ? `<button data-screen="${item.action.screen}" data-profile-view="${item.action.profileView}">${escapeHtml(item.action.label)} →</button>` : ''}
-      </article>`).join('')}
-    </div>
-    ${next ? `<div class="clearance-next"><span>NEXT REQUIRED</span><b>${escapeHtml(next.label)}</b></div>` : '<div class="clearance-next complete"><span>STATUS</span><b>READY FOR ELIGIBLE MISSIONS</b></div>'}
+function clearanceMarkup() {
+  const checks = campaignEligibilityRequirements();
+  const complete = checks.filter(item => item.complete).length;
+  const oracleAvailable = Boolean(state.runtime?.oracleBotUrl && state.profile.telegramVerified);
+  return `<section class="clearance-panel profile-clearance"><div class="clearance-head"><div><span>CLEARANCE</span><h3>${complete === checks.length ? 'Ready for eligible missions' : 'Complete your operation setup'}</h3></div><b>${complete}/${checks.length}</b></div>
+    <div class="dossier-clearance-track">${checks.map(item => `<i class="${item.complete ? 'complete' : ''}"></i>`).join('')}</div>
+    <div class="clearance-list">${checks.map(item => `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}"><i>${item.complete ? '✓' : '○'}</i><div><b>${escapeHtml(item.label)}</b><small>${item.complete ? 'Verified' : escapeHtml(item.action === 'oracle' && !oracleAvailable ? 'Oracle connection is not ready in this environment yet.' : item.detail)}</small></div>${item.complete ? '' : `<button data-clearance-action="${item.action}" ${item.action === 'oracle' && !oracleAvailable ? 'disabled' : ''}>${item.action === 'oracle' ? 'CONNECT' : item.action === 'wallet' ? 'CHECK WALLET' : 'OPEN TELEGRAM'} →</button>`}</article>`).join('')}</div>
+    <small class="clearance-observation">Connections come from Oracle. Token-account and holding eligibility use the latest verified wallet observation.</small>
   </section>`;
 }
 
@@ -878,55 +697,7 @@ function missionCard(mission) {
 }
 
 function missionsScreen() {
-  const c = state.campaign || fallbackCampaign;
-  const missions = Array.isArray(c.missions) ? c.missions : [];
-  const individual = missions.filter(({ kind }) => kind !== 'COLLECTIVE');
-  const collective = missions.filter(({ kind }) => kind === 'COLLECTIVE');
-  const available = individual.filter(({ enabled }) => enabled).length;
-  const verified = individual.reduce((total, mission) => total + Number(missionTelemetry(mission)?.verified || 0), 0);
-
-  return `<div class="missions-v2">
-    <section class="screen-intro operations-intro missions-hero">
-      <div>
-        <span class="label">Campaign operations</span>
-        <h2>Missions</h2>
-        <p>Choose an eligible action, complete it, and let Project Q record verified campaign participation.</p>
-      </div>
-      <div class="section-actions">
-        <button class="info-action" data-explainer="campaign" aria-label="How campaigns work">?</button>
-        ${runtimePill()}
-      </div>
-    </section>
-
-    <section class="missions-snapshot">
-      <article><span>Available now</span><strong>${available}</strong><small>mission lanes</small></article>
-      <article><span>Verified today</span><strong>${verified}</strong><small>accepted actions</small></article>
-      <article><span>Daily XP</span><strong>${Number(state.profile.todayXp || 0)}</strong><small>of ${Number(c.xpCaps?.overallDaily || 0)}</small></article>
-      <article><span>Identity</span><strong>${verifiedCount()}/3</strong><small>${verifiedCount() === 3 ? 'campaign ready' : 'finish setup'}</small></article>
-    </section>
-
-    <section class="missions-primary">
-      <div class="section-head">
-        <div><span class="label">For you</span><h2>Individual missions</h2></div>
-        <span>${individual.length} campaign lanes</span>
-      </div>
-      <div class="mission-list mission-list-v2">${individual.map(missionCard).join('')}</div>
-    </section>
-
-    ${collective.length ? `<section class="missions-collective">
-      <div class="section-head">
-        <div><span class="label">Collective objective</span><h2>Ecosystem missions</h2></div>
-        <span>Shared progress</span>
-      </div>
-      <div class="mission-list mission-list-v2 collective-list">${collective.map(missionCard).join('')}</div>
-    </section>` : ''}
-
-    <section class="oracle-note missions-oracle" data-tour-target="oracle">
-      <img src="${ORACLE_LOGO}" alt="Oracle" />
-      <div><b>Verified with Oracle</b><p>Oracle verifies supported identity and activity signals. Project Q remains the source of truth for XP, caps, eligibility and campaign records.</p></div>
-      <button class="info-action" data-explainer="oracle" aria-label="What Oracle does">?</button>
-    </section>
-  </div>`;
+  return operationMissionsMarkup(state.campaign || fallbackCampaign);
 }
 
 function communityPulsePanel() {
@@ -991,15 +762,9 @@ function xpScreen({ embedded = false } = {}) {
       </div>
     </section>
 
-    ${communityPulsePanel()}
-
-    ${embedded ? `<section class="record-xp-shortcuts"><button data-record-view="activity">VIEW VERIFIED ACTIVITY →</button><button data-record-view="achievements">CAMPAIGN BADGES →</button></section>` : `<section class="xp-ledger-section">
-      <div class="section-head compact-head">
-        <div><span class="label">Verified activity</span><h2>XP ledger</h2></div>
-        <span>Source · status · time</span>
-      </div>
-      <section class="ledger xp-ledger">${activity.length ? activity.map(activityRow).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>XP entries appear here after eligible activity is verified and settled by Project Q.</p></div>'}</section>
-    </section>`}
+    <section class="xp-ledger-section"><div class="section-head compact-head"><div><span class="label">Settled activity</span><h2>XP history</h2></div><span>Latest ${activity.length} entries</span></div>
+      <section class="ledger xp-ledger">${activity.length ? activity.map(item => activityRow({ label: missionName(item.missionCode, item.source), timestamp: `${item.source || 'verified'} · Cycle ${Number(item.cycleId || 0)} · ${formatProfileDate(item.awardedAt)}`, xp: Number(item.amount || 0), icon: 'Q' })).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>Entries appear only after eligible activity is verified and settled.</p></div>'}</section>
+    </section>
 
     ${embedded ? '' : `<section class="xp-achievement-section">
       <div class="section-head">
@@ -1070,9 +835,7 @@ function leaderboardScreen() {
       </div>
     </section>
 
-    <div class="tabs rank-tabs" role="tablist">
-      ${tabs.map(([id, label]) => `<button class="${state.leaderboardView === id ? 'active' : ''}" data-leaderboard-view="${id}" role="tab" aria-selected="${state.leaderboardView === id}">${label}</button>`).join('')}
-    </div>
+    <label class="standing-filter">STANDING BY <select id="standing-filter">${tabs.map(([id, label]) => `<option value="${id}" ${state.leaderboardView === id ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
 
     <section class="leaderboard-list rank-list">
       ${rows.length ? rows.map((row, index) => leaderboardRow(row, index, view?.unit || 'XP')).join('') : `<div class="empty compact"><b>${escapeHtml(emptyTitle)}</b><p>${escapeHtml(emptyDetail)}</p></div>`}
@@ -1082,13 +845,7 @@ function leaderboardScreen() {
       <span>${escapeHtml(standingState.note)}</span><b>${escapeHtml(standingState.mode)}</b>
     </div>
 
-    <section class="rank-achievements">
-      <div class="section-head">
-        <div><span class="label">Campaign standing</span><h2>Planned campaign badges</h2></div>
-        <span>Verified campaign standings only</span>
-      </div>
-      ${badgeGallery(c.leaderboardBadges)}
-    </section>
+    ${cycleResultsMarkup()}
   </div>`;
 }
 
@@ -1222,66 +979,6 @@ function terminalOperationPill() {
   return statePill(lifecycle.label, lifecycle.tone);
 }
 
-function operationPhaseBriefMarkup() {
-  const lifecycle = operationLifecycleState();
-  const copy = {
-    UPCOMING: {
-      title: 'Prepare for launch',
-      detail: 'Review clearance, mission requirements and operation economics before eligible participation opens.',
-      next: 'Complete clearance and review Mission Files.',
-    },
-    ACTIVE: {
-      title: 'Operation active',
-      detail: 'Eligible Mission Files are open. Verified activity contributes to campaign progress, scoring and economic outcomes.',
-      next: 'Complete an eligible mission and confirm it reaches your Record.',
-    },
-    REVIEWING: {
-      title: 'Final review in progress',
-      detail: 'Project Q is reconciling verified activity, outcomes and final allocation inputs. New campaign scoring is closed.',
-      next: 'Follow review status and wait for finalized allocations.',
-    },
-    DISTRIBUTING: {
-      title: 'Reward distribution in progress',
-      detail: 'Finalized allocations are moving through scheduled treasury-authorized releases and on-chain confirmation.',
-      next: 'Track each release until a confirmed receipt appears.',
-    },
-    COMPLETED: {
-      title: 'Operation complete',
-      detail: 'Campaign participation and economic outcomes are finalized. Your verified history remains in your Project Q Record.',
-      next: 'Review your permanent operation record and receipts.',
-    },
-    ARCHIVED: {
-      title: 'Operation archived',
-      detail: 'This operation is read-only. Historical participation, outcomes and receipts remain available for audit.',
-      next: 'Review archived records.',
-    },
-    'LAUNCH BLOCKED': {
-      title: 'Launch gates are not cleared',
-      detail: 'The campaign window may have arrived, but Project Q remains fail-closed until authoritative activation requirements pass.',
-      next: 'Review Operation Intel and wait for launch clearance.',
-    },
-    PAUSED: {
-      title: 'Operation paused',
-      detail: 'Campaign participation is temporarily paused by authoritative operation state.',
-      next: 'Wait for Project Q to resume or publish the next operation status.',
-    },
-    TERMINATED: {
-      title: 'Operation terminated',
-      detail: 'Campaign participation has been terminated. Existing verified records remain available for audit.',
-      next: 'Review your Record and finalized receipts.',
-    },
-  }[lifecycle.label] || {
-    title: 'Operation status',
-    detail: 'Project Q is synchronizing authoritative operation state.',
-    next: 'Wait for the current state to settle.',
-  };
-
-  return `<section class="operation-phase-brief">
-    <div><span>NOW</span><b>${escapeHtml(copy.title)}</b><small>${escapeHtml(copy.detail)}</small></div>
-    <div><span>NEXT</span><b>${escapeHtml(copy.next)}</b></div>
-  </section>`;
-}
-
 function operationLifecycleMarkup() {
   const current = operationLifecycleState();
   const stages = ['UPCOMING','ACTIVE','REVIEWING','DISTRIBUTING','COMPLETED'];
@@ -1324,110 +1021,14 @@ function operationNumber() {
   return sequence.padStart(2, '0');
 }
 
-function operationPrimaryActionMarkup() {
-  const lifecycle = operationLifecycleState();
-
-  if (lifecycle.label === 'ACTIVE') {
-    return '<button class="q-primary-action" data-operation-view="missions">ENTER MISSION FILES →</button>';
-  }
-  if (lifecycle.label === 'REVIEWING') {
-    return '<button class="q-primary-action" data-operation-view="progress">FOLLOW FINAL REVIEW →</button>';
-  }
-  if (lifecycle.label === 'DISTRIBUTING') {
-    return '<button class="q-primary-action" data-screen="rewards">TRACK REWARD DELIVERY →</button>';
-  }
-  if (['COMPLETED','ARCHIVED','TERMINATED'].includes(lifecycle.label)) {
-    return '<button class="q-primary-action" data-screen="record">VIEW OPERATION RECORD →</button>';
-  }
-  if (['LAUNCH BLOCKED','PAUSED'].includes(lifecycle.label)) {
-    return '<button class="q-primary-action" data-operation-view="intel">REVIEW OPERATION STATUS →</button>';
-  }
-  return '<button class="q-primary-action" data-operation-view="missions">REVIEW MISSION FILES →</button>';
-}
-
 function operationTabs() {
-  const tabs = [
-    ['overview', 'Overview'],
-    ['missions', 'Mission Files'],
-    ['progress', 'Progress'],
-    ['rewards', 'Rewards'],
-    ['intel', 'Intel'],
-  ];
-  return `<div class="operation-tabs" role="tablist" aria-label="Bond the Duck operation sections">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" data-persist-focus="operation-${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
+  const tabs = [['overview', 'Briefing'], ['missions', 'Missions'], ['economics', 'Economics']];
+  return `<div class="operation-tabs" role="tablist" aria-label="Operation sections">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" data-persist-focus="operation-${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
 }
 
 function operationCurrentOrderMarkup() {
-  const lifecycle = operationLifecycleState().label;
-  const requirements = campaignEligibilityRequirements();
-  const next = requirements.find(({ complete }) => !complete);
-  let title;
-  let detail;
-  let action;
-  if (['UPCOMING', 'ACTIVE'].includes(lifecycle) && next) {
-    title = `Complete ${next.label}`;
-    detail = `${next.detail} ${requirements.filter(({ complete }) => complete).length} of ${requirements.length} clearance requirements complete.`;
-    action = `<button data-profile-view="${escapeHtml(next.action?.profileView || 'identity')}">CONTINUE SETUP →</button>`;
-  } else if (lifecycle === 'ACTIVE') {
-    title = 'Choose a Mission File';
-    detail = 'Complete an available objective and follow its verified result in your Record.';
-    action = '<button data-operation-view="missions">VIEW MISSIONS →</button>';
-  } else if (lifecycle === 'UPCOMING') {
-    title = 'Review your mission options';
-    detail = 'Your clearance is complete. Mission participation opens only after the operation is activated.';
-    action = '<button data-operation-view="missions">REVIEW MISSION FILES →</button>';
-  } else if (['LAUNCH BLOCKED', 'PAUSED'].includes(lifecycle)) {
-    title = 'Follow operation status';
-    detail = 'Participation is closed. Review the latest readiness and verification state.';
-    action = '<button data-operation-view="intel">VIEW OPERATION INTEL →</button>';
-  } else if (lifecycle === 'REVIEWING') {
-    title = 'Follow final review';
-    detail = 'New scoring is closed while verified activity is reconciled.';
-    action = '<button data-operation-view="progress">FOLLOW REVIEW →</button>';
-  } else if (lifecycle === 'DISTRIBUTING') {
-    title = 'Track reward delivery';
-    detail = 'Follow scheduled releases and confirmed receipts in Rewards.';
-    action = '<button data-screen="rewards">OPEN REWARDS →</button>';
-  } else {
-    title = 'Review your operation record';
-    detail = 'Your accepted campaign history and receipts remain available.';
-    action = '<button data-screen="record">VIEW RECORD →</button>';
-  }
-  return `<section class="operation-current-order" aria-label="Current order"><div><span>CURRENT ORDER // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(title)}</h3><p>${escapeHtml(detail)}</p></div>${action}</section>`;
-}
-
-function operationProgressMarkup(readiness, readinessLabel, readinessWidth) {
-  const lifecycle = operationLifecycleState().label;
-  const schedule = state.runtime?.schedule;
-  const reviewState = ['REVIEWING', 'DISTRIBUTING', 'COMPLETED', 'ARCHIVED', 'TERMINATED'].includes(lifecycle);
-  if (lifecycle === 'ACTIVE') {
-    const cycle = Number(schedule?.currentCycle || 0);
-    const cycleCopy = cycle > 0 && cycle <= 5 ? `CYCLE ${cycle} / 5` : 'CURRENT CYCLE SYNCING';
-    const xp = Number(state.profile.xp || 0);
-    const today = Number(state.profile.todayXp || 0);
-    const cap = Number(state.campaign?.xpCaps?.overallDaily || 0);
-    return `<section class="operation-content-panel operation-live-progress">
-      <div class="operation-section-head"><div><span>CAMPAIGN PROGRESS</span><h3>Verified participation.</h3></div>${statePill(lifecycle, 'success')}</div>
-      <div class="operation-cycle-focus"><span>${cycleCopy}</span><strong>${escapeHtml(schedule?.label || 'Cycle status syncing')}</strong><small>${schedule?.targetAt ? `Next cycle update in ${escapeHtml(formatCountdown(schedule.targetAt))}` : 'Cycle timing is being synchronized.'}</small></div>
-      <div class="operation-progress-metrics"><article><span>Campaign XP</span><strong>${xp.toLocaleString()}</strong><small>Settled in your Record</small></article><article><span>Today</span><strong>${today.toLocaleString()}${cap ? ` / ${cap}` : ''}</strong><small>Daily campaign XP</small></article><article><span>Mission Files</span><strong>${Number(state.profile.completedMissions || 0)} / ${Number(state.campaign?.missions?.length || 0)}</strong><small>Recorded completions</small></article></div>
-      <div class="operation-progress-links"><button data-operation-view="missions">VIEW MISSION FILES →</button><button data-record-view="xp">OPEN YOUR RECORD →</button></div>
-    </section>`;
-  }
-  if (reviewState) {
-    const final = ['COMPLETED', 'ARCHIVED', 'TERMINATED'].includes(lifecycle);
-    return `<section class="operation-content-panel operation-review-progress">
-      <div class="operation-section-head"><div><span>${final ? 'OPERATION RECORD' : 'FINAL REVIEW'}</span><h3>${final ? 'Campaign record available.' : lifecycle === 'DISTRIBUTING' ? 'Distribution in progress.' : 'Verified activity under review.'}</h3></div>${statePill(lifecycle, final ? 'success' : 'pending')}</div>
-      <p>${final ? 'See settled campaign XP, confirmed activity and reward receipts in their source records.' : lifecycle === 'DISTRIBUTING' ? 'Approved releases appear in Rewards as they are scheduled and confirmed.' : 'Project Q is reconciling accepted activity. Your settled XP remains visible in Record; new scoring is closed.'}</p>
-      <div class="operation-progress-links"><button data-record-view="activity">VIEW ACTIVITY →</button><button data-screen="rewards">TRACK REWARDS →</button></div>
-    </section>`;
-  }
-  const gates = state.readiness?.available && Number(state.readiness.totalCount || 0) > 0 ? `${Number(state.readiness.readyCount || 0)} / ${Number(state.readiness.totalCount)} PUBLIC GATES` : 'READINESS SYNCING';
-  return `<section class="operation-content-panel operation-launch-progress">
-    <div class="operation-section-head"><div><span>LAUNCH READINESS</span><h3>Operational gates before launch.</h3></div><b>${escapeHtml(readinessLabel)}</b></div>
-    <div class="operation-progress-bar" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readinessWidth}"`}><i style="width:${readinessWidth}%"></i></div>
-    <div class="operation-readiness-summary"><span>${escapeHtml(gates)}</span><b>${escapeHtml(schedule?.label || 'Campaign dates pending')}</b></div>
-    <p>This measures launch checks, not your personal campaign XP. Participation stays closed until the operation is activated.</p>
-    <div class="operation-progress-links"><button data-screen="readiness">REVIEW LAUNCH GATES →</button><button data-operation-view="missions">PREVIEW MISSION FILES →</button></div>
-  </section>`;
+  const next = currentNextStep();
+  return `<section class="operation-current-order" aria-label="Next step"><div><span>NEXT STEP</span><h3>${escapeHtml(next.title)}</h3><p>${escapeHtml(next.detail)}</p></div></section>`;
 }
 
 function compactPoolAmount(amount) {
@@ -1443,31 +1044,45 @@ function operationPoolMarkup(c) {
   const burnGates = ['burn-rules', 'burn-progress', 'burn-verification'];
   const burnVerified = Boolean(state.readiness?.available && burnGates.every((key) => state.readiness.checks?.find((gate) => gate.key === key)?.ready));
   const rows = [
-    { amount: commitments.campaignRewards?.amountBaseUnits ? formatBaseUnits(commitments.campaignRewards.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Reward Pool', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
-    { amount: commitments.diamondDuckBonus?.amountBaseUnits ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Diamond Duck', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
-    { amount: commitments.earnToBurn?.amountBaseUnits ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Earn to Burn', detail: burnVerified ? 'Burn gates verified' : 'Planned · burn checks pending', screen: 'burns' },
-    { amount: commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '—', unit: '', label: 'Top Duck Prize', detail: prizeRegistryVerified ? 'Prize registry verified' : 'Planned · prize evidence pending', screen: 'rewards' },
+    { amount: commitments.campaignRewards?.amountBaseUnits ? formatBaseUnits(commitments.campaignRewards.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Reward Pool', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', poolId: 'campaignRewards' },
+    { amount: commitments.diamondDuckBonus?.amountBaseUnits ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Diamond Duck', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', poolId: 'diamondDuckBonus' },
+    { amount: commitments.earnToBurn?.amountBaseUnits ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Earn to Burn', detail: burnVerified ? 'Burn gates verified' : 'Planned · burn checks pending', poolId: 'earnToBurn' },
+    { amount: commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '—', unit: '', label: 'Top Duck Prize', detail: prizeRegistryVerified ? 'Prize registry verified' : 'Planned · prize evidence pending', poolId: 'topContributorPrize' },
   ];
   return `<div class="operation-economics operation-pool-list" aria-label="Configured campaign pools">${rows.map((row) => {
     const compact = compactPoolAmount(row.amount);
     const exact = row.amount === '—' ? 'Amount pending' : `${row.amount}${row.unit ? ` ${row.unit}` : ''}`;
-    return `<button type="button" class="operation-pool-row" data-screen="${row.screen}" aria-label="View ${escapeHtml(row.label)} details, ${escapeHtml(exact)}, ${escapeHtml(row.detail)}"><span class="pool-copy"><b>${escapeHtml(row.label)}</b><small>${escapeHtml(row.detail)}</small></span><span class="pool-value"><strong>${escapeHtml(compact)}</strong>${row.unit ? `<span>${escapeHtml(row.unit)}</span>` : ''}${compact !== row.amount || row.unit ? `<small>${escapeHtml(exact)}</small>` : ''}</span><span class="pool-chevron" aria-hidden="true">›</span></button>`;
+    return `<button type="button" class="operation-pool-row" data-pool-id="${row.poolId}" aria-label="View ${escapeHtml(row.label)} details, ${escapeHtml(exact)}, ${escapeHtml(row.detail)}"><span class="pool-copy"><b>${escapeHtml(row.label)}</b><small>${escapeHtml(row.detail)}</small></span><span class="pool-value"><strong>${escapeHtml(compact)}</strong>${row.unit ? `<span>${escapeHtml(row.unit)}</span>` : ''}${compact !== row.amount || row.unit ? `<small>${escapeHtml(exact)}</small>` : ''}</span><span class="pool-chevron" aria-hidden="true">›</span></button>`;
   }).join('')}</div>`;
 }
 
-function operationIntelMarkup() {
-  const oracleVerified = Boolean(state.profile.xVerified);
-  const websiteSources = state.websiteVotes?.available ? state.websiteVotes.sources || [] : null;
-  const acceptingWebsites = websiteSources?.filter(({ status }) => status === 'AVAILABLE').length;
-  const pendingWebsites = websiteSources?.filter(({ status }) => status === 'PENDING_CERTIFICATION').length;
-  return `<section class="operation-content-panel operation-intel-panel">
-    <div class="operation-section-head"><div><span>OPERATIONAL INTEL</span><h3>Connections & verification.</h3></div><b>STATUS CHECK</b></div>
-    <div class="operation-intel-list">
-      <article class="operation-intel-row"><img src="${ORACLE_LOGO}" alt="" /><div><span>ORACLE CONNECTION</span><b>${oracleVerified ? 'X identity verified' : 'X identity pending'}</b><small>${oracleVerified ? 'Oracle identity is connected to this campaign record.' : 'Review your X connection in campaign clearance.'}</small></div><button data-profile-view="identity">VIEW IDENTITY →</button></article>
-      <article class="operation-intel-row"><img src="/campaign-app/assets/missions/v3-website-voting.webp" alt="" /><div><span>WEBSITE VOTING</span><b>${websiteSources ? `${acceptingWebsites} proof flows available` : 'Status available in Telegram'}</b><small>${websiteSources ? `${pendingWebsites} sources awaiting certification. Mission availability also depends on the operation state and your clearance.` : 'Signed Telegram access is needed for your current source status.'}</small></div><button data-mission-id="website-voting">VIEW SOURCES →</button></article>
-    </div>
-    ${readinessDetailsMarkup()}
+function operationEconomicsMarkup(c) {
+  if (state.activePool) return operationPoolDetailMarkup(c, state.activePool);
+  const commitments = c.campaignCommitments || {};
+  const fundingGate = state.readiness?.available ? state.readiness.checks?.find(item => item.key === 'funding') : null;
+  return `<section class="operation-content-panel"><div class="operation-section-head"><div><span>ECONOMICS</span><h3>Four pools. Separate purposes.</h3></div><b>OP ${operationNumber()}</b></div><p class="operation-pool-note">Configured commitments for this operation. Open a pool to inspect its rules and verification state.</p>${operationPoolMarkup(c)}
+    <details class="economics-treasury"><summary>Treasury & receipts <span>⌄</span></summary><p>${commitments.squadsCommunityVault ? `${Number(commitments.squadsCommunityVault.approvalThreshold)} of ${Number(commitments.squadsCommunityVault.memberCount)} Squads members authorize treasury transfers.` : 'Treasury authorization details are pending.'} Configured pool amounts are not proof of funding or payment.</p><div class="operation-progress-line"><span>FUNDING GATE</span><strong>${fundingGate?.ready ? 'VERIFIED' : fundingGate ? 'PENDING' : 'UNAVAILABLE'}</strong></div><p>Confirmed burn transactions appear in Earn-to-Burn progress. Your allocation and delivery receipts appear in Rewards. Campaign treasury transaction receipts are not available in this public feed yet.</p></details>
   </section>`;
+}
+
+function operationPoolDetailMarkup(c, id) {
+  if (id === 'earnToBurn') return burnsScreen();
+  const pool = c.campaignCommitments?.[id];
+  const copy = {
+    campaignRewards: ['Reward Pool', 'The main operation reward pool supports verified activity and Buy-to-Earn under the published allocation rules.', 'Combined verified activity and Buy-to-Earn each use 7.5M FAWKQ of the configured 15M pool. Five 48-hour cycles select eligible winners. Previous-cycle winners have a one-cycle cooldown.'],
+    diamondDuckBonus: ['Diamond Duck', 'A separate bonus allocation, with its own eligibility and verification review.', 'This 2.5M FAWKQ commitment is separate from the main reward pool. Full funding and final bonus rules must be verified before calculation.'],
+    topContributorPrize: ['Top Duck Prize', 'A separate SOL prize for the top verified overall contributor.', 'Paid only after final verification. The conservation contribution made in the winner’s name is separately funded and does not reduce the winner’s SOL prize or grant additional XP.'],
+  }[id];
+  if (!pool || !copy) return '<section class="operation-content-panel"><button data-operation-view="economics">← ECONOMICS</button><p>Pool configuration unavailable.</p></section>';
+  const exact = pool.amountBaseUnits ? `${formatBaseUnits(pool.amountBaseUnits)} FAWKQ` : `${pool.amountSol} SOL`;
+  const gateKey = id === 'topContributorPrize' ? 'registry' : 'funding';
+  const gate = state.readiness?.available ? state.readiness.checks?.find(item => item.key === gateKey) : null;
+  return `<section class="operation-content-panel pool-detail"><button class="burn-back" data-operation-view="economics">← ECONOMICS</button><header><span>OP ${operationNumber()} // POOL DETAILS</span><h3>${copy[0]}</h3><strong>${escapeHtml(compactPoolAmount(exact))}</strong><small>${escapeHtml(exact)} · configured commitment</small></header><p>${copy[1]}</p><div class="operation-progress-line"><span>${gateKey === 'registry' ? 'PRIZE REGISTRY' : 'FUNDING GATE'}</span><strong>${gate?.ready ? 'VERIFIED' : gate ? 'PENDING' : 'UNAVAILABLE'}</strong></div><h4>Allocation rules</h4><p>${copy[2]}</p><p>Individual amounts appear in Rewards only after eligible participation is verified and an allocation is recorded.</p><button class="outline-action" data-screen="rewards">YOUR REWARDS →</button></section>`;
+}
+
+function buyPositionMarkup() {
+  const position = state.profile.buyToEarn;
+  return `<section class="record-panel buy-position"><div class="dossier-heading"><span>Your Buy-to-Earn position</span><b>${position?.eligible ? 'ELIGIBLE' : 'PENDING VERIFICATION'}</b></div><p>${position ? `Verified tier: ${Number(position.tier || 0)}. Final allocations remain subject to operation review.` : 'No verified position has been recorded yet. Only eligible finalized purchases through approved markets count.'}</p></section>`;
 }
 
 function missionListCopy(mission) {
@@ -1493,28 +1108,17 @@ function missionListCategory(mission, telemetry) {
   return 'locked';
 }
 
-function operationsScreen() {
-  const c = state.campaign || fallbackCampaign;
-  const startFact = operationStartFact();
+function operationMissionsMarkup(c) {
   const missions = Array.isArray(c.missions) ? c.missions : [];
-  const op = operationNumber();
-  const readinessAvailable = Boolean(state.readiness?.available);
-  const readiness = readinessAvailable ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0))) : null;
-  const readinessLabel = readiness == null ? 'SYNCING' : `${readiness}%`;
-  const readinessWidth = readiness == null ? 0 : readiness;
-
-  let content = '';
-
-  if (state.operationsView === 'missions') {
-    const missionRows = missions.map((mission, index) => ({ mission, index, telemetry: missionTelemetry(mission) }));
+    const missionRows = missions.map((mission, index) => ({ mission, index, telemetry: missionTelemetry(mission) })).filter(({ mission }) => !['participation-xp', 'earn-to-burn'].includes(mission.id));
     const availableCount = missionRows.filter(({ mission, telemetry }) => missionListCategory(mission, telemetry) === 'available').length;
     const remaining = campaignEligibilityRequirements().filter(({ complete }) => !complete).length;
     const filteredRows = missionRows.filter(({ mission, telemetry }) => state.missionFilter === 'all' || missionListCategory(mission, telemetry) === state.missionFilter);
-    content = `<section class="operation-content-panel" data-tour-target="mission-files">
+    return `<section class="operation-content-panel" data-tour-target="mission-files">
       <div class="operation-section-head">
         <div><span>MISSION FILES</span><h3>Choose your next objective.</h3></div>
       </div>
-      <div class="mission-file-stats"><span><b>${missions.length}</b> MISSION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> REQUIREMENTS LEFT</span></div>
+      <div class="mission-file-stats"><span><b>${missionRows.length}</b> MISSION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> CLEARANCE PENDING</span></div>
       <div class="mission-file-filters" role="group" aria-label="Filter mission files">${[['all','All'],['available','Available'],['active','Active'],['completed','Completed']].map(([key,label])=>`<button type="button" data-mission-filter="${key}" class="${state.missionFilter === key ? 'active' : ''}" aria-pressed="${state.missionFilter === key}">${label}</button>`).join('')}</div>
       <div class="mission-file-index">${filteredRows.length ? filteredRows.map(({ mission, index, telemetry }) => {
         const [instruction, reward, frequency] = missionListCopy(mission);
@@ -1531,38 +1135,28 @@ function operationsScreen() {
       }).join('') : '<p class="mission-filter-empty">No mission files in this state yet. Try All to see every objective.</p>'}
       </div>
     </section>`;
-  } else if (state.operationsView === 'progress') {
-    content = operationProgressMarkup(readiness, readinessLabel, readinessWidth);
-  } else if (state.operationsView === 'rewards') {
-    content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>OPERATION ECONOMICS</span><h3>Campaign pools.</h3></div><b>OP ${op}</b></div>
-      <p class="operation-pool-note">Configured commitments for this operation. Tap a pool for its reward or burn record. Your personal allocation is tracked separately.</p>
-      ${operationPoolMarkup(c)}
-      <div class="operation-pool-actions"><button data-screen="rewards">YOUR REWARDS →</button><button data-screen="burns">BURN RECORD →</button></div>
-    </section>`;
-  } else if (state.operationsView === 'intel') {
-    content = operationIntelMarkup();
-  } else {
-    content = `<section class="operation-content-panel operation-overview-panel">
-      ${operationLifecycleState().label === 'ACTIVE'
-        ? `<div class="operation-progress-line"><span>CURRENT CYCLE</span><strong>${Number(state.runtime?.schedule?.currentCycle || 0)} / 5</strong></div><button class="operation-overview-link" data-operation-view="progress">VIEW VERIFIED PROGRESS →</button>`
-        : ['UPCOMING', 'LAUNCH BLOCKED'].includes(operationLifecycleState().label)
-          ? `<div class="operation-progress-line"><span>PUBLIC LAUNCH READINESS</span><strong>${escapeHtml(readinessLabel)}</strong></div><div class="operation-progress-bar" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readinessWidth}"`}><i style="width:${readinessWidth}%"></i></div><button class="operation-overview-link" data-screen="readiness">REVIEW LAUNCH GATES →</button>`
-          : `<div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(operationLifecycleState().label)}</strong></div><button class="operation-overview-link" data-operation-view="progress">VIEW OPERATION RECORD →</button>`}
+ }
 
-      <details class="operation-clearance-disclosure"><summary><span>CAMPAIGN CLEARANCE</span><b>${campaignEligibilityRequirements().filter(({ complete }) => complete).length} / ${campaignEligibilityRequirements().length} COMPLETE</b><i aria-hidden="true">⌄</i></summary>${clearanceMarkup({ compact: true })}</details>
-
-      <button type="button" class="operation-pool-teaser" data-operation-view="rewards"><span><b>OPERATION ECONOMICS</b><strong>Four campaign pools</strong><small>Reward pool · Diamond Duck · Earn to Burn · Top Duck</small></span><span class="pool-teaser-action">VIEW POOLS →</span></button>
-
-      <div class="operation-impact-note">
-        <div class="impact-globe">◎</div>
-        <div><b>A cleaner ocean. A brighter tomorrow.</b><span>Powered by community.</span></div>
-      </div>
-
-      ${operationPrimaryActionMarkup()}
-    </section>`;
-  }
-
+function operationsScreen() {
+  const c = state.campaign || fallbackCampaign;
+  const startFact = operationStartFact();
+  const op = operationNumber();
+  // Preserve old internal links while giving every visible section one name.
+  if (['progress', 'intel'].includes(state.operationsView)) state.operationsView = 'overview';
+  if (state.operationsView === 'rewards') state.operationsView = 'economics';
+  let content;
+  if (state.operationsView === 'missions') content = operationMissionsMarkup(c);
+  else if (state.operationsView === 'economics') content = operationEconomicsMarkup(c);
+  else content = `<section class="operation-content-panel operation-overview-panel">
+    ${operationCurrentOrderMarkup()}
+    <div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(state.runtime?.schedule?.label || 'Status syncing')}${Number(state.runtime?.schedule?.currentCycle || 0) ? ` · CYCLE ${Number(state.runtime.schedule.currentCycle)} / 5` : ''}</strong></div>
+    <div class="briefing-clearance"><span>CLEARANCE ${clearanceCountLabel()}</span><button data-profile-view="overview">OPEN PROFILE →</button></div>
+    <div class="briefing-story"><h3>The operation</h3><p>${escapeHtml(c.description || '')}</p><p>Complete eligible Mission Files. Project Q verifies and settles accepted activity before it contributes to XP, standing and rewards.</p></div>
+    <details class="briefing-rules"><summary>Rules & verification <span>⌄</span></summary><p>One Telegram identity, one X account and one verified reward wallet per participant. Founders and admins are excluded from XP and public leaderboards.</p><p>Daily caps: ${Number(c.xpCaps?.participationDaily || 0)} participation XP, ${Number(c.xpCaps?.projectQDaily || 0)} mission XP, ${Number(c.xpCaps?.trendingBotsDaily || 0)} trending XP, and ${Number(c.xpCaps?.overallDaily || 0)} XP overall. Pending or rejected evidence earns no XP.</p><p>Each 48-hour cycle selects the top two eligible participants and three weighted winners from ranks 3–15. Previous-cycle winners have a one-cycle cooldown. Final review takes 48–72 hours.</p><p>Mission-specific instructions and verification rules appear inside each Mission File.</p></details>
+    <button class="operation-pool-teaser" data-operation-view="economics"><span><b>OPERATION ECONOMICS</b><strong>Four operation pools</strong><small>Rewards · Diamond Duck · Earn to Burn · Top Duck</small></span><span class="pool-teaser-action">SEE POOLS →</span></button>
+    <button class="operation-overview-link" data-screen="readiness">PUBLIC LAUNCH READINESS →</button>
+    <button class="q-primary-action" data-operation-view="missions">${operationLifecycleState().label === 'ACTIVE' ? 'CHOOSE A MISSION' : 'PREVIEW MISSIONS'} →</button>
+  </section>`;
   const bondCover = String(c.name || '').trim().toLowerCase() === 'bond the duck';
   const coverImage = bondCover ? '/campaign-app/assets/bond-the-duck-terminal-hero-20260927.jpg' : c.banner;
   return `<div class="operations-ui operation-reference">
@@ -1580,86 +1174,39 @@ function operationsScreen() {
           <div><span>FINAL REVIEW</span><b>48–72H</b></div>
         </div>
       </div>
-    </section>` : `<section class="operation-compact-context"><div><span>OPERATION ${op}</span><h2>${escapeHtml(c.name || 'Bond the Duck')}</h2><small>${escapeHtml(operationLifecycleState().label)} · ${state.operationsView === 'missions' ? `${missions.length} MISSION FILES` : 'CAMPAIGN DOSSIER'}</small></div><button data-operation-view="overview">OVERVIEW →</button></section>`}
+    </section>` : `<section class="operation-compact-context"><div><span>OPERATION ${op}</span><h2>${escapeHtml(c.name || 'Bond the Duck')}</h2><small>${escapeHtml(operationLifecycleState().label)} · ${state.operationsView === 'missions' ? `${actionableMissionFiles().length} MISSION FILES` : 'OPERATION ECONOMICS'}</small></div><button data-operation-view="overview">BRIEFING →</button></section>`}
 
     ${operationTabs()}
-    ${state.operationsView === 'overview' ? `${operationCurrentOrderMarkup()}${operationLifecycleMarkup()}` : ''}
+    ${state.operationsView === 'overview' ? operationLifecycleMarkup() : ''}
     ${content}
   </div>`;
 }
 
 function recordTabs() {
-  const tabs = [['xp', 'XP'], ['rank', 'Standing'], ['achievements', 'Achievements'], ['activity', 'Activity']];
-  return `<div class="record-tabs" role="tablist" aria-label="Campaign record sections">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
+  const tabs = [['xp', 'XP'], ['rank', 'Standing'], ['achievements', 'Badges']];
+  return `<div class="record-tabs" role="tablist" aria-label="Record sections">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
 }
 
-function recordNextActionMarkup() {
-  const lifecycle = operationLifecycleState();
+function cycleResultsMarkup() {
+  const cycles = state.profile.xpByCycle || [];
+  return `<section class="record-panel cycle-results"><div class="dossier-heading"><span>Your cycle results</span><b>SETTLED XP</b></div>${cycles.length ? cycles.map(row => `<div class="cycle-result-row"><b>CYCLE ${Number(row.cycleId)}</b><strong>${Number(row.xp || 0).toLocaleString()} XP</strong></div>`).join('') : '<p>No settled cycle XP yet.</p>'}<small>These are your settled XP totals. Winner and payout outcomes appear only after selection and allocation are finalized.</small></section>`;
+}
 
-  if (lifecycle.label === 'ACTIVE') {
-    return '<section class="record-next-action"><div><span>NEXT</span><b>Continue Operation</b><small>Choose another eligible Mission File and keep building your verified Record.</small></div><button data-screen="operations">OPEN OPERATIONS →</button></section>';
-  }
-  if (lifecycle.label === 'REVIEWING') {
-    return '<section class="record-next-action"><div><span>NEXT</span><b>Follow Final Review</b><small>Your verified Record remains visible while Project Q reconciles final campaign outcomes.</small></div><button data-operation-view="progress">TRACK REVIEW →</button></section>';
-  }
-  if (lifecycle.label === 'DISTRIBUTING') {
-    return '<section class="record-next-action"><div><span>NEXT</span><b>Track Reward Delivery</b><small>Follow finalized allocations through scheduled release and confirmed receipts.</small></div><button data-screen="rewards">REWARDS →</button></section>';
-  }
-  if (['COMPLETED','ARCHIVED'].includes(lifecycle.label)) {
-    return '<section class="record-next-action complete"><div><span>PERMANENT RECORD</span><b>Operation History Finalized</b><small>Review receipts, achievements and verified campaign outcomes at any time.</small></div><button data-screen="rewards">RECEIPTS →</button></section>';
-  }
-  if (['LAUNCH BLOCKED','PAUSED','TERMINATED'].includes(lifecycle.label)) {
-    return '<section class="record-next-action blocked"><div><span>OPERATION STATUS</span><b>Campaign Actions Closed</b><small>Existing verified records remain available while the operation is not accepting activity.</small></div><button data-screen="operations">OPEN OPERATIONS →</button></section>';
-  }
-  return '<section class="record-next-action"><div><span>NEXT</span><b>Prepare for Operation</b><small>Review clearance and Mission Files before campaign participation opens.</small></div><button data-operation-view="overview">OPERATION →</button></section>';
+function pastOperationsMarkup() {
+  const finished = ['COMPLETED', 'ARCHIVED'].includes(operationLifecycleState().label)
+    && Boolean(state.profile.enrolledAt || state.profile.xp > 0 || state.profile.rewards?.recorded);
+  const c = state.campaign || fallbackCampaign;
+  return `<section class="record-panel past-operations"><div class="dossier-heading"><span>Past operations</span><b>${finished ? '1 OPERATION' : 'NO COMPLETED OPERATIONS'}</b></div>${finished ? `<button data-screen="operations">${escapeHtml(c.name)} · ${escapeHtml(operationLifecycleState().label)} →</button>` : '<p>Completed operation history will appear here. The current operation is still in progress.</p>'}</section>`;
 }
 
 function recordScreen() {
   const c = state.campaign || fallbackCampaign;
   const p = state.profile;
-  let content = '';
-  if (state.recordView === 'rank') {
-    content = leaderboardScreen();
-  } else if (state.recordView === 'achievements') {
-    content = `<section class="record-panel">
-      <div class="dossier-heading"><span>Campaign Badges</span><b>AWARD RULES PENDING</b></div>
-      ${badgeGallery([...(c.xpBadges || []), ...(c.leaderboardBadges || [])])}
-    </section>`;
-  } else if (state.recordView === 'activity') {
-    content = `<section class="record-panel">
-      <div class="dossier-heading"><span>Verified Activity</span><b>AUDITABLE RECORD</b></div>
-      <section class="ledger">${p.activity?.length ? p.activity.map(activityRow).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>Your permanent activity record begins when Project Q accepts and settles eligible participation.</p></div>'}</section>
-    </section>`;
-  } else {
-    content = xpScreen({ embedded: true });
-  }
-
-  const lifecycle = operationLifecycleState();
-  const allocation = p.rewards?.recorded ? ` · ${formatBaseUnits(p.rewards.allocatedBaseUnits)} FAWKQ allocated` : '';
-
-  return `<div class="record-ui">
-    <section class="record-header">
-      <div><span>PROJECT Q RECORD</span><h2>${escapeHtml(p.name)}</h2><p>Verified campaign participation becomes an auditable operation record.</p></div>
-      <div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>CAMPAIGN XP</span><small>STANDING ${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</small></div>
-    </section>
-
-    <section class="record-operation-context">
-      <button data-screen="operations">
-        <span>OP ${operationNumber()}</span>
-        <div><b>${escapeHtml(c.name || 'Operation')}</b><small>${escapeHtml(lifecycle.label)} · ${Number(p.completedMissions || 0)} missions${escapeHtml(allocation)}</small></div>
-        <i>OPEN DOSSIER →</i>
-      </button>
-      <div class="record-proof-links">
-        <button data-screen="rewards">Allocation Receipts →</button>
-        <button data-screen="burns">Earn-to-Burn Receipts →</button>
-      </div>
-    </section>
-
-    ${recordNextActionMarkup()}
-
-    ${recordTabs()}
-    ${content}
-  </div>`;
+  if (state.recordView === 'activity') state.recordView = 'xp';
+  const badges = [...new Map([...(c.xpBadges || []), ...(c.leaderboardBadges || [])].map(item => [item.id, item])).values()];
+  const content = state.recordView === 'rank' ? leaderboardScreen() : state.recordView === 'achievements'
+    ? `<section class="record-panel"><div class="dossier-heading"><span>Operation badges</span><b>AWARD RULES PENDING</b></div>${badgeGallery(badges)}</section>` : xpScreen({ embedded: true });
+  return `<div class="record-ui"><section class="record-header record-header-compact"><div><span>YOUR RECORD // ${escapeHtml(c.name)}</span><h2>${escapeHtml(p.name)}</h2><p>Settled XP, standing and operation history.</p></div><div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>OPERATION XP</span></div></section>${recordTabs()}${content}${pastOperationsMarkup()}</div>`;
 }
 
 function rewardsScreen() {
@@ -1686,18 +1233,7 @@ function rewardsScreen() {
   const hasReleased = actualReleases.some(({ status }) => ['paid','recovered'].includes(status));
   const hasConfirmed = actualReleases.some(({ status, transactionSignature }) =>
     ['paid', 'recovered'].includes(status) && isSolanaSignature(transactionSignature));
-  const missingClearance = campaignEligibilityRequirements().find(({ complete }) => !complete);
-  const next = hasFailedRelease
-    ? ['Recovery review', 'A failed release remains under review. Track the operation status while the record is reconciled.', 'OPEN OPERATIONS →', 'data-screen="operations"']
-    : missingClearance?.label === 'Telegram identity'
-      ? ['Verify your identity', 'Open Project Q inside Telegram to establish your campaign identity.', 'VIEW IDENTITY →', 'data-profile-view="identity"']
-      : !walletReady
-        ? ['Verify your reward wallet', 'Your verified wallet is required before any campaign release can be delivered.', 'OPEN WALLET →', 'data-profile-view="wallet"']
-        : !rewards.recorded
-          ? [operationLifecycleState().label === 'ACTIVE' ? 'Build verified activity' : 'Prepare for the operation', 'Allocations are determined from eligible, verified campaign participation.', 'OPEN OPERATIONS →', 'data-screen="operations"']
-          : !rewards.releaseCount
-            ? ['Follow allocation review', 'Your allocation is recorded. A release schedule has not been created yet.', 'VIEW YOUR RECORD →', 'data-record-view="activity"']
-            : ['Follow your release record', 'Scheduled releases and confirmed transaction receipts appear below.', 'VIEW RECORD →', 'data-profile-view="rewards"'];
+  const next = currentNextStep();
 
   const stages = [
     ['01', 'Participation', hasCampaignActivity, hasCampaignActivity ? 'Campaign activity recorded' : 'Complete eligible campaign activity'],
@@ -1708,12 +1244,14 @@ function rewardsScreen() {
     ['06', 'Confirmed', hasConfirmed, hasConfirmed ? 'On-chain receipt confirmed' : 'Awaiting finalized transaction receipt'],
   ];
 
+  const allocationReceipts = (rewards.allocations || []).map(item => `<article class="allocation-receipt"><header><span>ALLOCATION RECEIPT</span><b>${escapeHtml(rewardCategoryLabel(item.category))}</b></header><div class="receipt-grid"><div><span>Amount</span><b>${formatBaseUnits(item.amountBaseUnits)} FAWKQ</b></div><div><span>Cycle</span><b>${item.cycleId ? Number(item.cycleId) : 'OPERATION'}</b></div><div><span>Recorded</span><b>${escapeHtml(formatProfileDate(item.createdAt))}</b></div><div><span>Allocation ID</span><b>${escapeHtml(item.id)}</b></div></div><small>Recorded allocation · delivery requires a separate confirmed transaction receipt.</small></article>`).join('');
+
   const receiptReleases = actualReleases.filter(({ status, transactionSignature }) => ['paid','recovered'].includes(status) || isSolanaSignature(transactionSignature));
   const receiptCards = receiptReleases
     .map((release) => {
       const sig = isSolanaSignature(release.transactionSignature) ? release.transactionSignature : null;
       return `<article class="allocation-receipt">
-        <header><span>PROJECT Q // ALLOCATION RECEIPT</span><b>OP ${operationNumber()}</b></header>
+        <header><span>PROJECT Q // DELIVERY RECEIPT</span><b>OP ${operationNumber()}</b></header>
         <div class="receipt-grid">
           <div><span>Operation</span><b>OP ${operationNumber()}</b></div>
           <div><span>Reason</span><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · CYCLE ${Number(release.cycleId)}` : ''}</b></div>
@@ -1753,7 +1291,7 @@ function rewardsScreen() {
       </div>
     </section>
 
-    <section class="reward-next-action"><div><span>NEXT STEP</span><b>${escapeHtml(next[0])}</b><small>${escapeHtml(next[1])}</small></div><button ${next[3]}>${escapeHtml(next[2])}</button></section>
+    <section class="reward-next-action"><div><span>NEXT STEP</span><b>${escapeHtml(hasFailedRelease ? 'Release recovery review' : next.title)}</b><small>${escapeHtml(hasFailedRelease ? 'A failed release remains visible until treasury-authorized recovery is finalized.' : next.detail)}</small></div></section>
 
     ${hasFailedRelease ? `<section class="reward-recovery-alert">
       <div>
@@ -1791,10 +1329,12 @@ function rewardsScreen() {
 
     ${releaseRows ? `<section class="release-schedule"><div class="dossier-heading"><span>Release Schedule</span><b>${actualReleases.length} RECORD${actualReleases.length === 1 ? '' : 'S'}</b></div><div class="release-rows">${releaseRows}</div></section>` : ''}
 
-    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Allocation Receipts</span><b>${receiptReleases.length} RECEIPT RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : rewards.recorded ? `<section class="receipt-empty"><span>ALLOCATION RECEIPTS</span><h3>No confirmed receipt yet.</h3><p>On-chain proof appears when an approved release reaches your verified wallet.</p></section>` : ''}
+    ${allocationReceipts ? `<section class="receipt-section"><div class="dossier-heading"><span>Your allocation receipts</span><b>${(rewards.allocations || []).length} ALLOCATIONS</b></div><div class="receipt-stack">${allocationReceipts}</div></section>` : ''}
+
+    ${receiptCards ? `<section class="receipt-section"><div class="dossier-heading"><span>Your delivery receipts</span><b>${receiptReleases.length} RECEIPT RECORDS</b></div><div class="receipt-stack">${receiptCards}</div></section>` : rewards.recorded ? `<section class="receipt-empty"><span>YOUR RECEIPTS</span><h3>No confirmed receipt yet.</h3><p>On-chain proof appears when an approved release reaches your verified wallet.</p></section>` : ''}
 
     <section class="reward-transparency-link">
-      <button data-operation-view="rewards">VIEW OPERATION ECONOMICS →</button>
+      <button data-operation-view="economics">SEE THE POOLS →</button>
       <button data-explainer="rewards">HOW REWARDS WORK ?</button>
     </section>
   </div>`;
@@ -1831,11 +1371,11 @@ function burnsScreen() {
     const explorer = `https://solscan.io/tx/${encodeURIComponent(receipt.signature)}`;
     return `<article class="burn-receipt${selected}"><div><span class="label">CONFIRMED // ${escapeHtml(receipt.receiptCode)}</span><h3>${formatBaseUnits(receipt.amountBaseUnits, b.decimals)} FAWKQ</h3><p>${escapeHtml(receipt.burnType)} · ${escapeHtml(receipt.blockTime)}</p></div><a class="outline-action" href="${explorer}" target="_blank" rel="noopener noreferrer">VIEW ON-CHAIN PROOF →</a></article>`;
   }).join('');
-  const header = `<section class="burn-dossier-header"><button class="burn-back" data-operation-view="rewards">← OPERATION ECONOMICS</button><div class="burn-header-content"><div><span>PROJECT Q // COLLECTIVE MISSION</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div><div class="burn-reserve"><span>CONFIGURED BURN RESERVE</span><strong>${escapeHtml(compactPoolAmount(reserveAmount))} <small>FAWKQ</small></strong><em>${escapeHtml(reserveAmount)} FAWKQ · creator wallet</em></div></div></section>`;
+  const header = `<section class="burn-dossier-header"><button class="burn-back" data-operation-view="economics">← OPERATION ECONOMICS</button><div class="burn-header-content"><div><span>PROJECT Q // COLLECTIVE PROGRESS</span><h2>Earn to Burn</h2><p>${escapeHtml(configured.tagline || 'Individual activity earns rewards. Collective activity advances transparent burn milestones.')}</p></div><div class="burn-reserve"><span>CONFIGURED BURN RESERVE</span><strong>${escapeHtml(compactPoolAmount(reserveAmount))} <small>FAWKQ</small></strong><em>${escapeHtml(reserveAmount)} FAWKQ · creator wallet</em></div></div></section>`;
   const plan = `<section class="burn-plan-panel"><header><div><span>FIVE COLLECTIVE UNLOCKS</span><h3>Milestone plan</h3><p>Verified campaign XP advances each milestone. A planned burn is not a confirmed transaction.</p></div><b>${milestones.length} FILES</b></header><div class="burn-plan">${milestonePlan || '<div class="burn-empty"><b>Milestone configuration unavailable</b><p>No burn state is being inferred.</p></div>'}</div></section>`;
   const authorization = `<details class="burn-execution-note"><summary>HOW BURNS ARE AUTHORIZED <span>⌄</span></summary><p>Two founder approvals are recorded before Project Q prepares the exact burn. The creator wallet signs the irreversible transaction; Project Q never stores its private key.</p></details>`;
   if (b.unavailable) {
-    return `<div class="burn-dossier burns-unavailable">${header}<section class="burn-ledger-status unavailable"><div><span>VERIFIED LEDGER // SYNCING</span><h3>Burn record temporarily unavailable</h3><p>Confirmed burns, supply changes and receipts need the authoritative ledger. The milestones below are the configured plan only.</p></div><button data-retry-system>RETRY SYNC →</button></section>${plan}${authorization}</div>`;
+    return `<div class="burn-dossier burns-unavailable">${header}<section class="burn-ledger-status unavailable"><div><span>VERIFIED LEDGER // SYNCING</span><h3>Burn progress temporarily unavailable</h3><p>Confirmed burns, supply changes and receipts need the authoritative ledger. The milestones below are the configured plan only.</p></div><button data-retry-system>RETRY SYNC →</button></section>${plan}${authorization}</div>`;
   }
   const burned = formatBaseUnits(b.totalBurnedBaseUnits, b.decimals);
   const observed = formatBaseUnits(b.currentSupplyBaseUnits, b.decimals);
@@ -1862,130 +1402,6 @@ function missionName(code, source) {
   if (mission) return mission.title;
   if (code) return String(code).split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   return `${String(source || 'Verified').charAt(0).toUpperCase()}${String(source || 'verified').slice(1)} activity`;
-}
-
-function profileTabs() {
-  const tabs = [['overview', 'Dossier'], ['activity', 'Activity'], ['rewards', 'Rewards'], ['identity', 'Identity']];
-  return `<div class="profile-tabs passport-tabs" role="tablist" aria-label="Campaign dossier sections">${tabs.map(([id, label]) => `<button class="${state.profileView === id ? 'active' : ''}" data-profile-view="${id}" role="tab" aria-selected="${state.profileView === id}">${label}</button>`).join('')}</div>`;
-}
-
-function profileOverview() {
-  const p = state.profile;
-  const c = state.campaign || fallbackCampaign;
-  const requirements = campaignEligibilityRequirements();
-  const completedRequirements = requirements.filter(({ complete }) => complete).length;
-  const cycleCount = Number(c.schedule?.cycles?.length || 5);
-  const cycle = Number(state.runtime?.schedule?.currentCycle || 0);
-  const currentCycle = cycle > 0 && cycle <= cycleCount ? `${cycle} / ${cycleCount}` : 'PENDING';
-  const scheduledRelease = (p.rewards?.releases || [])
-    .filter(({ status, scheduledAt }) => ['scheduled', 'proposed', 'reserve'].includes(status) && Number.isFinite(Date.parse(scheduledAt || '')))
-    .sort((a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt))[0];
-  const nextRelease = scheduledRelease ? formatProfileDate(scheduledRelease.scheduledAt) : 'NOT SCHEDULED';
-  const rewards = p.rewards || {};
-  const activity = p.xpByBucket || {};
-  const xpCategories = [
-    ['Participation', activity.participation],
-    ['Project Q missions', activity.mission],
-    ['Trending & voting', activity.trending],
-    ['Other verified activity', activity.other],
-  ];
-  const maxCategory = Math.max(1, ...xpCategories.map(([, amount]) => Number(amount || 0)));
-
-  return `<div class="passport-overview">
-    <section class="dossier-clearance">
-      <div><span>CAMPAIGN CLEARANCE</span><strong>${completedRequirements} / ${requirements.length}</strong></div>
-      <div class="dossier-clearance-track" aria-label="${completedRequirements} of ${requirements.length} campaign requirements complete">${requirements.map(({ complete }) => `<i class="${complete ? 'complete' : ''}"></i>`).join('')}</div>
-      <small>${completedRequirements} verified · ${requirements.length - completedRequirements} pending</small>
-      <button data-profile-view="identity">${completedRequirements === requirements.length ? 'VIEW CLEARANCE' : 'COMPLETE CLEARANCE'} →</button>
-    </section>
-
-    <section class="dossier-live-record">
-      <header><span>${escapeHtml(c.name || 'Operation')} // CAMPAIGN RECORD</span>${statePill(operationLifecycleState().label, operationLifecycleState().tone)}</header>
-      <div class="dossier-metrics">
-        <div><span>Campaign XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></div>
-        <div><span>Standing</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></div>
-        <div><span>Mission Files</span><strong>${Number(p.completedMissions || 0)} / ${Number(c.missions?.length || 0)}</strong></div>
-      </div>
-      <details class="dossier-deep-record" data-persist-open="dossier-deep-record"><summary data-persist-focus="dossier-deep-record">VIEW CAMPAIGN DETAILS <span>⌄</span></summary>
-        <div class="dossier-secondary-metrics"><div><span>Current Cycle</span><b>${currentCycle}</b></div><div><span>Recent Activity</span><b>${Number(p.activity?.length || 0)} ENTRIES</b></div><div><span>Next Release</span><b>${escapeHtml(nextRelease)}</b></div></div>
-        <div class="dossier-contributions"><div class="dossier-subheading"><span>CONTRIBUTION BREAKDOWN</span><small>CAMPAIGN XP</small></div>
-          ${xpCategories.map(([label, amount]) => `<div class="dossier-contribution-row"><span>${label}</span><div><i style="width:${Math.min(100, Math.max(0, Number(amount || 0)) / maxCategory * 100)}%"></i></div><b>${Number(amount || 0).toLocaleString()}</b></div>`).join('')}
-        </div>
-      </details>
-    </section>
-
-    <section class="dossier-reward-position">
-      <div class="dossier-subheading"><span>CAMPAIGN REWARDS</span><small>FAWKQ</small></div>
-      ${rewards.recorded ? `<div class="dossier-reward-values"><div><span>Allocated</span><b>${escapeHtml(compactPoolAmount(formatBaseUnits(rewards.allocatedBaseUnits)))}</b><small>${formatBaseUnits(rewards.allocatedBaseUnits)} FAWKQ</small></div><div><span>Scheduled</span><b>${rewards.releaseCount ? escapeHtml(compactPoolAmount(formatBaseUnits(rewards.scheduledBaseUnits))) : 'NOT SCHEDULED'}</b></div><div><span>Distributed</span><b>${rewards.releaseCount ? escapeHtml(compactPoolAmount(formatBaseUnits(rewards.distributedBaseUnits))) : '0'}</b></div></div>` : '<p class="dossier-reward-pending">No allocation recorded yet. Reward amounts appear after verified participation and campaign review.</p>'}
-      <button data-screen="rewards">VIEW REWARD RECORD →</button>
-    </section>
-
-    <section class="dossier-reputation">
-      <span>REPUTATION IN PROGRESS</span>
-      <b>${Number(p.activity?.length || 0) ? 'Verified campaign activity recorded' : 'Awaiting verified campaign activity'}</b>
-      <small>Qualifying contributions reach the Universal Record only after review, settlement and Oracle confirmation. No lifetime score is inferred here.</small>
-    </section>
-
-    <section class="dossier-impact">
-      <span>CAMPAIGN IMPACT</span><b>Receipts before claims.</b>
-      <p>Individual and campaign-wide conservation outcomes will appear with confirmed evidence. Earn-to-Burn progress is recorded separately.</p>
-      <button data-screen="burns">VIEW EARN-TO-BURN RECORD →</button>
-    </section>
-  </div>`;
-}
-
-function profileActivity() {
-  const p = state.profile;
-  const rows = p.activity || [];
-  return `<div class="passport-activity-view">
-    <section class="passport-activity-summary">
-      <div><span>TODAY</span><b>${Number(p.todayXp || 0)} XP</b></div>
-      <div><span>TOTAL</span><b>${Number(p.xp || 0).toLocaleString()} XP</b></div>
-      <div><span>RECORDS</span><b>${rows.length}</b></div>
-    </section>
-
-    <section class="record-panel">
-      <div class="dossier-heading"><span>Verified Contributions</span><b>PROJECT Q XP RECORDS</b></div>
-      <section class="ledger">${rows.length
-        ? rows.map((item) => activityRow({
-            label: missionName(item.missionCode, item.source),
-            timestamp: `${item.source || 'verified'} · Cycle ${Number(item.cycleId || 0)} · ${formatProfileDate(item.awardedAt)}`,
-            xp: Number(item.amount || 0),
-            icon: 'Q',
-          })).join('')
-        : '<div class="empty compact"><b>Awaiting verified activity</b><p>Accepted actions appear here only after Project Q settles them into the append-only XP ledger.</p></div>'}</section>
-    </section>
-  </div>`;
-}
-
-function profileRewards() {
-  const p = state.profile;
-  const rewards = p.rewards || {};
-  const allocation = rewards.recorded ? formatBaseUnits(rewards.allocatedBaseUnits) : 'NOT ALLOCATED';
-  const scheduled = rewards.releaseCount ? formatBaseUnits(rewards.scheduledBaseUnits) : 'NOT SCHEDULED';
-  const distributed = rewards.releaseCount ? formatBaseUnits(rewards.distributedBaseUnits) : '0';
-  const receiptCount = Number(rewards.receiptCount || 0);
-
-  return `<div class="passport-rewards-view">
-    <section class="passport-economic-summary">
-      <div><span>ALLOCATION</span><strong>${escapeHtml(compactPoolAmount(allocation))}</strong><small>${rewards.recorded ? `${allocation} FAWKQ recorded` : 'No allocation recorded yet'}</small></div>
-      ${statePill(rewards.recorded ? 'RECORDED' : 'PENDING', rewards.recorded ? 'success' : 'pending')}
-    </section>
-
-    <section class="passport-economic-grid">
-      <article><span>Scheduled</span><b>${escapeHtml(compactPoolAmount(scheduled))}</b></article>
-      <article><span>Distributed</span><b>${escapeHtml(compactPoolAmount(distributed))}</b></article>
-      <article><span>Receipts</span><b>${receiptCount}</b></article>
-      <article><span>Wallet</span><b>${p.walletVerified ? 'VERIFIED' : 'REQUIRED'}</b></article>
-    </section>
-
-    <section class="passport-economic-note">
-      <span>ECONOMIC RECORD</span>
-      <h3>No reward should disappear into a backend process.</h3>
-      <p>The full Rewards system shows where each eligible reward sits from earned activity through allocation, release and confirmed receipt.</p>
-      <button data-screen="rewards">OPEN REWARD PIPELINE →</button>
-    </section>
-  </div>`;
 }
 
 function profileWallet() {
@@ -2030,11 +1446,7 @@ function profileWallet() {
       </article>
     </section>
 
-    <section class="wallet-requirement-strip">
-      <div class="${walletReady ? 'complete' : ''}"><span>01</span><b>Wallet</b><small>${walletReady ? 'Verified' : 'Required'}</small></div>
-      <div class="${tokenReady ? 'complete' : ''}"><span>02</span><b>Token Account</b><small>${tokenReady ? 'Ready' : 'Pending'}</small></div>
-      <div class="${holderReady ? 'complete' : ''}"><span>03</span><b>FAWKQ Holding</b><small>${holderReady ? 'Eligible' : 'Incomplete'}</small></div>
-    </section>
+    <div class="wallet-eligibility-note"><b>Holding eligibility: ${holderReady ? 'VERIFIED' : 'PENDING'}</b><small>${holderReady ? 'The latest verified holding meets the operation minimum.' : 'Eligibility remains pending until the token account and minimum holding are verified.'}</small></div>
 
     <section class="identity-system-note wallet-system-note">
       <div class="identity-system oracle-system"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle Ownership</b><small>Oracle verifies the canonical reward-wallet connection.</small></span></div>
@@ -2053,7 +1465,7 @@ function profileWallet() {
   </div>`;
 }
 
-function profileReferrals() {
+function referralMissionMarkup() {
   const referral = state.referrals || {};
   const counts = referral.counts || {};
   const referralLink = referral.link ? escapeHtml(referral.link) : null;
@@ -2068,134 +1480,13 @@ function profileReferrals() {
   <div class="x-invite-bonus"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span class="label">One-time X invite bonus</span><h3>Bring three real people into the conversation.</h3><p>Reply once to the official pinned FAWKQ campaign post and mention exactly three distinct interested people. Oracle verifies the linked X author, reply target and mentions.</p><small>${escapeHtml(xInviteBonus)} · ${escapeHtml(xInviteState)}</small></div>${statePill(xInviteState, state.xInvite?.verified ? 'success' : 'pending')}</div></section>`;
 }
 
-function profileIdentity() {
-  const p = state.profile;
-  const count = verifiedCount();
-  const fullyVerified = count === 3;
-  const oracleAvailable = Boolean(state.runtime?.oracleBotUrl);
-  const campaignRequirements = campaignEligibilityRequirements();
-
-  const steps = [
-    {
-      label: 'Telegram',
-      complete: p.telegramVerified,
-      locked: false,
-      detail: p.telegramVerified ? 'Telegram Mini App session verified.' : 'Open Project Q from the official Telegram bot.',
-      action: p.telegramVerified ? null : 'Open Telegram',
-      actionId: null,
-      provider: 'q',
-    },
-    {
-      label: 'X Identity',
-      complete: p.xVerified,
-      locked: !p.telegramVerified || !oracleAvailable,
-      detail: p.xVerified ? `Oracle verified · ${formatProfileDate(p.xVerifiedAt)}` : oracleAvailable ? 'Connect the X account used for eligible social activity.' : 'Oracle Dev connection is being prepared.',
-      action: p.xVerified ? 'Open Oracle' : 'Connect X',
-      actionId: 'oracle-link',
-      provider: 'oracle',
-    },
-    {
-      label: 'Reward Wallet',
-      complete: p.walletVerified,
-      locked: !p.telegramVerified || !oracleAvailable,
-      detail: p.walletVerified ? `Oracle verified · ${formatProfileDate(p.walletVerifiedAt)}${state.wallet ? ` · ${short(state.wallet)}` : ''}` : oracleAvailable ? 'Verify the one wallet used for eligibility and distributions.' : 'Oracle Dev connection is being prepared.',
-      action: p.walletVerified ? 'Open Oracle' : 'Connect Wallet',
-      actionId: 'profile-wallet',
-      provider: 'oracle',
-    },
-  ];
-
-  const nextIndex = steps.findIndex((step) => !step.complete);
-  const nextLabel = nextIndex >= 0 ? steps[nextIndex].label : 'Complete';
-
-  return `<div class="identity-passport-view">
-    <section class="dossier-identity-clearance">
-      <div class="dossier-subheading"><span>CAMPAIGN CLEARANCE</span><strong>${campaignRequirements.filter(({ complete }) => complete).length} / ${campaignRequirements.length}</strong></div>
-      ${campaignRequirements.map(({ label, complete }) => `<div class="dossier-requirement"><i class="${complete ? 'complete' : ''}">${complete ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${complete ? 'VERIFIED' : 'PENDING'}</b></div>`).join('')}
-    </section>
-    <section class="identity-status-card">
-      <div>
-        <span>PROJECT Q IDENTITY</span>
-        <h3>${fullyVerified ? 'Identity Complete' : `Next: ${escapeHtml(nextLabel)}`}</h3>
-        <p>${fullyVerified
-          ? 'Your Telegram, X identity and reward wallet are connected to one Project Q participant record.'
-          : 'Complete each connection once. Project Q then uses the verified identity for missions, eligibility and rewards.'}</p>
-      </div>
-      <div class="identity-status-score"><strong>${count}/3</strong><span>VERIFIED</span></div>
-    </section>
-
-    <section class="identity-step-list">
-      ${steps.map((step, index) => `<article class="identity-passport-step ${step.complete ? 'complete' : index === nextIndex ? 'current' : step.locked ? 'locked' : ''}">
-        <div class="identity-step-number">${step.complete ? '✓' : String(index + 1).padStart(2,'0')}</div>
-        <div class="identity-step-provider ${step.provider === 'oracle' ? 'oracle-provider' : ''}">
-          ${step.provider === 'oracle'
-            ? `<img src="${ORACLE_LOGO}" alt="Oracle" />`
-            : '<img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" />'}
-        </div>
-        <div class="identity-step-copy">
-          <div><b>${escapeHtml(step.label)}</b>${statePill(step.complete ? 'VERIFIED' : step.locked ? 'LOCKED' : 'NEXT', step.complete ? 'success' : 'pending')}</div>
-          <p>${escapeHtml(step.detail)}</p>
-        </div>
-        ${step.actionId ? `<button class="outline-action" id="${step.actionId}" ${step.locked ? 'disabled' : ''}>${escapeHtml(step.action)}</button>` : ''}
-      </article>`).join('')}
-    </section>
-
-    <section class="identity-system-note">
-      <div class="identity-system q-system"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="" /><span><b>Project Q</b><small>Records identity state and campaign eligibility.</small></span></div>
-      <div class="identity-system oracle-system"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Verifies canonical X and reward-wallet connections.</small></span></div>
-    </section>
-
-    <div class="dossier-identity-actions"><button data-profile-view="wallet">VIEW REWARD WALLET →</button><button data-profile-view="referrals">VERIFIED REFERRALS →</button><button data-replay-tour>REPLAY GUIDE →</button></div>
-    ${p.telegramVerified ? '<button class="identity-refresh outline-action" id="identity-refresh">Refresh Verification Status</button>' : ''}
-  </div>`;
-}
-
 function profileScreen() {
   const p = state.profile;
-  const c = state.campaign || fallbackCampaign;
-  const count = verifiedCount();
-  const fullyVerified = count === 3;
-  const op = operationNumber();
-  const views = { overview: profileOverview, wallet: profileWallet, activity: profileActivity, rewards: profileRewards, referrals: profileReferrals, identity: profileIdentity };
-  const content = (views[state.profileView] || profileOverview)();
-  const operationSchedule = !state.runtime
-    ? 'Checking campaign schedule'
-    : state.runtime.schedule?.phase === 'PRE_LAUNCH' && !state.runtime.schedule?.targetAt
-      ? 'Campaign dates pending · 10 active days'
-      : c.schedule?.activeLabel || 'Campaign schedule pending';
-
-  return `<div class="passport-ui">
-    <section class="participant-passport">
-      <div class="passport-copy">
-        <span class="passport-kicker">PROJECT Q // CAMPAIGN DOSSIER</span>
-        <h2>${escapeHtml(p.name)}</h2>
-        ${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}
-        <div class="passport-id-line"><span>UNIVERSAL ID</span>${statePill('RANK SYNC PENDING', 'pending')}</div>
-        <p><b>${escapeHtml(c.name || 'Bond the Duck')}</b> · ${fullyVerified ? 'Campaign Operator' : 'Campaign access pending'}${Number(state.runtime?.schedule?.currentCycle || 0) ? ` · CYCLE ${Number(state.runtime.schedule.currentCycle)}` : ''}</p>
-      </div>
-      <div class="passport-photo">
-        <img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Project Q participant identity" />
-        <span class="${fullyVerified ? 'verified' : ''}">${fullyVerified ? 'VERIFIED' : 'PENDING'}</span>
-      </div>
-      <div class="passport-motto">PEOPLE<br />COMMUNITY<br />DEFI<br />OCEAN IMPACT</div>
-    </section>
-
-    ${profileTabs()}
-    ${content}
-
-    ${state.profileView === 'overview' ? `<section class="passport-records">
-      <div class="dossier-heading"><span>Campaign Records</span><b>1 OPERATION</b></div>
-      <button class="passport-operation-record" data-screen="operations">
-        <span class="passport-op">OP<br /><b>${op}</b></span>
-        <div class="passport-record-copy">
-          <small>${escapeHtml(c.shortName || 'Operation')}</small>
-          <b>${escapeHtml(c.name || 'Bond the Duck')}</b>
-          <span>${escapeHtml(operationSchedule)}</span>
-        </div>
-        ${c.banner ? `<img src="${escapeHtml(c.banner)}" alt="" loading="lazy" decoding="async" />` : ''}
-        <em>${escapeHtml(operationLifecycleState().label)}</em>
-      </button>
-    </section>` : ''}
+  const walletView = state.profileView === 'wallet';
+  return `<div class="passport-ui profile-identity-ui">
+    ${walletView ? '<button class="burn-back" data-profile-view="overview">← PROFILE</button>' : ''}
+    <section class="participant-passport profile-compact-header"><div class="passport-copy"><span class="passport-kicker">PROJECT Q // YOUR IDENTITY</span><h2>${escapeHtml(p.name)}</h2>${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}<div class="passport-id-line"><span>UNIVERSAL ID</span><b>${p.profileId ? escapeHtml(short(p.profileId)) : 'SYNC PENDING'}</b></div><small>Crab Army rank · Oracle sync pending</small></div><div class="passport-photo"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Your Telegram profile photo" /><span>${clearanceCountLabel()} CLEARANCE</span></div></section>
+    ${walletView ? profileWallet() : `${clearanceMarkup()}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button></details>`}
   </div>`;
 }
 
@@ -2361,7 +1652,7 @@ function render() {
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : state.screen === 'ocean' ? 'CRABSTAR / OCEAN IMPACT' : `PROJECT Q / ${c.sequence}`;
   document.querySelector('#account-control .account-copy b').textContent = state.profile.name;
-  document.querySelector('#account-name').textContent = `${verifiedCount()}/3 Verified`;
+  document.querySelector('#account-name').textContent = `${clearanceCountLabel()} Clearance`;
   const accountImage = document.querySelector('#account-control img');
   if (accountImage) {
     accountImage.onerror = () => {
@@ -2370,7 +1661,7 @@ function render() {
     };
     accountImage.src = safeHttpsUrl(state.profile.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   }
-  document.querySelector('#account-control').classList.toggle('verified', verifiedCount() === 3);
+  document.querySelector('#account-control').classList.toggle('verified', campaignClearanceReady());
   const lifecycle = state.runtime ? operationLifecycleState() : { label: 'SYNCING', tone: 'pending' };
   const railState = document.querySelector('#rail-campaign-state');
   if (railState) railState.textContent = lifecycle.label;
@@ -2440,15 +1731,15 @@ function navigateBack() {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
-function go(screen, { replace = false } = {}) {
+function go(screen, { replace = false, view = null } = {}) {
   screen = resolveScreenRoute(screen);
   if (!screens[screen]) return;
   if (state.screen !== screen) {
     if (!replace) state.navigationStack.push(state.screen);
-    if (screen === 'operations') state.operationsView = 'overview';
-    if (screen === 'record') state.recordView = 'xp';
-    if (screen === 'profile') state.profileView = 'overview';
   }
+  if (screen === 'operations') { state.operationsView = view || 'overview'; if (state.operationsView !== 'economics') state.activePool = null; }
+  if (screen === 'record') state.recordView = view || 'xp';
+  if (screen === 'profile') state.profileView = view || 'overview';
   state.screen = screen;
   history.replaceState(null, '', `#${screen}`);
   render();
@@ -2620,6 +1911,12 @@ async function refreshWebsiteVoteState() {
 }
 
 function bindMissionDialog(dialog, missionId) {
+  dialog.querySelector('#copy-referral')?.addEventListener('click', async () => {
+    if (!state.referrals?.link) return;
+    try { await navigator.clipboard.writeText(state.referrals.link); toast('Personal referral link copied.'); }
+    catch { toast('Copy is unavailable in this browser.'); }
+  });
+
   dialog.querySelector('[data-mission-action]')?.addEventListener('click', () => executeMissionAction(missionId));
   dialog.querySelector('[data-view-requirements]')?.addEventListener('click', () => {
     const section = dialog.querySelector('.mission-clearance');
@@ -2630,7 +1927,7 @@ function bindMissionDialog(dialog, missionId) {
   dialog.querySelectorAll('[data-screen]').forEach((button) => button.addEventListener('click', () => {
     if (button.dataset.profileView) state.profileView = button.dataset.profileView;
     closeMission();
-    go(button.dataset.screen);
+    go(button.dataset.screen, { view: button.dataset.profileView || null });
   }));
   dialog.querySelectorAll('[data-vote-source-key]').forEach((button) => {
     button.addEventListener('click', () => startWebsiteVote(button.dataset.voteSourceKey));
@@ -2755,15 +2052,9 @@ function missionStatusSummaryMarkup(mission, telemetry) {
 }
 
 function missionClearanceMarkup() {
-  const requirements = campaignEligibilityRequirements();
-  const complete = requirements.filter(({ complete: done }) => done).length;
-  const next = requirements.find(({ complete: done }) => !done);
-  return `<section class="mission-clearance">
-    <div class="mission-clearance-head"><div><span>CAMPAIGN CLEARANCE</span><b>${complete} OF ${requirements.length} COMPLETE</b></div><strong>${complete}/${requirements.length}</strong></div>
-    <div class="mission-clearance-track">${requirements.map(({ complete: done })=>`<i class="${done ? 'complete' : ''}"></i>`).join('')}</div>
-    ${next ? `<div class="mission-next-requirement"><span>NEXT REQUIREMENT</span><b>${escapeHtml(next.label)}</b><small>${escapeHtml(next.detail)}</small>${next.action ? `<button type="button" data-screen="${next.action.screen}" data-profile-view="${next.action.profileView}">CONTINUE SETUP →</button>` : ''}</div>` : '<p>Eligibility requirements complete. Mission availability also depends on the operation state.</p>'}
-    <details><summary>View all requirements <span>⌄</span></summary><div class="mission-clearance-all">${requirements.map((item)=>`<div><i>${item.complete ? '✓' : '○'}</i><span>${escapeHtml(item.label)}</span></div>`).join('')}</div></details>
-  </section>`;
+  const checks = campaignEligibilityRequirements();
+  const next = checks.find(item => !item.complete);
+  return `<section class="mission-clearance"><div class="mission-clearance-head"><div><span>CLEARANCE</span><b>${next ? escapeHtml(next.label) + ' pending' : 'Clearance complete'}</b></div><strong>${clearanceCountLabel()}</strong></div>${next ? '<button class="outline-action" data-screen="profile">VIEW CLEARANCE →</button>' : '<p>Availability also depends on the operation and source status.</p>'}</section>`;
 }
 
 function missionDetailMarkup(mission) {
@@ -2866,6 +2157,9 @@ function missionDetailMarkup(mission) {
     ${missionClearanceMarkup()}
     ${mission.readOnlyAction && operationLifecycleState().label !== 'ACTIVE' ? '<small class="mission-read-only-note">Read-only access · no new campaign credit is created from this action.</small>' : ''}
 
+    ${mission.id === 'verified-referrals' ? referralMissionMarkup() : ''}
+    ${mission.id === 'community-pulse' ? communityPulsePanel() : ''}
+    ${mission.id === 'buy-to-earn' ? buyPositionMarkup() : ''}
     ${mission.id === 'website-voting' ? sourceList : sourceList ? `<details class="mission-file-disclosure"><summary>Registered Sources <span>⌄</span></summary><div class="mission-file-disclosure-body">${sourceList}</div></details>` : ''}
 
     <details class="mission-file-disclosure" open>
@@ -2904,15 +2198,18 @@ function executeMissionAction(missionId) {
   closeMission();
   if (missionId === 'oracle-raids') return openOracle();
   if (missionId === 'bagwork') return openExternal('https://fawkq.com/bagwork');
-  if (missionId === 'buy-to-earn') { state.profileView = 'rewards'; return go('profile'); }
-  if (missionId === 'verified-referrals') { state.profileView = 'referrals'; return go('profile'); }
+  if (missionId === 'buy-to-earn') return openMission('buy-to-earn');
+  if (missionId === 'verified-referrals') return openMission('verified-referrals');
   if (missionId === 'earn-to-burn') return go('burns');
-  if (['community-pulse', 'participation-xp'].includes(missionId)) { state.recordView = 'xp'; return go('record'); }
+  if (missionId === 'community-pulse') return openMission('community-pulse');
+  if (missionId === 'participation-xp') return go('record');
   const mission = state.campaign?.missions?.find(({ id }) => id === missionId);
   toast(`${mission?.title || 'Mission'} source launcher is not available.`);
 }
 
 function openMission(missionId) {
+  if (missionId === 'participation-xp') return go('record');
+  if (missionId === 'earn-to-burn') { state.activePool = 'earnToBurn'; return go('operations', { view: 'economics' }); }
   const mission = state.campaign?.missions?.find(({ id }) => id === missionId);
   const dialog = document.querySelector('#mission-dialog');
   if (!mission || !dialog) return;
@@ -3236,14 +2533,30 @@ function openExplainer(key) {
 
 function openCampaignUpdates() {
   const dialog = document.querySelector('#updates-dialog');
-  const lifecycle = state.runtime ? operationLifecycleState().label : 'Checking status';
-  dialog.innerHTML = `<header><div><small>PROJECT Q</small><h2>Campaign updates</h2></div><button aria-label="Close updates">×</button></header><article><span>${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Campaign')}</h3><p>${escapeHtml(state.runtime?.schedule?.label || 'Live campaign status is temporarily unavailable.')}</p></article><p>Review operation details, verification requirements and launch status in Intel.</p><button class="updates-intel">Open Intel →</button>`;
+  const lifecycle = state.runtime ? operationLifecycleState().label : 'STATUS UNAVAILABLE';
+  dialog.innerHTML = `<header><div><small>PROJECT Q</small><h2>Updates</h2></div><button aria-label="Close updates">×</button></header><article><span>OPERATION STATUS // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3><p>${escapeHtml(state.runtime?.schedule?.label || 'Live operation status is temporarily unavailable.')}</p></article><p>No additional announcements have been published in this feed.</p>`;
   dialog.querySelector('[aria-label="Close updates"]').onclick = () => dialog.close();
-  dialog.querySelector('.updates-intel').onclick = () => { dialog.close(); state.operationsView = 'intel'; go('operations'); };
   dialog.showModal();
 }
 
 function bind() {
+  document.querySelectorAll('[data-clearance-action]').forEach(element => {
+    element.onclick = () => {
+      if (element.dataset.clearanceAction === 'oracle') return openOracle();
+      if (element.dataset.clearanceAction === 'wallet') return go('profile', { view: 'wallet' });
+      if (state.runtime?.projectQBotUrl) return openExternal(state.runtime.projectQBotUrl);
+      toast('Open Project Q from the official Telegram bot to verify your identity.');
+    };
+  });
+  document.querySelectorAll('[data-pool-id]').forEach(element => {
+    element.onclick = () => { state.activePool = element.dataset.poolId; go('operations', { view: 'economics' }); };
+  });
+  document.querySelector('#standing-filter')?.addEventListener('change', event => {
+    state.leaderboardView = event.currentTarget.value;
+    renderTabInPlace();
+    document.querySelector('#standing-filter')?.focus({ preventScroll: true });
+  });
+
   document.querySelector('#ocean-display-mode')?.addEventListener('change', (event) => {
     state.oceanDraftMode = event.currentTarget.value;
     state.oceanPreferenceError = null;
@@ -3321,7 +2634,7 @@ function bind() {
   document.querySelectorAll('[data-screen]').forEach((element) => {
     element.onclick = () => {
       if (element.dataset.profileView && state.screen === element.dataset.screen) state.profileView = element.dataset.profileView;
-      go(element.dataset.screen);
+      go(element.dataset.screen, { view: element.dataset.profileView || null });
     };
   });
   document.querySelectorAll('[data-explainer]').forEach((element) => { element.onclick = () => openExplainer(element.dataset.explainer); });
@@ -3365,24 +2678,25 @@ function bind() {
       const isTab = element.getAttribute('role') === 'tab';
       state.profileView = element.dataset.profileView;
       if (isTab && state.screen === 'profile') renderTabInPlace();
-      else go('profile');
+      else go('profile', { view: element.dataset.profileView });
       if (isTab) document.querySelector('.passport-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
     element.onclick = () => {
       state.operationsView = element.dataset.operationView;
+      state.activePool = null;
       if (element.getAttribute('role') === 'tab' && state.screen === 'operations') renderTabInPlace();
-      else go('operations');
+      else { state.activePool = null; go('operations', { view: element.dataset.operationView }); }
       if (element.getAttribute('role') === 'tab') document.querySelector('.operation-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
   document.querySelectorAll('[data-record-view]').forEach((element) => {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
-      state.recordView = element.dataset.recordView;
+      state.recordView = element.dataset.recordView === 'activity' ? 'xp' : element.dataset.recordView;
       if (isTab && state.screen === 'record') renderTabInPlace();
-      else go('record');
+      else go('record', { view: element.dataset.recordView === 'activity' ? 'xp' : element.dataset.recordView });
       if (isTab) document.querySelector('.record-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
@@ -3530,10 +2844,8 @@ async function loadWalletStatus() {
     state.walletStatus = payload.status;
     state.profile.holderEligible = Boolean(payload.status.holderEligible);
     state.profile.rewardEligible = Boolean(state.profile.campaignReady && payload.status.holderEligible);
-    if (payload.status.primaryTokenAccount) {
-      state.profile.tokenAccountReady = true;
-      state.profile.tokenAccount = payload.status.primaryTokenAccount;
-    }
+    state.profile.tokenAccountReady = Boolean(payload.status.primaryTokenAccount);
+    state.profile.tokenAccount = payload.status.primaryTokenAccount || null;
     return true;
   } catch {
     state.walletStatus = {

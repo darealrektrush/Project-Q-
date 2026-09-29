@@ -255,7 +255,9 @@ app.get('/campaign-app/api/runtime', async (req, res) => {
       : process.env.RENDER_EXTERNAL_HOSTNAME === 'project-q-8k3a.onrender.com'
         ? 'https://t.me/crabstar_oracle_bot'
         : null;
-    return res.status(200).json({ ok: true, runtime: { ...runtime, oracleBotUrl } });
+    const launcherUrl = telegram.botDeepLink('campaign');
+    const projectQBotUrl = /^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}\?start=campaign$/.test(launcherUrl || '') ? launcherUrl : null;
+    return res.status(200).json({ ok: true, runtime: { ...runtime, oracleBotUrl, projectQBotUrl } });
   } catch (err) {
     console.error('public campaign runtime unavailable', err.message);
     return res.status(503).json({ ok: false, error: 'campaign runtime unavailable' });
@@ -942,7 +944,7 @@ async function handleMessage(message) {
     case '/campaign':
       return telegram.sendMessage(chatId, await buildCampaignHomeText(), {
         threadId,
-        replyMarkup: campaignUi.buildBondTheDuckMenu(),
+        replyMarkup: await buildCampaignLauncherMenu(),
       });
     default:
       return;
@@ -1059,7 +1061,7 @@ async function handleCallbackQuery(callbackQuery) {
     case 'menu:campaigns:back':
       return sendHome(chatId, threadId, { isPrivate: chatType === 'private' });
     case campaignUi.CAMPAIGN_CALLBACK_PREFIX:
-      return editMenuMessage(callbackQuery, await buildCampaignHomeText(), campaignUi.buildBondTheDuckMenu());
+      return editMenuMessage(callbackQuery, await buildCampaignHomeText(), await buildCampaignLauncherMenu());
     case campaignUi.MISSIONS_CALLBACK_PREFIX:
       return editMenuMessage(callbackQuery, campaignUi.MISSIONS_HOME_TEXT, campaignUi.buildMissionsMenu());
     case `${campaignUi.MISSIONS_CALLBACK_PREFIX}:raids`:
@@ -1137,6 +1139,22 @@ async function buildCampaignHomeText() {
   }
 }
 
+async function buildCampaignLauncherMenu() {
+  try {
+    const runtime = await campaignService.getCampaignRuntime(supabase);
+    return campaignUi.buildBondTheDuckMenu(undefined, { enrollmentOpen: runtime.operational === true });
+  } catch { return campaignUi.buildBondTheDuckMenu(undefined, { enrollmentOpen: false }); }
+}
+
+function botOperationLifecycle(runtime) {
+  const state = String(runtime.databaseState || 'DRAFT');
+  if (['COMPLETED', 'ARCHIVED', 'DISTRIBUTING', 'PAUSED', 'TERMINATED'].includes(state)) return state;
+  if (['VERIFYING', 'ALLOCATIONS_FROZEN'].includes(state) || ['HANDOFF', 'REVIEW', 'REVIEW_EXTENSION', 'POST_REVIEW'].includes(runtime.schedule?.phase)) return 'REVIEWING';
+  if (runtime.operational) return 'ACTIVE';
+  if (runtime.schedule?.phase === 'ACTIVE') return 'LAUNCH BLOCKED';
+  return 'UPCOMING';
+}
+
 async function buildCampaignScreenText(screen, telegramUserId) {
   if (!['status', 'xp'].includes(screen)) return campaignUi.getCampaignScreen(screen);
   let status;
@@ -1146,9 +1164,17 @@ async function buildCampaignScreenText(screen, telegramUserId) {
     console.error('campaign participant status unavailable', err.message);
     status = campaignService.closedParticipantStatus();
   }
-  return screen === 'status'
-    ? campaignUi.buildParticipantStatusText(status)
-    : campaignUi.buildParticipantXpText(status);
+  if (screen !== 'status') return campaignUi.buildParticipantXpText(status);
+  let runtime = campaignService.closedCampaignStatus();
+  let standing = null;
+  try { runtime = await campaignService.getCampaignRuntime(supabase); } catch { /* Keep closed status. */ }
+  if (!status.unavailable) {
+    try { standing = (await getCampaignLeaderboards(supabase, telegramUserId)).overall?.participantRank ?? null; } catch { /* Never infer a standing. */ }
+  }
+  return campaignUi.buildParticipantStatusText(status, {
+    lifecycle: botOperationLifecycle(runtime), standing,
+    oracleAvailable: /^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/.test(process.env.ORACLE_PROJECT_Q_BOT_URL || ''),
+  });
 }
 
 // Checks Supabase for an admin-set override (bio text / image) for `key`

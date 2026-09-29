@@ -22,9 +22,11 @@ async function loadRuntime() {
     performance: { now: () => 0 },
     fetch: async () => { throw new Error('network is not used by template tests'); },
     document: {},
+    history: { replaceState() {} },
   };
   vm.createContext(context);
-  const instrumented = source.replace(/\nboot\(\);\s*$/, '') + `
+  const guidance = (await readFile(new URL('participant-guidance.js', root), 'utf8')).replace(/^export /gm, '');
+  const instrumented = guidance + source.replace(/^import .*participant-guidance.*;\n/m, '').replace(/\nboot\(\);\s*$/, '') + `
     state.campaign = ${JSON.stringify(campaign)};
     globalThis.__rendered = Object.fromEntries(Object.entries(screens).map(([key, screen]) => [key, screen()]));
     globalThis.__profiles = {};
@@ -33,6 +35,13 @@ async function loadRuntime() {
       globalThis.__profiles[view] = profileScreen();
     }
     globalThis.__nav = NAV;
+    globalThis.__poolDetail = id => operationPoolDetailMarkup(state.campaign, id);
+    globalThis.__navigateWith = (from, destination, view = null) => {
+      state.telegram = null; state.screen = from; state.operationsView = 'economics'; state.profileView = 'wallet'; state.recordView = 'rank';
+      const original = render; render = () => {};
+      go(destination, { view }); render = original;
+      return { screen: state.screen, operation: state.operationsView, profile: state.profileView, record: state.recordView };
+    };
     globalThis.__renderXpWithDailyBuckets = (buckets) => {
       state.profile.todayXpByBucket = buckets;
       return xpScreen();
@@ -205,6 +214,8 @@ async function loadRuntime() {
       state.profile.telegramVerified = true;
       state.profile.xVerified = true;
       state.profile.walletVerified = true;
+      state.profile.tokenAccountReady = true;
+      state.profile.holderEligible = true;
       return home();
     };
     globalThis.__renderOperationOverviewWith = (runtime, campaignState = 'DRAFT') => {
@@ -296,7 +307,7 @@ test('verified Telegram identity can show its portrait while Oracle campaign ide
   assert.equal(pending.profile.xVerified, false);
   assert.equal(pending.profile.walletVerified, false);
   assert.match(pending.banner, /campaign record pending/);
-  assert.match(pending.screen, /0\/3/);
+  assert.match(pending.screen, /0\/5/);
   assert.match(pending.home, /Sync Oracle Identity/);
   assert.match(pending.home, /data-retry-session/);
 });
@@ -309,68 +320,51 @@ test('legacy deep links normalize into the locked Operations IA', async () => {
   assert.equal(context.__resolveRoute('rewards'), 'rewards');
 });
 
-test('Operations UI renders from the real Bond campaign config', async () => {
+test('Operations UI gives each bottom destination one job', async () => {
   const context = await loadRuntime();
   assert.deepEqual(Array.from(context.__nav, ([id]) => id), ['home', 'operations', 'record', 'rewards', 'profile']);
-  for (const screen of ['home', 'operations', 'record', 'rewards', 'profile', 'burns', 'readiness']) {
-    assert.equal(typeof context.__rendered[screen], 'string');
-    assert.ok(context.__rendered[screen].length > 300, `${screen} should render substantial native UI`);
-  }
-  assert.match(context.__rendered.home, /Bond[\s\S]*the Duck/);
-  assert.match(context.__rendered.operations, /OPERATION 01/);
-  assert.match(context.__rendered.operations, /Four campaign pools/);
-  assert.match(context.__renderOperationsWithReadiness({ available: false }, 'rewards'), /Reward Pool/);
-  assert.match(context.__rendered.record, /PROJECT Q RECORD/);
-  assert.match(context.__rendered.record, /CAMPAIGN XP/);
-  assert.match(context.__rendered.record, /STANDING UNRANKED/);
-  assert.match(context.__rendered.record, />Standing<\/button>/);
+  assert.match(context.__rendered.operations, />Briefing<\/button>/);
+  assert.match(context.__rendered.operations, />Missions<\/button>/);
+  assert.match(context.__rendered.operations, />Economics<\/button>/);
+  assert.doesNotMatch(context.__rendered.operations, />Progress<\/button>|>Intel<\/button>|operation-clearance-disclosure/);
+  assert.match(context.__rendered.record, /YOUR RECORD/);
+  assert.match(context.__rendered.record, />Badges<\/button>/);
+  assert.doesNotMatch(context.__rendered.record, /record-proof-links|record-operation-context|>Activity<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation recorded yet/);
-  assert.doesNotMatch(context.__rendered.rewards, /Verified Reward Wallet/);
-  assert.match(context.__profiles.identity, /oracle-logo\.jpg/);
-  assert.match(context.__profiles.overview, /Campaign Records/);
+  assert.equal((context.__rendered.rewards.match(/OPEN WALLET/g) || []).length, 1);
+  assert.match(context.__profiles.overview, /CLEARANCE[\s\S]*0\/5/);
+  assert.doesNotMatch(context.__profiles.overview, /passport-tabs|Campaign Records|dossier-live-record|passport-rewards-view/);
   assert.match(context.__profiles.wallet, /VERIFIED REWARD DESTINATION/);
   assert.match(context.__profiles.wallet, /Non-custodial by design/);
-  assert.match(context.__profiles.activity, /PROJECT Q XP RECORDS/);
-  assert.match(context.__profiles.rewards, /ECONOMIC RECORD/);
-  assert.match(context.__profiles.referrals, /\$2 buy pending/);
 });
 
-test('Campaign Dossier keeps campaign standing and planned badges separate from universal rank', async () => {
+test('Profile owns identity while Record owns XP, standing and badges', async () => {
   const context = await loadRuntime();
-  const profile = context.__renderDossierWith({
-    name: 'RektRush', username: 'darealrektrush', xp: 680, rank: '#14',
-    completedMissions: 6, xpByBucket: { participation: 80, mission: 65, trending: 50, other: 0 },
-  }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
-  assert.match(profile, /PROJECT Q \/\/ CAMPAIGN DOSSIER/);
+  const profile = context.__renderDossierWith({ name: 'RektRush', username: 'darealrektrush', xp: 680, rank: '#14', completedMissions: 6 }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
+  assert.match(profile, /YOUR IDENTITY/);
   assert.match(profile, /@darealrektrush/);
-  assert.match(profile, /Campaign XP/);
-  assert.match(profile, /#14/);
-  assert.match(profile, /2 \/ 5/);
-  assert.match(profile, /CAMPAIGN CLEARANCE/);
-  assert.match(profile, /RANK SYNC PENDING/);
-  assert.doesNotMatch(profile, /Sergeant Major|4-day streak|27 verified actions/);
-  assert.match(context.__renderRecordWith('achievements'), />Planned<\/span>/);
-  const xpRecord = context.__renderRecordWith('xp');
-  assert.doesNotMatch(xpRecord, /Planned badges|progression-hero|xp-ledger-section/);
-  assert.equal((xpRecord.match(/CAMPAIGN XP<\/span>/g) || []).length, 1);
-  assert.match(xpRecord, /data-record-view="activity"/);
-  assert.match(xpRecord, /data-record-view="achievements"/);
-  assert.match(profile, /<details class="dossier-deep-record"/);
-  assert.match(profile, /No allocation recorded yet/);
-  assert.doesNotMatch(context.__rendered.record, /Rank Up|Level Up/);
+  assert.match(profile, /Crab Army rank · Oracle sync pending/);
+  assert.doesNotMatch(profile, /680|#14|dossier-live-record|dossier-reward-position|Sergeant Major/);
+  const badges = context.__renderRecordWith('achievements');
+  assert.match(badges, />Planned<\/span>/);
+  assert.equal((badges.match(/class="achievement locked"/g) || []).length, 8);
+  const xp = context.__renderRecordWith('xp');
+  assert.match(xp, /680/);
+  assert.match(xp, /XP history/);
+  assert.match(xp, /Today’s XP/);
+  assert.doesNotMatch(xp, /COMMUNITY PULSE|data-record-view="activity"|Rank Up|Level Up/);
 });
 
-test('Rewards pending state directs identity setup without suggesting a verified wallet or receipt', async () => {
+test('Rewards pending state shows one wallet action and no invented receipts', async () => {
   const context = await loadRuntime();
   const { screen, profile } = context.__renderRewardsWith({ recorded: false, releaseCount: 0, releases: [] });
-  assert.match(screen, /Verify your identity/);
-  assert.match(screen, /data-profile-view="identity"/);
+  assert.match(screen, /Complete Telegram identity/);
   assert.match(screen, /Reward Wallet Pending/);
   assert.match(screen, /No allocation recorded yet/);
+  assert.equal((screen.match(/OPEN WALLET/g) || []).length, 1);
   assert.doesNotMatch(screen, /reward-summary-grid|allocation-receipt|Verified Reward Wallet/);
-  assert.match(profile, /No allocation recorded yet/);
-  assert.doesNotMatch(profile, /RECORDED<\/span>/);
+  assert.doesNotMatch(profile, /No allocation recorded yet|ECONOMIC RECORD/);
 });
 
 test('Ocean Impact card opens a permanent mission page without an unverified contribution destination', async () => {
@@ -466,66 +460,51 @@ test('Mission Files are accessible below a compact campaign heading and readines
   assert.doesNotMatch(progress, />Campaign Progress</);
 });
 
-test('Operations makes the next setup step actionable without claiming the campaign has opened', async () => {
+test('Briefing repeats the shared next step and links to the sole clearance checklist', async () => {
   const context = await loadRuntime();
   const upcoming = context.__renderOperationOverviewWith({ databaseState: 'DRAFT', operational: false, schedule: { phase: 'PRE_LAUNCH' } });
-  assert.match(upcoming, /CURRENT ORDER \/\/ UPCOMING/);
-  assert.match(upcoming, /CONTINUE SETUP →/);
+  assert.match(upcoming, /NEXT STEP[\s\S]*Complete Telegram identity/);
+  assert.match(upcoming, /CLEARANCE 0\/5/);
+  assert.match(upcoming, /data-profile-view="overview"/);
   assert.match(upcoming, /PUBLIC LAUNCH READINESS/);
-  assert.match(upcoming, /<details class="operation-clearance-disclosure"><summary>[\s\S]*0 \/ 5 COMPLETE[\s\S]*<\/summary>/);
-  assert.match(upcoming, /Four campaign pools/);
-  assert.match(upcoming, /data-operation-view="rewards"/);
-  assert.doesNotMatch(upcoming, /class="operation-economics operation-pool-list"/);
-  assert.doesNotMatch(upcoming, /VIEW VERIFIED PROGRESS/);
+  assert.match(upcoming, /data-operation-view="economics"/);
+  assert.doesNotMatch(upcoming, /clearance-list|operation-clearance-disclosure|class="operation-economics operation-pool-list"/);
 });
 
-test('Operations progress follows active and review states and keeps launch readiness separate', async () => {
+test('Legacy Progress entry folds into Briefing with live operation state', async () => {
   const context = await loadRuntime();
-  const activeRuntime = { databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE', currentCycle: 2, label: 'Cycle 2 closes' } };
-  const active = context.__renderOperationsWithRuntime(activeRuntime, 'progress');
-  assert.match(active, /CAMPAIGN PROGRESS/);
+  const active = context.__renderOperationsWithRuntime({ databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE', currentCycle: 2, label: 'Cycle 2 closes' } }, 'progress');
   assert.match(active, /CYCLE 2 \/ 5/);
-  assert.match(active, /OPEN YOUR RECORD/);
-  assert.doesNotMatch(active, /Operational gates before launch/);
-  const reviewRuntime = { databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' } };
-  const review = context.__renderOperationsWithRuntime(reviewRuntime, 'overview');
-  assert.match(review, /OPERATION STATUS/);
-  assert.doesNotMatch(review, /PUBLIC LAUNCH READINESS/);
-  const reviewProgress = context.__renderOperationsWithRuntime(reviewRuntime, 'progress');
-  assert.match(reviewProgress, /Verified activity under review/);
-  assert.doesNotMatch(reviewProgress, /Operational gates before launch/);
+  assert.match(active, />Briefing<\/button>/);
+  assert.doesNotMatch(active, /operation-live-progress|>Progress<\/button>/);
+  const review = context.__renderOperationsWithRuntime({ databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' } }, 'progress');
+  assert.match(review, /REVIEWING/);
+  assert.doesNotMatch(review, /operation-live-progress/);
 });
 
-test('Operations pool and Intel disclose verification state without asserting unfunded awards', async () => {
+test('Economics discloses verification state without asserting unfunded awards', async () => {
   const context = await loadRuntime();
-  const pending = context.__renderOperationsWithReadiness({ available: true, readyCount: 0, totalCount: 12, checks: [] }, 'rewards');
+  const pending = context.__renderOperationsWithReadiness({ available: false }, 'economics');
   assert.match(pending, /Planned · funding pending/);
-  assert.match(pending, /Planned · burn checks pending/);
-  assert.match(pending, /Planned · prize evidence pending/);
-  assert.match(pending, /Your personal allocation is tracked separately/);
-  assert.match(pending, /<strong>15M<\/strong>[\s\S]*15,000,000 FAWKQ/);
-  assert.match(pending, /<strong>2\.5M<\/strong>[\s\S]*2,500,000 FAWKQ/);
-  assert.match(pending, /data-screen="burns" aria-label="View Earn to Burn details/);
-  assert.equal((pending.match(/class="operation-pool-row"/g) || []).length, 4);
-  const verified = context.__renderOperationsWithReadiness({ available: true, checks: ['funding', 'registry', 'burn-rules', 'burn-progress', 'burn-verification'].map((key) => ({ key, ready: true })) }, 'rewards');
+  assert.match(pending, /data-pool-id="campaignRewards"/);
+  assert.match(pending, /Treasury & receipts/);
+  assert.doesNotMatch(pending, /Funding gate verified/);
+  const verified = context.__renderOperationsWithReadiness({ available: true, checks: ['funding', 'registry', 'burn-rules', 'burn-progress', 'burn-verification'].map(key => ({ key, ready: true })) }, 'economics');
   assert.match(verified, /Funding gate verified/);
   assert.match(verified, /Burn gates verified/);
   assert.match(verified, /Prize registry verified/);
-  const intel = context.__renderOperationsWithReadiness({ available: false }, 'intel');
-  assert.match(intel, /Signed Telegram access is needed/);
-  assert.doesNotMatch(intel, /LIVE SOURCES/);
 });
 
 test('Earn to Burn shows planned milestones without inventing ledger progress when unavailable', async () => {
   const context = await loadRuntime();
   const unavailable = context.__renderBurnsWith(null);
   assert.match(unavailable, /CONFIGURED BURN RESERVE[\s\S]*15M/);
-  assert.match(unavailable, /Burn record temporarily unavailable/);
+  assert.match(unavailable, /Burn progress temporarily unavailable/);
   assert.match(unavailable, /The milestones below are the configured plan only/);
   assert.equal((unavailable.match(/class="burn-plan-row /g) || []).length, 5);
   assert.match(unavailable, /3M[\s\S]*3,000,000 FAWKQ/);
   assert.doesNotMatch(unavailable, /ON-CHAIN RECEIPTS|CONFIRMED BURNED/);
-  assert.match(unavailable, /data-operation-view="rewards"/);
+  assert.match(unavailable, /data-operation-view="economics"/);
 });
 
 test('Earn to Burn separates verified totals, the next unlock and on-chain receipts', async () => {
@@ -544,7 +523,7 @@ test('Earn to Burn separates verified totals, the next unlock and on-chain recei
   assert.match(live, /aria-label="Next burn milestone"[\s\S]*aria-valuenow="50"/);
   assert.match(live, /CONFIRMED \/\/ BURN-01/);
   assert.match(live, /https:\/\/solscan\.io\/tx\/validSignature/);
-  assert.doesNotMatch(live, /Burn record temporarily unavailable/);
+  assert.doesNotMatch(live, /Burn progress temporarily unavailable/);
 });
 
 test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {
@@ -574,9 +553,8 @@ test('Launch Readiness screen groups all public gates and exposes only the repor
   assert.match(rendered, /Campaign foundation/);
   assert.match(rendered, /Participation rails/);
   assert.match(rendered, /Earn to Burn/);
-  assert.match(rendered, /15,000,000 FAWKQ/);
-  assert.match(rendered, /2,500,000 FAWKQ/);
-  assert.match(rendered, /1 SOL/);
+  assert.match(rendered, /SEE OPERATION ECONOMICS/);
+  assert.doesNotMatch(rendered, /launch-commitments/);
   assert.match(rendered, new RegExp('e'.repeat(64)));
   assert.match(rendered, /cannot activate the campaign/);
   assert.doesNotMatch(rendered, /evidence_url|founder_user_id|source_key|service_role/i);
@@ -590,20 +568,17 @@ test('Operations UI never fabricates participant results', async () => {
   assert.match(rendered.leaderboard, /Rankings open with verified activity/);
   assert.doesNotMatch(rendered.home, /42%/);
 });
-test('Operations renders exact public readiness totals and launch-gate status', async () => {
+test('Public readiness owns the gate list while Briefing links to it', async () => {
   const context = await loadRuntime();
-  const checks = Array.from({ length: 11 }, (_, index) => ({
-    key: `gate-${index + 1}`, label: `Launch gate ${index + 1}`, ready: index < 6,
-  }));
-  const readiness = { available: true, ready: false, readyCount: 6, totalCount: 11, percent: 55, checks };
-  const intel = context.__renderOperationsWithReadiness(readiness, 'intel');
-  const progress = context.__renderOperationsWithReadiness(readiness, 'progress');
-  assert.match(progress, /55%/);
-  assert.match(intel, /6 \/ 11 verified/);
-  assert.match(intel, /Launch gate 1[\s\S]*Verified/);
-  assert.match(intel, /Launch gate 11[\s\S]*Pending/);
-  assert.match(intel, /Read-only readiness · no activation or treasury controls/);
+  const readiness = { available: true, ready: false, readyCount: 6, totalCount: 11, percent: 55, checks: Array.from({ length: 11 }, (_, index) => ({ key: `gate-${index+1}`, label: `Launch gate ${index+1}`, ready: index < 6 })) };
+  const report = context.__renderReadinessWith(readiness);
+  assert.match(report, /55%/);
+  assert.match(report, /6 of 11 public gates are verified/);
+  const briefing = context.__renderOperationsWithReadiness(readiness, 'overview');
+  assert.equal((briefing.match(/data-screen="readiness"/g) || []).length, 1);
+  assert.doesNotMatch(briefing, /Launch gate 1/);
 });
+
 test('Terminal and Operations render authoritative campaign phase without unlocking gated missions', async () => {
   const context = await loadRuntime();
   const blocked = context.__renderHomeWithRuntime({
@@ -617,7 +592,7 @@ test('Terminal and Operations render authoritative campaign phase without unlock
     displayLabel: 'LAUNCH BLOCKED', tone: 'blocked',
     schedule: { phase: 'ACTIVE', label: 'Cycle 1 closes', targetAt: '2026-09-03T15:00:00.000Z', currentCycle: 1 },
   }, 'missions');
-  assert.match(operations, /Mission Files/);
+  assert.match(operations, /MISSION FILES/);
   assert.match(operations, /LOCKED/);
 });
 test('Terminal distinguishes a proposed target from authoritative campaign timing', async () => {
@@ -646,16 +621,16 @@ test('Telegram identity paints the participant passport and advances the Oracle 
   const xStep = context.__renderIdentityState({ user });
   assert.match(xStep.profile, /<h2>Duck Recruit<\/h2>/);
   assert.match(xStep.profile, /src="https:\/\/t\.me\/i\/userpic\/320\/duck\.jpg"/);
-  assert.match(xStep.home, /Connect Oracle X/);
+  assert.match(xStep.home, /Complete X linked through Oracle/);
   assert.match(xStep.home, /class="terminal-next-step oracle-next"/);
   assert.match(xStep.home, /assets\/oracle-logo\.jpg/);
   const walletStep = context.__renderIdentityState({ user, xVerified: true });
-  assert.match(walletStep.home, /Verify Reward Wallet/);
+  assert.match(walletStep.home, /Complete Reward wallet/);
   const pending = context.__renderIdentityState({ user, oracleAvailable: false });
-  assert.match(pending.home, /Oracle Dev setup pending/);
+  assert.match(pending.home, /Oracle connection pending/);
   assert.doesNotMatch(pending.home, /<b>Connect Oracle X<\/b>/);
   const pendingWallet = context.__renderIdentityState({ user, xVerified: true, oracleAvailable: false });
-  assert.match(pendingWallet.home, /Wallet connection will open when Oracle Dev is ready/);
+  assert.match(pendingWallet.home, /Oracle connection is not available/);
   const privatePhoto = context.__renderIdentityState({ user: { firstName: 'Duck', photoUrl: null } });
   assert.match(privatePhoto.profile, /assets\/system\/q-id\.webp/);
 });
@@ -686,31 +661,31 @@ test('Terminal and Operation primary actions follow authoritative lifecycle', as
   const context = await loadRuntime();
 
   const upcomingRuntime = { databaseState: 'SCHEDULED', operational: false, schedule: { phase: 'PRE_LAUNCH' } };
-  assert.match(context.__renderHomeLifecycleWith(upcomingRuntime, 'SCHEDULED'), /Prepare for Operation 01/);
-  assert.match(context.__renderOperationOverviewWith(upcomingRuntime, 'SCHEDULED'), /REVIEW MISSION FILES/);
+  assert.match(context.__renderHomeLifecycleWith(upcomingRuntime, 'SCHEDULED'), /Prepare for the operation/);
+  assert.match(context.__renderOperationOverviewWith(upcomingRuntime, 'SCHEDULED'), /PREVIEW MISSIONS/);
 
   const activeRuntime = { databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE' } };
-  assert.match(context.__renderHomeLifecycleWith(activeRuntime, 'ACTIVE'), /Enter Mission Files/);
-  assert.match(context.__renderOperationOverviewWith(activeRuntime, 'ACTIVE'), /ENTER MISSION FILES/);
+  assert.match(context.__renderHomeLifecycleWith(activeRuntime, 'ACTIVE'), /Choose a Mission File/);
+  assert.match(context.__renderOperationOverviewWith(activeRuntime, 'ACTIVE'), /CHOOSE A MISSION/);
 
   const reviewRuntime = { databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' } };
-  assert.match(context.__renderHomeLifecycleWith(reviewRuntime, 'VERIFYING'), /Final Review in Progress/);
-  assert.match(context.__renderOperationOverviewWith(reviewRuntime, 'VERIFYING'), /FOLLOW FINAL REVIEW/);
+  assert.match(context.__renderHomeLifecycleWith(reviewRuntime, 'VERIFYING'), /Follow final review/);
+  assert.match(context.__renderOperationOverviewWith(reviewRuntime, 'VERIFYING'), /Follow final review/);
 
   const distributionRuntime = { databaseState: 'DISTRIBUTING', operational: false, schedule: { phase: 'POST_REVIEW' } };
-  assert.match(context.__renderHomeLifecycleWith(distributionRuntime, 'DISTRIBUTING'), /Track Reward Delivery/);
-  assert.match(context.__renderOperationOverviewWith(distributionRuntime, 'DISTRIBUTING'), /TRACK REWARD DELIVERY/);
+  assert.match(context.__renderHomeLifecycleWith(distributionRuntime, 'DISTRIBUTING'), /Track reward delivery/);
+  assert.match(context.__renderOperationOverviewWith(distributionRuntime, 'DISTRIBUTING'), /Track reward delivery/);
 
   const completedRuntime = { databaseState: 'COMPLETED', operational: false, schedule: { phase: 'POST_REVIEW' } };
-  assert.match(context.__renderHomeLifecycleWith(completedRuntime, 'COMPLETED'), /View Your Permanent Record/);
-  assert.match(context.__renderOperationOverviewWith(completedRuntime, 'COMPLETED'), /VIEW OPERATION RECORD/);
+  assert.match(context.__renderHomeLifecycleWith(completedRuntime, 'COMPLETED'), /Review your operation history/);
+  assert.match(context.__renderOperationOverviewWith(completedRuntime, 'COMPLETED'), /Review your operation history/);
 });
 test('campaign clearance explains the exact missing requirement instead of generic ineligibility', async () => {
   const context = await loadRuntime();
 
   const telegramMissing = context.__renderClearanceWith({});
   assert.match(telegramMissing, /Telegram identity/);
-  assert.match(telegramMissing, /NEXT REQUIRED[\s\S]*Telegram identity/);
+  assert.match(telegramMissing, /data-clearance-action="telegram"/);
   assert.doesNotMatch(telegramMissing, /\bIneligible\b/i);
 
   const tokenMissing = context.__renderClearanceWith({
@@ -719,7 +694,7 @@ test('campaign clearance explains the exact missing requirement instead of gener
     walletVerified: true,
   });
   assert.match(tokenMissing, /FAWKQ token account/);
-  assert.match(tokenMissing, /NEXT REQUIRED[\s\S]*FAWKQ token account/);
+  assert.match(tokenMissing, /3\/5/);
 
   const holderMissing = context.__renderClearanceWith({
     telegramVerified: true,
@@ -837,9 +812,9 @@ test('mission cards render verified, pending and rejected participant evidence',
     websiteVoting: { verified: 4, pending: 0, rejected: 0, target: 9 },
     trendingBots: { verified: 1, pending: 1, rejected: 0, target: 5, pushPoints: 4 },
   });
-  assert.match(rendered, /Oracle X Raids[\s\S]*2 \/ 5 verified[\s\S]*1 pending[\s\S]*1 rejected/);
-  assert.match(rendered, /Website Voting[\s\S]*4 \/ 9 verified/);
-  assert.match(rendered, /Trending Bots[\s\S]*4 pushes · 1 \/ 5 bots/);
+  assert.match(rendered, /Oracle X Raids[\s\S]*2 \/ 5 VERIFIED/);
+  assert.match(rendered, /Website Voting[\s\S]*4 \/ 9 VERIFIED/);
+  assert.match(rendered, /Trending Bots[\s\S]*1 \/ 5 VERIFIED/);
   assert.doesNotMatch(rendered, /telegram_user_id|source_key|evidence_ref/);
 });
 
@@ -852,7 +827,8 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
     assert.match(detail, /<summary>Verification /);
     assert.match(detail, /<summary>Reward /);
     assert.match(detail, /Opening a destination alone does not create verified credit/);
-    assert.match(detail, /View all requirements/);
+    assert.match(detail, /VIEW CLEARANCE/);
+    assert.doesNotMatch(detail, /View all requirements/);
   }
   assert.match(context.__missionDetails['website-voting'], /1 XP per accepted source/);
   assert.match(context.__missionDetails['website-voting'], /available-source completion/);
@@ -935,7 +911,7 @@ test('Rewards renders exact participant allocation and release records without c
   assert.match(rendered.screen, /PAID/);
   assert.match(rendered.screen, /No claim transaction required/);
   assert.match(rendered.screen, new RegExp(`solscan\\.io/tx/${'5'.repeat(88)}`));
-  assert.match(rendered.profile, /Scheduled[\s\S]*42,000/);
+  assert.doesNotMatch(rendered.profile, /passport-rewards-view|Scheduled[\s\S]*42,000/);
   assert.doesNotMatch(`${rendered.screen}\n${rendered.profile}`, /Claimable|claim tokens|sign transaction/i);
 });
 
@@ -961,4 +937,32 @@ test('Wallet cockpit renders verified on-chain state without custody or transfer
   assert.match(rendered, /Locked after allocation/);
   assert.match(rendered, /Non-custodial by design/);
   assert.doesNotMatch(rendered, /Send FAWKQ|Transfer FAWKQ|seed phrase input/i);
+});
+
+test('general destination entry is canonical while explicit actions can open named details', async () => {
+  const context = await loadRuntime();
+  assert.equal(context.__navigateWith('operations', 'operations').operation, 'overview');
+  assert.equal(context.__navigateWith('rewards', 'operations').operation, 'overview');
+  assert.equal(context.__navigateWith('rewards', 'operations', 'economics').operation, 'economics');
+  assert.equal(context.__navigateWith('rewards', 'profile', 'wallet').profile, 'wallet');
+  assert.equal(context.__navigateWith('profile', 'profile').profile, 'overview');
+});
+
+test('mission selector excludes passive reports and preserves original file IDs', async () => {
+  const context = await loadRuntime();
+  const missions = context.__renderOperationsWithRuntime({ databaseState: 'DRAFT', schedule: { phase: 'PRE_LAUNCH' } }, 'missions');
+  assert.doesNotMatch(missions, /data-mission-id="participation-xp"|data-mission-id="earn-to-burn"/);
+  assert.match(missions, /7<\/b> MISSION FILES/);
+  assert.match(missions, /MF-07[\s\S]*Community Pulse/);
+  assert.match(missions, /MF-08[\s\S]*Verified Referrals/);
+});
+
+test('pool taps open pool rules rather than personal allocation status', async () => {
+  const context = await loadRuntime();
+  const pool = context.__poolDetail('campaignRewards');
+  assert.match(pool, /POOL DETAILS/);
+  assert.match(pool, /15,000,000 FAWKQ/);
+  assert.match(pool, /7.5M FAWKQ/);
+  assert.match(pool, /Funding gate|FUNDING GATE/);
+  assert.doesNotMatch(pool, /rewards-command/);
 });
