@@ -2444,7 +2444,7 @@ function navigateBack() {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
-function go(screen, { replace = false } = {}) {
+function go(screen, { replace = false, preserveScroll = false } = {}) {
   screen = resolveScreenRoute(screen);
   if (!screens[screen]) return;
   if (!replace && state.screen !== screen) state.navigationStack.push(state.screen);
@@ -2452,7 +2452,7 @@ function go(screen, { replace = false } = {}) {
   history.replaceState(null, '', `#${screen}`);
   render();
   updateTelegramBackButton();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
@@ -3348,14 +3348,14 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.profileView = element.dataset.profileView;
-      go('profile');
+      go('profile', { preserveScroll: isTab });
       if (isTab) document.querySelector('.passport-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
     element.onclick = () => {
       state.operationsView = element.dataset.operationView;
-      go('operations');
+      go('operations', { preserveScroll: element.getAttribute('role') === 'tab' });
       if (element.getAttribute('role') === 'tab') document.querySelector('.operation-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
@@ -3363,7 +3363,7 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.recordView = element.dataset.recordView;
-      go('record');
+      go('record', { preserveScroll: isTab });
       if (isTab) document.querySelector('.record-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
