@@ -912,7 +912,7 @@
 .past-operations button{min-height:44px;border:0;background:transparent;text-align:left;color:var(--q-ink)}
 .q-shell-v2 .profile-compact-header{grid-template-columns:minmax(0,1fr) 74px;min-height:0;padding:16px;gap:12px}
 .q-shell-v2 .profile-compact-header .passport-copy h2{font-size:30px;line-height:1.05;overflow-wrap:anywhere}
-.q-shell-v2 .profile-compact-header .passport-photo{width:74px;height:74px;align-self:start}
+.q-shell-v2 .profile-compact-header .passport-photo{order:0;width:74px;height:74px;align-self:start}
 .q-shell-v2 .profile-compact-header .passport-photo img{width:74px;height:74px}
 .profile-compact-header .passport-photo span{font-size:9px;white-space:nowrap}
 .profile-compact-header .passport-copy>small{color:var(--q-copy);font-size:12px;line-height:1.4;display:block;margin-top:7px}
@@ -924,7 +924,7 @@
 .profile-clearance .clearance-row>div{min-width:0}
 .profile-clearance .clearance-row b{font-size:14px;line-height:1.25}
 .profile-clearance .clearance-row small{font-size:12px;line-height:1.45;margin-top:4px;color:var(--q-copy)}
-.profile-clearance .clearance-row>button{min-height:44px;max-width:106px;padding:8px;border-radius:8px;font:700 12px var(--q-display);white-space:normal;background:#e7bd53;border:1px solid #ac8a38;color:#111}
+.profile-clearance .clearance-row>button{grid-column:3;grid-row:1;justify-self:end;min-height:44px;max-width:106px;padding:8px;border-radius:8px;font:700 12px var(--q-display);white-space:normal;background:#e7bd53;border:1px solid #ac8a38;color:#111}
 .profile-clearance .clearance-row>button:disabled{opacity:.48;cursor:not-allowed}
 .clearance-observation{display:block;padding-top:12px;color:var(--q-copy);font-size:12px;line-height:1.5}
 .profile-utilities{display:grid;grid-template-columns:1fr 1fr;gap:8px}
