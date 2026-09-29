@@ -282,7 +282,8 @@ test('Operations UI renders from the real Bond campaign config', async () => {
   }
   assert.match(context.__rendered.home, /Bond[\s\S]*the Duck/);
   assert.match(context.__rendered.operations, /OPERATION 01/);
-  assert.match(context.__rendered.operations, /Reward Pool/);
+  assert.match(context.__rendered.operations, /Four campaign pools/);
+  assert.match(context.__renderOperationsWithReadiness({ available: false }, 'rewards'), /Reward Pool/);
   assert.match(context.__rendered.record, /PROJECT Q RECORD/);
   assert.match(context.__rendered.record, /CAMPAIGN XP/);
   assert.match(context.__rendered.record, /STANDING UNRANKED/);
@@ -334,6 +335,9 @@ test('Operations makes the next setup step actionable without claiming the campa
   assert.match(upcoming, /CONTINUE SETUP →/);
   assert.match(upcoming, /PUBLIC LAUNCH READINESS/);
   assert.match(upcoming, /<details class="operation-clearance-disclosure"><summary>[\s\S]*0 \/ 5 COMPLETE[\s\S]*<\/summary>/);
+  assert.match(upcoming, /Four campaign pools/);
+  assert.match(upcoming, /data-operation-view="rewards"/);
+  assert.doesNotMatch(upcoming, /class="operation-economics operation-pool-list"/);
   assert.doesNotMatch(upcoming, /VIEW VERIFIED PROGRESS/);
 });
 
@@ -359,7 +363,11 @@ test('Operations pool and Intel disclose verification state without asserting un
   const pending = context.__renderOperationsWithReadiness({ available: true, readyCount: 0, totalCount: 12, checks: [] }, 'rewards');
   assert.match(pending, /Planned · funding pending/);
   assert.match(pending, /Planned · burn checks pending/);
-  assert.match(pending, /Funding checks and personal allocations are tracked separately/);
+  assert.match(pending, /Your personal allocation is tracked separately/);
+  assert.match(pending, /<strong>15M<\/strong>[\s\S]*15,000,000 FAWKQ/);
+  assert.match(pending, /<strong>2\.5M<\/strong>[\s\S]*2,500,000 FAWKQ/);
+  assert.match(pending, /data-screen="burns" aria-label="View Earn to Burn details/);
+  assert.equal((pending.match(/class="operation-pool-row"/g) || []).length, 4);
   const verified = context.__renderOperationsWithReadiness({ available: true, checks: ['funding', 'burn-rules', 'burn-progress', 'burn-verification'].map((key) => ({ key, ready: true })) }, 'rewards');
   assert.match(verified, /Funding gate verified/);
   assert.match(verified, /Burn gates verified/);

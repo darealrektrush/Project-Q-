@@ -1349,7 +1349,7 @@ function operationTabs() {
     ['rewards', 'Rewards'],
     ['intel', 'Intel'],
   ];
-  return `<div class="operation-tabs" role="tablist" aria-label="Bond the Duck operation sections">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
+  return `<div class="operation-tabs" role="tablist" aria-label="Bond the Duck operation sections">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" data-persist-focus="operation-${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
 }
 
 function operationCurrentOrderMarkup() {
@@ -1426,6 +1426,12 @@ function operationProgressMarkup(readiness, readinessLabel, readinessWidth) {
   </section>`;
 }
 
+function compactPoolAmount(amount) {
+  const value = Number(String(amount).replace(/,/g, ''));
+  if (!Number.isFinite(value) || value < 1_000_000) return amount;
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value / 1_000_000)}M`;
+}
+
 function operationPoolMarkup(c) {
   const commitments = c.campaignCommitments || {};
   const fundingGateVerified = Boolean(state.readiness?.available && state.readiness.checks?.find(({ key }) => key === 'funding')?.ready);
@@ -1437,7 +1443,11 @@ function operationPoolMarkup(c) {
     { amount: commitments.earnToBurn?.amountBaseUnits ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Earn to Burn', detail: burnVerified ? 'Burn gates verified' : 'Planned · burn checks pending', screen: 'burns' },
     { amount: commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '—', unit: '', label: 'Top Duck Prize', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
   ];
-  return `<div class="operation-economics" aria-label="Configured campaign pools">${rows.map((row) => `<article><strong>${escapeHtml(row.amount)}</strong><span>${escapeHtml(row.unit)}</span><small>${escapeHtml(row.label)}</small><em>${escapeHtml(row.detail)}</em><button data-screen="${row.screen}" aria-label="View ${escapeHtml(row.label)} details">DETAILS →</button></article>`).join('')}</div>`;
+  return `<div class="operation-economics operation-pool-list" aria-label="Configured campaign pools">${rows.map((row) => {
+    const compact = compactPoolAmount(row.amount);
+    const exact = row.amount === '—' ? 'Amount pending' : `${row.amount}${row.unit ? ` ${row.unit}` : ''}`;
+    return `<button type="button" class="operation-pool-row" data-screen="${row.screen}" aria-label="View ${escapeHtml(row.label)} details, ${escapeHtml(exact)}, ${escapeHtml(row.detail)}"><span class="pool-copy"><b>${escapeHtml(row.label)}</b><small>${escapeHtml(row.detail)}</small></span><span class="pool-value"><strong>${escapeHtml(compact)}</strong>${row.unit ? `<span>${escapeHtml(row.unit)}</span>` : ''}${compact !== row.amount || row.unit ? `<small>${escapeHtml(exact)}</small>` : ''}</span><span class="pool-chevron" aria-hidden="true">›</span></button>`;
+  }).join('')}</div>`;
 }
 
 function operationIntelMarkup() {
@@ -1520,10 +1530,10 @@ function operationsScreen() {
     content = operationProgressMarkup(readiness, readinessLabel, readinessWidth);
   } else if (state.operationsView === 'rewards') {
     content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>OPERATION ECONOMICS</span><h3>Configured prize pools.</h3></div><b>OP ${op}</b></div>
-      <p class="operation-pool-note">These are campaign amounts. Funding checks and personal allocations are tracked separately.</p>
+      <div class="operation-section-head"><div><span>OPERATION ECONOMICS</span><h3>Campaign pools.</h3></div><b>OP ${op}</b></div>
+      <p class="operation-pool-note">Configured commitments for this operation. Tap a pool for its reward or burn record. Your personal allocation is tracked separately.</p>
       ${operationPoolMarkup(c)}
-      <button class="q-primary-action" data-screen="rewards">OPEN REWARD PIPELINE →</button>
+      <div class="operation-pool-actions"><button data-screen="rewards">YOUR REWARDS →</button><button data-screen="burns">BURN RECORD →</button></div>
     </section>`;
   } else if (state.operationsView === 'intel') {
     content = operationIntelMarkup();
@@ -1537,8 +1547,7 @@ function operationsScreen() {
 
       <details class="operation-clearance-disclosure"><summary><span>CAMPAIGN CLEARANCE</span><b>${campaignEligibilityRequirements().filter(({ complete }) => complete).length} / ${campaignEligibilityRequirements().length} COMPLETE</b><i aria-hidden="true">⌄</i></summary>${clearanceMarkup({ compact: true })}</details>
 
-      <div class="operation-pool-heading"><span>CAMPAIGN POOLS</span><button data-operation-view="rewards">VIEW POOL DETAILS →</button></div>
-      ${operationPoolMarkup(c)}
+      <button type="button" class="operation-pool-teaser" data-operation-view="rewards"><span><b>OPERATION ECONOMICS</b><strong>Four campaign pools</strong><small>Reward pool · Diamond Duck · Earn to Burn · Top Duck</small></span><span class="pool-teaser-action">VIEW POOLS →</span></button>
 
       <div class="operation-impact-note">
         <div class="impact-globe">◎</div>
@@ -2214,6 +2223,15 @@ function render() {
   if (focusedControl) screen.querySelectorAll('[data-persist-focus]').forEach((control) => {
     if (control.dataset.persistFocus === focusedControl) control.focus({ preventScroll: true });
   });
+  if (state.screen === 'operations') {
+    const tabs = screen.querySelector('.operation-tabs');
+    const activeTab = tabs?.querySelector('[aria-selected="true"]');
+    if (activeTab && tabs.scrollWidth > tabs.clientWidth) {
+      const tabBounds = tabs.getBoundingClientRect();
+      const activeBounds = activeTab.getBoundingClientRect();
+      tabs.scrollLeft += activeBounds.left - tabBounds.left - (tabBounds.width - activeBounds.width) / 2;
+    }
+  }
   requestAnimationFrame(() => screen.classList.remove('screen-rendering'));
   document.querySelector('#screen-title').textContent = screenTitle;
   document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
@@ -3111,7 +3129,11 @@ function bind() {
     element.onclick = () => { state.profileView = element.dataset.profileView; go('profile'); };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
-    element.onclick = () => { state.operationsView = element.dataset.operationView; go('operations'); };
+    element.onclick = () => {
+      state.operationsView = element.dataset.operationView;
+      go('operations');
+      if (element.getAttribute('role') === 'tab') document.querySelector('.operation-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
+    };
   });
   document.querySelectorAll('[data-record-view]').forEach((element) => {
     element.onclick = () => { state.recordView = element.dataset.recordView; go('record'); };
