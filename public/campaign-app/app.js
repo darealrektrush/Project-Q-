@@ -2462,6 +2462,13 @@ function go(screen, { replace = false } = {}) {
   }
 }
 
+function renderTabInPlace() {
+  const scrollY = window.scrollY;
+  render();
+  window.scrollTo({ top: scrollY, behavior: 'instant' });
+  requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
+}
+
 function openOracle() {
   const url = state.runtime?.oracleBotUrl;
   if (!/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/.test(url || '')) {
@@ -3348,7 +3355,7 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.profileView = element.dataset.profileView;
-      if (isTab && state.screen === 'profile') render();
+      if (isTab && state.screen === 'profile') renderTabInPlace();
       else go('profile');
       if (isTab) document.querySelector('.passport-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
@@ -3356,7 +3363,7 @@ function bind() {
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
     element.onclick = () => {
       state.operationsView = element.dataset.operationView;
-      if (element.getAttribute('role') === 'tab' && state.screen === 'operations') render();
+      if (element.getAttribute('role') === 'tab' && state.screen === 'operations') renderTabInPlace();
       else go('operations');
       if (element.getAttribute('role') === 'tab') document.querySelector('.operation-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
@@ -3365,7 +3372,7 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.recordView = element.dataset.recordView;
-      if (isTab && state.screen === 'record') render();
+      if (isTab && state.screen === 'record') renderTabInPlace();
       else go('record');
       if (isTab) document.querySelector('.record-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
