@@ -722,10 +722,28 @@ function activityRow(item) {
   </article>`;
 }
 
+function achievementProgress(badge) {
+  const synced = state.sessionStatus === 'verified';
+  if (badge.id === 'xp-earned') {
+    const recorded = synced && Number(state.profile.xp || 0) > 0;
+    return { recorded, label: recorded ? 'OBJECTIVE RECORDED' : synced ? 'NOT STARTED' : 'SYNC REQUIRED', detail: recorded ? 'Settled operation XP confirms participation. Badge issuance is pending.' : 'Complete one eligible action and wait for its XP to settle.', progress: recorded ? 100 : 0 };
+  }
+  return { recorded: false, label: 'RULES PENDING', detail: badge.id === 'xp-master' ? 'The XP threshold must be published before this achievement can be awarded.' : 'Competitive recognition uses finalized eligible standings. Cohort and award rules must be published.', progress: null };
+}
+
 function badgeGallery(badges = []) {
-  return `<div class="badge-gallery">${badges.map((badge) => {
-    return `<article class="achievement locked"><img src="${escapeHtml(badge.image)}" alt="" loading="lazy" decoding="async" /><div><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Earn through verified campaign activity')}</p></div><span>Planned</span></article>`;
+  return `<div class="achievement-collection">${badges.map(badge => {
+    const progress = achievementProgress(badge);
+    return `<details class="achievement-objective ${progress.recorded ? 'objective-recorded' : ''}"><summary><img src="${escapeHtml(badge.image)}" alt="" loading="lazy" decoding="async" /><div><span>${escapeHtml(progress.label)}</span><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Verified operation contribution')}</p>${progress.progress !== null ? `<div class="objective-progress" aria-label="${progress.recorded ? 'Objective recorded, badge issuance pending' : 'Awaiting settled activity'}"><i style="width:${progress.progress}%"></i></div>` : ''}</div><em aria-hidden="true">⌄</em></summary><div class="achievement-rule"><b>HOW IT COUNTS</b><p>${escapeHtml(progress.detail)}</p><small>Campaign recognition is separate from Crab Army lifetime rank. No additional XP is granted by opening this objective.</small></div></details>`;
   }).join('')}</div>`;
+}
+
+function contributionBreakdownMarkup() {
+  const available = state.sessionStatus === 'verified';
+  const entries = [['Participation','participation'],['Project Q missions','mission'],['Trending activity','trending'],['Other verified activity','other']];
+  const values = state.profile.xpByBucket || {};
+  const maximum = Math.max(1,...entries.map(([,key])=>Number(values[key] || 0)));
+  return `<section class="contribution-intelligence"><header><span>SOURCE BREAKDOWN</span><b>${available ? 'RECORDED XP' : 'SYNC PENDING'}</b></header>${available ? entries.map(([label,key])=>`<div><span>${label}</span><i><em style="width:${Math.min(100,Math.max(0,Number(values[key] || 0))/maximum*100)}%"></em></i><strong>${Number(values[key] || 0).toLocaleString()}</strong></div>`).join('') : '<p>Open Project Q in Telegram to load your verified contribution breakdown.</p>'}<small>Source totals reflect up to 1,000 ledger entries. Total operation XP is shown separately.</small></section>`;
 }
 
 function xpScreen({ embedded = false } = {}) {
@@ -762,7 +780,8 @@ function xpScreen({ embedded = false } = {}) {
       </div>
     </section>
 
-    <section class="xp-ledger-section"><div class="section-head compact-head"><div><span class="label">Settled activity</span><h2>XP history</h2></div><span>Latest ${activity.length} entries</span></div>
+    ${contributionBreakdownMarkup()}
+    <section class="xp-ledger-section"><div class="section-head compact-head"><div><span class="label">Settled activity</span><h2>Recent XP history</h2></div><span>Latest ${activity.length} entries</span></div>
       <section class="ledger xp-ledger">${activity.length ? activity.map(item => activityRow({ label: missionName(item.missionCode, item.source), timestamp: `${item.source || 'verified'} · Cycle ${Number(item.cycleId || 0)} · ${formatProfileDate(item.awardedAt)}`, xp: Number(item.amount || 0), icon: 'Q' })).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>Entries appear only after eligible activity is verified and settled.</p></div>'}</section>
     </section>
 
@@ -1118,7 +1137,8 @@ function operationMissionsMarkup(c) {
       <div class="operation-section-head">
         <div><span>MISSION FILES</span><h3>Choose your next objective.</h3></div>
       </div>
-      <div class="mission-file-stats"><span><b>${missionRows.length}</b> MISSION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> CLEARANCE PENDING</span></div>
+      <div class="mission-file-stats"><span><b>${missions.length}</b> OPERATION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> CLEARANCE PENDING</span></div>
+      <p class="mission-catalogue-note">${missionRows.length} action missions · ${missions.length - missionRows.length} progress files. Progress tracks accepted activity; opening a file does not award XP.</p>
       <div class="mission-file-filters" role="group" aria-label="Filter mission files">${[['all','All'],['available','Available'],['active','Active'],['completed','Completed']].map(([key,label])=>`<button type="button" data-mission-filter="${key}" class="${state.missionFilter === key ? 'active' : ''}" aria-pressed="${state.missionFilter === key}">${label}</button>`).join('')}</div>
       <div class="mission-file-index">${filteredRows.length ? filteredRows.map(({ mission, index, telemetry }) => {
         const [instruction, reward, frequency] = missionListCopy(mission);
@@ -1134,6 +1154,7 @@ function operationMissionsMarkup(c) {
         </button>`;
       }).join('') : '<p class="mission-filter-empty">No mission files in this state yet. Try All to see every objective.</p>'}
       </div>
+      <section class="operation-progress-files" aria-label="Progress files"><header><span>PROGRESS FILES</span><small>Your activity, recorded.</small></header>${missions.map((mission,index)=>({mission,index})).filter(({mission})=>['participation-xp','earn-to-burn'].includes(mission.id)).map(({mission,index})=>`<button type="button" data-mission-id="${escapeHtml(mission.id)}"><span>MF-${String(index+1).padStart(2,'0')}</span><div><b>${escapeHtml(mission.title)}</b><small>${mission.id === 'participation-xp' ? 'Your settled XP and source history' : 'Collective milestones and confirmed burn receipts'}</small></div><strong>${mission.id === 'participation-xp' ? 'VIEW XP' : 'VIEW BURNS'} →</strong></button>`).join('')}</section>
     </section>`;
  }
 
@@ -1174,7 +1195,7 @@ function operationsScreen() {
           <div><span>FINAL REVIEW</span><b>48–72H</b></div>
         </div>
       </div>
-    </section>` : `<section class="operation-compact-context"><div><span>OPERATION ${op}</span><h2>${escapeHtml(c.name || 'Bond the Duck')}</h2><small>${escapeHtml(operationLifecycleState().label)} · ${state.operationsView === 'missions' ? `${actionableMissionFiles().length} MISSION FILES` : 'OPERATION ECONOMICS'}</small></div><button data-operation-view="overview">BRIEFING →</button></section>`}
+    </section>` : `<section class="operation-compact-context"><div><span>OPERATION ${op}</span><h2>${escapeHtml(c.name || 'Bond the Duck')}</h2><small>${escapeHtml(operationLifecycleState().label)} · ${state.operationsView === 'missions' ? `${(c.missions || []).length} OPERATION FILES` : 'OPERATION ECONOMICS'}</small></div><button data-operation-view="overview">BRIEFING →</button></section>`}
 
     ${operationTabs()}
     ${state.operationsView === 'overview' ? operationLifecycleMarkup() : ''}
@@ -1183,7 +1204,7 @@ function operationsScreen() {
 }
 
 function recordTabs() {
-  const tabs = [['xp', 'XP'], ['rank', 'Standing'], ['achievements', 'Badges']];
+  const tabs = [['xp', 'XP'], ['rank', 'Standing'], ['achievements', 'Achievements']];
   return `<div class="record-tabs" role="tablist" aria-label="Record sections">${tabs.map(([id, label]) => `<button class="${state.recordView === id ? 'active' : ''}" data-record-view="${id}" role="tab" aria-selected="${state.recordView === id}">${label}</button>`).join('')}</div>`;
 }
 
@@ -1205,7 +1226,7 @@ function recordScreen() {
   if (state.recordView === 'activity') state.recordView = 'xp';
   const badges = [...new Map([...(c.xpBadges || []), ...(c.leaderboardBadges || [])].map(item => [item.id, item])).values()];
   const content = state.recordView === 'rank' ? leaderboardScreen() : state.recordView === 'achievements'
-    ? `<section class="record-panel"><div class="dossier-heading"><span>Operation badges</span><b>AWARD RULES PENDING</b></div>${badgeGallery(badges)}</section>` : xpScreen({ embedded: true });
+    ? `<section class="record-panel"><div class="dossier-heading"><span>YOUR ACHIEVEMENTS</span><b>VERIFIED PROGRESS</b></div><p class="recognition-explanation">Explore objectives and recorded progress. Badge awards remain pending until their issuance rules and records are available.</p>${badgeGallery(badges)}</section>` : xpScreen({ embedded: true });
   return `<div class="record-ui"><section class="record-header record-header-compact"><div><span>YOUR RECORD // ${escapeHtml(c.name)}</span><h2>${escapeHtml(p.name)}</h2><p>Settled XP, standing and operation history.</p></div><div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>OPERATION XP</span></div></section>${recordTabs()}${content}${pastOperationsMarkup()}</div>`;
 }
 
@@ -1260,7 +1281,7 @@ function rewardsScreen() {
           <div><span>Amount</span><b>${formatBaseUnits(release.amountBaseUnits)}</b></div>
           <div><span>Status</span><b>${escapeHtml(String(release.status || '').toUpperCase())}</b></div>
           <div><span>Release</span><b>${Number(release.percent || 0)}%</b></div>
-          <div><span>Verified</span><b>${escapeHtml(formatProfileDate(release.scheduledAt))}</b></div>
+          <div><span>Scheduled</span><b>${escapeHtml(formatProfileDate(release.scheduledAt))}</b></div><div><span>Confirmed</span><b>${sig && release.confirmedBlockTime ? escapeHtml(formatProfileDate(release.confirmedBlockTime)) : 'Evidence pending'}</b></div>
         </div>
         ${sig ? `<a href="https://solscan.io/tx/${encodeURIComponent(sig)}" target="_blank" rel="noopener noreferrer">TX ${escapeHtml(short(sig))} ↗</a>` : '<span class="receipt-pending">On-chain receipt pending</span>'}
       </article>`;
@@ -1480,13 +1501,27 @@ function referralMissionMarkup() {
   <div class="x-invite-bonus"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span class="label">One-time X invite bonus</span><h3>Bring three real people into the conversation.</h3><p>Reply once to the official pinned FAWKQ campaign post and mention exactly three distinct interested people. Oracle verifies the linked X author, reply target and mentions.</p><small>${escapeHtml(xInviteBonus)} · ${escapeHtml(xInviteState)}</small></div>${statePill(xInviteState, state.xInvite?.verified ? 'success' : 'pending')}</div></section>`;
 }
 
+function campaignPassportMarkup() {
+  const p = state.profile;
+  const synced = state.sessionStatus === 'verified';
+  const cycle = Number(state.runtime?.schedule?.currentCycle || 0);
+  const cycleXp = (p.xpByCycle || []).find(row=>Number(row.cycleId) === cycle)?.xp || 0;
+  const nextRelease = (p.rewards?.releases || []).filter(row=>['scheduled','proposed','reserve'].includes(row.status) && Number.isFinite(Date.parse(row.scheduledAt || ''))).sort((a,b)=>Date.parse(a.scheduledAt)-Date.parse(b.scheduledAt))[0];
+  const first = (state.campaign?.xpBadges || []).find(badge=>badge.id === 'xp-earned');
+  const objective = first ? achievementProgress(first) : null;
+  return `<section class="campaign-passport"><header><div><span>OP ${operationNumber()} // CAMPAIGN PASSPORT</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3></div>${statePill(operationLifecycleState().label,operationLifecycleState().tone)}</header><div class="passport-live-metrics">${[['Operation XP',synced ? Number(p.xp || 0).toLocaleString() : '—'],['Standing',synced ? p.rank && p.rank !== '—' ? p.rank : 'UNRANKED' : '—'],['Current cycle',cycle ? `${cycle} / ${(state.campaign?.schedule?.cycles || []).length || 5}` : 'PENDING'],['Cycle XP',synced && cycle ? Number(cycleXp).toLocaleString() : '—']].map(([label,value])=>`<div><span>${label}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('')}</div><p>${synced ? 'Settled contribution builds your operation history.' : 'Your personal record loads after Telegram identity and Oracle synchronization.'}</p><details class="passport-contribution-detail"><summary>Contribution details <span>⌄</span></summary>${contributionBreakdownMarkup()}<small>${synced ? `${Number(p.completedMissions || 0)} mission codes with settled XP · ${(p.activity || []).length} recent ledger entries` : 'Mission progress awaiting synchronization.'}</small></details></section>
+  <section class="passport-recognition"><header><span>ACHIEVEMENT IN FOCUS</span><button data-record-view="achievements">VIEW ACHIEVEMENTS →</button></header>${first ? `<div><img src="${escapeHtml(first.image)}" alt="" /><div><b>${escapeHtml(first.label)}</b><p>${escapeHtml(objective.detail)}</p><small>${escapeHtml(objective.label)}</small></div></div>` : '<p>Recognition objectives are being prepared.</p>'}</section>
+  <section class="passport-outcomes"><header><span>YOUR OUTCOMES</span><b>${synced ? 'OPERATION RECORD' : 'SYNC PENDING'}</b></header><div><span>Allocated rewards</span><strong>${synced && p.rewards?.recorded ? `${escapeHtml(compactPoolAmount(formatBaseUnits(p.rewards.allocatedBaseUnits)))} FAWKQ` : 'NOT RECORDED'}</strong></div><div><span>Next scheduled release</span><strong>${synced && nextRelease ? escapeHtml(formatProfileDate(nextRelease.scheduledAt)) : 'NOT SCHEDULED'}</strong></div><button data-screen="rewards">VIEW REWARDS →</button><p>Ocean contribution receipts remain distinct from documented conservation work.</p><button data-screen="ocean">OCEAN IMPACT →</button></section>
+  <section class="passport-universal"><span>UNIVERSAL RECORD</span><b>Contribution review & settlement</b><p>Project Q records operation outcomes. Qualifying lifetime XP, rank and reputation require Oracle confirmation; no lifetime award is inferred here.</p></section>`;
+}
+
 function profileScreen() {
   const p = state.profile;
   const walletView = state.profileView === 'wallet';
   return `<div class="passport-ui profile-identity-ui">
     ${walletView ? '<button class="burn-back" data-profile-view="overview">← PROFILE</button>' : ''}
     <section class="participant-passport profile-compact-header"><div class="passport-copy"><span class="passport-kicker">PROJECT Q // YOUR IDENTITY</span><h2>${escapeHtml(p.name)}</h2>${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}<div class="passport-id-line"><span>UNIVERSAL ID</span><b>${p.profileId ? escapeHtml(short(p.profileId)) : 'SYNC PENDING'}</b></div><small>Crab Army rank · Oracle sync pending</small></div><div class="passport-photo"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Your Telegram profile photo" /><span>${clearanceCountLabel()} CLEARANCE</span></div></section>
-    ${walletView ? profileWallet() : `${clearanceMarkup()}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button></details>`}
+    ${walletView ? profileWallet() : `${campaignClearanceReady() ? '' : clearanceMarkup()}${campaignPassportMarkup()}${campaignClearanceReady() ? `<details class="passport-clearance-complete"><summary>Clearance ${clearanceCountLabel()} · verified <span>⌄</span></summary>${clearanceMarkup()}</details>` : ''}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button></details>`}
   </div>`;
 }
 

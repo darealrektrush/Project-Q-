@@ -6,13 +6,13 @@ Approved September 29, 2026 following the professional walkthrough review. This 
 | --- | --- |
 | Terminal | Operation artwork/status, shared next step, participant snapshot, Ocean Impact entry |
 | Operations / Briefing | Operation story, rules, schedule/status, clearance summary, public launch-readiness entry |
-| Operations / Missions | Seven actionable Mission Files, with instructions, verification and reward rules |
+| Operations / Missions | Nine visible operation files: seven action missions and two progress files, with instructions, verification and reward rules |
 | Operations / Economics | Four pool detail views, collective burn progress, treasury disclosure |
 | Record / XP | Today's source/cap progress and settled XP history |
 | Record / Standing | One leaderboard filter and participant cycle XP totals |
-| Record / Badges | One deduplicated list of configured badges, marked planned until an award source exists |
+| Record / Achievements | One deduplicated objective collection with recorded progress and clearly pending badge issuance |
 | Rewards | Personal allocations, six evidence-based stages, allocation/delivery receipts, one wallet action |
-| Profile | Telegram identity, canonical ID, the sole full clearance checklist, refresh/replay/settings |
+| Profile | Telegram identity, campaign passport summaries, canonical ID, the sole full clearance checklist, refresh/replay/settings |
 | Profile / Wallet | Reward destination, token account, observed balance and holding state, destination protection |
 
 ## Shared state
@@ -21,7 +21,7 @@ Approved September 29, 2026 following the professional walkthrough review. This 
 
 ## Stable Mission Files
 
-Participation XP (MF-06) is reporting, now Record / XP. Earn-to-Burn (MF-09) is collective reporting, now Economics / Earn to Burn. Their configuration and ledger identifiers remain intact. Actionable files retain their original numbers, including MF-07 Community Pulse and MF-08 Verified Referrals. Referral details and copyable links live within MF-08; Community Pulse rules live within MF-07. Buy-to-Earn position lives within MF-05.
+Participation XP (MF-06) is reporting, now Record / XP. Earn-to-Burn (MF-09) is collective reporting, now Economics / Earn to Burn. Both remain visible in the selector’s Progress Files group. Their configuration and ledger identifiers remain intact. Actionable files retain their original numbers, including MF-07 Community Pulse and MF-08 Verified Referrals. Referral details and copyable links live within MF-08; Community Pulse rules live within MF-07. Buy-to-Earn position lives within MF-05.
 
 ## Entry and return
 

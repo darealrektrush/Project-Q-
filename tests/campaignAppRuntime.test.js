@@ -158,7 +158,8 @@ async function loadRuntime() {
       state.burns = summary;
       return burnsScreen();
     };
-    globalThis.__renderDossierWith = (profilePatch = {}, runtime = null) => {
+    globalThis.__renderDossierWith = (profilePatch = {}, runtime = null, sessionStatus = 'verified') => {
+      state.sessionStatus = sessionStatus;
       Object.assign(state.profile, profilePatch);
       state.runtime = runtime;
       state.runtimeLoadedAt = runtime ? Date.now() : null;
@@ -328,7 +329,7 @@ test('Operations UI gives each bottom destination one job', async () => {
   assert.match(context.__rendered.operations, />Economics<\/button>/);
   assert.doesNotMatch(context.__rendered.operations, />Progress<\/button>|>Intel<\/button>|operation-clearance-disclosure/);
   assert.match(context.__rendered.record, /YOUR RECORD/);
-  assert.match(context.__rendered.record, />Badges<\/button>/);
+  assert.match(context.__rendered.record, />Achievements<\/button>/);
   assert.doesNotMatch(context.__rendered.record, /record-proof-links|record-operation-context|>Activity<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation recorded yet/);
@@ -345,10 +346,14 @@ test('Profile owns identity while Record owns XP, standing and badges', async ()
   assert.match(profile, /YOUR IDENTITY/);
   assert.match(profile, /@darealrektrush/);
   assert.match(profile, /Crab Army rank · Oracle sync pending/);
-  assert.doesNotMatch(profile, /680|#14|dossier-live-record|dossier-reward-position|Sergeant Major/);
+  assert.match(profile, /680/);
+  assert.match(profile, /#14/);
+  assert.match(profile, /CAMPAIGN PASSPORT/);
+  assert.doesNotMatch(profile, /Sergeant Major|passport-tabs/);
   const badges = context.__renderRecordWith('achievements');
-  assert.match(badges, />Planned<\/span>/);
-  assert.equal((badges.match(/class="achievement locked"/g) || []).length, 8);
+  assert.match(badges, /OBJECTIVE RECORDED/);
+  assert.match(badges, /Badge issuance is pending/);
+  assert.equal((badges.match(/class="achievement-objective/g) || []).length, 8);
   const xp = context.__renderRecordWith('xp');
   assert.match(xp, /680/);
   assert.match(xp, /XP history/);
@@ -948,11 +953,15 @@ test('general destination entry is canonical while explicit actions can open nam
   assert.equal(context.__navigateWith('profile', 'profile').profile, 'overview');
 });
 
-test('mission selector excludes passive reports and preserves original file IDs', async () => {
+test('nine-file catalogue separates action missions from progress and preserves original IDs', async () => {
   const context = await loadRuntime();
   const missions = context.__renderOperationsWithRuntime({ databaseState: 'DRAFT', schedule: { phase: 'PRE_LAUNCH' } }, 'missions');
-  assert.doesNotMatch(missions, /data-mission-id="participation-xp"|data-mission-id="earn-to-burn"/);
-  assert.match(missions, /7<\/b> MISSION FILES/);
+  assert.match(missions, /data-mission-id="participation-xp"/);
+  assert.match(missions, /data-mission-id="earn-to-burn"/);
+  assert.match(missions, /9<\/b> OPERATION FILES/);
+  assert.match(missions, /7 action missions · 2 progress files/);
+  assert.match(missions, /MF-06[\s\S]*Participation XP/);
+  assert.match(missions, /MF-09[\s\S]*Earn to Burn/);
   assert.match(missions, /MF-07[\s\S]*Community Pulse/);
   assert.match(missions, /MF-08[\s\S]*Verified Referrals/);
 });
@@ -965,4 +974,26 @@ test('pool taps open pool rules rather than personal allocation status', async (
   assert.match(pool, /7.5M FAWKQ/);
   assert.match(pool, /Funding gate|FUNDING GATE/);
   assert.doesNotMatch(pool, /rewards-command/);
+});
+
+
+test('passport keeps pending identity distinct from a recorded zero and prioritizes incomplete clearance', async () => {
+  const context = await loadRuntime();
+  const unknown = context.__renderDossierWith({xp: 680,rank: '#14'}, null, 'identity-unavailable');
+  assert.doesNotMatch(unknown, /680|#14|OBJECTIVE RECORDED/);
+  assert.match(unknown, /personal record loads after Telegram identity/);
+  assert.ok(unknown.indexOf('profile-clearance') < unknown.indexOf('campaign-passport'));
+  const complete = context.__renderDossierWith({telegramVerified:true,xVerified:true,walletVerified:true,tokenAccountReady:true,holderEligible:true,xp:20},null,'verified');
+  assert.match(complete, /passport-clearance-complete/);
+  assert.equal((complete.match(/class="clearance-list"/g)||[]).length,1);
+});
+
+test('delivery confirmation date never substitutes the scheduled date', async () => {
+  const context = await loadRuntime();
+  const rewards = {recorded:true,allocatedBaseUnits:'1000000',releaseCount:1,releases:[{category:'activity',percent:25,amountBaseUnits:'250000',status:'paid',scheduledAt:'2026-09-01T12:00:00Z',transactionSignature:'5'.repeat(88),confirmedBlockTime:'2026-09-03T12:00:00Z'}]};
+  const recorded = context.__renderRewardsWith(rewards).screen;
+  assert.match(recorded, /<span>Scheduled<\/span><b>Sep 1, 2026/);
+  assert.match(recorded, /<span>Confirmed<\/span><b>Sep 3, 2026/);
+  rewards.releases[0].confirmedBlockTime=null;
+  assert.match(context.__renderRewardsWith(rewards).screen, /<span>Confirmed<\/span><b>Evidence pending/);
 });

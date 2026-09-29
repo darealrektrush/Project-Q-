@@ -1,0 +1,59 @@
+/* Campaign passport and achievement components; shared shell stays in Terminal V2. */
+.mission-catalogue-note,.recognition-explanation{font:400 13px/1.5 system-ui,sans-serif;color:var(--q-copy);margin:10px 0 14px}
+.operation-progress-files{margin-top:18px;border-top:1px solid var(--q-border);padding-top:16px;display:grid;gap:8px}
+.operation-progress-files header,.campaign-passport header,.passport-recognition header,.passport-outcomes header,.contribution-intelligence header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.operation-progress-files header>span,.passport-recognition header>span,.passport-outcomes header>span,.contribution-intelligence header>span{font:700 12px var(--q-display);letter-spacing:.07em;color:var(--q-connection)}
+.operation-progress-files header>small{font:400 12px system-ui;color:var(--q-copy)}
+.operation-progress-files>button{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:76px;padding:12px;border:1px solid var(--q-border);border-radius:10px;background:var(--q-paper);text-align:left;color:var(--q-ink)}
+.operation-progress-files>button>span{font:700 12px var(--q-display);color:var(--q-copy)}
+.operation-progress-files>button b{display:block;font:700 20px/1.1 var(--q-display)}
+.operation-progress-files>button small{display:block;font:400 12px/1.4 system-ui;color:var(--q-copy);margin-top:5px}
+.operation-progress-files>button strong{font:700 12px var(--q-display);white-space:nowrap;color:#755514}
+.campaign-passport,.passport-recognition,.passport-outcomes,.passport-universal,.contribution-intelligence,.passport-clearance-complete{padding:16px;border:1px solid var(--q-border);border-radius:12px;background:var(--q-paper)}
+.q-shell-v2 .campaign-passport{background:#0a1820;color:#f5f0e5;border-color:#254c61}
+.campaign-passport header span{font:700 12px var(--q-display);letter-spacing:.07em;color:#8bbdd4}
+.campaign-passport h3{font:700 28px/1 var(--q-display);margin:7px 0 0}
+.passport-live-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px;padding:18px 0 14px}
+.passport-live-metrics>div{border-left:1px solid #325265;padding-left:10px;min-width:0}
+.passport-live-metrics span{font:400 13px/1.3 system-ui;color:#bacbd3;display:block}
+.passport-live-metrics strong{font:700 26px/1.2 var(--q-display);display:block;color:#edca6b;overflow-wrap:anywhere}
+.campaign-passport>p,.passport-universal p,.passport-outcomes p{font:400 13px/1.5 system-ui;margin:8px 0;color:var(--q-copy)}
+.campaign-passport>p{color:#bacbd3}
+.passport-contribution-detail summary,.passport-clearance-complete summary{font:700 16px/1.4 var(--q-display);min-height:44px;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}
+.passport-contribution-detail>small{display:block;font:400 12px/1.4 system-ui;color:#bacbd3;margin-top:12px}
+.contribution-intelligence{margin:12px 0;color:var(--q-ink)}
+.contribution-intelligence header>b,.passport-outcomes header>b{font:700 11px var(--q-display);color:var(--q-copy)}
+.contribution-intelligence>div{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(35px,1fr) 40px;gap:8px;align-items:center;margin-top:12px;font:400 13px system-ui}
+.contribution-intelligence>div>i{height:5px;background:#d9e4e9;border-radius:3px;overflow:hidden}
+.contribution-intelligence>div>i>em{display:block;height:100%;background:var(--q-connection)}
+.contribution-intelligence>div>strong{text-align:right;font:700 17px var(--q-display)}
+.contribution-intelligence>small,.contribution-intelligence>p{display:block;font:400 12px/1.5 system-ui;color:var(--q-copy);margin-top:14px}
+.passport-recognition header button,.passport-outcomes button{min-height:44px;border:0;background:transparent;font:700 13px var(--q-display);color:#785614;text-align:left;padding:5px 0}
+.passport-recognition>div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;align-items:center;margin-top:12px}
+.passport-recognition img{width:88px;height:108px;object-fit:contain;border-radius:8px;background:#0b1113}
+.passport-recognition b{font:700 23px var(--q-display)}
+.passport-recognition p{font:400 13px/1.45 system-ui;color:var(--q-copy);margin:5px 0}
+.passport-recognition small{font:700 11px var(--q-display);color:var(--q-connection)}
+.passport-outcomes>div{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--q-border)}
+.passport-outcomes>div span{font:400 13px/1.4 system-ui;color:var(--q-copy)}
+.passport-outcomes>div strong{font:700 18px var(--q-display);text-align:right}
+.passport-universal>span{display:block;font:700 12px var(--q-display);color:var(--q-connection);letter-spacing:.07em}
+.passport-universal>b{display:block;font:700 22px var(--q-display);margin:7px 0}
+.achievement-collection{display:grid;gap:12px}
+.achievement-objective{border:1px solid var(--q-border);border-radius:12px;background:var(--q-paper);overflow:hidden}
+.achievement-objective summary{display:grid;grid-template-columns:92px minmax(0,1fr) 12px;gap:12px;align-items:center;padding:12px;cursor:pointer;list-style:none}
+.achievement-objective summary::-webkit-details-marker{display:none}
+.achievement-objective summary>img{width:92px;height:112px;object-fit:contain;border-radius:8px;background:#0b1113}
+.achievement-objective summary>div{min-width:0}
+.achievement-objective summary span{font:700 11px var(--q-display);color:var(--q-connection);letter-spacing:.06em}
+.achievement-objective summary b{display:block;font:700 25px/1.1 var(--q-display);margin:6px 0}
+.achievement-objective summary p,.achievement-rule p{font:400 13px/1.5 system-ui;color:var(--q-copy);margin:5px 0}
+.achievement-objective summary em{font:700 19px var(--q-display);color:var(--q-copy)}
+.objective-recorded{border-color:#6898b1}
+.objective-progress{height:5px;border-radius:4px;overflow:hidden;background:#d9e4e9;margin-top:12px}
+.objective-progress i{display:block;height:100%;background:var(--q-connection)}
+.achievement-rule{padding:14px;border-top:1px solid var(--q-border)}
+.achievement-rule>b{font:700 12px var(--q-display);color:var(--q-connection)}
+.achievement-rule>small{font:400 12px/1.5 system-ui;color:var(--q-copy);display:block;margin-top:10px}
+@media(min-width:1000px){.achievement-collection{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:359px){.achievement-objective summary{grid-template-columns:74px minmax(0,1fr) 10px;gap:9px;padding:10px}.achievement-objective summary>img{width:74px;height:94px}.achievement-objective summary b{font-size:22px}.operation-progress-files>button{grid-template-columns:32px minmax(0,1fr);gap:8px}.operation-progress-files>button>strong{grid-column:2;min-height:30px;display:flex;align-items:center}.passport-recognition header{align-items:start;flex-direction:column;gap:0}.campaign-passport h3{font-size:25px}}
