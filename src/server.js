@@ -33,6 +33,7 @@ import {
 } from './campaign/oracleIdentity.js';
 import * as walletStatus from './campaign/walletStatus.js';
 import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
+import { verifyOceanContribution } from './campaign/oceanContributionProof.js';
 import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
   WEBSITE_VOTE_PROFILES,
@@ -69,6 +70,7 @@ const READINESS_CACHE_MS = 15_000;
 let readinessCache = { value: null, expiresAt: 0, pending: null };
 const OCEAN_VAULT_CACHE_MS = 120_000;
 let oceanVaultCache = { value: null, expiresAt: 0, pending: null };
+const oceanProofAttempts = new Map();
 
 const STUB_COMMANDS = new Set([
   '/missions',
@@ -100,6 +102,43 @@ app.get('/campaign-app/api/ocean/vault-status', async (req, res) => {
     oceanVaultCache.expiresAt = 0;
     console.error('public ocean vault status unavailable', error.message);
     return res.status(503).json({ ok: false, error: 'ocean vault status unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/ocean/check-transfer', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  let session;
+  try { session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN); }
+  catch { return res.status(401).json({ ok: false, error: 'valid Telegram session required' }); }
+  const signature = req.body?.signature;
+  if (typeof signature !== 'string' || signature.length > 90 || !/^[1-9A-HJ-NP-Za-km-z]+$/.test(signature)) {
+    return res.status(400).json({ ok: false, error: 'invalid transaction signature' });
+  }
+  const userId = session.user.id;
+  const now = Date.now();
+  const previous = oceanProofAttempts.get(userId) || { start: now, count: 0 };
+  const attempt = now - previous.start > 60_000 ? { start: now, count: 1 } : { ...previous, count: previous.count + 1 };
+  oceanProofAttempts.set(userId, attempt);
+  if (attempt.count > 6) return res.status(429).json({ ok: false, error: 'wait before checking another transfer' });
+  if (oceanProofAttempts.size > 5000) {
+    for (const [id, record] of oceanProofAttempts) if (now - record.start > 60_000) oceanProofAttempts.delete(id);
+  }
+  try {
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const identities = await supabase.select('identity_links',
+      `?campaign_id=eq.${encodeURIComponent(campaignId)}&telegram_user_id=eq.${encodeURIComponent(String(userId))}` +
+      '&select=reward_wallet,wallet_verified_at&limit=1');
+    const identity = identities[0];
+    if (!identity?.reward_wallet || !identity.wallet_verified_at) {
+      return res.status(409).json({ ok: false, error: 'Oracle verified wallet required to match this transfer' });
+    }
+    const proof = await verifyOceanContribution(solana.getConnection(), signature, identity.reward_wallet);
+    return res.status(200).json({ ok: true, proof, status: proof ? 'MATCHED' : 'NO_MATCH',
+      note: 'Read-only check. No contribution receipt, campaign credit or XP has been issued.' });
+  } catch (error) {
+    if (error.message === 'invalid transaction signature') return res.status(400).json({ ok: false, error: error.message });
+    console.error('ocean transfer check unavailable', error.message);
+    return res.status(503).json({ ok: false, error: 'transfer check unavailable' });
   }
 });
 

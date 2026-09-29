@@ -121,6 +121,11 @@ async function loadRuntime() {
       state.oceanVault = snapshot;
       return oceanImpactScreen();
     };
+    globalThis.__renderOceanProofWith = (proof) => {
+      state.oceanProof = proof;
+      state.profile.walletVerified = true;
+      return oceanImpactScreen();
+    };
     globalThis.__renderBurnsWith = (summary) => {
       state.burns = summary;
       return burnsScreen();
@@ -359,6 +364,8 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(ocean, /COMMITTED/);
   assert.match(ocean, /DOCUMENTED/);
   assert.match(ocean, /In-app contributions are not open yet/);
+  assert.match(ocean, /CHECK AN EXISTING TRANSFER/);
+  assert.match(ocean, /CHECK TRANSFER →<\/button>/);
   assert.match(ocean, /Community record pending/);
   assert.match(ocean, /J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
   assert.match(ocean, /solscan\.io\/account\/J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
@@ -380,6 +387,12 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.doesNotMatch(observed, /Hjb5k2ihS22D6HZJJUivZ1XQTfrgdT4HY14BF5ZYujNQ/);
   assert.match(observed, /USDC IN VAULT[\s\S]*NOT READY/);
   assert.match(observed, /balances are not contribution totals/);
+  const matched = context.__renderOceanProofWith({ status: 'MATCHED', signature: 'txsignature', slot: 451602609,
+    transfers: [{ asset: 'SOL', amountBaseUnits: '1200000000', decimals: 9 }] });
+  assert.match(matched, /FINALIZED TRANSFER MATCHED/);
+  assert.match(matched, /1\.2 SOL/);
+  assert.match(matched, /a contribution receipt and campaign credit have not been issued/);
+  assert.match(context.__renderOceanProofWith({ status: 'NO_MATCH' }), /NO MATCH FOUND/);
 });
 
 test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {

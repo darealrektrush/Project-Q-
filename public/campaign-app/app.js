@@ -131,6 +131,7 @@ const state = {
   readiness: { available: false, ready: false, readyCount: 0, totalCount: 0, percent: null, checks: [] },
   burns: null,
   oceanVault: null,
+  oceanProof: null,
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
   missionEvidence: { available: false, oracleRaids: null, websiteVoting: null, trendingBots: null },
@@ -2210,6 +2211,13 @@ function oceanImpactScreen() {
         <div><span>USDC IN VAULT</span><strong>${usdc?.available ? escapeHtml(formatBaseUnits(usdc.balanceBaseUnits, 6)) : 'NOT READY'}</strong><small>${usdc?.available ? `<a href="https://solscan.io/account/${escapeHtml(usdc.tokenAccount)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW RECEIVING ACCOUNT ↗</a>` : 'Receiving account not established'}</small></div>
       </div><small class="ocean-vault-observed">Finalized Solana slot ${Number(vault.slot)} · observed ${escapeHtml(new Date(vault.observedAt).toLocaleString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))} UTC. Balances can change.</small>`
     : '<div class="ocean-vault-unavailable">Live vault observation is unavailable. Check the public explorer for current account information.</div>';
+  const proof = state.oceanProof;
+  const proofResult = proof?.status === 'MATCHED'
+    ? `<div class="ocean-proof-result matched" role="status"><b>FINALIZED TRANSFER MATCHED</b><p>A transfer from your Oracle verified wallet to the conservation vault was found. This is a read-only check; a contribution receipt and campaign credit have not been issued.</p>${proof.transfers.map((entry) => `<div class="ocean-proof-transfer"><strong>${escapeHtml(formatBaseUnits(entry.amountBaseUnits, entry.decimals))} ${escapeHtml(entry.asset)}</strong><span>Finalized slot ${Number(proof.slot)}</span></div>`).join('')}<a href="https://solscan.io/tx/${escapeHtml(proof.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW TRANSACTION ↗</a></div>`
+    : proof?.status === 'NO_MATCH'
+      ? '<div class="ocean-proof-result" role="status"><b>NO MATCH FOUND</b><p>No finalized supported transfer from your Oracle verified wallet to the approved vault was found in this transaction. Check the wallet, destination, network and signature.</p></div>'
+      : proof?.status === 'ERROR'
+        ? `<div class="ocean-proof-result" role="status"><b>CHECK UNAVAILABLE</b><p>${escapeHtml(proof.message)}</p></div>` : '';
   return `<div class="ocean-impact-ui">
     <button type="button" class="ocean-back" data-screen="home">← BACK TO TERMINAL</button>
     <div class="ocean-impact-hero"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact: cleaner oceans, brighter tomorrows, community-powered conservation" /></div>
@@ -2235,6 +2243,13 @@ function oceanImpactScreen() {
       <p>CrabStar has confirmed the conservation Squads vault. SOL, native Solana USDC and FAWKQ transfer flows will open separately after the wallet integration, token destinations and finalization checks pass.</p>
       <div class="ocean-asset-list"><span>SOL <small>TRANSFER IN REVIEW</small></span><span>USDC <small>${usdc?.available ? 'ACCOUNT OBSERVED' : 'ACCOUNT NOT READY'}</small></span><span>FAWKQ <small>${fawkq?.available ? 'ACCOUNT OBSERVED' : 'ACCOUNT NOT VERIFIED'}</small></span></div>
       <div class="ocean-impact-notice"><b>In-app contributions are not open yet.</b><p>The public vault is shown below for transparency. This screen cannot request a wallet signature or issue contribution credit.</p></div>
+      <form class="ocean-proof-form" id="ocean-proof-form">
+        <label for="ocean-transaction-signature">CHECK AN EXISTING TRANSFER</label>
+        <p>Already sent SOL, native USDC or FAWKQ from your Oracle verified wallet? Check its finalized transaction against the approved vault.</p>
+        <div><input id="ocean-transaction-signature" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="90" placeholder="Solana transaction signature" aria-label="Solana transaction signature" required /><button type="submit" ${state.profile.walletVerified ? '' : 'disabled'}>CHECK TRANSFER →</button></div>
+        ${state.profile.walletVerified ? '' : '<small>Verify your wallet in Oracle to check a transfer.</small>'}
+        ${proofResult}
+      </form>
     </section>
     <section class="ocean-impact-panel" id="ocean-vault">
       <div class="ocean-section-head"><span class="ocean-section-label">03 / THE VAULT</span><b>MAINNET · SQUADS V4</b></div>
@@ -3181,6 +3196,27 @@ function openCampaignUpdates() {
 }
 
 function bind() {
+  document.querySelector('#ocean-proof-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const signature = form.querySelector('input')?.value.trim();
+    const button = form.querySelector('button');
+    const initData = state.telegram?.initData;
+    if (!signature || !initData || !state.profile.walletVerified || button.disabled) return;
+    button.disabled = true;
+    button.textContent = 'CHECKING…';
+    try {
+      const response = await fetch('/campaign-app/api/ocean/check-transfer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+        body: JSON.stringify({ initData, signature }),
+      });
+      const result = await response.json();
+      state.oceanProof = response.ok ? { ...result.proof, status: result.status } : {
+        status: 'ERROR', message: result.error || 'Transfer check unavailable. Try again later.',
+      };
+    } catch { state.oceanProof = { status: 'ERROR', message: 'Transfer check unavailable. Try again later.' }; }
+    if (state.screen === 'ocean') render();
+  });
   const passportImage = document.querySelector('.passport-photo img');
   if (passportImage) passportImage.onerror = () => {
     passportImage.onerror = null;

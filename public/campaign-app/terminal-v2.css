@@ -746,6 +746,20 @@
 .q-shell-v2 .ocean-impact-notice{margin-top:14px;padding:12px;border:1px solid #d6c89b;border-radius:7px;background:#f8f5e9}
 .q-shell-v2 .ocean-impact-notice b{font:700 14px/1.15 var(--q-display)}
 .q-shell-v2 .ocean-impact-notice p{margin:5px 0 0;color:#576a70;font:400 12px/1.4 var(--q-display)}
+.q-shell-v2 .ocean-proof-form{display:grid;gap:9px;margin-top:15px;padding:14px;border:1px solid #afcbd3;border-radius:8px;background:#eff5f3}
+.q-shell-v2 .ocean-proof-form label{color:#257393;font:700 11px/1.2 var(--q-display);letter-spacing:.08em}
+.q-shell-v2 .ocean-proof-form p{margin:0;color:#48616e;font:400 13px/1.4 var(--q-display)}
+.q-shell-v2 .ocean-proof-form>div:has(input){display:flex;gap:7px;flex-wrap:wrap}
+.q-shell-v2 .ocean-proof-form input{flex:1 1 250px;min-width:0;min-height:45px;padding:0 12px;border:1px solid #9cbac5;border-radius:5px;background:white;color:#10222c;font:500 13px/1.2 ui-monospace,monospace}
+.q-shell-v2 .ocean-proof-form button{min-height:45px;padding:0 13px;border:0;border-radius:5px;background:#edc768;color:#17232a;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .ocean-proof-form button:disabled{opacity:.55;cursor:not-allowed}
+.q-shell-v2 .ocean-proof-form small{color:#647882;font:400 12px/1.3 var(--q-display)}
+.q-shell-v2 .ocean-proof-result{padding:12px;border:1px solid #c3c6b6;border-radius:6px;background:#fffdf3;color:#202e33}
+.q-shell-v2 .ocean-proof-result.matched{border-color:#72adc1;background:#f2faf8}
+.q-shell-v2 .ocean-proof-result b{font:700 13px/1.2 var(--q-display)}
+.q-shell-v2 .ocean-proof-result p{margin:5px 0 9px}
+.q-shell-v2 .ocean-proof-transfer{display:flex;justify-content:space-between;gap:8px;margin-top:8px;color:#276f8b;font:700 13px/1.25 var(--q-display)}
+.q-shell-v2 .ocean-proof-result a{display:inline-flex;align-items:center;min-height:40px;color:#17688a;font:700 12px/1 var(--q-display)}
 .q-shell-v2 .ocean-vault-address{display:grid;gap:9px;margin-top:16px;padding:14px;border:1px solid #8ebdd0;border-left:3px solid #349dca;border-radius:7px;background:#ecf4f4}
 .q-shell-v2 .ocean-vault-address>span{color:#397b95;font:700 11px/1 var(--q-display);letter-spacing:.06em}
 .q-shell-v2 .ocean-vault-address code{color:#0d2731;font:700 13px/1.35 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;user-select:all}
