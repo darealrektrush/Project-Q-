@@ -2444,21 +2444,15 @@ function navigateBack() {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
-function go(screen, { replace = false, preserveScroll = false } = {}) {
+function go(screen, { replace = false } = {}) {
   screen = resolveScreenRoute(screen);
   if (!screens[screen]) return;
-  const previousScroll = preserveScroll ? window.scrollY : 0;
   if (!replace && state.screen !== screen) state.navigationStack.push(state.screen);
   state.screen = screen;
   history.replaceState(null, '', `#${screen}`);
   render();
   updateTelegramBackButton();
-  if (preserveScroll) {
-    window.scrollTo({ top: previousScroll, behavior: 'instant' });
-    requestAnimationFrame(() => window.scrollTo({ top: previousScroll, behavior: 'instant' }));
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
@@ -3354,14 +3348,16 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.profileView = element.dataset.profileView;
-      go('profile', { preserveScroll: isTab });
+      if (isTab && state.screen === 'profile') render();
+      else go('profile');
       if (isTab) document.querySelector('.passport-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
   document.querySelectorAll('[data-operation-view]').forEach((element) => {
     element.onclick = () => {
       state.operationsView = element.dataset.operationView;
-      go('operations', { preserveScroll: element.getAttribute('role') === 'tab' });
+      if (element.getAttribute('role') === 'tab' && state.screen === 'operations') render();
+      else go('operations');
       if (element.getAttribute('role') === 'tab') document.querySelector('.operation-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
@@ -3369,7 +3365,8 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.recordView = element.dataset.recordView;
-      go('record', { preserveScroll: isTab });
+      if (isTab && state.screen === 'record') render();
+      else go('record');
       if (isTab) document.querySelector('.record-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
   });
