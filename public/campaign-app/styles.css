@@ -4729,6 +4729,22 @@ body.rail-collapsed .rail .nav-icon svg {
 }
 
 @media (max-width: 520px) {
+  .record-ui .rank-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    margin-right: 0;
+    overflow: visible;
+  }
+
+  .record-ui .rank-tabs button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px;
+    font-size: 12px;
+  }
+
   .record-header {
     min-height: 122px;
   }
@@ -4747,9 +4763,9 @@ body.rail-collapsed .rail .nav-icon svg {
   }
 
   .record-tabs button {
-    min-height: 38px;
-    padding: 0 10px;
-    font-size: 9px;
+    min-height: 44px;
+    padding: 0 4px;
+    font-size: 11px;
   }
 }
 

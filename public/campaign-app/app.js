@@ -1697,7 +1697,7 @@ function rewardsScreen() {
   const next = hasFailedRelease
     ? ['Recovery review', 'A failed release remains under review. Track the operation status while the record is reconciled.', 'OPERATION INTEL →', 'data-operation-view="intel"']
     : missingClearance?.label === 'Telegram identity'
-      ? ['Recognize your identity', 'Open Project Q inside Telegram to establish your campaign identity.', 'VIEW IDENTITY →', 'data-profile-view="identity"']
+      ? ['Verify your identity', 'Open Project Q inside Telegram to establish your campaign identity.', 'VIEW IDENTITY →', 'data-profile-view="identity"']
       : !walletReady
         ? ['Verify your reward wallet', 'Your verified wallet is required before any campaign release can be delivered.', 'OPEN WALLET →', 'data-profile-view="wallet"']
         : !rewards.recorded

@@ -364,7 +364,7 @@ test('Campaign Dossier keeps campaign standing and planned badges separate from 
 test('Rewards pending state directs identity setup without suggesting a verified wallet or receipt', async () => {
   const context = await loadRuntime();
   const { screen, profile } = context.__renderRewardsWith({ recorded: false, releaseCount: 0, releases: [] });
-  assert.match(screen, /Recognize your identity/);
+  assert.match(screen, /Verify your identity/);
   assert.match(screen, /data-profile-view="identity"/);
   assert.match(screen, /Reward Wallet Pending/);
   assert.match(screen, /No allocation recorded yet/);
