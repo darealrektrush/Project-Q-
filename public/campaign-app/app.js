@@ -1349,7 +1349,110 @@ function operationTabs() {
     ['rewards', 'Rewards'],
     ['intel', 'Intel'],
   ];
-  return `<div class="operation-tabs" role="tablist">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
+  return `<div class="operation-tabs" role="tablist" aria-label="Bond the Duck operation sections">${tabs.map(([id, label]) => `<button class="${state.operationsView === id ? 'active' : ''}" data-operation-view="${id}" role="tab" aria-selected="${state.operationsView === id}">${label}</button>`).join('')}</div>`;
+}
+
+function operationCurrentOrderMarkup() {
+  const lifecycle = operationLifecycleState().label;
+  const requirements = campaignEligibilityRequirements();
+  const next = requirements.find(({ complete }) => !complete);
+  let title;
+  let detail;
+  let action;
+  if (['UPCOMING', 'ACTIVE'].includes(lifecycle) && next) {
+    title = `Complete ${next.label}`;
+    detail = `${next.detail} ${requirements.filter(({ complete }) => complete).length} of ${requirements.length} clearance requirements complete.`;
+    action = `<button data-profile-view="${escapeHtml(next.action?.profileView || 'identity')}">CONTINUE SETUP →</button>`;
+  } else if (lifecycle === 'ACTIVE') {
+    title = 'Choose a Mission File';
+    detail = 'Complete an available objective and follow its verified result in your Record.';
+    action = '<button data-operation-view="missions">VIEW MISSIONS →</button>';
+  } else if (lifecycle === 'UPCOMING') {
+    title = 'Review your mission options';
+    detail = 'Your clearance is complete. Mission participation opens only after the operation is activated.';
+    action = '<button data-operation-view="missions">REVIEW MISSION FILES →</button>';
+  } else if (['LAUNCH BLOCKED', 'PAUSED'].includes(lifecycle)) {
+    title = 'Follow operation status';
+    detail = 'Participation is closed. Review the latest readiness and verification state.';
+    action = '<button data-operation-view="intel">VIEW OPERATION INTEL →</button>';
+  } else if (lifecycle === 'REVIEWING') {
+    title = 'Follow final review';
+    detail = 'New scoring is closed while verified activity is reconciled.';
+    action = '<button data-operation-view="progress">FOLLOW REVIEW →</button>';
+  } else if (lifecycle === 'DISTRIBUTING') {
+    title = 'Track reward delivery';
+    detail = 'Follow scheduled releases and confirmed receipts in Rewards.';
+    action = '<button data-screen="rewards">OPEN REWARDS →</button>';
+  } else {
+    title = 'Review your operation record';
+    detail = 'Your accepted campaign history and receipts remain available.';
+    action = '<button data-screen="record">VIEW RECORD →</button>';
+  }
+  return `<section class="operation-current-order" aria-label="Current order"><div><span>CURRENT ORDER // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(title)}</h3><p>${escapeHtml(detail)}</p></div>${action}</section>`;
+}
+
+function operationProgressMarkup(readiness, readinessLabel, readinessWidth) {
+  const lifecycle = operationLifecycleState().label;
+  const schedule = state.runtime?.schedule;
+  const reviewState = ['REVIEWING', 'DISTRIBUTING', 'COMPLETED', 'ARCHIVED', 'TERMINATED'].includes(lifecycle);
+  if (lifecycle === 'ACTIVE') {
+    const cycle = Number(schedule?.currentCycle || 0);
+    const cycleCopy = cycle > 0 && cycle <= 5 ? `CYCLE ${cycle} / 5` : 'CURRENT CYCLE SYNCING';
+    const xp = Number(state.profile.xp || 0);
+    const today = Number(state.profile.todayXp || 0);
+    const cap = Number(state.campaign?.xpCaps?.overallDaily || 0);
+    return `<section class="operation-content-panel operation-live-progress">
+      <div class="operation-section-head"><div><span>CAMPAIGN PROGRESS</span><h3>Verified participation.</h3></div>${statePill(lifecycle, 'success')}</div>
+      <div class="operation-cycle-focus"><span>${cycleCopy}</span><strong>${escapeHtml(schedule?.label || 'Cycle status syncing')}</strong><small>${schedule?.targetAt ? `Next cycle update in ${escapeHtml(formatCountdown(schedule.targetAt))}` : 'Cycle timing is being synchronized.'}</small></div>
+      <div class="operation-progress-metrics"><article><span>Campaign XP</span><strong>${xp.toLocaleString()}</strong><small>Settled in your Record</small></article><article><span>Today</span><strong>${today.toLocaleString()}${cap ? ` / ${cap}` : ''}</strong><small>Daily campaign XP</small></article><article><span>Mission Files</span><strong>${Number(state.profile.completedMissions || 0)} / ${Number(state.campaign?.missions?.length || 0)}</strong><small>Recorded completions</small></article></div>
+      <div class="operation-progress-links"><button data-operation-view="missions">VIEW MISSION FILES →</button><button data-record-view="xp">OPEN YOUR RECORD →</button></div>
+    </section>`;
+  }
+  if (reviewState) {
+    const final = ['COMPLETED', 'ARCHIVED', 'TERMINATED'].includes(lifecycle);
+    return `<section class="operation-content-panel operation-review-progress">
+      <div class="operation-section-head"><div><span>${final ? 'OPERATION RECORD' : 'FINAL REVIEW'}</span><h3>${final ? 'Campaign record available.' : lifecycle === 'DISTRIBUTING' ? 'Distribution in progress.' : 'Verified activity under review.'}</h3></div>${statePill(lifecycle, final ? 'success' : 'pending')}</div>
+      <p>${final ? 'See settled campaign XP, confirmed activity and reward receipts in their source records.' : lifecycle === 'DISTRIBUTING' ? 'Approved releases appear in Rewards as they are scheduled and confirmed.' : 'Project Q is reconciling accepted activity. Your settled XP remains visible in Record; new scoring is closed.'}</p>
+      <div class="operation-progress-links"><button data-record-view="activity">VIEW ACTIVITY →</button><button data-screen="rewards">TRACK REWARDS →</button></div>
+    </section>`;
+  }
+  const gates = state.readiness?.available && Number(state.readiness.totalCount || 0) > 0 ? `${Number(state.readiness.readyCount || 0)} / ${Number(state.readiness.totalCount)} PUBLIC GATES` : 'READINESS SYNCING';
+  return `<section class="operation-content-panel operation-launch-progress">
+    <div class="operation-section-head"><div><span>LAUNCH READINESS</span><h3>Operational gates before launch.</h3></div><b>${escapeHtml(readinessLabel)}</b></div>
+    <div class="operation-progress-bar" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readinessWidth}"`}><i style="width:${readinessWidth}%"></i></div>
+    <div class="operation-readiness-summary"><span>${escapeHtml(gates)}</span><b>${escapeHtml(schedule?.label || 'Campaign dates pending')}</b></div>
+    <p>This measures launch checks, not your personal campaign XP. Participation stays closed until the operation is activated.</p>
+    <div class="operation-progress-links"><button data-screen="readiness">REVIEW LAUNCH GATES →</button><button data-operation-view="missions">PREVIEW MISSION FILES →</button></div>
+  </section>`;
+}
+
+function operationPoolMarkup(c) {
+  const commitments = c.campaignCommitments || {};
+  const fundingGateVerified = Boolean(state.readiness?.available && state.readiness.checks?.find(({ key }) => key === 'funding')?.ready);
+  const burnGates = ['burn-rules', 'burn-progress', 'burn-verification'];
+  const burnVerified = Boolean(state.readiness?.available && burnGates.every((key) => state.readiness.checks?.find((gate) => gate.key === key)?.ready));
+  const rows = [
+    { amount: commitments.campaignRewards?.amountBaseUnits ? formatBaseUnits(commitments.campaignRewards.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Reward Pool', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
+    { amount: commitments.diamondDuckBonus?.amountBaseUnits ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Diamond Duck', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
+    { amount: commitments.earnToBurn?.amountBaseUnits ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Earn to Burn', detail: burnVerified ? 'Burn gates verified' : 'Planned · burn checks pending', screen: 'burns' },
+    { amount: commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '—', unit: '', label: 'Top Duck Prize', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
+  ];
+  return `<div class="operation-economics" aria-label="Configured campaign pools">${rows.map((row) => `<article><strong>${escapeHtml(row.amount)}</strong><span>${escapeHtml(row.unit)}</span><small>${escapeHtml(row.label)}</small><em>${escapeHtml(row.detail)}</em><button data-screen="${row.screen}" aria-label="View ${escapeHtml(row.label)} details">DETAILS →</button></article>`).join('')}</div>`;
+}
+
+function operationIntelMarkup() {
+  const oracleVerified = Boolean(state.profile.xVerified);
+  const websiteSources = state.websiteVotes?.available ? state.websiteVotes.sources || [] : null;
+  const acceptingWebsites = websiteSources?.filter(({ status }) => status === 'AVAILABLE').length;
+  const pendingWebsites = websiteSources?.filter(({ status }) => status === 'PENDING_CERTIFICATION').length;
+  return `<section class="operation-content-panel operation-intel-panel">
+    <div class="operation-section-head"><div><span>OPERATIONAL INTEL</span><h3>Connections & verification.</h3></div><b>STATUS CHECK</b></div>
+    <div class="operation-intel-list">
+      <article class="operation-intel-row"><img src="${ORACLE_LOGO}" alt="" /><div><span>ORACLE CONNECTION</span><b>${oracleVerified ? 'X identity verified' : 'X identity pending'}</b><small>${oracleVerified ? 'Oracle identity is connected to this campaign record.' : 'Review your X connection in campaign clearance.'}</small></div><button data-profile-view="identity">VIEW IDENTITY →</button></article>
+      <article class="operation-intel-row"><img src="/campaign-app/assets/missions/v3-website-voting.webp" alt="" /><div><span>WEBSITE VOTING</span><b>${websiteSources ? `${acceptingWebsites} proof flows available` : 'Status available in Telegram'}</b><small>${websiteSources ? `${pendingWebsites} sources awaiting certification. Mission availability also depends on the operation state and your clearance.` : 'Signed Telegram access is needed for your current source status.'}</small></div><button data-mission-id="website-voting">VIEW SOURCES →</button></article>
+    </div>
+    ${readinessDetailsMarkup()}
+  </section>`;
 }
 
 function missionListCopy(mission) {
@@ -1380,11 +1483,6 @@ function operationsScreen() {
   const startFact = operationStartFact();
   const missions = Array.isArray(c.missions) ? c.missions : [];
   const op = operationNumber();
-  const commitments = c.campaignCommitments || {};
-  const rewardPool = commitments.campaignRewards ? formatBaseUnits(commitments.campaignRewards.amountBaseUnits) : '15M';
-  const duckBonus = commitments.diamondDuckBonus ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '2.5M';
-  const burnReserve = commitments.earnToBurn ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '15M';
-  const topPrize = commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '1 SOL';
   const readinessAvailable = Boolean(state.readiness?.available);
   const readiness = readinessAvailable ? Math.max(0, Math.min(100, Number(state.readiness.percent || 0))) : null;
   const readinessLabel = readiness == null ? 'SYNCING' : `${readiness}%`;
@@ -1419,47 +1517,28 @@ function operationsScreen() {
       </div>
     </section>`;
   } else if (state.operationsView === 'progress') {
-    content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>LAUNCH READINESS</span><h3>Operational gates before launch.</h3></div><b>${escapeHtml(readinessLabel)}</b></div>
-      <div class="operation-progress-line"><span>Launch Readiness</span><strong>${escapeHtml(readinessLabel)}</strong></div>
-      <div class="operation-progress-bar"><i style="width:${readinessWidth}%"></i></div>
-      <div class="operation-cycle-summary"><span>5 × 48H CYCLES</span><b>${escapeHtml(state.runtime?.schedule?.label || 'Readiness mode')}</b></div>
-      <button class="operation-burn-link" data-screen="burns">Earn to Burn <span>Collective progress & public receipts →</span></button>
-    </section>`;
+    content = operationProgressMarkup(readiness, readinessLabel, readinessWidth);
   } else if (state.operationsView === 'rewards') {
     content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>OPERATION ECONOMICS</span><h3>Campaign commitments.</h3></div><b>OP ${op}</b></div>
-      <div class="operation-economics">
-        <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Reward Pool</small></article>
-        <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
-        <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
-        <article><strong>${topPrize}</strong><span></span><small>Top Duck Prize</small></article>
-      </div>
+      <div class="operation-section-head"><div><span>OPERATION ECONOMICS</span><h3>Configured prize pools.</h3></div><b>OP ${op}</b></div>
+      <p class="operation-pool-note">These are campaign amounts. Funding checks and personal allocations are tracked separately.</p>
+      ${operationPoolMarkup(c)}
       <button class="q-primary-action" data-screen="rewards">OPEN REWARD PIPELINE →</button>
     </section>`;
   } else if (state.operationsView === 'intel') {
-    content = `<section class="operation-content-panel">
-      <div class="operation-section-head"><div><span>OPERATIONAL INTEL</span><h3>Verification & readiness.</h3></div><b>LIVE SOURCES</b></div>
-      <article class="brand-service oracle-service" data-tour-target="oracle">
-        <img src="${ORACLE_LOGO}" alt="Oracle" />
-        <div><span>INTELLIGENCE / VERIFICATION PROVIDER</span><b>Oracle</b><p>Identity and supported activity verification retain Oracle's native blue identity inside Project Q.</p></div>
-        <button class="info-action" data-explainer="oracle">?</button>
-      </article>
-      ${readinessDetailsMarkup()}
-    </section>`;
+    content = operationIntelMarkup();
   } else {
     content = `<section class="operation-content-panel operation-overview-panel">
-      <div class="operation-progress-line"><span>CAMPAIGN PROGRESS</span><strong>${escapeHtml(readinessLabel)}</strong></div>
-      <div class="operation-progress-bar"><i style="width:${readinessWidth}%"></i></div>
+      ${operationLifecycleState().label === 'ACTIVE'
+        ? `<div class="operation-progress-line"><span>CURRENT CYCLE</span><strong>${Number(state.runtime?.schedule?.currentCycle || 0)} / 5</strong></div><button class="operation-overview-link" data-operation-view="progress">VIEW VERIFIED PROGRESS →</button>`
+        : ['UPCOMING', 'LAUNCH BLOCKED'].includes(operationLifecycleState().label)
+          ? `<div class="operation-progress-line"><span>PUBLIC LAUNCH READINESS</span><strong>${escapeHtml(readinessLabel)}</strong></div><div class="operation-progress-bar" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readinessWidth}"`}><i style="width:${readinessWidth}%"></i></div><button class="operation-overview-link" data-screen="readiness">REVIEW LAUNCH GATES →</button>`
+          : `<div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(operationLifecycleState().label)}</strong></div><button class="operation-overview-link" data-operation-view="progress">VIEW OPERATION RECORD →</button>`}
 
       ${clearanceMarkup({ compact: true })}
 
-      <div class="operation-economics">
-        <article><strong>${rewardPool}</strong><span>FAWKQ</span><small>Reward Pool</small></article>
-        <article><strong>${duckBonus}</strong><span>FAWKQ</span><small>Diamond Duck</small></article>
-        <article><strong>${burnReserve}</strong><span>FAWKQ</span><small>Earn to Burn</small></article>
-        <article><strong>${topPrize}</strong><span></span><small>Top Duck Prize</small></article>
-      </div>
+      <div class="operation-pool-heading"><span>CAMPAIGN POOLS</span><button data-operation-view="rewards">VIEW POOL DETAILS →</button></div>
+      ${operationPoolMarkup(c)}
 
       <div class="operation-impact-note">
         <div class="impact-globe">◎</div>
@@ -1490,7 +1569,7 @@ function operationsScreen() {
     </section>` : `<section class="operation-compact-context"><div><span>OPERATION ${op}</span><h2>${escapeHtml(c.name || 'Bond the Duck')}</h2><small>${escapeHtml(operationLifecycleState().label)} · ${state.operationsView === 'missions' ? `${missions.length} MISSION FILES` : 'CAMPAIGN DOSSIER'}</small></div><button data-operation-view="overview">OVERVIEW →</button></section>`}
 
     ${operationTabs()}
-    ${state.operationsView === 'overview' ? `${operationLifecycleMarkup()}${operationPhaseBriefMarkup()}` : ''}
+    ${state.operationsView === 'overview' ? `${operationCurrentOrderMarkup()}${operationLifecycleMarkup()}` : ''}
     ${content}
   </div>`;
 }

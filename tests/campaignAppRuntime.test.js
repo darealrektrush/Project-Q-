@@ -323,8 +323,48 @@ test('Mission Files are accessible below a compact campaign heading and readines
   assert.match(missions, /data-tour-target="mission-files"/);
   assert.doesNotMatch(missions, /operation-cover bond-cover/);
   const progress = context.__renderOperationsWithReadiness({ available: true, percent: 55 }, 'progress');
-  assert.match(progress, /Launch Readiness/);
+  assert.match(progress, /LAUNCH READINESS/);
   assert.doesNotMatch(progress, />Campaign Progress</);
+});
+
+test('Operations makes the next setup step actionable without claiming the campaign has opened', async () => {
+  const context = await loadRuntime();
+  const upcoming = context.__renderOperationOverviewWith({ databaseState: 'DRAFT', operational: false, schedule: { phase: 'PRE_LAUNCH' } });
+  assert.match(upcoming, /CURRENT ORDER \/\/ UPCOMING/);
+  assert.match(upcoming, /CONTINUE SETUP →/);
+  assert.match(upcoming, /PUBLIC LAUNCH READINESS/);
+  assert.doesNotMatch(upcoming, /VIEW VERIFIED PROGRESS/);
+});
+
+test('Operations progress follows active and review states and keeps launch readiness separate', async () => {
+  const context = await loadRuntime();
+  const activeRuntime = { databaseState: 'ACTIVE', operational: true, schedule: { phase: 'ACTIVE', currentCycle: 2, label: 'Cycle 2 closes' } };
+  const active = context.__renderOperationsWithRuntime(activeRuntime, 'progress');
+  assert.match(active, /CAMPAIGN PROGRESS/);
+  assert.match(active, /CYCLE 2 \/ 5/);
+  assert.match(active, /OPEN YOUR RECORD/);
+  assert.doesNotMatch(active, /Operational gates before launch/);
+  const reviewRuntime = { databaseState: 'VERIFYING', operational: false, schedule: { phase: 'REVIEW' } };
+  const review = context.__renderOperationsWithRuntime(reviewRuntime, 'overview');
+  assert.match(review, /OPERATION STATUS/);
+  assert.doesNotMatch(review, /PUBLIC LAUNCH READINESS/);
+  const reviewProgress = context.__renderOperationsWithRuntime(reviewRuntime, 'progress');
+  assert.match(reviewProgress, /Verified activity under review/);
+  assert.doesNotMatch(reviewProgress, /Operational gates before launch/);
+});
+
+test('Operations pool and Intel disclose verification state without asserting unfunded awards', async () => {
+  const context = await loadRuntime();
+  const pending = context.__renderOperationsWithReadiness({ available: true, readyCount: 0, totalCount: 12, checks: [] }, 'rewards');
+  assert.match(pending, /Planned · funding pending/);
+  assert.match(pending, /Planned · burn checks pending/);
+  assert.match(pending, /Funding checks and personal allocations are tracked separately/);
+  const verified = context.__renderOperationsWithReadiness({ available: true, checks: ['funding', 'burn-rules', 'burn-progress', 'burn-verification'].map((key) => ({ key, ready: true })) }, 'rewards');
+  assert.match(verified, /Funding gate verified/);
+  assert.match(verified, /Burn gates verified/);
+  const intel = context.__renderOperationsWithReadiness({ available: false }, 'intel');
+  assert.match(intel, /Signed Telegram access is needed/);
+  assert.doesNotMatch(intel, /LIVE SOURCES/);
 });
 
 test('unavailable voting sources are described by certification state rather than stale availability observations', async () => {

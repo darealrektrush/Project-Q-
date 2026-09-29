@@ -505,3 +505,62 @@
  .q-shell-v2 .dossier-clearance button{float:none;display:block;margin:10px 0 0}
  .q-shell-v2 .dossier-reward-values{grid-template-columns:1fr}
 }
+
+/* Operations: short orders, readable campaign records, verified-source status. */
+.q-shell-v2 .operation-tabs{scrollbar-width:none;scroll-snap-type:x proximity}
+.q-shell-v2 .operation-tabs button{min-height:44px;scroll-snap-align:start;white-space:nowrap}
+.q-shell-v2 .operation-tabs button:focus-visible,.q-shell-v2 .operations-ui button:focus-visible{outline:2px solid #298ab4;outline-offset:2px}
+.q-shell-v2 .operation-current-order{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid #2d5266;border-left:3px solid #349ac7;border-radius:9px;background:linear-gradient(115deg,#081419,#122b38);color:#f6f4e9}
+.q-shell-v2 .operation-current-order>div{min-width:0}
+.q-shell-v2 .operation-current-order span{font:700 11px/1.1 var(--q-display);letter-spacing:.08em;color:#86c8e6}
+.q-shell-v2 .operation-current-order h3{margin:5px 0 3px;font:700 22px/1.05 var(--q-display)}
+.q-shell-v2 .operation-current-order p{margin:0;font:400 12px/1.35 var(--q-display);color:#bad1d9}
+.q-shell-v2 .operation-current-order button{flex:0 0 auto;min-height:42px;padding:0 13px;border:1px solid #cda33f;border-radius:6px;background:#ebc760;color:#10171a;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .operation-overview-link,.q-shell-v2 .operation-pool-heading button{min-height:38px;padding:0 8px;border:0;background:transparent;color:#245f7e;font:700 12px/1 var(--q-display);text-align:left}
+.q-shell-v2 .operation-pool-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 7px;border-top:1px solid var(--q-border);padding-top:10px}
+.q-shell-v2 .operation-pool-heading span{font:700 12px/1 var(--q-display);letter-spacing:.08em}
+.q-shell-v2 .operation-pool-note,.q-shell-v2 .operation-launch-progress>p,.q-shell-v2 .operation-review-progress>p{margin:4px 0 14px;color:#4b626d;font:400 13px/1.4 var(--q-display)}
+.q-shell-v2 .operation-cycle-focus{padding:14px;border:1px solid #336078;border-radius:8px;background:#0b202b;color:#fff}
+.q-shell-v2 .operation-cycle-focus span,.q-shell-v2 .operation-cycle-focus strong,.q-shell-v2 .operation-cycle-focus small{display:block}
+.q-shell-v2 .operation-cycle-focus span{color:#83c7e8;font:700 11px/1 var(--q-display);letter-spacing:.08em}
+.q-shell-v2 .operation-cycle-focus strong{margin:7px 0;font:700 23px/1.1 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .operation-cycle-focus small{color:#c6d8dd;font:400 12px/1.25 var(--q-display)}
+.q-shell-v2 .operation-progress-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
+.q-shell-v2 .operation-progress-metrics article{min-width:0;padding:10px;border:1px solid var(--q-border);border-radius:7px;background:#f4f6f2}
+.q-shell-v2 .operation-progress-metrics span,.q-shell-v2 .operation-progress-metrics strong,.q-shell-v2 .operation-progress-metrics small{display:block}
+.q-shell-v2 .operation-progress-metrics span{color:#456a7c;font:700 11px/1.1 var(--q-display)}
+.q-shell-v2 .operation-progress-metrics strong{margin:7px 0;font:700 22px/1 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .operation-progress-metrics small{color:#536c78;font:400 11px/1.2 var(--q-display)}
+.q-shell-v2 .operation-progress-links{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.q-shell-v2 .operation-progress-links button{min-height:42px;padding:0 13px;border:1px solid #b99139;border-radius:6px;background:#101c22;color:#f2d16f;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .operation-progress-links button+button{border-color:#aac5d1;background:#eaf1f1;color:#1b5877}
+.q-shell-v2 .operation-readiness-summary{display:flex;justify-content:space-between;gap:12px;margin:2px 0 13px;color:#397591;font:700 11px/1.25 var(--q-display)}
+.q-shell-v2 .operation-readiness-summary b{text-align:right;overflow-wrap:anywhere}
+.q-shell-v2 .operation-economics article{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.q-shell-v2 .operation-economics strong{overflow-wrap:anywhere}
+.q-shell-v2 .operation-economics article em{display:block;margin-top:8px;color:#476d7d;font:400 11px/1.25 var(--q-display);font-style:normal}
+.q-shell-v2 .operation-economics article button{min-height:36px;margin-top:auto;padding:6px 0 0;border:0;background:transparent;color:#245e7c;font:700 11px/1 var(--q-display);text-align:left}
+.q-shell-v2 .operation-intel-list{display:grid;gap:8px;margin-bottom:15px}
+.q-shell-v2 .operation-intel-row{display:grid;grid-template-columns:45px minmax(0,1fr) auto;align-items:center;gap:11px;padding:12px;border:1px solid var(--q-border);border-left:3px solid #3b98bd;border-radius:8px;background:#f6f8f5}
+.q-shell-v2 .operation-intel-row img{width:45px;height:45px;object-fit:contain;border-radius:7px;background:#101e25}
+.q-shell-v2 .operation-intel-row span,.q-shell-v2 .operation-intel-row b,.q-shell-v2 .operation-intel-row small{display:block}
+.q-shell-v2 .operation-intel-row span{color:#3582a3;font:700 11px/1 var(--q-display);letter-spacing:.07em}
+.q-shell-v2 .operation-intel-row b{margin:5px 0;color:#101a1f;font:700 17px/1.1 var(--q-display)}
+.q-shell-v2 .operation-intel-row small{color:#516b78;font:400 12px/1.3 var(--q-display)}
+.q-shell-v2 .operation-intel-row button{min-height:40px;padding:0 10px;border:1px solid #b5c8cc;border-radius:6px;background:#e6f0f1;color:#1a607d;font:700 11px/1 var(--q-display);white-space:nowrap}
+@media(max-width:520px){
+ .q-shell-v2 .operation-tabs{overflow-x:auto;overscroll-behavior-inline:contain}
+ .q-shell-v2 .operation-tabs button{flex:0 0 auto;min-width:83px;min-height:44px;padding:0 9px;font-size:12px}
+ .q-shell-v2 .operation-tabs button:nth-child(2){min-width:105px}
+ .q-shell-v2 .operation-current-order{align-items:stretch;flex-direction:column;gap:10px}
+ .q-shell-v2 .operation-current-order button{align-self:flex-start}
+ .q-shell-v2 .operation-intel-row{grid-template-columns:42px minmax(0,1fr);gap:9px}
+ .q-shell-v2 .operation-intel-row img{width:42px;height:42px}
+ .q-shell-v2 .operation-intel-row button{grid-column:2;justify-self:start}
+ .q-shell-v2 .operation-economics article{padding:11px}
+ .q-shell-v2 .operation-economics strong{font-size:20px}
+}
+@media(max-width:359px){
+ .q-shell-v2 .operation-progress-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .q-shell-v2 .operation-economics strong{font-size:17px}
+}
