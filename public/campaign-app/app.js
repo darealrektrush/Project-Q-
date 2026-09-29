@@ -1535,7 +1535,7 @@ function operationsScreen() {
           ? `<div class="operation-progress-line"><span>PUBLIC LAUNCH READINESS</span><strong>${escapeHtml(readinessLabel)}</strong></div><div class="operation-progress-bar" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${readiness == null ? '' : `aria-valuenow="${readinessWidth}"`}><i style="width:${readinessWidth}%"></i></div><button class="operation-overview-link" data-screen="readiness">REVIEW LAUNCH GATES →</button>`
           : `<div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(operationLifecycleState().label)}</strong></div><button class="operation-overview-link" data-operation-view="progress">VIEW OPERATION RECORD →</button>`}
 
-      ${clearanceMarkup({ compact: true })}
+      <details class="operation-clearance-disclosure"><summary><span>CAMPAIGN CLEARANCE</span><b>${campaignEligibilityRequirements().filter(({ complete }) => complete).length} / ${campaignEligibilityRequirements().length} COMPLETE</b><i aria-hidden="true">⌄</i></summary>${clearanceMarkup({ compact: true })}</details>
 
       <div class="operation-pool-heading"><span>CAMPAIGN POOLS</span><button data-operation-view="rewards">VIEW POOL DETAILS →</button></div>
       ${operationPoolMarkup(c)}

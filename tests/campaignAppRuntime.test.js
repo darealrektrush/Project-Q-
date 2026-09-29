@@ -333,6 +333,7 @@ test('Operations makes the next setup step actionable without claiming the campa
   assert.match(upcoming, /CURRENT ORDER \/\/ UPCOMING/);
   assert.match(upcoming, /CONTINUE SETUP →/);
   assert.match(upcoming, /PUBLIC LAUNCH READINESS/);
+  assert.match(upcoming, /<details class="operation-clearance-disclosure"><summary>[\s\S]*0 \/ 5 COMPLETE[\s\S]*<\/summary>/);
   assert.doesNotMatch(upcoming, /VIEW VERIFIED PROGRESS/);
 });
 
