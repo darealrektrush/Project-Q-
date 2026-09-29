@@ -2263,6 +2263,16 @@ function websiteVoteStatusCopy(source) {
   return 'Individual XP unavailable';
 }
 
+const WEBSITE_SOURCE_ICONS = Object.freeze({
+  'web:coinmooner': 'coinmooner.png',
+  'web:gemfinder': 'gemfinder.png',
+  'web:coinmun': 'coinmun.png',
+  'web:top100token': 'top100token.ico',
+  'web:coinsniper': 'coinsniper.ico',
+  'web:coinboom': 'coinboom.png',
+  'web:coinbuzzer': 'coinbuzzer.png',
+});
+
 function websiteVoteSourcesMarkup(sources, actionEnabled) {
   const cards = sources.map(({ sourceKey, name, url, verificationMode, individualXpEligible }) => {
     let safeUrl = null;
@@ -2283,8 +2293,15 @@ function websiteVoteSourcesMarkup(sources, actionEnabled) {
               : status === 'AVAILABLE' ? 'Verified vote · 1 XP after review'
                 : verificationMode === 'PENDING_LIVE_TEST' ? 'Live test pending · no individual XP'
                   : 'Individual XP unavailable';
+    const icon = WEBSITE_SOURCE_ICONS[sourceKey];
+    const fallback = sourceKey === 'web:geckoterminal' ? 'GT'
+      : sourceKey === 'web:coinscope' ? 'CS'
+        : String(name || 'WEB').replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase();
+    const mark = icon
+      ? `<img src="/campaign-app/assets/voting-sources/${icon}" alt="" loading="lazy" decoding="async" />`
+      : `<span aria-hidden="true">${fallback}</span>`;
     const card = `<article class="vote-source-card${canStart ? ' vote-source-ready' : ''}">
-      <div class="vote-source-heading"><div><h4>${escapeHtml(name)}</h4><p>${escapeHtml(description)}</p></div><span class="vote-source-tag${eligible ? ' vote-source-tag-proof' : ''}">${eligible ? 'PROOF SOURCE' : 'COMMUNITY / INFO'}</span></div>
+      <div class="vote-source-heading"><div class="vote-source-identity"><div class="vote-source-mark">${mark}</div><div><h4>${escapeHtml(name)}</h4><p>${escapeHtml(description)}</p></div></div><span class="vote-source-tag${eligible ? ' vote-source-tag-proof' : ''}">${eligible ? 'PROOF SOURCE' : 'COMMUNITY / INFO'}</span></div>
       <div class="vote-source-actions">${safeUrl ? `<a href="${escapeHtml(safeUrl)}" data-external-vote-link target="_blank" rel="noopener noreferrer" aria-label="Visit ${escapeHtml(name)} website">Visit website ↗</a>` : '<span>Website link unavailable</span>'}
       ${canStart ? `<button type="button" data-vote-source-key="${escapeHtml(sourceKey || '')}">Start verified vote →</button>` : ''}</div>
     </article>`;
