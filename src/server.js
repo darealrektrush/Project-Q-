@@ -32,6 +32,7 @@ import {
   validateOracleWalletEvent,
 } from './campaign/oracleIdentity.js';
 import * as walletStatus from './campaign/walletStatus.js';
+import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
 import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
   WEBSITE_VOTE_PROFILES,
@@ -66,6 +67,8 @@ const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
 const READINESS_CACHE_MS = 15_000;
 let readinessCache = { value: null, expiresAt: 0, pending: null };
+const OCEAN_VAULT_CACHE_MS = 120_000;
+let oceanVaultCache = { value: null, expiresAt: 0, pending: null };
 
 const STUB_COMMANDS = new Set([
   '/missions',
@@ -75,6 +78,30 @@ const STUB_COMMANDS = new Set([
 ]);
 
 app.get('/healthz', (req, res) => res.status(200).json({ ok: true }));
+
+app.get('/campaign-app/api/ocean/vault-status', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    if (!oceanVaultCache.value || Date.now() >= oceanVaultCache.expiresAt) {
+      if (!oceanVaultCache.pending) {
+        oceanVaultCache.pending = getOceanVaultStatus(solana.getConnection())
+          .then((status) => {
+            oceanVaultCache.value = status;
+            oceanVaultCache.expiresAt = Date.now() + OCEAN_VAULT_CACHE_MS;
+            return status;
+          })
+          .finally(() => { oceanVaultCache.pending = null; });
+      }
+      await oceanVaultCache.pending;
+    }
+    return res.status(200).json({ ok: true, status: oceanVaultCache.value });
+  } catch (error) {
+    oceanVaultCache.value = null;
+    oceanVaultCache.expiresAt = 0;
+    console.error('public ocean vault status unavailable', error.message);
+    return res.status(503).json({ ok: false, error: 'ocean vault status unavailable' });
+  }
+});
 
 app.get('/campaign-app/api/runtime', async (req, res) => {
   res.set('Cache-Control', 'no-store');

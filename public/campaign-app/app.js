@@ -130,6 +130,7 @@ const state = {
   runtimeLoadedAt: null,
   readiness: { available: false, ready: false, readyCount: 0, totalCount: 0, percent: null, checks: [] },
   burns: null,
+  oceanVault: null,
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
   missionEvidence: { available: false, oracleRaids: null, websiteVoting: null, trendingBots: null },
@@ -2198,6 +2199,17 @@ function profileScreen() {
 }
 
 function oceanImpactScreen() {
+  const vault = state.oceanVault?.available && state.oceanVault?.vault === OCEAN_CONSERVATION_VAULT
+    && state.oceanVault?.network === 'mainnet-beta' ? state.oceanVault : null;
+  const fawkq = vault?.assets?.FAWKQ;
+  const usdc = vault?.assets?.USDC;
+  const snapshot = vault
+    ? `<div class="ocean-vault-snapshot" aria-label="Finalized vault balances">
+        <div><span>SOL IN VAULT</span><strong>${escapeHtml(formatBaseUnits(vault.sol?.balanceLamports, 9))}</strong><small>Observed balance, not conservation spent</small></div>
+        <div><span>FAWKQ IN VAULT</span><strong>${fawkq?.available ? escapeHtml(formatBaseUnits(fawkq.balanceBaseUnits, 6)) : 'UNAVAILABLE'}</strong><small>${fawkq?.available ? `<a href="https://solscan.io/account/${escapeHtml(fawkq.tokenAccount)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW RECEIVING ACCOUNT ↗</a>` : 'Token account not verified'}</small></div>
+        <div><span>USDC IN VAULT</span><strong>${usdc?.available ? escapeHtml(formatBaseUnits(usdc.balanceBaseUnits, 6)) : 'NOT READY'}</strong><small>${usdc?.available ? `<a href="https://solscan.io/account/${escapeHtml(usdc.tokenAccount)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW RECEIVING ACCOUNT ↗</a>` : 'Receiving account not established'}</small></div>
+      </div><small class="ocean-vault-observed">Finalized Solana slot ${Number(vault.slot)} · observed ${escapeHtml(new Date(vault.observedAt).toLocaleString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))} UTC. Balances can change.</small>`
+    : '<div class="ocean-vault-unavailable">Live vault observation is unavailable. Check the public explorer for current account information.</div>';
   return `<div class="ocean-impact-ui">
     <button type="button" class="ocean-back" data-screen="home">← BACK TO TERMINAL</button>
     <div class="ocean-impact-hero"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact: cleaner oceans, brighter tomorrows, community-powered conservation" /></div>
@@ -2221,7 +2233,7 @@ function oceanImpactScreen() {
       <div class="ocean-section-head"><span class="ocean-section-label">02 / CONTRIBUTE</span><b>TRANSFER FLOW IN REVIEW</b></div>
       <h3>A clear route to the vault.</h3>
       <p>CrabStar has confirmed the conservation Squads vault. SOL, native Solana USDC and FAWKQ transfer flows will open separately after the wallet integration, token destinations and finalization checks pass.</p>
-      <div class="ocean-asset-list"><span>SOL <small>TRANSFER IN REVIEW</small></span><span>USDC <small>TOKEN ACCOUNT IN REVIEW</small></span><span>FAWKQ <small>TOKEN ACCOUNT IN REVIEW</small></span></div>
+      <div class="ocean-asset-list"><span>SOL <small>TRANSFER IN REVIEW</small></span><span>USDC <small>${usdc?.available ? 'ACCOUNT OBSERVED' : 'ACCOUNT NOT READY'}</small></span><span>FAWKQ <small>${fawkq?.available ? 'ACCOUNT OBSERVED' : 'ACCOUNT NOT VERIFIED'}</small></span></div>
       <div class="ocean-impact-notice"><b>In-app contributions are not open yet.</b><p>The public vault is shown below for transparency. This screen cannot request a wallet signature or issue contribution credit.</p></div>
     </section>
     <section class="ocean-impact-panel" id="ocean-vault">
@@ -2229,7 +2241,8 @@ function oceanImpactScreen() {
       <h3>CrabStar conservation vault.</h3>
       <p>Founder-confirmed destination. The public explorer identifies this vault as governed by a 2-of-3 Squads V4 multisig. The Bond the Duck reward vault is separate.</p>
       <div class="ocean-vault-address"><span>PUBLIC SOLANA VAULT ADDRESS</span><code>${OCEAN_CONSERVATION_VAULT}</code><a href="${OCEAN_CONSERVATION_EXPLORER}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VERIFY ON SOLSCAN ↗</a></div>
-      <small class="ocean-vault-note">Token-specific receiving accounts and live balances will appear after independent verification. No campaign XP or impact outcome follows from an address alone.</small>
+      ${snapshot}
+      <small class="ocean-vault-note">Observed vault balances are not contribution totals or documented conservation spending. No campaign XP or impact outcome follows from a balance alone.</small>
     </section>
     <section class="ocean-impact-panel" id="ocean-work">
       <span class="ocean-section-label">04 / IMPACT IN ACTION</span>
@@ -2396,6 +2409,10 @@ function go(screen, { replace = false } = {}) {
   updateTelegramBackButton();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
+  if (screen === 'ocean') {
+    state.oceanVault = null;
+    loadOceanVaultStatus().then(() => { if (state.screen === 'ocean') render(); });
+  }
 }
 
 function openOracle() {
@@ -3311,6 +3328,17 @@ async function loadBurnSummary() {
   } catch { state.burns = null; }
 }
 
+async function loadOceanVaultStatus() {
+  try {
+    const response = await fetch('/campaign-app/api/ocean/vault-status', { cache: 'no-store' });
+    const payload = await response.json();
+    if (!response.ok || payload.status?.vault !== OCEAN_CONSERVATION_VAULT || !payload.status?.available) {
+      throw new Error('ocean vault status unavailable');
+    }
+    state.oceanVault = payload.status;
+  } catch { state.oceanVault = null; }
+}
+
 async function loadWalletStatus() {
   const initData = state.telegram?.initData;
   if (!initData || !state.profile.walletVerified || !state.wallet) {
@@ -3459,6 +3487,7 @@ async function boot() {
     loadCampaignRuntime(),
     loadCampaignReadiness(),
     loadBurnSummary(),
+    state.screen === 'ocean' ? loadOceanVaultStatus() : Promise.resolve(),
     authenticateTelegram(),
   ]);
   await loadWalletStatus();

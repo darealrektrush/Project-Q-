@@ -752,6 +752,15 @@
 .q-shell-v2 .ocean-vault-address a{justify-self:start;display:inline-flex;align-items:center;min-height:44px;color:#185f83;font:700 12px/1 var(--q-display);text-decoration:underline;text-underline-offset:3px}
 .q-shell-v2 .ocean-vault-address a:focus-visible{outline:2px solid #298ab4;outline-offset:2px}
 .q-shell-v2 .ocean-vault-note{display:block;margin-top:10px;color:#536e78;font:400 12px/1.35 var(--q-display)}
+.q-shell-v2 .ocean-vault-snapshot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}
+.q-shell-v2 .ocean-vault-snapshot>div{min-width:0;padding:12px;border:1px solid #bad3dc;border-radius:7px;background:#f1f7f6}
+.q-shell-v2 .ocean-vault-snapshot span,.q-shell-v2 .ocean-vault-snapshot strong,.q-shell-v2 .ocean-vault-snapshot small{display:block}
+.q-shell-v2 .ocean-vault-snapshot span{color:#287897;font:700 10px/1.15 var(--q-display);letter-spacing:.04em}
+.q-shell-v2 .ocean-vault-snapshot strong{margin:8px 0;color:#10212a;font:700 24px/1 var(--q-display);overflow-wrap:anywhere}
+.q-shell-v2 .ocean-vault-snapshot small{color:#53707d;font:400 11px/1.3 var(--q-display)}
+.q-shell-v2 .ocean-vault-snapshot small a{display:inline-flex;align-items:center;min-height:36px;color:#246b88;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.q-shell-v2 .ocean-vault-observed{display:block;margin-top:8px;color:#527480;font:400 11px/1.35 var(--q-display)}
+.q-shell-v2 .ocean-vault-unavailable{margin-top:12px;padding:12px;border:1px dashed #9cb8c0;border-radius:7px;color:#526c77;background:#f1f6f4;font:400 12px/1.35 var(--q-display)}
 .q-shell-v2 .ocean-impact-footer{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px 10px;margin-top:4px;padding:17px;color:#7fc6e1;background:#081b29;border-radius:8px;font:700 11px/1 var(--q-display)}
 .q-shell-v2 .ocean-impact-footer strong{color:#f2cf73}
 .q-shell-v2 .ocean-impact-footer i{color:#459ecc;font-style:normal}
@@ -760,6 +769,7 @@
  .q-shell-v2 .ocean-impact-principle{grid-template-columns:1fr}
  .q-shell-v2 .ocean-impact-principle>div{padding:10px 12px}
  .q-shell-v2 .ocean-asset-list{grid-template-columns:1fr}
+ .q-shell-v2 .ocean-vault-snapshot{grid-template-columns:1fr}
  .q-shell-v2 .ocean-impact-panel{padding:14px}
  .q-shell-v2 .ocean-impact-footer{justify-content:flex-start}
 }

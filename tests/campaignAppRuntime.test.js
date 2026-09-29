@@ -117,6 +117,10 @@ async function loadRuntime() {
       state.recordView = view;
       return recordScreen();
     };
+    globalThis.__renderOceanWith = (snapshot) => {
+      state.oceanVault = snapshot;
+      return oceanImpactScreen();
+    };
     globalThis.__renderBurnsWith = (summary) => {
       state.burns = summary;
       return burnsScreen();
@@ -360,6 +364,22 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(ocean, /solscan\.io\/account\/J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
   assert.match(ocean, /2-of-3 Squads V4 multisig/);
   assert.doesNotMatch(ocean, /3z6YpKpgDrUdRuqp1KkJfVhw5X3BRGQzUZhGN8VMNfci|data-send-transfer|<button[^>]*>SEND/);
+  assert.match(ocean, /Live vault observation is unavailable/);
+  const observed = context.__renderOceanWith({
+    available: true, vault: 'J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p',
+    network: 'mainnet-beta', slot: 450523697, observedAt: '2026-09-29T09:00:00Z',
+    sol: { balanceLamports: '248947592' },
+    assets: {
+      FAWKQ: { available: true, balanceBaseUnits: '35000000000000', tokenAccount: 'WgGuvkt875q1WH5oPgn2a71KyNj5RRrJCGHc9JY6tcf' },
+      USDC: { available: false, balanceBaseUnits: null, tokenAccount: null },
+    },
+  });
+  assert.match(observed, /0\.248947592/);
+  assert.match(observed, /35,000,000/);
+  assert.match(observed, /WgGuvkt875q1WH5oPgn2a71KyNj5RRrJCGHc9JY6tcf/);
+  assert.doesNotMatch(observed, /Hjb5k2ihS22D6HZJJUivZ1XQTfrgdT4HY14BF5ZYujNQ/);
+  assert.match(observed, /USDC IN VAULT[\s\S]*NOT READY/);
+  assert.match(observed, /balances are not contribution totals/);
 });
 
 test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {
