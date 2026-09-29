@@ -34,6 +34,7 @@ import {
 import * as walletStatus from './campaign/walletStatus.js';
 import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
 import { verifyOceanContribution } from './campaign/oceanContributionProof.js';
+import { oceanReceiptsEnabled, recordOceanContribution } from './campaign/oceanReceipts.js';
 import { OCEAN_RECOGNITION_VERSION, OCEAN_TIERS, OCEAN_BADGES } from './campaign/oceanRecognition.js';
 import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
@@ -72,6 +73,17 @@ let readinessCache = { value: null, expiresAt: 0, pending: null };
 const OCEAN_VAULT_CACHE_MS = 120_000;
 let oceanVaultCache = { value: null, expiresAt: 0, pending: null };
 const oceanProofAttempts = new Map();
+
+function consumeOceanProofAttempt(userId) {
+  const now = Date.now();
+  const previous = oceanProofAttempts.get(userId) || { start: now, count: 0 };
+  const attempt = now - previous.start > 60_000 ? { start: now, count: 1 } : { ...previous, count: previous.count + 1 };
+  oceanProofAttempts.set(userId, attempt);
+  if (oceanProofAttempts.size > 5000) {
+    for (const [id, record] of oceanProofAttempts) if (now - record.start > 60_000) oceanProofAttempts.delete(id);
+  }
+  return attempt.count <= 6;
+}
 
 const STUB_COMMANDS = new Set([
   '/missions',
@@ -127,14 +139,7 @@ app.post('/campaign-app/api/ocean/check-transfer', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'invalid transaction signature' });
   }
   const userId = session.user.id;
-  const now = Date.now();
-  const previous = oceanProofAttempts.get(userId) || { start: now, count: 0 };
-  const attempt = now - previous.start > 60_000 ? { start: now, count: 1 } : { ...previous, count: previous.count + 1 };
-  oceanProofAttempts.set(userId, attempt);
-  if (attempt.count > 6) return res.status(429).json({ ok: false, error: 'wait before checking another transfer' });
-  if (oceanProofAttempts.size > 5000) {
-    for (const [id, record] of oceanProofAttempts) if (now - record.start > 60_000) oceanProofAttempts.delete(id);
-  }
+  if (!consumeOceanProofAttempt(userId)) return res.status(429).json({ ok: false, error: 'wait before checking another transfer' });
   try {
     const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
     const identities = await supabase.select('identity_links',
@@ -151,6 +156,33 @@ app.post('/campaign-app/api/ocean/check-transfer', async (req, res) => {
     if (error.message === 'invalid transaction signature') return res.status(400).json({ ok: false, error: error.message });
     console.error('ocean transfer check unavailable', error.message);
     return res.status(503).json({ ok: false, error: 'transfer check unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/ocean/record-transfer', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!oceanReceiptsEnabled()) return res.status(503).json({ ok: false, error: 'contribution receipts unavailable' });
+  let session;
+  try { session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN); }
+  catch { return res.status(401).json({ ok: false, error: 'valid Telegram session required' }); }
+  if (!consumeOceanProofAttempt(session.user.id)) return res.status(429).json({ ok: false, error: 'wait before recording another transfer' });
+  const signature = req.body?.signature;
+  if (typeof signature !== 'string' || signature.length > 90 || !/^[1-9A-HJ-NP-Za-km-z]+$/.test(signature)) {
+    return res.status(400).json({ ok: false, error: 'invalid transaction signature' });
+  }
+  try {
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const saved = await recordOceanContribution(supabase, solana.getConnection(), {
+      campaignId, telegramUserId: session.user.id, signature,
+    });
+    if (!saved) return res.status(404).json({ ok: false, error: 'no finalized vault transfer matched your verified wallet' });
+    return res.json({ ok: true, ...saved, status: 'RECORDED',
+      note: 'Verified deposit receipt only. No campaign XP, badge or conservation expenditure has been issued.' });
+  } catch (error) {
+    if (error.message === 'invalid transaction signature') return res.status(400).json({ ok: false, error: error.message });
+    if (error.message === 'Oracle verified profile and wallet required') return res.status(409).json({ ok: false, error: error.message });
+    console.error('ocean receipt unavailable', error.message);
+    return res.status(503).json({ ok: false, error: 'receipt recording unavailable' });
   }
 });
 

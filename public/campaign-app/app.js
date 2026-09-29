@@ -2214,8 +2214,8 @@ function oceanImpactScreen() {
       </div><small class="ocean-vault-observed">Finalized Solana slot ${Number(vault.slot)} · observed ${escapeHtml(new Date(vault.observedAt).toLocaleString('en-CA', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))} UTC. Balances can change.</small>`
     : '<div class="ocean-vault-unavailable">Live vault observation is unavailable. Check the public explorer for current account information.</div>';
   const proof = state.oceanProof;
-  const proofResult = proof?.status === 'MATCHED'
-    ? `<div class="ocean-proof-result matched" role="status"><b>FINALIZED TRANSFER MATCHED</b><p>A transfer from your Oracle verified wallet to the conservation vault was found. This is a read-only check; a contribution receipt and campaign credit have not been issued.</p>${proof.transfers.map((entry) => `<div class="ocean-proof-transfer"><strong>${escapeHtml(formatBaseUnits(entry.amountBaseUnits, entry.decimals))} ${escapeHtml(entry.asset)}</strong><span>Finalized slot ${Number(proof.slot)}</span></div>`).join('')}<a href="https://solscan.io/tx/${escapeHtml(proof.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW TRANSACTION ↗</a></div>`
+  const proofResult = proof?.status === 'MATCHED' || proof?.status === 'RECORDED'
+    ? `<div class="ocean-proof-result matched" role="status"><b>${proof.status === 'RECORDED' ? 'VERIFIED DEPOSIT RECEIPT SAVED' : 'FINALIZED TRANSFER MATCHED'}</b><p>${proof.status === 'RECORDED' ? 'Your original asset and amount are saved to your CrabStar ID record. No campaign XP, badge or conservation expenditure has been issued.' : 'A transfer from your Oracle verified wallet to the conservation vault was found. Save its receipt to add it to your private record.'}</p>${proof.transfers.map((entry) => `<div class="ocean-proof-transfer"><strong>${escapeHtml(formatBaseUnits(entry.amountBaseUnits, entry.decimals))} ${escapeHtml(entry.asset)}</strong><span>Finalized slot ${Number(proof.slot)}</span></div>`).join('')}${proof.status === 'MATCHED' && location.hostname === 'project-q-dev.onrender.com' ? '<button type="button" id="ocean-save-receipt">SAVE VERIFIED RECEIPT →</button>' : ''}<a href="https://solscan.io/tx/${escapeHtml(proof.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW TRANSACTION ↗</a></div>`
     : proof?.status === 'NO_MATCH'
       ? '<div class="ocean-proof-result" role="status"><b>NO MATCH FOUND</b><p>No finalized supported transfer from your Oracle verified wallet to the approved vault was found in this transaction. Check the wallet, destination, network and signature.</p></div>'
       : proof?.status === 'ERROR'
@@ -2270,7 +2270,7 @@ function oceanImpactScreen() {
       <span class="ocean-section-label">05 / COMMUNITY IMPACT</span>
       <h3>Every verified contributor has a place.</h3>
       <p>Participation builds an Ocean Impact record alongside Project Q campaigns. Every verified contributor counts; recognition is optional, and project or founder deposits stay separate from community rankings.</p>
-      <div class="ocean-impact-notice"><b>Community record pending.</b><p>These recognition rules are proposed for review. No XP, badges, tiers, standings or shout-outs are active. A read-only transaction match is not a saved contribution receipt.</p></div>
+      <div class="ocean-impact-notice"><b>Community recognition pending.</b><p>Verified deposit receipts can be saved on Project Q Dev. XP, badges, tiers, standings and shout-outs remain inactive until the rules are approved.</p></div>
       ${recognition ? `<div class="ocean-recognition-head"><div><span>THE RECOGNITION PROGRAM</span><h4>Build a record across campaigns.</h4></div><em>RULES PROPOSED</em></div>
       <div class="ocean-tier-grid">${recognition.tiers.map((tier, index) => `<article class="ocean-tier"><span>0${index + 1} / OCEAN IMPACT</span><h5>${escapeHtml(tier.title)}</h5><p>${Number(tier.days)} distinct verified contribution ${Number(tier.days) === 1 ? 'day' : 'days'}</p><small>AWARD PENDING ACTIVATION</small></article>`).join('')}</div>
       <div class="ocean-program-grid">
@@ -3209,6 +3209,24 @@ function openCampaignUpdates() {
 }
 
 function bind() {
+  document.querySelector('#ocean-save-receipt')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const signature = state.oceanProof?.signature;
+    if (!signature || state.oceanProof?.status !== 'MATCHED' || !state.telegram?.initData) return;
+    button.disabled = true;
+    button.textContent = 'VERIFYING & SAVING…';
+    try {
+      const response = await fetch('/campaign-app/api/ocean/record-transfer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+        body: JSON.stringify({ initData: state.telegram.initData, signature }),
+      });
+      const result = await response.json();
+      state.oceanProof = response.ok ? { ...result.proof, status: 'RECORDED', receipts: result.receipts } : {
+        status: 'ERROR', message: result.error || 'Receipt unavailable. Try again later.',
+      };
+    } catch { state.oceanProof = { status: 'ERROR', message: 'Receipt unavailable. Try again later.' }; }
+    if (state.screen === 'ocean') render();
+  });
   document.querySelector('#ocean-proof-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;

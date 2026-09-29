@@ -370,7 +370,7 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(ocean, /In-app contributions are not open yet/);
   assert.match(ocean, /CHECK AN EXISTING TRANSFER/);
   assert.match(ocean, /CHECK TRANSFER →<\/button>/);
-  assert.match(ocean, /Community record pending/);
+  assert.match(ocean, /Community recognition pending/);
   assert.match(ocean, /J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
   assert.match(ocean, /solscan\.io\/account\/J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
   assert.match(ocean, /2-of-3 Squads V4 multisig/);
@@ -395,7 +395,7 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
     transfers: [{ asset: 'SOL', amountBaseUnits: '1200000000', decimals: 9 }] });
   assert.match(matched, /FINALIZED TRANSFER MATCHED/);
   assert.match(matched, /1\.2 SOL/);
-  assert.match(matched, /a contribution receipt and campaign credit have not been issued/);
+  assert.match(matched, /Save its receipt to add it to your private record/);
   assert.match(context.__renderOceanProofWith({ status: 'NO_MATCH' }), /NO MATCH FOUND/);
   const proposed = context.__renderOceanRecognitionWith({ status: 'PROPOSED',
     tiers: [{ title: 'Ocean Supporter', days: 1 }, { title: 'Ocean Steward', days: 25 }],

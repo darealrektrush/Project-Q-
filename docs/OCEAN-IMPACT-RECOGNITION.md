@@ -1,11 +1,11 @@
 # Ocean Impact recognition — proposal 1
 
-Project Q Dev displays this program as **proposed**. No transfer, receipt, badge, XP, leaderboard entry, multiplier or shout-out is activated by this document. Project Q owns campaign rules and receipts; Oracle owns the permanent CrabStar identity, lifetime Crab Army XP and the existing rank ladder.
+Project Q Dev displays the recognition program as **proposed**. A finalized existing transfer can now be saved as a private verified deposit receipt. No badge, XP, leaderboard entry, multiplier or shout-out is activated by this document. Project Q owns campaign rules and receipts; Oracle owns the permanent CrabStar identity, lifetime Crab Army XP and the existing rank ladder.
 
 ## Evidence and identity
 
 1. The member has a valid signed Telegram Mini App session and an Oracle verified wallet. A read-only signature check can match a finalized mainnet transfer from that wallet to the founder-confirmed conservation vault `J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p`. The approved FAWKQ Token-2022 and native USDC receiving accounts are validated separately. A pasted signature alone never earns credit.
-2. Before launch, store immutable contribution receipts with a unique network/signature/asset/source key, wallet, vault destination, original integer units, finalized slot/time, mint/program, proof version and identity. Replay returns the original receipt; changed terms fail. Reconcile through a server-controlled transaction verifier, never a client-supplied amount.
+2. Project Q Dev stores immutable contribution receipts with a unique network/signature/asset key, source wallet, vault destination, original integer units, finalized slot/time, proof version and identity. Replay returns the original receipt; changed terms fail. The server independently verifies the transaction and the database rechecks the Oracle linked identity and wallet. Asset verification uses exact program, mint and destination checks in the chain verifier; the mint/program are not yet stored in each receipt.
 3. A contribution to the vault is **funds received**. Conservation commitments, expenditure and documented work require separate evidence and public records. A balance is neither received-total history nor completed impact.
 4. Only verified community wallets enter community boards. Founder/project-funded deposits remain visible in a separate section. Exclude founder/admin profiles from campaign XP and the general participation leaderboard.
 
@@ -38,4 +38,4 @@ New members start anonymous until they explicitly choose public profile or alias
 
 ## Deployment boundary
 
-The current connected Supabase tool exposes only the production Oracle project; it does not expose Project Q Dev's isolated database. Do not run Project Q schema changes against Oracle production. The next implementation stage needs Dev schema/migrations for immutable receipts, privacy preferences, historical pricing evidence and publication outbox; then end-to-end test with a signed Telegram session and controlled mainnet transfers. Wallet signing, transaction preparation, persistent receipt issuance, campaign settlement, Oracle awards, public leaderboards and social posting remain closed until these gates pass.
+The connected Supabase tool now reaches Project Q Dev's isolated database `awouccxagxglpvvuznxo`, where receipt and default anonymous preference tables were migrated. The Dev app enables receipt writes only against that exact database and service name. Next steps are historical pricing evidence, consent UI and publication outbox, followed by a signed Telegram session and controlled mainnet transfer test. Wallet signing, transaction preparation, campaign settlement, Oracle awards, public leaderboards and social posting remain closed until those gates pass. The Dev receipt write has not yet been exercised with a real contribution.
