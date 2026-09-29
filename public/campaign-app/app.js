@@ -426,7 +426,7 @@ function readinessScreen() {
   <div class="section-head"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
   ${readinessCommitmentsMarkup(c)}
   <section class="readiness-fingerprint command-card"><div><span class="label">Readiness fingerprint</span><h3>${reportHash ? 'Exact reviewed state' : 'Report unavailable'}</h3><p>${reportHash ? 'This SHA-256 fingerprint changes whenever the readiness evidence or an operational gate changes.' : 'A fingerprint appears only when Project Q can build the authoritative readiness report.'}</p></div><code>${reportHash || 'No report hash available'}</code><small>${escapeHtml(readiness.reportVersion || 'readiness report pending')}</small></section>
-  <section class="launch-safety"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><div><b>Founder approval remains outside this public screen.</b><p>Project Q may calculate, verify and publish status. It cannot activate the campaign, hold a treasury signer or execute a transfer from this interface.</p></div></section>
+  <section class="launch-safety"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="" /><div><b>Founder approval remains outside this public screen.</b><p>Project Q may calculate, verify and publish status. It cannot activate the campaign, hold a treasury signer or execute a transfer from this interface.</p></div></section>
   <button class="outline-action launch-back" data-screen="home">← Back to campaign home</button>`;
 }
 
@@ -643,7 +643,7 @@ function home() {
       </div>
     </section>
     <section class="terminal-next-step ${nextMove.brand === 'oracle' ? 'oracle-next' : ''}">
-      <div class="terminal-identity-art"><span class="identity-channel">${identitySymbol}</span>${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<img src="/campaign-app/assets/q-medallion.svg" alt="Project Q" />'}</div>
+      <div class="terminal-identity-art"><span class="identity-channel">${identitySymbol}</span>${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" />'}</div>
       <div><span>${escapeHtml(nextMove.label)}</span><b>${escapeHtml(nextMove.title)}</b><small>${escapeHtml(nextMove.detail)}</small></div>
       <button ${actionAttrs}>${escapeHtml(nextMove.action)} <span aria-hidden="true">→</span></button>
     </section>
@@ -2045,7 +2045,7 @@ function profileWallet() {
 
     <section class="identity-system-note wallet-system-note">
       <div class="identity-system oracle-system"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle Ownership</b><small>Oracle verifies the canonical reward-wallet connection.</small></span></div>
-      <div class="identity-system q-system"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" /><span><b>Project Q Destination</b><small>Q uses the verified wallet for eligibility, allocations and releases.</small></span></div>
+      <div class="identity-system q-system"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" /><span><b>Project Q Destination</b><small>Q uses the verified wallet for eligibility, allocations and releases.</small></span></div>
     </section>
 
     <section class="wallet-protection-note">
@@ -2054,7 +2054,7 @@ function profileWallet() {
     </section>
 
     <section class="wallet-noncustodial-note">
-      <img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" />
+      <img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" />
       <div><b>Non-custodial by design.</b><small>Project Q cannot sign from your wallet, cannot withdraw funds, and never stores a seed phrase or private key.</small></div>
     </section>
   </div>`;
@@ -2137,7 +2137,7 @@ function profileIdentity() {
         <div class="identity-step-provider ${step.provider === 'oracle' ? 'oracle-provider' : ''}">
           ${step.provider === 'oracle'
             ? `<img src="${ORACLE_LOGO}" alt="Oracle" />`
-            : '<img src="/campaign-app/assets/project-q-app-icon.webp" alt="Project Q" />'}
+            : '<img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" />'}
         </div>
         <div class="identity-step-copy">
           <div><b>${escapeHtml(step.label)}</b>${statePill(step.complete ? 'VERIFIED' : step.locked ? 'LOCKED' : 'NEXT', step.complete ? 'success' : 'pending')}</div>
@@ -2148,7 +2148,7 @@ function profileIdentity() {
     </section>
 
     <section class="identity-system-note">
-      <div class="identity-system q-system"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /><span><b>Project Q</b><small>Records identity state and campaign eligibility.</small></span></div>
+      <div class="identity-system q-system"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="" /><span><b>Project Q</b><small>Records identity state and campaign eligibility.</small></span></div>
       <div class="identity-system oracle-system"><img src="${ORACLE_LOGO}" alt="Oracle" /><span><b>Oracle</b><small>Verifies canonical X and reward-wallet connections.</small></span></div>
     </section>
 
@@ -2827,7 +2827,7 @@ function missionDetailMarkup(mission) {
 
   const oracleMission = mission.id === 'oracle-raids';
   const providerName = oracleMission ? 'Oracle' : 'Project Q';
-  const providerLogo = oracleMission ? ORACLE_LOGO : '/campaign-app/assets/project-q-app-icon.webp';
+  const providerLogo = oracleMission ? ORACLE_LOGO : '/campaign-app/assets/project-q-mark-20260929.jpg';
   const status = canonicalMissionState(mission, telemetry).label;
   const fileIndex = (state.campaign?.missions || []).findIndex(({ id }) => id === mission.id) + 1;
   const [, shortReward, shortFrequency] = missionListCopy(mission);
@@ -2956,7 +2956,7 @@ async function saveTourCompletion() {
 function tourWelcomeMarkup(source = 'auto') {
   const replay = source === 'manual';
   return `<div class="tour-welcome-card" role="dialog" aria-label="Welcome to Project Q">
-    <div class="tour-welcome-mark"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /></div>
+    <div class="tour-welcome-mark"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="" /></div>
     <span class="label">${replay ? 'Project Q Guide' : 'Welcome to Project Q'}</span>
     <h2>${replay ? 'Replay the Operations Tour' : 'Enter the Operation'}</h2>
     <p>${replay
