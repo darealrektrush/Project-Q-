@@ -5,12 +5,70 @@ export function oceanReceiptsEnabled(env = process.env) {
     String(env.SUPABASE_URL || '').replace(/\/$/, '') === 'https://awouccxagxglpvvuznxo.supabase.co';
 }
 
-export async function listOceanContributions(client, { campaignId, telegramUserId }) {
+async function canonicalOceanProfile(client, { campaignId, telegramUserId }) {
   const identities = await client.select('identity_links',
     `?campaign_id=eq.${encodeURIComponent(campaignId)}&telegram_user_id=eq.${encodeURIComponent(String(telegramUserId))}` +
     '&select=profile_id&limit=1');
   const profileId = identities[0]?.profile_id;
   if (!profileId) throw new Error('Oracle verified profile required');
+  return profileId;
+}
+
+export async function getOceanRecognitionState(client, identity) {
+  const profileId = await canonicalOceanProfile(client, identity);
+  const [preferences, progressRows] = await Promise.all([
+    client.select('ocean_recognition_preferences',
+      `?profile_id=eq.${encodeURIComponent(profileId)}` +
+      '&select=display_mode,display_alias,shoutout_opt_in,display_consent_at&limit=1'),
+    client.rpc('get_ocean_private_progress', { p_profile_id: profileId }),
+  ]);
+  if (!Array.isArray(preferences) || !Array.isArray(progressRows) || !progressRows[0]) {
+    throw new Error('ocean recognition state unavailable');
+  }
+  const row = preferences[0];
+  const progress = progressRows[0];
+  return {
+    preference: {
+      displayMode: row?.display_mode || 'ANONYMOUS',
+      alias: row?.display_mode === 'ALIAS' ? row.display_alias : null,
+      shoutoutOptIn: false,
+      consentAt: row?.display_consent_at || null,
+    },
+    progress: {
+      contributions: Number(progress.contributions),
+      days: Number(progress.contribution_days),
+      founderReceipts: Number(progress.founder_receipts),
+      status: 'PREVIEW',
+    },
+  };
+}
+
+export async function saveOceanRecognitionPreference(client, identity, { displayMode, alias }) {
+  if (!['ANONYMOUS', 'PUBLIC', 'ALIAS'].includes(displayMode)) throw new Error('invalid recognition mode');
+  const trimmedAlias = typeof alias === 'string' ? alias.trim() : '';
+  if (displayMode === 'ALIAS' && (!/^[A-Za-z0-9_ .-]{3,30}$/.test(trimmedAlias) ||
+    /^(admin|oracle|crabstar|project[ _.-]*q|fawkq|moderator|official)$/i.test(trimmedAlias))) {
+    throw new Error('choose an alias of 3–30 letters, numbers or spaces');
+  }
+  const profileId = await canonicalOceanProfile(client, identity);
+  const now = new Date().toISOString();
+  const rows = await client.upsert('ocean_recognition_preferences', [{
+    profile_id: profileId,
+    display_mode: displayMode,
+    display_alias: displayMode === 'ALIAS' ? trimmedAlias : null,
+    display_consent_at: displayMode === 'ANONYMOUS' ? null : now,
+    display_consent_version: displayMode === 'ANONYMOUS' ? null : 'draft-1',
+    shoutout_opt_in: false,
+    updated_at: now,
+  }], 'profile_id');
+  if (!Array.isArray(rows) || rows[0]?.profile_id !== profileId) {
+    throw new Error('ocean recognition preference not saved');
+  }
+  return getOceanRecognitionState(client, identity);
+}
+
+export async function listOceanContributions(client, { campaignId, telegramUserId }) {
+  const profileId = await canonicalOceanProfile(client, { campaignId, telegramUserId });
   const rows = await client.rpc('list_ocean_contribution_receipts', { p_profile_id: profileId });
   if (!Array.isArray(rows)) throw new Error('ocean receipt history unavailable');
   return rows.map((row) => ({

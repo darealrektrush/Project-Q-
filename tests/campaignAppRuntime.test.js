@@ -136,6 +136,11 @@ async function loadRuntime() {
       state.oceanRecognition = program;
       return oceanImpactScreen();
     };
+    globalThis.__renderOceanPrivateWith = (personal) => {
+      state.telegram = { initData: 'signed-fixture' };
+      state.oceanRecognitionState = personal;
+      return oceanImpactScreen();
+    };
     globalThis.__renderBurnsWith = (summary) => {
       state.burns = summary;
       return burnsScreen();
@@ -420,6 +425,15 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(proposed, /Public profile/);
   assert.match(proposed, /SHOUT-OUTS \/\/ OPT-IN/);
   assert.match(proposed, /RULES PROPOSED/);
+  const personal = context.__renderOceanPrivateWith({
+    preference: { displayMode: 'ALIAS', alias: 'Ocean Crab', consentAt: '2026-09-29T00:00:00Z' },
+    progress: { contributions: 2, days: 2, founderReceipts: 1, status: 'PREVIEW' },
+  });
+  assert.match(personal, /2 verified days/);
+  assert.match(personal, /Ocean Steward proposed threshold: 25 days/);
+  assert.match(personal, /value="Ocean Crab"/);
+  assert.match(personal, /No tier or badge has been awarded/);
+  assert.match(personal, /Shout-outs are off/);
   assert.doesNotMatch(proposed, /XP AWARDED|BADGE EARNED|data-send-transfer/);
 });
 

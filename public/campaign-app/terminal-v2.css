@@ -769,6 +769,19 @@
 .q-shell-v2 .ocean-receipt-row strong{display:block;color:#172b34;font:700 16px/1.1 var(--q-display)}
 .q-shell-v2 .ocean-receipt-row small{display:block;margin-top:5px;color:#567883;font:400 11px/1.2 var(--q-display)}
 .q-shell-v2 .ocean-receipt-row a{flex-shrink:0;color:#177596;font:700 11px/1 var(--q-display)}
+.q-shell-v2 .ocean-personal-progress{display:grid;gap:7px;margin:12px 0;padding:14px;border:1px solid #9ac5d4;border-left:3px solid #319bc2;border-radius:7px;background:#eef6f6}
+.q-shell-v2 .ocean-personal-progress span{color:#317e9d;font:700 10px/1 var(--q-display);letter-spacing:.08em}
+.q-shell-v2 .ocean-personal-progress strong{display:block;margin:5px 0;color:#152d36;font:700 23px/1 var(--q-display)}
+.q-shell-v2 .ocean-personal-progress small,.q-shell-v2 .ocean-personal-progress p{display:block;margin:0;color:#52737d;font:400 11px/1.35 var(--q-display)}
+.q-shell-v2 .ocean-privacy-form{display:grid;gap:8px;margin-top:10px;padding:14px;border:1px solid #bdcbd1;border-radius:7px;background:#102431;color:#eff3ee}
+.q-shell-v2 .ocean-privacy-form>span{color:#75bada;font:700 10px/1.2 var(--q-display);letter-spacing:.1em}
+.q-shell-v2 .ocean-privacy-form p{margin:0 0 3px;color:#d0dfe0;font:400 12px/1.4 var(--q-display)}
+.q-shell-v2 .ocean-privacy-form label{color:#9dc1cf;font:700 10px/1.2 var(--q-display);letter-spacing:.06em}
+.q-shell-v2 .ocean-privacy-form select,.q-shell-v2 .ocean-privacy-form input{width:100%;min-height:42px;padding:9px 10px;border:1px solid #7e9ba5;border-radius:5px;background:#f7faf8;color:#19303a;font:600 14px/1.2 var(--q-display)}
+.q-shell-v2 .ocean-privacy-form button{min-height:44px;margin-top:2px;border:0;border-radius:5px;background:#d7ae3b;color:#151e20;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .ocean-privacy-form button:disabled{opacity:.65}
+.q-shell-v2 .ocean-privacy-form small{color:#b7ced5;font:400 11px/1.35 var(--q-display)}
+.q-shell-v2 .ocean-privacy-form small[role=alert]{color:#ffd079}
 .q-shell-v2 .ocean-vault-address{display:grid;gap:9px;margin-top:16px;padding:14px;border:1px solid #8ebdd0;border-left:3px solid #349dca;border-radius:7px;background:#ecf4f4}
 .q-shell-v2 .ocean-vault-address>span{color:#397b95;font:700 11px/1 var(--q-display);letter-spacing:.06em}
 .q-shell-v2 .ocean-vault-address code{color:#0d2731;font:700 13px/1.35 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;user-select:all}

@@ -34,7 +34,10 @@ import {
 import * as walletStatus from './campaign/walletStatus.js';
 import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
 import { verifyOceanContribution } from './campaign/oceanContributionProof.js';
-import { oceanReceiptsEnabled, recordOceanContribution, listOceanContributions } from './campaign/oceanReceipts.js';
+import {
+  oceanReceiptsEnabled, recordOceanContribution, listOceanContributions,
+  getOceanRecognitionState, saveOceanRecognitionPreference,
+} from './campaign/oceanReceipts.js';
 import { OCEAN_RECOGNITION_VERSION, OCEAN_TIERS, OCEAN_BADGES } from './campaign/oceanRecognition.js';
 import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
@@ -200,6 +203,45 @@ app.post('/campaign-app/api/ocean/my-receipts', async (req, res) => {
     if (error.message === 'Oracle verified profile required') return res.status(409).json({ ok: false, error: error.message });
     console.error('ocean receipt history unavailable', error.message);
     return res.status(503).json({ ok: false, error: 'receipt history unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/ocean/my-recognition', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!oceanReceiptsEnabled()) return res.status(503).json({ ok: false, error: 'recognition preferences unavailable' });
+  let session;
+  try { session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN); }
+  catch { return res.status(401).json({ ok: false, error: 'valid Telegram session required' }); }
+  try {
+    const identity = { campaignId: process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID,
+      telegramUserId: session.user.id };
+    return res.json({ ok: true, ...(await getOceanRecognitionState(supabase, identity)) });
+  } catch (error) {
+    if (error.message === 'Oracle verified profile required') return res.status(409).json({ ok: false, error: error.message });
+    console.error('ocean private recognition unavailable', error.message);
+    return res.status(503).json({ ok: false, error: 'recognition state unavailable' });
+  }
+});
+
+app.post('/campaign-app/api/ocean/recognition-preference', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!oceanReceiptsEnabled()) return res.status(503).json({ ok: false, error: 'recognition preferences unavailable' });
+  let session;
+  try { session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN); }
+  catch { return res.status(401).json({ ok: false, error: 'valid Telegram session required' }); }
+  try {
+    const identity = { campaignId: process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID,
+      telegramUserId: session.user.id };
+    return res.json({ ok: true, ...(await saveOceanRecognitionPreference(supabase, identity, {
+      displayMode: req.body?.displayMode, alias: req.body?.alias,
+    })) });
+  } catch (error) {
+    if (error.message?.startsWith('invalid recognition') || error.message?.startsWith('choose an alias')) {
+      return res.status(400).json({ ok: false, error: error.message });
+    }
+    if (error.message === 'Oracle verified profile required') return res.status(409).json({ ok: false, error: error.message });
+    console.error('ocean recognition preference unavailable', error.message);
+    return res.status(503).json({ ok: false, error: 'preference save unavailable' });
   }
 });
 

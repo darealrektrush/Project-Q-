@@ -134,6 +134,10 @@ const state = {
   oceanProof: null,
   oceanReceipts: null,
   oceanRecognition: null,
+  oceanRecognitionState: null,
+  oceanDraftMode: null,
+  oceanDraftAlias: null,
+  oceanPreferenceError: null,
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
   missionEvidence: { available: false, oracleRaids: null, websiteVoting: null, trendingBots: null },
@@ -2216,6 +2220,11 @@ function oceanImpactScreen() {
     : '<div class="ocean-vault-unavailable">Live vault observation is unavailable. Check the public explorer for current account information.</div>';
   const proof = state.oceanProof;
   const savedReceipts = Array.isArray(state.oceanReceipts) ? state.oceanReceipts : [];
+  const personalRecognition = state.oceanRecognitionState;
+  const draftMode = state.oceanDraftMode || personalRecognition?.preference?.displayMode || 'ANONYMOUS';
+  const draftAlias = state.oceanDraftAlias ?? personalRecognition?.preference?.alias ?? '';
+  const contributionDays = Number(personalRecognition?.progress?.days || 0);
+  const nextTier = recognition?.tiers?.find((tier) => Number(tier.days) > contributionDays);
   const proofResult = proof?.status === 'MATCHED' || proof?.status === 'RECORDED'
     ? `<div class="ocean-proof-result matched" role="status"><b>${proof.status === 'RECORDED' ? 'VERIFIED DEPOSIT RECEIPT SAVED' : 'FINALIZED TRANSFER MATCHED'}</b><p>${proof.status === 'RECORDED' ? 'Your original asset and amount are saved in Project Q, linked to your CrabStar ID. No campaign XP, badge or conservation expenditure has been issued.' : 'A transfer from your Oracle verified wallet to the conservation vault was found. Save its receipt to add it to your private record.'}</p>${proof.transfers.map((entry) => `<div class="ocean-proof-transfer"><strong>${escapeHtml(formatBaseUnits(entry.amountBaseUnits, entry.decimals))} ${escapeHtml(entry.asset)}</strong><span>Finalized slot ${Number(proof.slot)}</span></div>`).join('')}${proof.status === 'MATCHED' && location.hostname === 'project-q-dev.onrender.com' ? '<button type="button" id="ocean-save-receipt">SAVE VERIFIED RECEIPT →</button>' : ''}<a href="https://solscan.io/tx/${escapeHtml(proof.signature)}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VIEW TRANSACTION ↗</a></div>`
     : proof?.status === 'NO_MATCH'
@@ -2274,6 +2283,7 @@ function oceanImpactScreen() {
       <h3>Every verified contributor has a place.</h3>
       <p>Participation builds an Ocean Impact record alongside Project Q campaigns. Every verified contributor counts; recognition is optional, and project or founder deposits stay separate from community rankings.</p>
       <div class="ocean-impact-notice"><b>Community recognition pending.</b><p>Verified deposit receipts can be saved on Project Q Dev. XP, badges, tiers, standings and shout-outs remain inactive until the rules are approved.</p></div>
+      ${personalRecognition ? `<div class="ocean-personal-progress"><div><span>YOUR PRIVATE CONTRIBUTION PROGRESS</span><strong>${contributionDays} verified ${contributionDays === 1 ? 'day' : 'days'}</strong><small>${Number(personalRecognition.progress.contributions)} verified asset receipts · ${Number(personalRecognition.progress.founderReceipts)} founder/project receipts tracked separately</small></div><p>${recognition ? (nextTier ? `${escapeHtml(nextTier.title)} proposed threshold: ${Number(nextTier.days)} days` : 'Proposed tier day thresholds met') : 'Tier rules currently unavailable'} · No tier or badge has been awarded.</p></div>` : ''}
       ${recognition ? `<div class="ocean-recognition-head"><div><span>THE RECOGNITION PROGRAM</span><h4>Build a record across campaigns.</h4></div><em>RULES PROPOSED</em></div>
       <div class="ocean-tier-grid">${recognition.tiers.map((tier, index) => `<article class="ocean-tier"><span>0${index + 1} / OCEAN IMPACT</span><h5>${escapeHtml(tier.title)}</h5><p>${Number(tier.days)} distinct verified contribution ${Number(tier.days) === 1 ? 'day' : 'days'}</p><small>AWARD PENDING ACTIVATION</small></article>`).join('')}</div>
       <div class="ocean-program-grid">
@@ -2282,7 +2292,7 @@ function oceanImpactScreen() {
         <article><span>COMMUNITY BOARDS // PROPOSED</span><h5>Participation and contribution.</h5><p>All-time and current-campaign counts would include every verified community contributor. A top-value board across SOL, USDC and FAWKQ requires recorded USD pricing at the time of each transfer.</p><small>No currency conversion or rankings are estimated from live vault balances.</small></article>
         <article><span>SHOUT-OUTS // OPT-IN</span><h5>Your identity, your choice.</h5><p>Choose public name, alias or anonymous before recognition goes live. A daily community roll-up can thank opted-in contributors; milestones can earn individual spotlights.</p><small>Nothing posts automatically while this program is in review.</small></article>
       </div>
-      <div class="ocean-privacy-preview"><span>RECOGNITION CHOICES IN REVIEW</span><b>Public profile</b><b>Alias</b><b>Anonymous</b><small>Saved receipts are private by default. Public recognition controls will open after consent and moderation are tested.</small></div>` : '<div class="ocean-vault-unavailable">Recognition rules are temporarily unavailable. No tiers, XP or public rankings are active.</div>'}
+      ${personalRecognition && state.telegram?.initData ? `<form id="ocean-privacy-form" class="ocean-privacy-form"><span>YOUR FUTURE DISPLAY PREFERENCE</span><p>Choose how you would appear if community recognition opens. This choice is private now; no public board or social post is active.</p><label for="ocean-display-mode">DISPLAY AS</label><select id="ocean-display-mode" name="displayMode"><option value="ANONYMOUS" ${draftMode === 'ANONYMOUS' ? 'selected' : ''}>Anonymous</option><option value="PUBLIC" ${draftMode === 'PUBLIC' ? 'selected' : ''}>Telegram display name</option><option value="ALIAS" ${draftMode === 'ALIAS' ? 'selected' : ''}>Alias</option></select>${draftMode === 'ALIAS' ? `<label for="ocean-display-alias">ALIAS</label><input id="ocean-display-alias" name="alias" maxlength="30" minlength="3" required pattern="[A-Za-z0-9_ .-]{3,30}" value="${escapeHtml(draftAlias)}" placeholder="Choose a name for future recognition" />` : ''}<button type="submit">SAVE PRIVACY CHOICE →</button>${state.oceanPreferenceError ? `<small role="alert">${escapeHtml(state.oceanPreferenceError)}</small>` : ''}<small>Shout-outs are off. This preference alone cannot publish your profile or issue XP.</small></form>` : `<div class="ocean-privacy-preview"><span>RECOGNITION CHOICES IN REVIEW</span><b>Public profile</b><b>Alias</b><b>Anonymous</b><small>Saved receipts are private by default. Display controls require a verified Telegram identity.</small></div>`}` : '<div class="ocean-vault-unavailable">Recognition rules are temporarily unavailable. No tiers, XP or public rankings are active.</div>'}
     </section>
     <footer class="ocean-impact-footer"><strong>CRABSTAR</strong><span>THE MISSION</span><i aria-hidden="true">✦</i><strong>PROJECT Q</strong><span>THE CAMPAIGN ENGINE</span></footer>
   </div>`;
@@ -2440,7 +2450,7 @@ function go(screen, { replace = false } = {}) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
-    Promise.allSettled([loadOceanVaultStatus(), loadOceanRecognition(), loadOceanReceipts()]).then(() => {
+    Promise.allSettled([loadOceanVaultStatus(), loadOceanRecognition(), loadOceanReceipts(), loadOceanRecognitionState()]).then(() => {
       if (state.screen === 'ocean') render();
     });
   }
@@ -3212,6 +3222,35 @@ function openCampaignUpdates() {
 }
 
 function bind() {
+  document.querySelector('#ocean-display-mode')?.addEventListener('change', (event) => {
+    state.oceanDraftMode = event.currentTarget.value;
+    state.oceanPreferenceError = null;
+    if (state.screen === 'ocean') render();
+  });
+  document.querySelector('#ocean-privacy-form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    const displayMode = state.oceanDraftMode || state.oceanRecognitionState?.preference?.displayMode || 'ANONYMOUS';
+    const alias = event.currentTarget.querySelector('#ocean-display-alias')?.value || '';
+    if (!state.telegram?.initData || !state.oceanRecognitionState || button.disabled) return;
+    state.oceanDraftAlias = alias;
+    button.disabled = true;
+    button.textContent = 'SAVING…';
+    try {
+      const response = await fetch('/campaign-app/api/ocean/recognition-preference', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+        body: JSON.stringify({ initData: state.telegram.initData, displayMode, alias }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Privacy choice unavailable. Try again later.');
+      state.oceanRecognitionState = { preference: result.preference, progress: result.progress };
+      state.oceanDraftMode = null;
+      state.oceanDraftAlias = null;
+      state.oceanPreferenceError = null;
+      toast('Ocean Impact privacy choice saved. Public recognition remains off.');
+    } catch (error) { state.oceanPreferenceError = error.message || 'Privacy choice unavailable. Try again later.'; }
+    if (state.screen === 'ocean') render();
+  });
   document.querySelector('#ocean-save-receipt')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
     const signature = state.oceanProof?.signature;
@@ -3227,7 +3266,7 @@ function bind() {
       state.oceanProof = response.ok ? { ...result.proof, status: 'RECORDED', receipts: result.receipts } : {
         status: 'ERROR', message: result.error || 'Receipt unavailable. Try again later.',
       };
-      if (response.ok) await loadOceanReceipts();
+      if (response.ok) await Promise.allSettled([loadOceanReceipts(), loadOceanRecognitionState()]);
     } catch { state.oceanProof = { status: 'ERROR', message: 'Receipt unavailable. Try again later.' }; }
     if (state.screen === 'ocean') render();
   });
@@ -3430,6 +3469,18 @@ async function loadOceanReceipts() {
   } catch { state.oceanReceipts = null; }
 }
 
+async function loadOceanRecognitionState() {
+  if (!state.telegram?.initData || !state.profile.telegramVerified) return;
+  try {
+    const response = await fetch('/campaign-app/api/ocean/my-recognition', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+      body: JSON.stringify({ initData: state.telegram.initData }),
+    });
+    const payload = await response.json();
+    state.oceanRecognitionState = response.ok && payload.preference && payload.progress ? payload : null;
+  } catch { state.oceanRecognitionState = null; }
+}
+
 async function loadWalletStatus() {
   const initData = state.telegram?.initData;
   if (!initData || !state.profile.walletVerified || !state.wallet) {
@@ -3582,7 +3633,7 @@ async function boot() {
     authenticateTelegram(),
   ]);
   await loadWalletStatus();
-  if (state.screen === 'ocean') await loadOceanReceipts();
+  if (state.screen === 'ocean') await Promise.allSettled([loadOceanReceipts(), loadOceanRecognitionState()]);
   restoreWebsiteVoteFlow();
   render();
   updateTelegramBackButton();

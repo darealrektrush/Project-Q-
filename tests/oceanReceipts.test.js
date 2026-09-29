@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import bs58 from 'bs58';
 import { Keypair, SystemProgram } from '@solana/web3.js';
 import { OCEAN_VAULT } from '../src/campaign/oceanVaultStatus.js';
-import { oceanReceiptsEnabled, recordOceanContribution, listOceanContributions } from '../src/campaign/oceanReceipts.js';
+import {
+  oceanReceiptsEnabled, recordOceanContribution, listOceanContributions,
+  getOceanRecognitionState, saveOceanRecognitionPreference,
+} from '../src/campaign/oceanReceipts.js';
 
 const wallet = Keypair.generate().publicKey.toBase58();
 const signature = bs58.encode(Buffer.alloc(64, 7));
@@ -71,4 +74,46 @@ test('private history uses canonical profile and preserves full integer units', 
   assert.equal(rows[0].amountBaseUnits, '18446744073709551615');
   await assert.rejects(listOceanContributions({ select: async () => [], rpc: async () => { throw Error('must not query'); } },
     { campaignId: 'bond-the-duck-2026', telegramUserId: 42 }), /verified profile/);
+});
+
+test('recognition state defaults anonymous and counts private progress independently of short history', async () => {
+  const seen = [];
+  const client = {
+    select: async (table) => table === 'identity_links' ? [{ profile_id: profile }] : [],
+    rpc: async (name, args) => {
+      seen.push(name);
+      assert.equal(args.p_profile_id, profile);
+      return [{ contributions: 42, contribution_days: 25, founder_receipts: 3 }];
+    },
+  };
+  const state = await getOceanRecognitionState(client, { campaignId: 'bond-the-duck-2026', telegramUserId: 42 });
+  assert.deepEqual(state.preference, { displayMode: 'ANONYMOUS', alias: null, shoutoutOptIn: false, consentAt: null });
+  assert.deepEqual(state.progress, { contributions: 42, days: 25, founderReceipts: 3, status: 'PREVIEW' });
+  assert.deepEqual(seen, ['get_ocean_private_progress']);
+});
+
+test('display preference records explicit consent and withdrawal without enabling shout-outs', async () => {
+  const writes = [];
+  const client = {
+    select: async (table) => table === 'identity_links' ? [{ profile_id: profile }] : [writes.at(-1)],
+    rpc: async () => [{ contributions: 0, contribution_days: 0, founder_receipts: 0 }],
+    upsert: async (table, rows, conflict) => {
+      assert.equal(table, 'ocean_recognition_preferences');
+      assert.equal(conflict, 'profile_id');
+      writes.push(rows[0]);
+      return rows;
+    },
+  };
+  const identity = { campaignId: 'bond-the-duck-2026', telegramUserId: 42 };
+  await assert.rejects(saveOceanRecognitionPreference(client, identity, { displayMode: 'ALIAS', alias: 'Oracle' }), /choose an alias/);
+  await assert.rejects(saveOceanRecognitionPreference(client, identity, { displayMode: 'ALIAS', alias: '<script>' }), /choose an alias/);
+  assert.equal(writes.length, 0);
+  const selected = await saveOceanRecognitionPreference(client, identity, { displayMode: 'ALIAS', alias: ' Ocean Crab ' });
+  assert.equal(selected.preference.alias, 'Ocean Crab');
+  assert.equal(writes[0].display_consent_version, 'draft-1');
+  assert.equal(writes[0].shoutout_opt_in, false);
+  const withdrawn = await saveOceanRecognitionPreference(client, identity, { displayMode: 'ANONYMOUS', alias: '' });
+  assert.equal(withdrawn.preference.displayMode, 'ANONYMOUS');
+  assert.equal(writes[1].display_consent_at, null);
+  assert.equal(writes[1].display_alias, null);
 });
