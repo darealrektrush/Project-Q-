@@ -4,7 +4,7 @@
 .q-shell-v2{--q-paper:#faf9f4;--q-ink:#080b0b;--q-copy:#526b79;--q-border:#deded7;--q-display:QCondensed,'Arial Narrow',sans-serif}
 .q-shell-v2 .noise{display:none}
 .q-shell-v2 .topbar{background:var(--q-paper);border:0;gap:12px;box-shadow:none;padding:8px 0;min-height:78px;backdrop-filter:none}
-.q-shell-v2 .compact-brand{display:block;flex:0 0 62px;width:62px;height:62px;border:0;background:transparent;overflow:visible}
+.q-shell-v2 .compact-brand{display:block;flex:0 0 62px;width:62px;height:62px;border:0;border-radius:50%;background:transparent;overflow:hidden}
 .q-shell-v2 .topbar-identity{gap:9px;flex:1}
 .q-shell-v2 .brand-wordmark{min-width:0;color:var(--q-ink)}
 .q-shell-v2 .brand-wordmark>b{font:700 28px/.95 var(--q-display);letter-spacing:.025em;white-space:nowrap;display:block}
