@@ -354,9 +354,12 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(ocean, /CONTRIBUTED/);
   assert.match(ocean, /COMMITTED/);
   assert.match(ocean, /DOCUMENTED/);
-  assert.match(ocean, /Contributions are not open yet/);
+  assert.match(ocean, /In-app contributions are not open yet/);
   assert.match(ocean, /Community record pending/);
-  assert.doesNotMatch(ocean, /J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p|3z6YpKpgDrUdRuqp1KkJfVhw5X3BRGQzUZhGN8VMNfci|data-send-transfer/);
+  assert.match(ocean, /J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
+  assert.match(ocean, /solscan\.io\/account\/J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p/);
+  assert.match(ocean, /2-of-3 Squads V4 multisig/);
+  assert.doesNotMatch(ocean, /3z6YpKpgDrUdRuqp1KkJfVhw5X3BRGQzUZhGN8VMNfci|data-send-transfer|<button[^>]*>SEND/);
 });
 
 test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {

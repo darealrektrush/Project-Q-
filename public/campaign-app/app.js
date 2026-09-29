@@ -1,4 +1,6 @@
 const ORACLE_LOGO = '/campaign-app/assets/oracle-logo.jpg';
+const OCEAN_CONSERVATION_VAULT = 'J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p';
+const OCEAN_CONSERVATION_EXPLORER = `https://solscan.io/account/${OCEAN_CONSERVATION_VAULT}`;
 
 const EXPLAINERS = {
   campaign: {
@@ -2218,14 +2220,16 @@ function oceanImpactScreen() {
     <section class="ocean-impact-panel ocean-contribute" id="ocean-contribute">
       <div class="ocean-section-head"><span class="ocean-section-label">02 / CONTRIBUTE</span><b>TRANSFER FLOW IN REVIEW</b></div>
       <h3>A clear route to the vault.</h3>
-      <p>The proposed choices are SOL, native Solana USDC and FAWKQ. Each asset will open only after its mint, vault destination and wallet transfer have been verified end to end.</p>
-      <div class="ocean-asset-list"><span>SOL <small>DESTINATION PENDING</small></span><span>USDC <small>DESTINATION PENDING</small></span><span>FAWKQ <small>DESTINATION PENDING</small></span></div>
-      <div class="ocean-impact-notice"><b>Contributions are not open yet.</b><p>No address, QR code or transfer request is shown until the conservation vault and supported token accounts are confirmed.</p></div>
+      <p>CrabStar has confirmed the conservation Squads vault. SOL, native Solana USDC and FAWKQ transfer flows will open separately after the wallet integration, token destinations and finalization checks pass.</p>
+      <div class="ocean-asset-list"><span>SOL <small>TRANSFER IN REVIEW</small></span><span>USDC <small>TOKEN ACCOUNT IN REVIEW</small></span><span>FAWKQ <small>TOKEN ACCOUNT IN REVIEW</small></span></div>
+      <div class="ocean-impact-notice"><b>In-app contributions are not open yet.</b><p>The public vault is shown below for transparency. This screen cannot request a wallet signature or issue contribution credit.</p></div>
     </section>
     <section class="ocean-impact-panel" id="ocean-vault">
-      <div class="ocean-section-head"><span class="ocean-section-label">03 / THE VAULT</span><b>VERIFICATION PENDING</b></div>
-      <h3>One public source of truth.</h3>
-      <p>The confirmed Squads conservation vault, supported destination accounts, on-chain deposits and approval policy will appear here with public verification links. The Bond the Duck reward vault has a separate purpose and is not presented as the donation destination.</p>
+      <div class="ocean-section-head"><span class="ocean-section-label">03 / THE VAULT</span><b>MAINNET · SQUADS V4</b></div>
+      <h3>CrabStar conservation vault.</h3>
+      <p>Founder-confirmed destination. The public explorer identifies this vault as governed by a 2-of-3 Squads V4 multisig. The Bond the Duck reward vault is separate.</p>
+      <div class="ocean-vault-address"><span>PUBLIC SOLANA VAULT ADDRESS</span><code>${OCEAN_CONSERVATION_VAULT}</code><a href="${OCEAN_CONSERVATION_EXPLORER}" data-external-ocean-link target="_blank" rel="noopener noreferrer">VERIFY ON SOLSCAN ↗</a></div>
+      <small class="ocean-vault-note">Token-specific receiving accounts and live balances will appear after independent verification. No campaign XP or impact outcome follows from an address alone.</small>
     </section>
     <section class="ocean-impact-panel" id="ocean-work">
       <span class="ocean-section-label">04 / IMPACT IN ACTION</span>
@@ -3194,6 +3198,9 @@ function bind() {
   });
   document.querySelectorAll('[data-ocean-section]').forEach((element) => {
     element.onclick = () => document.getElementById(element.dataset.oceanSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.querySelectorAll('[data-external-ocean-link]').forEach((link) => {
+    link.onclick = (event) => { event.preventDefault(); openExternal(link.href); };
   });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };
