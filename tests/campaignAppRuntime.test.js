@@ -407,6 +407,9 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(history, /YOUR SAVED RECEIPTS/);
   assert.match(history, /2\.3 FAWKQ/);
   assert.match(history, /solscan\.io\/tx\/test-signature/);
+  const saved = context.__renderOceanProofWith({ status: 'RECORDED', signature: 'test-signature', slot: 451602609,
+    transfers: [{ asset: 'SOL', amountBaseUnits: '1200000000', decimals: 9 }] });
+  assert.match(saved, /saved in Project Q, linked to your CrabStar ID/);
   assert.match(context.__renderOceanProofWith({ status: 'NO_MATCH' }), /NO MATCH FOUND/);
   const proposed = context.__renderOceanRecognitionWith({ status: 'PROPOSED',
     tiers: [{ title: 'Ocean Supporter', days: 1 }, { title: 'Ocean Steward', days: 25 }],
