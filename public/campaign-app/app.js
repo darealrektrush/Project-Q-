@@ -229,7 +229,7 @@ function verifiedCount() {
 }
 
 function navMarkup() {
-  return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id ? 'active' : ''}" data-screen="${id}" data-tour-target="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
+  return NAV.map(([id, label]) => `<button class="nav-button ${state.screen === id || (state.screen === 'ocean' && id === 'home') ? 'active' : ''}" data-screen="${id}" data-tour-target="${id}" aria-label="${label}" title="${label}"><span class="nav-icon">${NAV_ICONS[id]}</span><span class="nav-label">${label}</span></button>`).join('');
 }
 
 function railCollapsedPreference() {
@@ -643,7 +643,7 @@ function home() {
       <button data-screen="rewards"><span class="terminal-action-icon">${NAV_ICONS.rewards}</span><div><b>Your Rewards</b><small>Allocations and<br />delivery receipts</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
       <button data-operation-view="intel"><span class="terminal-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2h16v20H4z" fill="currentColor"/><path d="M8 7h8M8 12h8M8 17h5" stroke="#faf9f4"/></svg></span><div><b>Latest Intel</b><small>Operation info<br />and verification</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
     </section>
-    <button class="terminal-ocean-banner reference-art reference-impact" data-operation-view="intel" aria-label="Explore ocean conservation and Project Q impact"><img src="/campaign-app/assets/terminal-approved-reference.jpg?v=crabstar-blue-1" alt="Cleaner oceans. Brighter tomorrows. Powered by people. Real impact. Lasting change." /></button>
+    <button class="terminal-ocean-banner ocean-impact-entry" data-screen="ocean" aria-label="Explore the CrabStar Ocean Impact mission"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact. Cleaner oceans. Brighter tomorrows. Community-powered conservation. Explore the mission." /></button>
   </div>`;
 }
 
@@ -2195,6 +2195,53 @@ function profileScreen() {
   </div>`;
 }
 
+function oceanImpactScreen() {
+  return `<div class="ocean-impact-ui">
+    <button type="button" class="ocean-back" data-screen="home">← BACK TO TERMINAL</button>
+    <div class="ocean-impact-hero"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact: cleaner oceans, brighter tomorrows, community-powered conservation" /></div>
+    <header class="ocean-impact-intro">
+      <span>CRABSTAR // OCEAN IMPACT</span>
+      <h2>One mission. A global community behind it.</h2>
+      <p>CrabStar leads the ocean conservation mission. FAWKQ opens the door. Project Q will connect verified participation and on-chain contributions to a lasting record.</p>
+      <button type="button" data-ocean-section="ocean-contribute">EXPLORE CONTRIBUTIONS <span aria-hidden="true">→</span></button>
+    </header>
+    <section class="ocean-impact-principle" aria-label="How contribution becomes impact">
+      <div><b>01 / CONTRIBUTED</b><p>A finalized transfer to the approved vault.</p></div>
+      <div><b>02 / COMMITTED</b><p>Funds assigned to a named conservation initiative.</p></div>
+      <div><b>03 / DOCUMENTED</b><p>Work completed with evidence and public updates.</p></div>
+    </section>
+    <section class="ocean-impact-panel" id="ocean-mission">
+      <span class="ocean-section-label">01 / OUR MISSION</span>
+      <h3>Community participation with a purpose.</h3>
+      <p>CrabStar and FAWKQ support the same conservation mission. Project Q can show what people contributed and what the community accomplished, with separate proof for each step.</p>
+    </section>
+    <section class="ocean-impact-panel ocean-contribute" id="ocean-contribute">
+      <div class="ocean-section-head"><span class="ocean-section-label">02 / CONTRIBUTE</span><b>TRANSFER FLOW IN REVIEW</b></div>
+      <h3>A clear route to the vault.</h3>
+      <p>The proposed choices are SOL, native Solana USDC and FAWKQ. Each asset will open only after its mint, vault destination and wallet transfer have been verified end to end.</p>
+      <div class="ocean-asset-list"><span>SOL <small>DESTINATION PENDING</small></span><span>USDC <small>DESTINATION PENDING</small></span><span>FAWKQ <small>DESTINATION PENDING</small></span></div>
+      <div class="ocean-impact-notice"><b>Contributions are not open yet.</b><p>No address, QR code or transfer request is shown until the conservation vault and supported token accounts are confirmed.</p></div>
+    </section>
+    <section class="ocean-impact-panel" id="ocean-vault">
+      <div class="ocean-section-head"><span class="ocean-section-label">03 / THE VAULT</span><b>VERIFICATION PENDING</b></div>
+      <h3>One public source of truth.</h3>
+      <p>The confirmed Squads conservation vault, supported destination accounts, on-chain deposits and approval policy will appear here with public verification links. The Bond the Duck reward vault has a separate purpose and is not presented as the donation destination.</p>
+    </section>
+    <section class="ocean-impact-panel" id="ocean-work">
+      <span class="ocean-section-label">04 / IMPACT IN ACTION</span>
+      <h3>Follow the work, not just the balance.</h3>
+      <p>Initiatives will show funds received, funds committed, spending evidence and completed work as distinct records. Conservation outcomes remain pending until the team publishes supporting proof.</p>
+    </section>
+    <section class="ocean-impact-panel" id="ocean-community">
+      <span class="ocean-section-label">05 / COMMUNITY IMPACT</span>
+      <h3>Every verified contributor has a place.</h3>
+      <p>After verified deposits are available, this space can show contribution receipts, opt-in public or alias recognition, badges and a dedicated Ocean Impact leaderboard. Founders and project deposits belong in a separate visible record.</p>
+      <div class="ocean-impact-notice"><b>Community record pending.</b><p>No contributions, XP, tiers or rankings are inferred before a transfer to the approved vault is finalized and matched to the member’s identity.</p></div>
+    </section>
+    <footer class="ocean-impact-footer"><strong>CRABSTAR</strong><span>THE MISSION</span><i aria-hidden="true">✦</i><strong>PROJECT Q</strong><span>THE CAMPAIGN ENGINE</span></footer>
+  </div>`;
+}
+
 const screens = {
   home,
   operations: operationsScreen,
@@ -2204,6 +2251,7 @@ const screens = {
   leaderboard: leaderboardScreen,
   rewards: rewardsScreen,
   burns: burnsScreen,
+  ocean: oceanImpactScreen,
   profile: profileScreen,
   readiness: readinessScreen,
 };
@@ -2218,7 +2266,7 @@ function toast(message) {
 function render() {
   const c = state.campaign || fallbackCampaign;
   const navTitle = NAV.find(([id]) => id === state.screen)?.[1];
-  const screenTitle = state.screen === 'home' ? 'Operations Terminal' : (navTitle || (state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
+  const screenTitle = state.screen === 'home' ? 'Operations Terminal' : (navTitle || (state.screen === 'ocean' ? 'Ocean Impact' : state.screen === 'burns' ? 'Earn to Burn' : state.screen === 'readiness' ? 'Launch Readiness' : c.name));
   const nav = navMarkup();
   for (const selector of ['#desktop-nav', '#mobile-nav']) {
     const container = document.querySelector(selector);
@@ -2256,7 +2304,7 @@ function render() {
   }
   requestAnimationFrame(() => screen.classList.remove('screen-rendering'));
   document.querySelector('#screen-title').textContent = screenTitle;
-  document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : `PROJECT Q / ${c.sequence}`;
+  document.querySelector('#campaign-sequence').textContent = state.screen === 'home' ? 'PROJECT Q / OPERATIONS TERMINAL' : state.screen === 'operations' ? `PROJECT Q / OP ${operationNumber()}` : state.screen === 'record' ? 'PROJECT Q / PARTICIPANT RECORD' : state.screen === 'ocean' ? 'CRABSTAR / OCEAN IMPACT' : `PROJECT Q / ${c.sequence}`;
   document.querySelector('#account-control .account-copy b').textContent = state.profile.name;
   document.querySelector('#account-name').textContent = `${verifiedCount()}/3 Verified`;
   const accountImage = document.querySelector('#account-control img');
@@ -3143,6 +3191,9 @@ function bind() {
   document.querySelectorAll('[data-mission-id]').forEach((element) => { element.onclick = () => openMission(element.dataset.missionId); });
   document.querySelectorAll('[data-mission-filter]').forEach((element) => {
     element.onclick = () => { state.missionFilter = element.dataset.missionFilter; render(); };
+  });
+  document.querySelectorAll('[data-ocean-section]').forEach((element) => {
+    element.onclick = () => document.getElementById(element.dataset.oceanSection)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   document.querySelectorAll('[data-leaderboard-view]').forEach((element) => {
     element.onclick = () => { state.leaderboardView = element.dataset.leaderboardView; render(); };

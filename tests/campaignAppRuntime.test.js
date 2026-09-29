@@ -345,6 +345,20 @@ test('Rewards pending state directs identity setup without suggesting a verified
   assert.doesNotMatch(profile, /RECORDED<\/span>/);
 });
 
+test('Ocean Impact card opens a permanent mission page without an unverified contribution destination', async () => {
+  const context = await loadRuntime();
+  assert.match(context.__rendered.home, /data-screen="ocean"/);
+  assert.match(context.__rendered.home, /crabstar-ocean-impact-card-20260929\.jpg/);
+  const ocean = context.__rendered.ocean;
+  assert.match(ocean, /CrabStar leads the ocean conservation mission/);
+  assert.match(ocean, /CONTRIBUTED/);
+  assert.match(ocean, /COMMITTED/);
+  assert.match(ocean, /DOCUMENTED/);
+  assert.match(ocean, /Contributions are not open yet/);
+  assert.match(ocean, /Community record pending/);
+  assert.doesNotMatch(ocean, /J9J6MsSxicqmwTuzJGHitVUuUhRwP4iaDdTRgMAUDj4p|3z6YpKpgDrUdRuqp1KkJfVhw5X3BRGQzUZhGN8VMNfci|data-send-transfer/);
+});
+
 test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {
   const context = await loadRuntime();
   const missions = context.__renderOperationsWithReadiness({ available: true, percent: 55 }, 'missions');

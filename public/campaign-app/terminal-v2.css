@@ -716,6 +716,47 @@
 .q-shell-v2 .dossier-reward-values small{display:block;margin-top:4px;color:#526b79;font:400 10px/1.15 var(--q-display);overflow-wrap:anywhere}
 .q-shell-v2 .dossier-reward-pending{margin:10px 0;color:#4e6975;font:400 13px/1.35 var(--q-display)}
 .q-shell-v2 .passport-economic-summary strong{overflow-wrap:anywhere}
+
+/* Ocean Impact is a permanent mission destination reached from the Terminal. */
+.terminal-v2 .ocean-impact-entry{display:block;position:relative;overflow:hidden;padding:0;border:1px solid #52b9dd;aspect-ratio:1280/427;background:#071b2f;box-shadow:0 0 0 1px #126e95}
+.terminal-v2 .ocean-impact-entry img{display:block;width:100%;height:100%;object-fit:cover}
+.q-shell-v2 .ocean-impact-ui{display:grid;gap:11px;max-width:960px;margin:auto;padding:8px 8px 34px;color:#111c23;font-family:var(--q-display)}
+.q-shell-v2 .ocean-back{justify-self:start;min-height:40px;padding:0 5px;border:0;background:transparent;color:#246d90;font:700 11px/1 var(--q-display);letter-spacing:.05em}
+.q-shell-v2 .ocean-impact-hero{overflow:hidden;border:1px solid #5cbedf;border-radius:10px;background:#082440}
+.q-shell-v2 .ocean-impact-hero img{display:block;width:100%;height:auto}
+.q-shell-v2 .ocean-impact-intro{padding:20px;border:1px solid #315879;border-radius:10px;background:linear-gradient(135deg,#071722,#11334b);color:#f4f8f8}
+.q-shell-v2 .ocean-impact-intro>span,.q-shell-v2 .ocean-section-label{color:#51b6e3;font:700 11px/1 var(--q-display);letter-spacing:.11em}
+.q-shell-v2 .ocean-impact-intro h2{max-width:680px;margin:10px 0;font:700 clamp(30px,5vw,48px)/.98 var(--q-display)}
+.q-shell-v2 .ocean-impact-intro p{max-width:680px;color:#c1d6e2;font:400 14px/1.45 var(--q-display)}
+.q-shell-v2 .ocean-impact-intro button{min-height:44px;margin-top:13px;padding:0 15px;border:1px solid #e5bc5a;border-radius:6px;background:#f0cb67;color:#101a1d;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .ocean-impact-intro button span{margin-left:12px}
+.q-shell-v2 .ocean-impact-principle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.q-shell-v2 .ocean-impact-principle>div{padding:13px;border:1px solid #c3d2d3;border-radius:8px;background:#f3f8f6}
+.q-shell-v2 .ocean-impact-principle b{color:#216b8b;font:700 12px/1.1 var(--q-display)}
+.q-shell-v2 .ocean-impact-principle p{margin:7px 0 0;color:#4d6876;font:400 12px/1.32 var(--q-display)}
+.q-shell-v2 .ocean-impact-panel{scroll-margin-top:90px;padding:18px;border:1px solid #d2d9d4;border-radius:9px;background:#fafbf7}
+.q-shell-v2 .ocean-impact-panel h3{margin:9px 0;font:700 clamp(23px,3vw,30px)/1 var(--q-display)}
+.q-shell-v2 .ocean-impact-panel>p{max-width:720px;margin:0;color:#4b6571;font:400 13px/1.5 var(--q-display)}
+.q-shell-v2 .ocean-section-head{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.q-shell-v2 .ocean-section-head>b{color:#49778d;font:700 10px/1.15 var(--q-display);text-align:right}
+.q-shell-v2 .ocean-contribute{border-left:3px solid #3c9cc3}
+.q-shell-v2 .ocean-asset-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:14px}
+.q-shell-v2 .ocean-asset-list>span{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border:1px solid #b7d3da;border-radius:6px;background:#eef5f4;color:#12252c;font:700 15px/1 var(--q-display)}
+.q-shell-v2 .ocean-asset-list small{color:#477c92;font:700 10px/1 var(--q-display);text-align:right}
+.q-shell-v2 .ocean-impact-notice{margin-top:14px;padding:12px;border:1px solid #d6c89b;border-radius:7px;background:#f8f5e9}
+.q-shell-v2 .ocean-impact-notice b{font:700 14px/1.15 var(--q-display)}
+.q-shell-v2 .ocean-impact-notice p{margin:5px 0 0;color:#576a70;font:400 12px/1.4 var(--q-display)}
+.q-shell-v2 .ocean-impact-footer{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px 10px;margin-top:4px;padding:17px;color:#7fc6e1;background:#081b29;border-radius:8px;font:700 11px/1 var(--q-display)}
+.q-shell-v2 .ocean-impact-footer strong{color:#f2cf73}
+.q-shell-v2 .ocean-impact-footer i{color:#459ecc;font-style:normal}
+@media(max-width:560px){
+ .q-shell-v2 .ocean-impact-intro{padding:16px}
+ .q-shell-v2 .ocean-impact-principle{grid-template-columns:1fr}
+ .q-shell-v2 .ocean-impact-principle>div{padding:10px 12px}
+ .q-shell-v2 .ocean-asset-list{grid-template-columns:1fr}
+ .q-shell-v2 .ocean-impact-panel{padding:14px}
+ .q-shell-v2 .ocean-impact-footer{justify-content:flex-start}
+}
 @media(max-width:520px){
  .q-shell-v2 .reward-next-action{align-items:stretch;flex-direction:column}
  .q-shell-v2 .reward-next-action button{align-self:flex-start}
