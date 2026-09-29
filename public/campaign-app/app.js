@@ -132,6 +132,7 @@ const state = {
   burns: null,
   oceanVault: null,
   oceanProof: null,
+  oceanRecognition: null,
   community: { today: null, history: [], unavailable: true },
   xInvite: { verified: false, bonusAwarded: false, unavailable: true },
   missionEvidence: { available: false, oracleRaids: null, websiteVoting: null, trendingBots: null },
@@ -2202,6 +2203,7 @@ function profileScreen() {
 function oceanImpactScreen() {
   const vault = state.oceanVault?.available && state.oceanVault?.vault === OCEAN_CONSERVATION_VAULT
     && state.oceanVault?.network === 'mainnet-beta' ? state.oceanVault : null;
+  const recognition = state.oceanRecognition?.status === 'PROPOSED' ? state.oceanRecognition : null;
   const fawkq = vault?.assets?.FAWKQ;
   const usdc = vault?.assets?.USDC;
   const snapshot = vault
@@ -2267,8 +2269,17 @@ function oceanImpactScreen() {
     <section class="ocean-impact-panel" id="ocean-community">
       <span class="ocean-section-label">05 / COMMUNITY IMPACT</span>
       <h3>Every verified contributor has a place.</h3>
-      <p>After verified deposits are available, this space can show contribution receipts, opt-in public or alias recognition, badges and a dedicated Ocean Impact leaderboard. Founders and project deposits belong in a separate visible record.</p>
-      <div class="ocean-impact-notice"><b>Community record pending.</b><p>No contributions, XP, tiers or rankings are inferred before a transfer to the approved vault is finalized and matched to the member’s identity.</p></div>
+      <p>Participation builds an Ocean Impact record alongside Project Q campaigns. Every verified contributor counts; recognition is optional, and project or founder deposits stay separate from community rankings.</p>
+      <div class="ocean-impact-notice"><b>Community record pending.</b><p>These recognition rules are proposed for review. No XP, badges, tiers, standings or shout-outs are active. A read-only transaction match is not a saved contribution receipt.</p></div>
+      ${recognition ? `<div class="ocean-recognition-head"><div><span>THE RECOGNITION PROGRAM</span><h4>Build a record across campaigns.</h4></div><em>RULES PROPOSED</em></div>
+      <div class="ocean-tier-grid">${recognition.tiers.map((tier, index) => `<article class="ocean-tier"><span>0${index + 1} / OCEAN IMPACT</span><h5>${escapeHtml(tier.title)}</h5><p>${Number(tier.days)} distinct verified contribution ${Number(tier.days) === 1 ? 'day' : 'days'}</p><small>AWARD PENDING ACTIVATION</small></article>`).join('')}</div>
+      <div class="ocean-program-grid">
+        <article><span>CAMPAIGN XP // PROPOSED</span><h5>Capped, not bought.</h5><p>One qualifying contribution per day could earn ${Number(recognition.campaignXp.base)} base XP; repeat participation could earn ${Number(recognition.campaignXp.repeat)} or ${Number(recognition.campaignXp.consistent)} XP. A ${Number(recognition.campaignXp.campaignCap)} XP campaign cap protects the general leaderboard. Minimum value, pricing evidence and campaign rules still need approval.</p><small>Crab Army lifetime XP remains an Oracle record with separate settlement.</small></article>
+        <article><span>OCEAN BADGES // PROPOSED</span><h5>Proof of participation.</h5><p>${recognition.badges.map((badge) => escapeHtml(badge.title)).join(' · ')}. Badges follow verified receipts, never a pasted link alone.</p><small>Milestone and top-contributor distinctions require published rules.</small></article>
+        <article><span>COMMUNITY BOARDS // PROPOSED</span><h5>Participation and contribution.</h5><p>All-time and current-campaign counts would include every verified community contributor. A top-value board across SOL, USDC and FAWKQ requires recorded USD pricing at the time of each transfer.</p><small>No currency conversion or rankings are estimated from live vault balances.</small></article>
+        <article><span>SHOUT-OUTS // OPT-IN</span><h5>Your identity, your choice.</h5><p>Choose public name, alias or anonymous before recognition goes live. A daily community roll-up can thank opted-in contributors; milestones can earn individual spotlights.</p><small>Nothing posts automatically while this program is in review.</small></article>
+      </div>
+      <div class="ocean-privacy-preview"><span>RECOGNITION CHOICES AT LAUNCH</span><b>Public profile</b><b>Alias</b><b>Anonymous</b><small>Privacy selection opens with persistent receipts. Anonymous contributions still count in community totals.</small></div>` : '<div class="ocean-vault-unavailable">Recognition rules are temporarily unavailable. No tiers, XP or public rankings are active.</div>'}
     </section>
     <footer class="ocean-impact-footer"><strong>CRABSTAR</strong><span>THE MISSION</span><i aria-hidden="true">✦</i><strong>PROJECT Q</strong><span>THE CAMPAIGN ENGINE</span></footer>
   </div>`;
@@ -2426,7 +2437,9 @@ function go(screen, { replace = false } = {}) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
-    loadOceanVaultStatus().then(() => { if (state.screen === 'ocean') render(); });
+    Promise.allSettled([loadOceanVaultStatus(), loadOceanRecognition()]).then(() => {
+      if (state.screen === 'ocean') render();
+    });
   }
 }
 
@@ -3375,6 +3388,14 @@ async function loadOceanVaultStatus() {
   } catch { state.oceanVault = null; }
 }
 
+async function loadOceanRecognition() {
+  try {
+    const response = await fetch('/campaign-app/api/ocean/recognition-rules', { cache: 'no-store' });
+    const payload = await response.json();
+    state.oceanRecognition = response.ok && payload.program?.status === 'PROPOSED' ? payload.program : null;
+  } catch { state.oceanRecognition = null; }
+}
+
 async function loadWalletStatus() {
   const initData = state.telegram?.initData;
   if (!initData || !state.profile.walletVerified || !state.wallet) {
@@ -3523,7 +3544,7 @@ async function boot() {
     loadCampaignRuntime(),
     loadCampaignReadiness(),
     loadBurnSummary(),
-    state.screen === 'ocean' ? loadOceanVaultStatus() : Promise.resolve(),
+    state.screen === 'ocean' ? Promise.allSettled([loadOceanVaultStatus(), loadOceanRecognition()]) : Promise.resolve(),
     authenticateTelegram(),
   ]);
   await loadWalletStatus();

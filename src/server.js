@@ -34,6 +34,7 @@ import {
 import * as walletStatus from './campaign/walletStatus.js';
 import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
 import { verifyOceanContribution } from './campaign/oceanContributionProof.js';
+import { OCEAN_RECOGNITION_VERSION, OCEAN_TIERS, OCEAN_BADGES } from './campaign/oceanRecognition.js';
 import { recordHolderEligibility, verifyFawkqHolderEligibility } from './campaign/holderEligibility.js';
 import {
   WEBSITE_VOTE_PROFILES,
@@ -103,6 +104,17 @@ app.get('/campaign-app/api/ocean/vault-status', async (req, res) => {
     console.error('public ocean vault status unavailable', error.message);
     return res.status(503).json({ ok: false, error: 'ocean vault status unavailable' });
   }
+});
+
+app.get('/campaign-app/api/ocean/recognition-rules', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.json({ ok: true, program: {
+    status: 'PROPOSED', version: OCEAN_RECOGNITION_VERSION,
+    tiers: OCEAN_TIERS, badges: OCEAN_BADGES,
+    campaignXp: { base: 4, repeat: 5, consistent: 6, campaignCap: 12, active: false },
+    valueLeaderboard: { active: false, reason: 'Verified historical USD pricing is required for cross-asset comparison.' },
+    shoutouts: { active: false, mode: 'Opt-in daily community roll-up' },
+  } });
 });
 
 app.post('/campaign-app/api/ocean/check-transfer', async (req, res) => {

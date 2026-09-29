@@ -126,6 +126,10 @@ async function loadRuntime() {
       state.profile.walletVerified = true;
       return oceanImpactScreen();
     };
+    globalThis.__renderOceanRecognitionWith = (program) => {
+      state.oceanRecognition = program;
+      return oceanImpactScreen();
+    };
     globalThis.__renderBurnsWith = (summary) => {
       state.burns = summary;
       return burnsScreen();
@@ -393,6 +397,16 @@ test('Ocean Impact card opens a permanent mission page without an unverified con
   assert.match(matched, /1\.2 SOL/);
   assert.match(matched, /a contribution receipt and campaign credit have not been issued/);
   assert.match(context.__renderOceanProofWith({ status: 'NO_MATCH' }), /NO MATCH FOUND/);
+  const proposed = context.__renderOceanRecognitionWith({ status: 'PROPOSED',
+    tiers: [{ title: 'Ocean Supporter', days: 1 }, { title: 'Ocean Steward', days: 25 }],
+    badges: [{ title: 'First Contributor' }, { title: 'Repeat Contributor' }],
+    campaignXp: { base: 4, repeat: 5, consistent: 6, campaignCap: 12 } });
+  assert.match(proposed, /Ocean Steward/);
+  assert.match(proposed, /12 XP campaign cap/);
+  assert.match(proposed, /Public profile/);
+  assert.match(proposed, /SHOUT-OUTS \/\/ OPT-IN/);
+  assert.match(proposed, /RULES PROPOSED/);
+  assert.doesNotMatch(proposed, /XP AWARDED|BADGE EARNED|data-send-transfer/);
 });
 
 test('Mission Files are accessible below a compact campaign heading and readiness keeps its real label', async () => {
