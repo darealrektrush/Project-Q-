@@ -1435,13 +1435,14 @@ function compactPoolAmount(amount) {
 function operationPoolMarkup(c) {
   const commitments = c.campaignCommitments || {};
   const fundingGateVerified = Boolean(state.readiness?.available && state.readiness.checks?.find(({ key }) => key === 'funding')?.ready);
+  const prizeRegistryVerified = Boolean(state.readiness?.available && state.readiness.checks?.find(({ key }) => key === 'registry')?.ready);
   const burnGates = ['burn-rules', 'burn-progress', 'burn-verification'];
   const burnVerified = Boolean(state.readiness?.available && burnGates.every((key) => state.readiness.checks?.find((gate) => gate.key === key)?.ready));
   const rows = [
     { amount: commitments.campaignRewards?.amountBaseUnits ? formatBaseUnits(commitments.campaignRewards.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Reward Pool', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
     { amount: commitments.diamondDuckBonus?.amountBaseUnits ? formatBaseUnits(commitments.diamondDuckBonus.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Diamond Duck', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
     { amount: commitments.earnToBurn?.amountBaseUnits ? formatBaseUnits(commitments.earnToBurn.amountBaseUnits) : '—', unit: 'FAWKQ', label: 'Earn to Burn', detail: burnVerified ? 'Burn gates verified' : 'Planned · burn checks pending', screen: 'burns' },
-    { amount: commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '—', unit: '', label: 'Top Duck Prize', detail: fundingGateVerified ? 'Funding gate verified' : 'Planned · funding pending', screen: 'rewards' },
+    { amount: commitments.topContributorPrize?.amountSol ? `${commitments.topContributorPrize.amountSol} SOL` : '—', unit: '', label: 'Top Duck Prize', detail: prizeRegistryVerified ? 'Prize registry verified' : 'Planned · prize evidence pending', screen: 'rewards' },
   ];
   return `<div class="operation-economics operation-pool-list" aria-label="Configured campaign pools">${rows.map((row) => {
     const compact = compactPoolAmount(row.amount);

@@ -363,14 +363,16 @@ test('Operations pool and Intel disclose verification state without asserting un
   const pending = context.__renderOperationsWithReadiness({ available: true, readyCount: 0, totalCount: 12, checks: [] }, 'rewards');
   assert.match(pending, /Planned · funding pending/);
   assert.match(pending, /Planned · burn checks pending/);
+  assert.match(pending, /Planned · prize evidence pending/);
   assert.match(pending, /Your personal allocation is tracked separately/);
   assert.match(pending, /<strong>15M<\/strong>[\s\S]*15,000,000 FAWKQ/);
   assert.match(pending, /<strong>2\.5M<\/strong>[\s\S]*2,500,000 FAWKQ/);
   assert.match(pending, /data-screen="burns" aria-label="View Earn to Burn details/);
   assert.equal((pending.match(/class="operation-pool-row"/g) || []).length, 4);
-  const verified = context.__renderOperationsWithReadiness({ available: true, checks: ['funding', 'burn-rules', 'burn-progress', 'burn-verification'].map((key) => ({ key, ready: true })) }, 'rewards');
+  const verified = context.__renderOperationsWithReadiness({ available: true, checks: ['funding', 'registry', 'burn-rules', 'burn-progress', 'burn-verification'].map((key) => ({ key, ready: true })) }, 'rewards');
   assert.match(verified, /Funding gate verified/);
   assert.match(verified, /Burn gates verified/);
+  assert.match(verified, /Prize registry verified/);
   const intel = context.__renderOperationsWithReadiness({ available: false }, 'intel');
   assert.match(intel, /Signed Telegram access is needed/);
   assert.doesNotMatch(intel, /LIVE SOURCES/);
