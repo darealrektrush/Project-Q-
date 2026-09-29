@@ -1108,8 +1108,7 @@ h1 { font-size: 17px; letter-spacing: .045em; text-transform: none; }
 .tour-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.72);
-  backdrop-filter: blur(5px);
+  background: rgba(0,0,0,.38);
   pointer-events: auto;
 }
 .tour-target-active {
@@ -1131,6 +1130,8 @@ h1 { font-size: 17px; letter-spacing: .045em; text-transform: none; }
   background: linear-gradient(160deg, rgba(26,24,18,.99), rgba(12,12,12,.99));
   box-shadow: 0 28px 90px rgba(0,0,0,.72);
   pointer-events: auto;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
 }
 .tour-progress {
   display: flex;
@@ -1706,6 +1707,7 @@ a.release-proof { min-height: 44px; }
 
 /* TOUR STACKING QA */
 .mobile-nav:has(.tour-target-active),
+.mobile-dock:has(.tour-target-active),
 .rail:has(.tour-target-active),
 .topbar:has(.tour-target-active) {
   z-index: 126;

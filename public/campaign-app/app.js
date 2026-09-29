@@ -91,7 +91,7 @@ const APP_TOUR_VERSION = 2;
 
 const APP_TOUR_STEPS = [
   { screen: 'home', target: '[data-tour-target="home"]', icon: 'Q', title: 'Your Terminal', text: 'See the current operation and the next action you can take.' },
-  { screen: 'operations', operationsView: 'missions', target: '[data-tour-target="mission-files"]', icon: 'OP', title: 'Choose a Mission', text: 'Open Mission Files to see objectives, requirements and verified campaign rewards.' },
+  { screen: 'operations', operationsView: 'missions', target: '[data-tour-target="operations"]', icon: 'OP', title: 'Choose a Mission', text: 'Mission Files live inside Operations. Browse objectives here, then use Overview to return to the operation.' },
   { screen: 'record', recordView: 'xp', target: '[data-tour-target="record"]', icon: 'R', title: 'Track Your Record', text: 'Review campaign XP, standing and verified activity. Rewards and identity have their own screens.' },
 ];
 
@@ -622,7 +622,6 @@ function home() {
 
   const bondArtwork = c.id === 'bond-the-duck-2026';
   const globe = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6h14M5 18h14"/></svg>';
-  const targetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>';
   const xIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2h5l13 20h-5L3 2ZM21 2 3 22"/></svg>';
   const identitySymbol = !p.telegramVerified
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 11 20-8-4 19-6-7-4 4v-6l10-7-12 6z"/></svg>'
@@ -633,7 +632,7 @@ function home() {
         ? '<figure class="reference-art reference-hero"><img src="/campaign-app/assets/bond-the-duck-terminal-hero-20260927.jpg" alt="Bond the Duck. 10-day verified. Small actions, bigger oceans. The tide rises together." /></figure>'
         : c.banner ? `<figure class="terminal-campaign-art"><img src="${escapeHtml(c.banner)}" alt="${escapeHtml(c.bannerAlt || c.name)}" /></figure>` : ''}
       <div class="operation-summary">
-        <div class="operation-summary-heading"><strong>OPERATION ${op}</strong>${terminalOperationPill()}<button data-operation-view="overview">VIEW OPERATIONS <span aria-hidden="true">→</span></button></div>
+        <div class="operation-summary-heading"><strong>OPERATION ${op}</strong>${terminalOperationPill()}</div>
         <div class="operation-summary-body">
           ${countdownState
             ? `<div class="terminal-countdown-state"><strong>${escapeHtml(countdownState === 'TARGET PENDING' ? 'DATES PENDING' : countdownState)}</strong><small>${escapeHtml(schedule?.label || 'Checking campaign schedule')}</small></div>`
@@ -648,12 +647,6 @@ function home() {
       <button ${actionAttrs}>${escapeHtml(nextMove.action)} <span aria-hidden="true">→</span></button>
     </section>
     ${identityReady && !campaignClearanceReady() ? `<section class="terminal-clearance-prereq"><div><span>CAMPAIGN CLEARANCE</span><b>${escapeHtml(campaignEligibilityRequirements().find(({complete})=>!complete)?.label || 'Requirement incomplete')}</b></div><button data-screen="profile" data-profile-view="wallet">REVIEW →</button></section>` : ''}
-    <section class="terminal-actions" aria-label="Terminal shortcuts">
-      <button data-operation-view="overview"><span class="terminal-action-icon">${targetIcon}</span><div><b>View Operations</b><small>Campaign details<br />and missions</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
-      <button data-record-view="xp"><span class="terminal-action-icon">${NAV_ICONS.record}</span><div><b>Track Progress</b><small>Your XP, activity<br />and standing</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
-      <button data-screen="rewards"><span class="terminal-action-icon">${NAV_ICONS.rewards}</span><div><b>Your Rewards</b><small>Allocations and<br />delivery receipts</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
-      <button data-operation-view="intel"><span class="terminal-action-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2h16v20H4z" fill="currentColor"/><path d="M8 7h8M8 12h8M8 17h5" stroke="#faf9f4"/></svg></span><div><b>Latest Intel</b><small>Operation info<br />and verification</small></div><span class="action-chevron" aria-hidden="true">›</span></button>
-    </section>
     <button class="terminal-ocean-banner ocean-impact-entry" data-screen="ocean" aria-label="Explore the CrabStar Ocean Impact mission"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact. Cleaner oceans. Brighter tomorrows. Community-powered conservation. Explore the mission." /></button>
   </div>`;
 }
@@ -1604,7 +1597,7 @@ function recordNextActionMarkup() {
   const lifecycle = operationLifecycleState();
 
   if (lifecycle.label === 'ACTIVE') {
-    return '<section class="record-next-action"><div><span>NEXT</span><b>Continue Operation</b><small>Choose another eligible Mission File and keep building your verified Record.</small></div><button data-operation-view="missions">MISSION FILES →</button></section>';
+    return '<section class="record-next-action"><div><span>NEXT</span><b>Continue Operation</b><small>Choose another eligible Mission File and keep building your verified Record.</small></div><button data-screen="operations">OPEN OPERATIONS →</button></section>';
   }
   if (lifecycle.label === 'REVIEWING') {
     return '<section class="record-next-action"><div><span>NEXT</span><b>Follow Final Review</b><small>Your verified Record remains visible while Project Q reconciles final campaign outcomes.</small></div><button data-operation-view="progress">TRACK REVIEW →</button></section>';
@@ -1616,7 +1609,7 @@ function recordNextActionMarkup() {
     return '<section class="record-next-action complete"><div><span>PERMANENT RECORD</span><b>Operation History Finalized</b><small>Review receipts, achievements and verified campaign outcomes at any time.</small></div><button data-screen="rewards">RECEIPTS →</button></section>';
   }
   if (['LAUNCH BLOCKED','PAUSED','TERMINATED'].includes(lifecycle.label)) {
-    return '<section class="record-next-action blocked"><div><span>OPERATION STATUS</span><b>Campaign Actions Closed</b><small>Existing verified records remain available while the operation is not accepting activity.</small></div><button data-operation-view="intel">INTEL →</button></section>';
+    return '<section class="record-next-action blocked"><div><span>OPERATION STATUS</span><b>Campaign Actions Closed</b><small>Existing verified records remain available while the operation is not accepting activity.</small></div><button data-screen="operations">OPEN OPERATIONS →</button></section>';
   }
   return '<section class="record-next-action"><div><span>NEXT</span><b>Prepare for Operation</b><small>Review clearance and Mission Files before campaign participation opens.</small></div><button data-operation-view="overview">OPERATION →</button></section>';
 }
@@ -1695,13 +1688,13 @@ function rewardsScreen() {
     ['paid', 'recovered'].includes(status) && isSolanaSignature(transactionSignature));
   const missingClearance = campaignEligibilityRequirements().find(({ complete }) => !complete);
   const next = hasFailedRelease
-    ? ['Recovery review', 'A failed release remains under review. Track the operation status while the record is reconciled.', 'OPERATION INTEL →', 'data-operation-view="intel"']
+    ? ['Recovery review', 'A failed release remains under review. Track the operation status while the record is reconciled.', 'OPEN OPERATIONS →', 'data-screen="operations"']
     : missingClearance?.label === 'Telegram identity'
       ? ['Verify your identity', 'Open Project Q inside Telegram to establish your campaign identity.', 'VIEW IDENTITY →', 'data-profile-view="identity"']
       : !walletReady
         ? ['Verify your reward wallet', 'Your verified wallet is required before any campaign release can be delivered.', 'OPEN WALLET →', 'data-profile-view="wallet"']
         : !rewards.recorded
-          ? [operationLifecycleState().label === 'ACTIVE' ? 'Build verified activity' : 'Prepare for the operation', 'Allocations are determined from eligible, verified campaign participation.', 'VIEW MISSION FILES →', 'data-operation-view="missions"']
+          ? [operationLifecycleState().label === 'ACTIVE' ? 'Build verified activity' : 'Prepare for the operation', 'Allocations are determined from eligible, verified campaign participation.', 'OPEN OPERATIONS →', 'data-screen="operations"']
           : !rewards.releaseCount
             ? ['Follow allocation review', 'Your allocation is recorded. A release schedule has not been created yet.', 'VIEW YOUR RECORD →', 'data-record-view="activity"']
             : ['Follow your release record', 'Scheduled releases and confirmed transaction receipts appear below.', 'VIEW RECORD →', 'data-profile-view="rewards"'];
@@ -1770,7 +1763,7 @@ function rewardsScreen() {
         <small>No claim transaction or private-key action is required from the participant.</small>
       </div>
       ${statePill('RECOVERY REVIEW', 'blocked')}
-      <button data-operation-view="intel">OPEN OPERATION INTEL →</button>
+      <button data-screen="operations">OPEN OPERATIONS →</button>
     </section>` : ''}
 
     <details class="reward-pipeline" data-persist-open="reward-pipeline">
@@ -2438,21 +2431,29 @@ function navigateBack() {
     state.navigationStack = ['home'];
     state.screen = 'home';
   }
+  if (state.screen === 'operations') state.operationsView = 'overview';
+  if (state.screen === 'record') state.recordView = 'xp';
+  if (state.screen === 'profile') state.profileView = 'overview';
   history.replaceState(null, '', `#${state.screen}`);
   render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'instant' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
 function go(screen, { replace = false } = {}) {
   screen = resolveScreenRoute(screen);
   if (!screens[screen]) return;
-  if (!replace && state.screen !== screen) state.navigationStack.push(state.screen);
+  if (state.screen !== screen) {
+    if (!replace) state.navigationStack.push(state.screen);
+    if (screen === 'operations') state.operationsView = 'overview';
+    if (screen === 'record') state.recordView = 'xp';
+    if (screen === 'profile') state.profileView = 'overview';
+  }
   state.screen = screen;
   history.replaceState(null, '', `#${screen}`);
   render();
   updateTelegramBackButton();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'instant' });
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
@@ -3052,6 +3053,14 @@ function positionTourCard(target) {
   const margin = 14;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  if (viewportWidth <= 860) {
+    const dockHeight = document.querySelector('.mobile-dock')?.getBoundingClientRect().height || 76;
+    card.style.left = '12px';
+    card.style.top = 'auto';
+    card.style.bottom = `${Math.round(dockHeight + 12)}px`;
+    card.style.transform = 'none';
+    return;
+  }
   let left = Math.max(margin, Math.min(viewportWidth - cardRect.width - margin, rect.left + (rect.width - cardRect.width) / 2));
   let top = rect.bottom + margin;
   if (top + cardRect.height > viewportHeight - margin) top = Math.max(margin, rect.top - cardRect.height - margin);
@@ -3073,6 +3082,7 @@ function renderTourStep() {
     state.screen = step.screen;
     history.replaceState(null, '', `#${step.screen}`);
     render();
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   tour.hidden = false;
@@ -3086,8 +3096,7 @@ function renderTourStep() {
     const target = visibleTourTarget(step.target);
     if (target) {
       target.classList.add('tour-target-active');
-      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-      setTimeout(() => positionTourCard(target), 220);
+      positionTourCard(target);
     } else {
       const card = tour.querySelector('.tour-card');
       if (card) {
@@ -3311,7 +3320,7 @@ function bind() {
   };
   document.querySelectorAll('[data-screen]').forEach((element) => {
     element.onclick = () => {
-      if (element.dataset.profileView) state.profileView = element.dataset.profileView;
+      if (element.dataset.profileView && state.screen === element.dataset.screen) state.profileView = element.dataset.profileView;
       go(element.dataset.screen);
     };
   });
@@ -3381,8 +3390,6 @@ function bind() {
   applyRailPreference();
   const updates = document.querySelector('#campaign-updates');
   if (updates) updates.onclick = openCampaignUpdates;
-  const account = document.querySelector('#account-control');
-  if (account) account.onclick = () => go('profile');
   document.querySelector('#profile-wallet')?.addEventListener('click', openOracle);
   document.querySelector('#identity-refresh')?.addEventListener('click', async () => {
     state.sessionStatus = 'checking';

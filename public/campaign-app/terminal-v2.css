@@ -13,6 +13,7 @@
 .notification-control{padding:7px;width:35px;min-height:44px;border:0;background:transparent;color:#101414;cursor:pointer}
 .notification-control svg{width:23px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .q-shell-v2 .account-control{border:1px solid #d6d4ca;border-radius:9px;padding:4px;gap:5px;background:transparent;min-width:0;min-height:46px;color:#131414}
+.q-shell-v2 .account-control{cursor:default}
 .q-shell-v2 .account-control img{width:35px;height:35px;opacity:1;border:1px solid #8b7238;border-radius:50%;object-fit:cover}
 .q-shell-v2 .account-copy{display:grid;min-width:0;max-width:65px;gap:1px}
 .q-shell-v2 .account-copy b{font:700 13px/1.1 var(--q-display);color:#101414;letter-spacing:0;text-transform:none}
