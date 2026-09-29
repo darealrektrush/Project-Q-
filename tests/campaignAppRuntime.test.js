@@ -335,6 +335,8 @@ test('unavailable voting sources are described by certification state rather tha
   assert.match(voting, /href="https:\/\/coinbuzzer\.me\/coin\/860"[^>]*data-external-vote-link/);
   assert.doesNotMatch(voting, /data-vote-source-key="web:coinbuzzer"/);
   assert.doesNotMatch(voting, /CoinBuzzer[\s\S]*offline/);
+  assert.equal((voting.match(/data-external-vote-link/g) || []).length, 9);
+  assert.doesNotMatch(voting, /data-vote-source-key=/);
 });
 
 test('Launch Readiness screen groups all public gates and exposes only the report fingerprint', async () => {
