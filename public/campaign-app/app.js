@@ -2447,12 +2447,18 @@ function navigateBack() {
 function go(screen, { replace = false, preserveScroll = false } = {}) {
   screen = resolveScreenRoute(screen);
   if (!screens[screen]) return;
+  const previousScroll = preserveScroll ? window.scrollY : 0;
   if (!replace && state.screen !== screen) state.navigationStack.push(state.screen);
   state.screen = screen;
   history.replaceState(null, '', `#${screen}`);
   render();
   updateTelegramBackButton();
-  if (!preserveScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (preserveScroll) {
+    window.scrollTo({ top: previousScroll, behavior: 'instant' });
+    requestAnimationFrame(() => window.scrollTo({ top: previousScroll, behavior: 'instant' }));
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
   state.telegram?.HapticFeedback?.impactOccurred('light');
   if (screen === 'ocean') {
     state.oceanVault = null;
