@@ -57,3 +57,17 @@
 .achievement-rule>small{font:400 12px/1.5 system-ui;color:var(--q-copy);display:block;margin-top:10px}
 @media(min-width:1000px){.achievement-collection{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:359px){.achievement-objective summary{grid-template-columns:74px minmax(0,1fr) 10px;gap:9px;padding:10px}.achievement-objective summary>img{width:74px;height:94px}.achievement-objective summary b{font-size:22px}.operation-progress-files>button{grid-template-columns:32px minmax(0,1fr);gap:8px}.operation-progress-files>button>strong{grid-column:2;min-height:30px;display:flex;align-items:center}.passport-recognition header{align-items:start;flex-direction:column;gap:0}.campaign-passport h3{font-size:25px}}
+
+/* Personal updates use the same readable operational surfaces as the passport. */
+.updates-dialog{max-height:calc(100dvh - 32px);overflow:auto;width:min(480px,calc(100% - 24px))}
+.updates-dialog .updates-context,.update-controls p,.personal-update p,.updates-empty{font:13px/1.5 system-ui,sans-serif}
+.personal-update-list{display:grid;gap:10px;margin:14px 0}
+.personal-update{display:grid;text-align:left;gap:6px;padding:16px;border:1px solid var(--q-border);border-left:3px solid var(--q-connection);border-radius:10px;background:#fffdf7;color:var(--q-ink);cursor:pointer}
+.personal-update>span,.personal-update>small{font:700 11px/1.3 var(--q-display);color:var(--q-connection);letter-spacing:1px}
+.personal-update>b{font:700 23px/1.15 var(--q-display)}
+.personal-update p{margin:0}
+.update-controls{border-top:1px solid var(--q-border);padding-top:16px}
+.update-controls summary{display:flex;justify-content:space-between;min-height:44px;align-items:center;cursor:pointer;font:700 18px/1.3 var(--q-display)}
+.update-controls label{display:flex;justify-content:space-between;align-items:center;min-height:48px;gap:20px;border-bottom:1px solid var(--q-border);font:14px/1.4 system-ui,sans-serif}
+.update-controls input{width:22px;height:22px;accent-color:#247aa1}
+.update-controls small{display:block;margin-top:12px;font:12px/1.5 system-ui,sans-serif;color:var(--q-connection)}

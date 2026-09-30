@@ -1511,7 +1511,7 @@ function campaignPassportMarkup() {
   const objective = first ? achievementProgress(first) : null;
   return `<section class="campaign-passport"><header><div><span>OP ${operationNumber()} // CAMPAIGN PASSPORT</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3></div>${statePill(operationLifecycleState().label,operationLifecycleState().tone)}</header><div class="passport-live-metrics">${[['Operation XP',synced ? Number(p.xp || 0).toLocaleString() : '—'],['Standing',synced ? p.rank && p.rank !== '—' ? p.rank : 'UNRANKED' : '—'],['Current cycle',cycle ? `${cycle} / ${(state.campaign?.schedule?.cycles || []).length || 5}` : 'PENDING'],['Cycle XP',synced && cycle ? Number(cycleXp).toLocaleString() : '—']].map(([label,value])=>`<div><span>${label}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('')}</div><p>${synced ? 'Settled contribution builds your operation history.' : 'Your personal record loads after Telegram identity and Oracle synchronization.'}</p><details class="passport-contribution-detail"><summary>Contribution details <span>⌄</span></summary>${contributionBreakdownMarkup()}<small>${synced ? `${Number(p.completedMissions || 0)} mission codes with settled XP · ${(p.activity || []).length} recent ledger entries` : 'Mission progress awaiting synchronization.'}</small></details></section>
   <section class="passport-recognition"><header><span>ACHIEVEMENT IN FOCUS</span><button data-record-view="achievements">VIEW ACHIEVEMENTS →</button></header>${first ? `<div><img src="${escapeHtml(first.image)}" alt="" /><div><b>${escapeHtml(first.label)}</b><p>${escapeHtml(objective.detail)}</p><small>${escapeHtml(objective.label)}</small></div></div>` : '<p>Recognition objectives are being prepared.</p>'}</section>
-  <section class="passport-outcomes"><header><span>YOUR OUTCOMES</span><b>${synced ? 'OPERATION RECORD' : 'SYNC PENDING'}</b></header><div><span>Allocated rewards</span><strong>${synced && p.rewards?.recorded ? `${escapeHtml(compactPoolAmount(formatBaseUnits(p.rewards.allocatedBaseUnits)))} FAWKQ` : 'NOT RECORDED'}</strong></div><div><span>Next scheduled release</span><strong>${synced && nextRelease ? escapeHtml(formatProfileDate(nextRelease.scheduledAt)) : 'NOT SCHEDULED'}</strong></div><button data-screen="rewards">VIEW REWARDS →</button><p>Ocean contribution receipts remain distinct from documented conservation work.</p><button data-screen="ocean">OCEAN IMPACT →</button></section>
+  <section class="passport-outcomes"><header><span>YOUR OUTCOMES</span><b>${synced ? 'OPERATION RECORD' : 'SYNC PENDING'}</b></header><div><span>Allocated rewards</span><strong>${synced && p.rewards?.recorded ? `${escapeHtml(compactPoolAmount(formatBaseUnits(p.rewards.allocatedBaseUnits)))} FAWKQ` : synced ? 'NOT RECORDED' : 'SYNC PENDING'}</strong></div><div><span>Next scheduled release</span><strong>${synced && nextRelease ? escapeHtml(formatProfileDate(nextRelease.scheduledAt)) : synced ? 'NOT SCHEDULED' : 'SYNC PENDING'}</strong></div><button data-screen="rewards">VIEW REWARDS →</button><p>Ocean contribution receipts remain distinct from documented conservation work.</p><button data-screen="ocean">OCEAN IMPACT →</button></section>
   <section class="passport-universal"><span>UNIVERSAL RECORD</span><b>Contribution review & settlement</b><p>Project Q records operation outcomes. Qualifying lifetime XP, rank and reputation require Oracle confirmation; no lifetime award is inferred here.</p></section>`;
 }
 
@@ -2566,12 +2566,62 @@ function openExplainer(key) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
+const UPDATE_CATEGORIES = [
+  ['clearance', 'Clearance & connections'], ['xp', 'Settled XP'],
+  ['rewards', 'Rewards & releases'], ['achievements', 'Achievement progress'],
+];
+
+function updatePreferenceKey() {
+  return `project-q:updates:${state.profile.profileId || 'preview'}`;
+}
+
+function updatePreferences() {
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem(updatePreferenceKey()) || '{}') || {}; } catch {}
+  return Object.fromEntries(UPDATE_CATEGORIES.map(([key]) => [key, stored[key] !== false]));
+}
+
+function campaignUpdateItems() {
+  const items = [];
+  if (state.sessionStatus !== 'verified') return items;
+  if (!campaignClearanceReady()) items.push({ category: 'clearance', title: `Clearance ${clearanceCountLabel()}`, text: 'Complete your next requirement to prepare for participation.', screen: 'profile' });
+  if (Number(state.profile.xp || 0) > 0) items.push({ category: 'xp', title: `${Number(state.profile.xp).toLocaleString()} operation XP settled`, text: 'Review your source breakdown and recent ledger entries.', screen: 'record', view: 'xp' });
+  if (state.profile.rewards?.recorded) items.push({ category: 'rewards', title: 'Reward allocation recorded', text: 'Check your allocation, release stages and transaction evidence.', screen: 'rewards' });
+  if (Number(state.profile.xp || 0) > 0) items.push({ category: 'achievements', title: 'First XP objective recorded', text: 'Your settled XP meets the first objective. Badge issuance remains pending.', screen: 'record', view: 'achievements' });
+  return items;
+}
+
+function campaignUpdatesMarkup() {
+  const preferences = updatePreferences();
+  const items = campaignUpdateItems().filter(item => preferences[item.category]);
+  const lifecycle = state.runtime ? operationLifecycleState().label : 'STATUS UNAVAILABLE';
+  return `<header><div><small>PROJECT Q // UPDATES</small><h2>Your operation inbox</h2></div><button aria-label="Close updates">×</button></header>
+  <p class="updates-context">Current record summaries. This is not a chronological notification history.</p>
+  <article class="update-status"><span>OPERATION STATUS // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3><p>${escapeHtml(state.runtime?.schedule?.label || 'Live operation status is temporarily unavailable.')}</p></article>
+  <div class="personal-update-list">${items.map((item,index)=>`<button class="personal-update" data-update-index="${index}"><span>${escapeHtml(item.category.toUpperCase())}</span><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.text)}</p><small>OPEN →</small></button>`).join('') || `<p class="updates-empty">${state.sessionStatus === 'verified' ? 'No personal summaries in your selected categories.' : 'Open Project Q in Telegram to load your personal updates.'}</p>`}</div>
+  <details class="update-controls"><summary>Personal update controls <span>⌄</span></summary><p>Choose which personal summaries appear here. Saved on this device for this profile. These controls do not subscribe you to Telegram messages.</p>${UPDATE_CATEGORIES.map(([key,label])=>`<label><span>${label}</span><input type="checkbox" data-update-category="${key}" ${preferences[key] ? 'checked' : ''} /></label>`).join('')}<small id="update-save-status" role="status"></small></details>`;
+}
+
 function openCampaignUpdates() {
   const dialog = document.querySelector('#updates-dialog');
-  const lifecycle = state.runtime ? operationLifecycleState().label : 'STATUS UNAVAILABLE';
-  dialog.innerHTML = `<header><div><small>PROJECT Q</small><h2>Updates</h2></div><button aria-label="Close updates">×</button></header><article><span>OPERATION STATUS // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3><p>${escapeHtml(state.runtime?.schedule?.label || 'Live operation status is temporarily unavailable.')}</p></article><p>No additional announcements have been published in this feed.</p>`;
+  if (!dialog) return;
+  dialog.innerHTML = campaignUpdatesMarkup();
   dialog.querySelector('[aria-label="Close updates"]').onclick = () => dialog.close();
-  dialog.showModal();
+  const items = campaignUpdateItems().filter(item => updatePreferences()[item.category]);
+  dialog.querySelectorAll('[data-update-index]').forEach(button => { button.onclick = () => {
+    const item = items[Number(button.dataset.updateIndex)];
+    if (!item) return;
+    dialog.close(); go(item.screen, { view: item.view });
+  }; });
+  dialog.querySelectorAll('[data-update-category]').forEach(input => { input.onchange = () => {
+    const preferences = updatePreferences(); preferences[input.dataset.updateCategory] = input.checked;
+    try {
+      localStorage.setItem(updatePreferenceKey(), JSON.stringify(preferences));
+      openCampaignUpdates(); dialog.querySelector('.update-controls').open = true;
+      dialog.querySelector('#update-save-status').textContent = 'Saved on this device.';
+    } catch { dialog.querySelector('#update-save-status').textContent = 'Device storage unavailable. Your preference was not saved.'; }
+  }; });
+  if (!dialog.open) dialog.showModal();
 }
 
 function bind() {

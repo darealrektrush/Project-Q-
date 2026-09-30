@@ -35,6 +35,7 @@ async function loadRuntime() {
       globalThis.__profiles[view] = profileScreen();
     }
     globalThis.__nav = NAV;
+    globalThis.__updatesWith = (status, patch = {}) => { state.sessionStatus = status; state.profile = {...state.profile, ...patch}; return campaignUpdatesMarkup(); };
     globalThis.__poolDetail = id => operationPoolDetailMarkup(state.campaign, id);
     globalThis.__navigateWith = (from, destination, view = null) => {
       state.telegram = null; state.screen = from; state.operationsView = 'economics'; state.profileView = 'wallet'; state.recordView = 'rank';
@@ -996,4 +997,18 @@ test('delivery confirmation date never substitutes the scheduled date', async ()
   assert.match(recorded, /<span>Confirmed<\/span><b>Sep 3, 2026/);
   rewards.releases[0].confirmedBlockTime=null;
   assert.match(context.__renderRewardsWith(rewards).screen, /<span>Confirmed<\/span><b>Evidence pending/);
+});
+
+
+test('personal update summaries require verified identity and distinguish objective from badge award', async () => {
+  const runtime = await loadRuntime();
+  const preview = runtime.__updatesWith('unavailable', { xp: 680, rewards: { recorded: true } });
+  assert.doesNotMatch(preview, /680 operation XP settled|Reward allocation recorded/);
+  assert.match(preview, /Open Project Q in Telegram/);
+  const verified = runtime.__updatesWith('verified', { xp: 680, rewards: { recorded: true } });
+  assert.match(verified, /680 operation XP settled/);
+  assert.match(verified, /Reward allocation recorded/);
+  assert.match(verified, /Badge issuance remains pending/);
+  assert.match(verified, /Saved on this device/);
+  assert.match(verified, /do not subscribe you to Telegram messages/);
 });
