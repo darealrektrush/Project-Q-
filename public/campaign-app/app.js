@@ -2650,7 +2650,7 @@ function helpResultsMarkup(query) {
 function openAccountPanel(view = 'menu') {
   const dialog = document.querySelector('#account-dialog');
   if (!dialog) return;
-  dialog.classList.toggle('account-drawer', view === 'menu');
+  dialog.classList.add('account-drawer');
   dialog.innerHTML = accountPanelMarkup(view);
   dialog.querySelector('[aria-label="Close account menu"]').onclick = () => dialog.close();
   dialog.querySelectorAll('[data-account-panel]').forEach(button=>{button.onclick=()=>openAccountPanel(button.dataset.accountPanel);});
@@ -2707,6 +2707,7 @@ function campaignUpdatesMarkup() {
 function openCampaignUpdates() {
   const dialog = document.querySelector('#updates-dialog');
   if (!dialog) return;
+  dialog.classList.add('updates-drawer');
   dialog.innerHTML = campaignUpdatesMarkup();
   dialog.querySelector('[aria-label="Close updates"]').onclick = () => dialog.close();
   const items = campaignUpdateItems().filter(item => updatePreferences()[item.category]);

@@ -112,3 +112,50 @@
 .support-message{padding:14px;background:#eee9dc;border-radius:10px;overflow-wrap:anywhere}
 .support-message.from-team{background:#e5f1f7;border-left:3px solid var(--q-connection)}
 .support-message p{white-space:pre-wrap;margin-bottom:0}
+
+
+/* Account tools share one right-side drawer and one deep-ocean palette. */
+.account-dialog.account-drawer,.updates-dialog.updates-drawer{
+  box-sizing:border-box;position:fixed;inset:0 0 0 auto;margin:0;width:min(440px,100%);height:100dvh;max-height:100dvh;
+  overflow:auto;overscroll-behavior:contain;padding:calc(22px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));
+  border:0;border-left:1px solid #29414c;border-radius:14px 0 0 14px;background:#0d171d;color:#f6f1e3;
+  box-shadow:-18px 0 50px #0005;font-family:system-ui,sans-serif
+}
+.account-dialog.account-drawer::backdrop,.updates-dialog.updates-drawer::backdrop{background:#0009}
+.account-dialog.account-drawer header,.updates-dialog.updates-drawer header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px}
+.account-dialog.account-drawer header small,.updates-dialog.updates-drawer header small{display:block;font:700 11px/1.4 var(--q-display);letter-spacing:.12em;color:#8bbdd4}
+.account-dialog.account-drawer h2,.updates-dialog.updates-drawer h2{font:700 29px/1.08 var(--q-display);margin:7px 0 18px;color:#f6f1e3}
+.account-dialog.account-drawer header>button,.updates-dialog.updates-drawer header button{flex:none;display:grid;place-items:center;width:44px;height:44px;border:1px solid #ffffff22;border-radius:50%;background:#ffffff08;color:#f6f1e3;font-size:25px}
+.account-dialog.account-drawer p,.updates-dialog.updates-drawer p{color:#b9c6cc}
+.account-dialog.account-drawer .account-back{width:100%;margin:0 0 14px;border:1px solid #ffffff20;border-radius:8px;background:#ffffff06;color:#f6f1e3}
+.account-dialog.account-drawer .account-settings-section,.account-dialog.account-drawer .support-availability{border-top:1px solid #ffffff20}
+.account-dialog.account-drawer .account-settings-section h3{color:#f6f1e3}
+.account-dialog.account-drawer .account-settings-section button,.account-dialog.account-drawer .support-availability button{width:100%;border:1px solid #ffffff20;background:#ffffff07;color:#f6f1e3}
+.account-dialog.account-drawer .account-settings-section button:hover,.account-dialog.account-drawer .support-availability button:hover,.account-dialog.account-drawer .account-back:hover{border-color:#8bbdd4;background:#142630}
+.account-dialog.account-drawer .account-settings-section button[data-account-action="tour"],.account-dialog.account-drawer .support-availability button{border-color:#8b7132;background:#dcb957;color:#111}
+.account-dialog.account-drawer .help-search{color:#8bbdd4}
+.account-dialog.account-drawer .help-search input,.account-dialog.account-drawer #support-form input,.account-dialog.account-drawer #support-form textarea,.account-dialog.account-drawer #support-form select{border-color:#344b56;background:#14232b;color:#f6f1e3;color-scheme:dark}
+.account-dialog.account-drawer .help-search input::placeholder,.account-dialog.account-drawer #support-form textarea::placeholder{color:#9aabb4}
+.account-dialog.account-drawer .help-search input:focus,.account-dialog.account-drawer #support-form input:focus,.account-dialog.account-drawer #support-form textarea:focus,.account-dialog.account-drawer #support-form select:focus{outline:2px solid #74aecb;outline-offset:1px}
+.account-dialog.account-drawer .help-article{border-bottom-color:#ffffff1c}
+.account-dialog.account-drawer .help-article summary{min-height:44px;display:flex;align-items:center;color:#f6f1e3;font-size:15px}
+.account-dialog.account-drawer .help-article p{margin:0 0 12px;color:#b9c6cc}
+.account-dialog.account-drawer .support-availability>b,.account-dialog.account-drawer #support-status{font:700 11px/1.4 var(--q-display);letter-spacing:.1em;color:#8bbdd4}
+.account-dialog.account-drawer .support-thread-list button,.account-dialog.account-drawer .support-message{background:#14232b;border-color:#344b56;color:#f6f1e3}
+.account-dialog.account-drawer .support-thread-list button{border-left:3px solid #74aecb}
+.account-dialog.account-drawer .support-message.from-team{background:#142b37;border-left:3px solid #74aecb}
+.account-dialog.account-drawer .support-thread-list small,.account-dialog.account-drawer .support-message small{color:#8bbdd4}
+.account-dialog.account-drawer .support-new{border-top:1px solid #ffffff20}
+.account-dialog.account-drawer .support-new summary{color:#f6f1e3}
+.account-dialog.account-drawer #support-form button,.account-dialog.account-drawer #support-refresh,.account-dialog.account-drawer #support-list-back{border-color:#a48538;background:#dcb957;color:#111}
+.account-dialog.account-drawer .personal-update,.updates-dialog.updates-drawer .personal-update{background:#14232b;border-color:#344b56;color:#f6f1e3}
+.updates-dialog.updates-drawer .updates-context,.updates-dialog.updates-drawer .update-controls p{color:#b9c6cc}
+.updates-dialog.updates-drawer .update-status{border-color:#344b56;background:#14232b}
+.updates-dialog.updates-drawer .update-status>span,.updates-dialog.updates-drawer .personal-update>span,.updates-dialog.updates-drawer .personal-update>small{color:#8bbdd4}
+.updates-dialog.updates-drawer .update-status h3,.updates-dialog.updates-drawer .personal-update>b{color:#f6f1e3}
+.updates-dialog.updates-drawer .update-controls{border-top-color:#ffffff20}
+.updates-dialog.updates-drawer .update-controls summary,.updates-dialog.updates-drawer .update-controls label{color:#f6f1e3}
+.updates-dialog.updates-drawer .update-controls label{border-bottom-color:#ffffff18}
+.updates-dialog.updates-drawer .update-controls input{accent-color:#74aecb}
+.updates-dialog.updates-drawer .update-controls small{color:#8bbdd4}
+@media(max-width:359px){.account-dialog.account-drawer,.updates-dialog.updates-drawer{padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}}
