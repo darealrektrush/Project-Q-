@@ -2566,6 +2566,61 @@ function openExplainer(key) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
+const supportState = { threads: [], thread: null, error: '', loading: false, requestId: null, loaded: false, owner: null };
+const SUPPORT_LABELS = { identity:'Identity & clearance',mission:'Mission verification',xp:'Missing XP',rewards:'Rewards',wallet:'Wallet',technical:'Technical issue',ocean:'Ocean Impact' };
+
+function supportPanelMarkup() {
+  if (state.sessionStatus !== 'verified') return '<p>Open Project Q through Telegram to access your private support conversations.</p>';
+  if (location.hostname !== 'project-q-dev.onrender.com') return '<p>Private support is available in the Dev build while testing.</p>';
+  if (supportState.owner !== state.profile.profileId) { Object.assign(supportState,{threads:[],thread:null,error:'',loading:false,requestId:null,loaded:false,owner:state.profile.profileId}); }
+  const thread = supportState.thread;
+  const status = value => ({waiting_team:'Awaiting team reply',waiting_user:'Team replied',resolved:'Resolved'}[value] || 'Status pending');
+  const messageForm = `<label>Your message<textarea id="support-body" maxlength="3000" rows="5" required placeholder="Describe what happened and what you expected. Do not include private keys or seed phrases."></textarea></label><button type="submit">${thread ? 'SEND REPLY' : 'SUBMIT REQUEST'} →</button>`;
+  return `<p class="support-note">Private conversation with the Project Q team. Replies appear here; use Refresh to check. No instant response is promised.</p><p id="support-status" role="status">${escapeHtml(supportState.error || (supportState.loading ? 'Loading requests…' : ''))}</p>${thread ? `<button id="support-list-back">← MY REQUESTS</button><button id="support-refresh-thread">REFRESH CONVERSATION</button><h3>${escapeHtml(thread.subject)}</h3><small>${escapeHtml(status(thread.status))}</small><div class="support-conversation">${thread.messages.map(message=>`<article class="support-message ${message.sender==='team'?'from-team':''}"><small>${message.sender==='team'?'PROJECT Q TEAM':'YOU'} · ${escapeHtml(formatProfileDate(message.created_at))}</small><p>${escapeHtml(message.body)}</p></article>`).join('')}</div><form id="support-form">${messageForm}</form>` : `<button id="support-refresh">REFRESH REQUESTS</button><div class="support-thread-list">${supportState.threads.map(row=>`<button data-support-thread="${escapeHtml(row.id)}"><b>${escapeHtml(row.subject)}</b><small>${escapeHtml(status(row.status))}</small></button>`).join('') || `<p>${supportState.loaded ? 'No requests yet.' : 'Your request list has not loaded yet.'}</p>`}</div><details class="support-new"><summary>Start a support request</summary><form id="support-form"><label>Issue<select id="support-category">${Object.entries(SUPPORT_LABELS).map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select></label><label>Subject<input id="support-subject" minlength="5" maxlength="120" required /></label>${messageForm}<p>Only your selected issue, subject and message are submitted with your verified identity and operation. This form does not attach wallet balances, screenshots or device diagnostics.</p></form></details>`}`;
+}
+
+async function supportRequest(payload) {
+  const initData=state.telegram?.initData;
+  if (!initData) throw new Error('Open Project Q in Telegram to access support.');
+  const response=await fetch('/campaign-app/api/support',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify({...payload,initData})});
+  const result=await response.json();
+  if (!response.ok) throw new Error(result.error || 'Support unavailable. Please retry.');
+  return result;
+}
+
+function bindSupportPanel(dialog) {
+  if (state.sessionStatus !== 'verified' || location.hostname !== 'project-q-dev.onrender.com') return;
+  const owner=state.profile.profileId;
+  const load = async (threadId=null) => {
+    supportState.loading=true; supportState.error='';
+    try {
+      const result=await supportRequest(threadId ? {action:'read',threadId} : {action:'list'});
+      if (state.profile.profileId !== owner) return;
+      supportState.requestId=null;
+      if (threadId) supportState.thread=result.thread;
+      else {supportState.threads=result.threads;supportState.thread=null;supportState.loaded=true;}
+    } catch(error) {supportState.error=error.message;}
+    supportState.loading=false;
+    if (dialog.open && dialog.querySelector('#support-status')) openAccountPanel('support');
+  };
+  dialog.querySelector('#support-refresh-thread')?.addEventListener('click',()=>load(supportState.thread?.id));
+  dialog.querySelector('#support-refresh')?.addEventListener('click',()=>load());
+  dialog.querySelector('#support-list-back')?.addEventListener('click',()=>load());
+  dialog.querySelectorAll('[data-support-thread]').forEach(button=>button.onclick=()=>load(button.dataset.supportThread));
+  const form=dialog.querySelector('#support-form');
+  if (form) form.oninput=()=>{ supportState.requestId=null; };
+  if (form) form.onsubmit=async event=>{
+    event.preventDefault(); const button=form.querySelector('[type="submit"]');button.disabled=true;
+    const payload={action:'write',threadId:supportState.thread?.id || null,messageId:supportState.requestId || crypto.randomUUID(),category:form.querySelector('#support-category')?.value,subject:form.querySelector('#support-subject')?.value,body:form.querySelector('#support-body').value};
+    supportState.requestId=payload.messageId;
+    try {
+      const result=await supportRequest(payload);if (state.profile.profileId !== owner) return;supportState.thread=result.thread;supportState.requestId=null;supportState.error='';
+      if (dialog.open) openAccountPanel('support');
+    } catch(error) {dialog.querySelector('#support-status').textContent=error.message;button.disabled=false;}
+  };
+  if (!supportState.loaded && !supportState.loading && !supportState.error) load();
+}
+
 const HELP_ARTICLES = [
   ['clearance', 'Why is my mission locked?', 'Open Profile and complete the five clearance requirements. Mission availability also depends on operation status and source readiness.'],
   ['identity', 'How do I connect X or change my wallet?', 'Oracle manages your verified identity and connections. Open Profile to check clearance or manage connections through Oracle.'],
@@ -2578,9 +2633,10 @@ const HELP_ARTICLES = [
 
 function accountPanelMarkup(view = 'menu') {
   const p = state.profile;
-  const header = `<header><div><small>PROJECT Q // YOUR ACCOUNT</small><h2>${view === 'help' ? 'Help Centre' : view === 'settings' ? 'Settings' : 'Your account'}</h2></div><button aria-label="Close account menu">×</button></header>`;
+  const header = `<header><div><small>PROJECT Q // YOUR ACCOUNT</small><h2>${view === 'support' ? 'Support requests' : view === 'help' ? 'Help Centre' : view === 'settings' ? 'Settings' : 'Your account'}</h2></div><button aria-label="Close account menu">×</button></header>`;
   const back = '<button class="account-back" data-account-panel="menu">← ACCOUNT MENU</button>';
-  if (view === 'help') return header + back + `<p>Find an answer and the right next step.</p><label class="help-search">Search help<input id="help-search" type="search" placeholder="Try XP, wallet or rewards" /></label><div id="help-results">${helpResultsMarkup('')}</div><section class="support-availability"><b>CONTACT SUPPORT</b><p>Private support conversations are being connected. Live chat is not available in this build yet.</p><button data-account-action="oracle">IDENTITY HELP THROUGH ORACLE ↗</button><small>Never share a seed phrase or private key.</small></section>`;
+  if (view === 'help') return header + back + `<p>Find an answer and the right next step.</p><label class="help-search">Search help<input id="help-search" type="search" placeholder="Try XP, wallet or rewards" /></label><div id="help-results">${helpResultsMarkup('')}</div><section class="support-availability"><b>PRIVATE SUPPORT</b><p>Send a request and return here for team replies. Response times vary.</p><button data-account-panel="support">MY REQUESTS & CONTACT SUPPORT →</button><small>Never share a seed phrase or private key.</small></section>`;
+  if (view === 'support') return header + back + supportPanelMarkup();
   if (view === 'settings') return header + back + `<section class="account-settings-section"><h3>Notifications</h3><p>Choose personal summaries in your Updates inbox. Preferences are currently saved on this device.</p><button data-account-action="updates">OPEN UPDATE CONTROLS →</button></section><section class="account-settings-section"><h3>Identity & privacy</h3><p>Your name and photo come from Telegram. Oracle manages your verified X and wallet connections.</p><button data-account-action="profile">PROFILE & CLEARANCE →</button><button data-account-action="ocean">OCEAN RECOGNITION & CONSENT →</button></section><section class="account-settings-section"><h3>Getting started</h3><button data-account-action="tour">REPLAY GUIDE →</button><p>Project Q Dev · Account experience v1</p></section>`;
   return header + `<section class="account-drawer-identity"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="" /><div><b>${escapeHtml(p.name)}</b><p>${p.username ? '@' + escapeHtml(p.username.replace(/^@/, '')) : 'Telegram identity pending'}</p><small>${clearanceCountLabel()} CLEARANCE</small></div></section><nav aria-label="Account tools"><span>YOUR IDENTITY</span><button data-account-action="profile">Campaign Profile <b>›</b></button><button data-account-action="oracle">Universal ID & connections <b>↗</b></button><button data-account-action="wallet">Wallet <b>›</b></button><span>YOUR EXPERIENCE</span><button data-account-action="updates">Notifications <b>›</b></button><button data-account-panel="settings">Settings <b>›</b></button><span>HELP</span><button data-account-panel="help">Help Centre & support <b>›</b></button><button data-account-action="tour">Replay guide <b>›</b></button></nav><footer>PROJECT Q // ECONOMIC LAYER<br />Identity by Oracle · Impact through CrabStar</footer>`;
 }
@@ -2608,6 +2664,7 @@ function openAccountPanel(view = 'menu') {
   };});
   const search = dialog.querySelector('#help-search');
   if (search) search.oninput = () => { dialog.querySelector('#help-results').innerHTML = helpResultsMarkup(search.value); };
+  if (view === 'support') bindSupportPanel(dialog);
   if (!dialog.open) dialog.showModal();
 }
 

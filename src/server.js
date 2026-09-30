@@ -31,6 +31,7 @@ import {
   recordOracleWallet,
   validateOracleWalletEvent,
 } from './campaign/oracleIdentity.js';
+import * as support from './campaign/support.js';
 import * as walletStatus from './campaign/walletStatus.js';
 import { getOceanVaultStatus } from './campaign/oceanVaultStatus.js';
 import { verifyOceanContribution } from './campaign/oceanContributionProof.js';
@@ -473,6 +474,28 @@ app.post('/campaign-app/api/session', async (req, res) => {
   }
 });
 
+app.post('/campaign-app/api/support', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  if (!support.supportEnabled()) return res.status(503).json({ok:false,error:'support unavailable'});
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const identity = await ensureCampaignProfile(supabase, {campaignId,telegramUserId:session.user.id});
+    if (req.body.action === 'list') return res.json({ok:true,threads:await support.listSupport(supabase,identity.profileId)});
+    if (req.body.action === 'read') return res.json({ok:true,thread:await support.readSupport(supabase,identity.profileId,req.body.threadId)});
+    if (req.body.action !== 'write') throw new Error('invalid support action');
+    const id = await support.writeSupport(supabase,identity.profileId,campaignId,req.body);
+    return res.json({ok:true,thread:await support.readSupport(supabase,identity.profileId,id)});
+  } catch(error) {
+    const message=String(error.message||'');
+    const auth=message.includes('telegram init data') || message.includes('telegram user');
+    const missing=message.includes('support thread not found');
+    const limited=message.includes('support rate limit') || message.includes('support conversation limit');
+    const invalid=message.startsWith('invalid support');
+    return res.status(auth?401:missing?404:limited?429:invalid?400:503).json({ok:false,error:auth?'Open Project Q in Telegram to access support.':missing?'Request not found.':limited?'Support limit reached. Please try later.':invalid?'Check your request and try again.':'Support is temporarily unavailable.'});
+  }
+});
+
 app.post('/campaign-app/api/preferences/tour', async (req, res) => {
   res.set('Cache-Control', 'private, no-store');
   try {
@@ -789,6 +812,12 @@ async function handleMessage(message) {
   const threadId = message.message_thread_id;
   const chatId = message.chat.id;
   const isPrivate = message.chat.type === 'private';
+
+  if (/^\/qsupport(?:reply|read)?(?:\s|$)/.test(message.text || '')) {
+    if (!isPrivate || !admin.isConfiguredPrivateAdmin(message.from.id) || !support.supportEnabled()) return;
+    try { return telegram.sendMessage(chatId, await support.supportTeamCommand(supabase,message.text), {parseMode:null}); }
+    catch { return telegram.sendMessage(chatId,'Support command could not be completed. Check the request ID and retry.',{}); }
+  }
 
   // Pending admin edits (bio text / media photo) take priority so an admin
   // can finish an edit regardless of normal topic/command gating.

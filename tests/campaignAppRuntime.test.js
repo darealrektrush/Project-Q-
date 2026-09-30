@@ -1025,5 +1025,5 @@ test('account tools keep core navigation separate and help search is safe', asyn
   assert.match(runtime.__accountPanel('settings'), /saved on this device/);
   assert.match(runtime.__helpResults('allocated'), /Does allocated mean paid/);
   assert.match(runtime.__helpResults('<script>'), /No matching answer/);
-  assert.match(runtime.__accountPanel('help'), /Live chat is not available/);
+  assert.match(runtime.__accountPanel('help'), /Response times vary/);
 });
