@@ -2566,6 +2566,51 @@ function openExplainer(key) {
   state.telegram?.HapticFeedback?.impactOccurred('light');
 }
 
+const HELP_ARTICLES = [
+  ['clearance', 'Why is my mission locked?', 'Open Profile and complete the five clearance requirements. Mission availability also depends on operation status and source readiness.'],
+  ['identity', 'How do I connect X or change my wallet?', 'Oracle manages your verified identity and connections. Open Profile to check clearance or manage connections through Oracle.'],
+  ['xp', 'Why has my XP not appeared?', 'Activity must be accepted and settled before it appears in Record. Check the mission verification details, daily caps and recent XP history. Opening a mission or submitting proof does not itself award XP.'],
+  ['rewards', 'Does allocated mean paid?', 'An allocation is a recorded reward position. Delivery is separate. Check Rewards for release stages and confirmed transaction evidence.'],
+  ['badges', 'Is an objective the same as an earned badge?', 'Recorded progress shows an objective was met. A badge requires an issuance record and its published rules; pending objectives are not issued badges.'],
+  ['ocean', 'Does a vault contribution mean conservation work is completed?', 'A verified deposit is a contribution receipt. Funds committed and conservation work completed require separate public evidence.'],
+  ['files', 'Why are there nine files but seven action missions?', 'Seven files are actions. MF-06 shows settled participation XP in Record. MF-09 shows collective Earn-to-Burn progress in Economics.'],
+];
+
+function accountPanelMarkup(view = 'menu') {
+  const p = state.profile;
+  const header = `<header><div><small>PROJECT Q // YOUR ACCOUNT</small><h2>${view === 'help' ? 'Help Centre' : view === 'settings' ? 'Settings' : 'Your account'}</h2></div><button aria-label="Close account menu">×</button></header>`;
+  const back = '<button class="account-back" data-account-panel="menu">← ACCOUNT MENU</button>';
+  if (view === 'help') return header + back + `<p>Find an answer and the right next step.</p><label class="help-search">Search help<input id="help-search" type="search" placeholder="Try XP, wallet or rewards" /></label><div id="help-results">${helpResultsMarkup('')}</div><section class="support-availability"><b>CONTACT SUPPORT</b><p>Private support conversations are being connected. Live chat is not available in this build yet.</p><button data-account-action="oracle">IDENTITY HELP THROUGH ORACLE ↗</button><small>Never share a seed phrase or private key.</small></section>`;
+  if (view === 'settings') return header + back + `<section class="account-settings-section"><h3>Notifications</h3><p>Choose personal summaries in your Updates inbox. Preferences are currently saved on this device.</p><button data-account-action="updates">OPEN UPDATE CONTROLS →</button></section><section class="account-settings-section"><h3>Identity & privacy</h3><p>Your name and photo come from Telegram. Oracle manages your verified X and wallet connections.</p><button data-account-action="profile">PROFILE & CLEARANCE →</button><button data-account-action="ocean">OCEAN RECOGNITION & CONSENT →</button></section><section class="account-settings-section"><h3>Getting started</h3><button data-account-action="tour">REPLAY GUIDE →</button><p>Project Q Dev · Account experience v1</p></section>`;
+  return header + `<section class="account-drawer-identity"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="" /><div><b>${escapeHtml(p.name)}</b><p>${p.username ? '@' + escapeHtml(p.username.replace(/^@/, '')) : 'Telegram identity pending'}</p><small>${clearanceCountLabel()} CLEARANCE</small></div></section><nav aria-label="Account tools"><span>YOUR IDENTITY</span><button data-account-action="profile">Campaign Profile <b>›</b></button><button data-account-action="oracle">Universal ID & connections <b>↗</b></button><button data-account-action="wallet">Wallet <b>›</b></button><span>YOUR EXPERIENCE</span><button data-account-action="updates">Notifications <b>›</b></button><button data-account-panel="settings">Settings <b>›</b></button><span>HELP</span><button data-account-panel="help">Help Centre & support <b>›</b></button><button data-account-action="tour">Replay guide <b>›</b></button></nav><footer>PROJECT Q // ECONOMIC LAYER<br />Identity by Oracle · Impact through CrabStar</footer>`;
+}
+
+function helpResultsMarkup(query) {
+  const normalized = String(query).trim().toLowerCase();
+  const matches = HELP_ARTICLES.filter(row=>row.join(' ').toLowerCase().includes(normalized));
+  return matches.map(([id,title,body])=>`<details class="help-article"><summary>${escapeHtml(title)}</summary><p>${escapeHtml(body)}</p></details>`).join('') || '<p role="status">No matching answer. Try a different keyword.</p>';
+}
+
+function openAccountPanel(view = 'menu') {
+  const dialog = document.querySelector('#account-dialog');
+  if (!dialog) return;
+  dialog.classList.toggle('account-drawer', view === 'menu');
+  dialog.innerHTML = accountPanelMarkup(view);
+  dialog.querySelector('[aria-label="Close account menu"]').onclick = () => dialog.close();
+  dialog.querySelectorAll('[data-account-panel]').forEach(button=>{button.onclick=()=>openAccountPanel(button.dataset.accountPanel);});
+  dialog.querySelectorAll('[data-account-action]').forEach(button=>{button.onclick=()=>{
+    const action = button.dataset.accountAction; dialog.close();
+    if (action === 'updates') return openCampaignUpdates();
+    if (action === 'oracle') return openOracle();
+    if (action === 'tour') return showTourWelcome('manual');
+    if (action === 'wallet') return go('profile', {view:'wallet'});
+    go(action);
+  };});
+  const search = dialog.querySelector('#help-search');
+  if (search) search.oninput = () => { dialog.querySelector('#help-results').innerHTML = helpResultsMarkup(search.value); };
+  if (!dialog.open) dialog.showModal();
+}
+
 const UPDATE_CATEGORIES = [
   ['clearance', 'Clearance & connections'], ['xp', 'Settled XP'],
   ['rewards', 'Rewards & releases'], ['achievements', 'Achievement progress'],
@@ -2787,6 +2832,8 @@ function bind() {
   });
   document.querySelector('#rail-toggle')?.addEventListener('click', toggleRail);
   applyRailPreference();
+  const menu = document.querySelector('#account-menu-control');
+  if (menu) menu.onclick = () => openAccountPanel();
   const updates = document.querySelector('#campaign-updates');
   if (updates) updates.onclick = openCampaignUpdates;
   document.querySelector('#profile-wallet')?.addEventListener('click', openOracle);

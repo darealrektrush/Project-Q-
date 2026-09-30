@@ -35,6 +35,8 @@ async function loadRuntime() {
       globalThis.__profiles[view] = profileScreen();
     }
     globalThis.__nav = NAV;
+    globalThis.__accountPanel = accountPanelMarkup;
+    globalThis.__helpResults = helpResultsMarkup;
     globalThis.__updatesWith = (status, patch = {}) => { state.sessionStatus = status; state.profile = {...state.profile, ...patch}; return campaignUpdatesMarkup(); };
     globalThis.__poolDetail = id => operationPoolDetailMarkup(state.campaign, id);
     globalThis.__navigateWith = (from, destination, view = null) => {
@@ -1011,4 +1013,17 @@ test('personal update summaries require verified identity and distinguish object
   assert.match(verified, /Badge issuance remains pending/);
   assert.match(verified, /Saved on this device/);
   assert.match(verified, /do not subscribe you to Telegram messages/);
+});
+
+
+test('account tools keep core navigation separate and help search is safe', async () => {
+  const runtime = await loadRuntime();
+  const menu = runtime.__accountPanel();
+  assert.match(menu, /Campaign Profile/);
+  assert.match(menu, /Help Centre & support/);
+  assert.doesNotMatch(menu, /data-account-action="operations"/);
+  assert.match(runtime.__accountPanel('settings'), /saved on this device/);
+  assert.match(runtime.__helpResults('allocated'), /Does allocated mean paid/);
+  assert.match(runtime.__helpResults('<script>'), /No matching answer/);
+  assert.match(runtime.__accountPanel('help'), /Live chat is not available/);
 });
