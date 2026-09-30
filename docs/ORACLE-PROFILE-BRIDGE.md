@@ -10,6 +10,22 @@ Project Q continues to own campaign rules, scoring, allocations, burns, settleme
 
 The migration is additive and does not award XP, activate campaigns, move funds or distribute rewards. Existing Telegram-keyed records remain readable through `identity_links`; later migrations can add direct `profile_id` foreign keys to economic ledgers without changing the member's identity.
 
+## X identity continuity
+
+Project Q treats the Oracle-verified X account as a **current verification rail**,
+not as the owner of participant reputation. Oracle remains the authority for
+historical X ownership and replacement.
+
+When Oracle verifies a replacement X account, Project Q updates only the current
+`identity_links.x_user_id` / `x_verified_at` reference for that campaign profile.
+Past campaign raid events, invite proofs, participation events, XP ledger entries,
+allocations, releases and transaction receipts keep the identity and evidence that
+were recorded when they occurred.
+
+Project Q never creates, transfers or repairs Oracle `x_identity` ownership. A
+current-X collision with another campaign profile fails closed. Identity conflicts
+must be resolved through Oracle / Repair Bay.
+
 ## Private Oracle read projection
 
 `POST /oracle/profile` provides a private read-only Profile V2 projection for the Oracle bot. It requires `x-oracle-campaign-secret` matching `ORACLE_PROFILE_SECRET` (falling back to `ORACLE_CAMPAIGN_SECRET` only when no dedicated profile secret is set). The production rollout isolates this bridge with matching `ORACLE_PROFILE_SECRET` / Oracle `PROJECT_Q_PROFILE_SECRET`, preserving existing campaign integrations. Missing or incorrect credentials return 401 before any participant read. The body must contain only a positive safe-integer `telegram_user_id` derived by Oracle from an authorized private Telegram update.
