@@ -29,13 +29,21 @@ function retryDelay(attemptCount) {
 }
 
 function outboundEvent(row) {
-  return {
+  const event = {
     event_id: String(row.event_key),
     event_name: String(row.event_name),
     campaign_id: String(row.campaign_id),
     telegram_user_id: Number(row.telegram_user_id),
     occurred_at: String(row.occurred_at),
   };
+  if (row.event_name === 'campaign.achievement.earned') {
+    event.profile_id = String(row.profile_id || '');
+    event.entity_type = String(row.entity_type || 'campaign_achievement');
+    event.entity_id = String(row.entity_id || '');
+    event.achievement = row.event_metadata && typeof row.event_metadata === 'object'
+      ? row.event_metadata : {};
+  }
+  return event;
 }
 
 async function sendOne(row, {

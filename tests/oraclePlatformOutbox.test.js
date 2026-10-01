@@ -71,6 +71,53 @@ test('campaign join outbox delivery uses a bounded privacy-safe payload', async 
   assert.equal(calls.at(-1).name, 'complete_oracle_platform_outbox');
 });
 
+test('achievement outbox delivery forwards a verified receipt to the canonical Universal Profile', async () => {
+  const calls = [];
+  const receipt = {
+    receipt_id: 'receipt-1', achievement_id: 'xp-earned', collection: 'xp',
+    rarity_tier: 'advanced', verification_state: 'VERIFIED', result: { settled_xp: 25 },
+  };
+  const client = {
+    async rpc(name, args) {
+      calls.push({ name, args });
+      if (name === 'claim_oracle_platform_outbox') return [{
+        id: 9,
+        event_key: 'campaign.achievement.earned:receipt-1',
+        event_name: 'campaign.achievement.earned',
+        campaign_id: 'bond-the-duck-2026',
+        telegram_user_id: 42,
+        occurred_at: '2026-10-01T10:00:00Z',
+        profile_id: '11111111-1111-4111-8111-111111111111',
+        entity_type: 'campaign_achievement',
+        entity_id: 'receipt-1',
+        event_metadata: receipt,
+        attempt_count: 1,
+      }];
+      if (name === 'complete_oracle_platform_outbox') return true;
+      throw new Error('unexpected rpc');
+    },
+  };
+  let payload;
+  const result = await drainOraclePlatformOutbox(client, {
+    env: ENV,
+    fetchImpl: async (_url, options) => { payload = JSON.parse(options.body); return { ok: true, status: 200 }; },
+    leaseId: '33333333-3333-3333-3333-333333333333',
+  });
+  assert.deepEqual(result, { configured: true, claimed: 1, delivered: 1, failed: 0 });
+  assert.deepEqual(payload, {
+    event_id: 'campaign.achievement.earned:receipt-1',
+    event_name: 'campaign.achievement.earned',
+    campaign_id: 'bond-the-duck-2026',
+    telegram_user_id: 42,
+    occurred_at: '2026-10-01T10:00:00Z',
+    profile_id: '11111111-1111-4111-8111-111111111111',
+    entity_type: 'campaign_achievement',
+    entity_id: 'receipt-1',
+    achievement: receipt,
+  });
+  assert.equal(calls.at(-1).name, 'complete_oracle_platform_outbox');
+});
+
 test('delivery failure is retained for bounded retry instead of blocking campaign state', async () => {
   const calls = [];
   const client = {

@@ -129,6 +129,16 @@ async function loadRuntime() {
       state.recordView = view;
       return recordScreen();
     };
+    globalThis.__detectAchievementUnlock = (profileId, records) => detectNewAchievementUnlock(profileId, records);
+    globalThis.__achievementStateWith = (view = 'overview', patch = {}) => {
+      state.recordView = 'achievements';
+      state.achievementView = view;
+      state.selectedAchievementId = patch.selectedAchievementId || null;
+      Object.assign(state.profile, patch.profile || {});
+      state.runtime = patch.runtime || null;
+      state.leaderboardMeta = patch.leaderboards || null;
+      return achievementsScreen();
+    };
     globalThis.__renderOceanWith = (snapshot) => {
       state.oceanVault = snapshot;
       return oceanImpactScreen();
@@ -354,14 +364,79 @@ test('Profile owns identity while Record owns XP, standing and badges', async ()
   assert.match(profile, /CAMPAIGN PASSPORT/);
   assert.doesNotMatch(profile, /Sergeant Major|passport-tabs/);
   const badges = context.__renderRecordWith('achievements');
-  assert.match(badges, /OBJECTIVE RECORDED/);
-  assert.match(badges, /Badge issuance is pending/);
-  assert.equal((badges.match(/class="achievement-objective/g) || []).length, 8);
+  assert.match(badges, /PROJECT Q \/\/ ACHIEVEMENTS/);
+  assert.match(badges, /0 \/ 8 earned/);
+  assert.match(badges, /NEXT INTEL/);
+  assert.match(badges, /VIEW ALL →/);
+  assert.match(badges, /CLASSIFIED/);
+  assert.equal((badges.match(/class="achievement-tile(?: [^"]*)?" data-achievement-id/g) || []).length, 8);
   const xp = context.__renderRecordWith('xp');
   assert.match(xp, /680/);
   assert.match(xp, /XP history/);
   assert.match(xp, /Today’s XP/);
   assert.doesNotMatch(xp, /COMMUNITY PULSE|data-record-view="activity"|Rank Up|Level Up/);
+});
+
+test('achievement center shows provisional standings progress but never labels it earned', async () => {
+  const context = await loadRuntime();
+  const overview = context.__achievementStateWith('overview', {
+    profile: { campaignState: 'ACTIVE' },
+    runtime: { schedule: { phase: 'ACTIVE' } },
+    leaderboards: { overall: { available: true, participantRank: 14, participantCount: 100 } },
+  });
+  assert.match(overview, /NEXT INTEL[\s\S]*Top 10%[\s\S]*Currently around the top 14%/);
+  assert.match(overview, /IN PROGRESS/);
+  assert.doesNotMatch(overview, /data-achievement-id="top-10-percent"[^>]*VERIFIED · EARNED/);
+  assert.match(context.__achievementStateWith('collections'), /0 \/ 6 EARNED/);
+  assert.match(context.__achievementStateWith('rarity'), /No rarity statistics are estimated/);
+});
+
+test('achievement record detail and history reflect only verified receipt and Oracle sync state', async () => {
+  const context = await loadRuntime();
+  const receipt = {
+    recordId: 'receipt-1', achievementId: 'xp-earned', collection: 'xp', rarityTier: 'advanced',
+    operationKey: 'operation-01', verificationState: 'VERIFIED', awardedAt: '2026-10-01T10:00:00Z',
+    result: '25 XP settled', universalProfileSync: 'DELIVERED',
+  };
+  const detail = context.__achievementStateWith('overview', {
+    selectedAchievementId: 'xp-earned',
+    profile: { achievementRecords: [receipt], achievementRecordsAvailable: true },
+  });
+  assert.match(detail, /PROJECT Q \/\/ ACHIEVEMENT RECORD/);
+  assert.match(detail, /VERIFIED by Project Q|Verified by Project Q/);
+  assert.match(detail, /UNIVERSAL PROFILE/);
+  assert.match(detail, /Synced/);
+  assert.match(detail, /25 XP settled/);
+  assert.match(context.__achievementStateWith('history', {
+    profile: { achievementRecords: [receipt], achievementRecordsAvailable: true },
+  }), /UNIVERSAL PROFILE SYNCED/);
+});
+
+test('achievement unlock event fires only for new verified receipts and can summarize a final award batch', async () => {
+  const context = await loadRuntime();
+  const storage = new Map();
+  context.localStorage = {
+    getItem(key) { return storage.has(key) ? storage.get(key) : null; },
+    setItem(key, value) { storage.set(key, value); },
+  };
+  const first = {
+    recordId: 'receipt-1', achievementId: 'xp-earned', verificationState: 'VERIFIED',
+    awardedAt: '2026-10-01T09:00:00Z',
+  };
+  assert.equal(context.__detectAchievementUnlock('profile-1', [first]), null);
+  const second = {
+    recordId: 'receipt-2', achievementId: 'top-10-percent', verificationState: 'VERIFIED',
+    awardedAt: '2026-10-01T10:00:00Z',
+  };
+  const third = {
+    recordId: 'receipt-3', achievementId: 'champion', verificationState: 'VERIFIED',
+    awardedAt: '2026-10-01T10:01:00Z',
+  };
+  const unlock = context.__detectAchievementUnlock('profile-1', [first, second, third]);
+  assert.equal(unlock.record.recordId, 'receipt-3');
+  assert.equal(unlock.additionalCount, 1);
+  assert.equal(context.__detectAchievementUnlock('profile-1', [first, second, third]), null);
+  assert.equal(context.__detectAchievementUnlock('profile-2', [first]), null);
 });
 
 test('Rewards pending state shows one wallet action and no invented receipts', async () => {

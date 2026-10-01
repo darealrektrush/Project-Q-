@@ -156,6 +156,9 @@ const state = {
   operationsView: 'overview',
   missionFilter: 'all',
   recordView: 'xp',
+  achievementView: 'overview',
+  selectedAchievementId: null,
+  pendingAchievementUnlock: null,
   activeMissionId: null,
   leaderboardView: 'overall',
   leaderboards: { overall: [], '48h': [], missions: [], trending: [], community: [], burn: [] },
@@ -194,6 +197,8 @@ const state = {
     buyToEarn: null,
     activity: [],
     achievements: [],
+    achievementRecords: [],
+    achievementRecordsAvailable: false,
   },
   sessionStatus: 'checking',
   walletManagedByOracle: true,
@@ -722,20 +727,241 @@ function activityRow(item) {
   </article>`;
 }
 
-function achievementProgress(badge) {
-  const synced = state.sessionStatus === 'verified';
-  if (badge.id === 'xp-earned') {
-    const recorded = synced && Number(state.profile.xp || 0) > 0;
-    return { recorded, label: recorded ? 'OBJECTIVE RECORDED' : synced ? 'NOT STARTED' : 'SYNC REQUIRED', detail: recorded ? 'Settled operation XP confirms participation. Badge issuance is pending.' : 'Complete one eligible action and wait for its XP to settle.', progress: recorded ? 100 : 0 };
-  }
-  return { recorded: false, label: 'RULES PENDING', detail: badge.id === 'xp-master' ? 'The XP threshold must be published before this achievement can be awarded.' : 'Competitive recognition uses finalized eligible standings. Cohort and award rules must be published.', progress: null };
+function achievementDefinitions() {
+  const campaign = state.campaign || fallbackCampaign;
+  return [...(campaign.xpBadges || []), ...(campaign.leaderboardBadges || [])]
+    .filter((item, index, all) => item?.id && all.findIndex((other) => other.id === item.id) === index)
+    .map((item) => ({
+      ...item,
+      collection: item.collection || (item.id.startsWith('top-') || item.id === 'champion' ? 'standings' : 'xp'),
+      criteriaState: item.criteriaState || 'CLASSIFIED',
+    }));
 }
 
-function badgeGallery(badges = []) {
-  return `<div class="achievement-collection">${badges.map(badge => {
-    const progress = achievementProgress(badge);
-    return `<details class="achievement-objective ${progress.recorded ? 'objective-recorded' : ''}"><summary><img src="${escapeHtml(badge.image)}" alt="" loading="lazy" decoding="async" /><div><span>${escapeHtml(progress.label)}</span><b>${escapeHtml(badge.label)}</b><p>${escapeHtml(badge.description || 'Verified operation contribution')}</p>${progress.progress !== null ? `<div class="objective-progress" aria-label="${progress.recorded ? 'Objective recorded, badge issuance pending' : 'Awaiting settled activity'}"><i style="width:${progress.progress}%"></i></div>` : ''}</div><em aria-hidden="true">⌄</em></summary><div class="achievement-rule"><b>HOW IT COUNTS</b><p>${escapeHtml(progress.detail)}</p><small>Campaign recognition is separate from Crab Army lifetime rank. No additional XP is granted by opening this objective.</small></div></details>`;
-  }).join('')}</div>`;
+function achievementRecordById() {
+  return new Map((state.profile.achievementRecords || [])
+    .filter((record) => record?.achievementId && record.verificationState === 'VERIFIED')
+    .map((record) => [record.achievementId, record]));
+}
+
+function achievementOperationLabel(value) {
+  const match = String(value || '').match(/operation[-_ ]?(\d+)/i);
+  return match ? `Operation ${String(match[1]).padStart(2, '0')}` : String(value || 'Campaign');
+}
+
+function detectNewAchievementUnlock(profileId, records) {
+  if (!profileId || !Array.isArray(records)) return null;
+  const verified = records.filter((record) => record?.recordId && record.verificationState === 'VERIFIED');
+  const ids = verified.map((record) => String(record.recordId));
+  const key = `project-q:achievement-seen:${profileId}`;
+  let knownIds;
+  try {
+    const stored = localStorage.getItem(key);
+    knownIds = stored === null ? null : new Set(JSON.parse(stored));
+    localStorage.setItem(key, JSON.stringify(ids.slice(0, 500)));
+  } catch {
+    return null;
+  }
+  if (!knownIds) return null;
+  const newlyEarned = verified.filter((record) => !knownIds.has(String(record.recordId)))
+    .sort((a,b) => new Date(b.awardedAt || 0) - new Date(a.awardedAt || 0));
+  return newlyEarned.length ? { record: newlyEarned[0], additionalCount: newlyEarned.length - 1 } : null;
+}
+
+function achievementProgress(badge) {
+  const record = achievementRecordById().get(badge.id);
+  if (record) return {
+    state: 'earned', label: 'VERIFIED · EARNED', detail: badge.description || 'Verified achievement',
+    progress: 100, record, current: null, remaining: null,
+  };
+  if (badge.criteriaState === 'CLASSIFIED' || !badge.criteriaVersion) return {
+    state: 'classified', label: 'CLASSIFIED',
+    detail: 'Unlock criteria will be published when this achievement is ready.',
+    progress: null, record: null, current: null, remaining: null,
+  };
+  if (badge.id === 'xp-earned') {
+    const hasSettledXp = state.sessionStatus === 'verified' && Number(state.profile.xp || 0) > 0;
+    return hasSettledXp ? {
+      state: 'pending', label: 'RECORD SYNCING',
+      detail: 'Settled XP is present. The verified achievement receipt is still syncing.',
+      progress: null, record: null, current: null, remaining: null,
+    } : {
+      state: 'locked', label: state.sessionStatus === 'verified' ? 'NOT STARTED' : 'SYNC REQUIRED',
+      detail: 'Complete your first eligible action and wait for its XP to settle.',
+      progress: 0, record: null, current: null, remaining: null,
+    };
+  }
+  const phase = String(state.runtime?.phase || state.runtime?.schedule?.phase || '').toUpperCase();
+  const live = ['ACTIVE', 'PAUSED', 'VERIFYING'].includes(phase);
+  const finalized = ['DISTRIBUTING', 'COMPLETED', 'ARCHIVED'].includes(String(state.profile.campaignState || '').toUpperCase());
+  const view = state.leaderboardMeta?.overall;
+  const rank = Number(view?.participantRank);
+  const count = Number(view?.participantCount);
+  if (badge.verificationSource === 'finalized_campaign_standings' && finalized) return {
+    state: 'pending', label: 'FINAL RECORD PENDING',
+    detail: 'Finalized standings are required before this achievement can be recorded.',
+    progress: null, record: null, current: null, remaining: null,
+  };
+  if (badge.verificationSource === 'finalized_campaign_standings' && live && view?.available && rank > 0 && count > 0) {
+    const currentPercent = (rank / count) * 100;
+    if (Number.isFinite(Number(badge.rankPercent))) {
+      const target = Number(badge.rankPercent);
+      const progress = Math.max(0, Math.min(100, Math.round((target / Math.max(target, currentPercent)) * 100)));
+      const roundedCurrent = Math.max(1, Math.ceil(currentPercent - 1e-9));
+      return {
+        state: currentPercent <= target ? 'provisional' : 'in-progress',
+        label: currentPercent <= target ? 'LIVE · PROVISIONAL' : 'IN PROGRESS',
+        detail: currentPercent <= target
+          ? `Currently around the top ${roundedCurrent}%. Final review confirms the result.`
+          : `Currently around the top ${roundedCurrent}%; ${Math.max(0, roundedCurrent - target)} percentage points to the top ${target}%. Rankings can move.`,
+        progress, record: null, current: `Top ${roundedCurrent}%`, remaining: `${Math.max(0, roundedCurrent - target)} pp`,
+      };
+    }
+    if (Number.isSafeInteger(Number(badge.rankPosition))) {
+      const target = Number(badge.rankPosition);
+      const progress = Math.max(0, Math.min(100, Math.round((target / Math.max(target, rank)) * 100)));
+      return {
+        state: rank <= target ? 'provisional' : 'in-progress',
+        label: rank <= target ? 'LIVE · PROVISIONAL' : 'IN PROGRESS',
+        detail: rank <= target ? `Currently ranked #${rank}. Final review confirms the result.` : `Currently ranked #${rank}; reach #${target} to qualify. Rankings can move.`,
+        progress, record: null, current: `#${rank}`, remaining: `${Math.max(0, rank - target)} places`,
+      };
+    }
+  }
+  return {
+    state: 'locked', label: 'AWAITING VERIFIED STANDINGS',
+    detail: 'This achievement is awarded only from finalized eligible campaign standings.',
+    progress: null, record: null, current: null, remaining: null,
+  };
+}
+
+function achievementCardMarkup(badge, { compact = false } = {}) {
+  const progress = achievementProgress(badge);
+  const record = progress.record;
+  const classes = ['achievement-tile', `achievement-${progress.state}`, compact ? 'compact' : ''].filter(Boolean).join(' ');
+  const progressMarkup = progress.progress === null ? '' : `<div class="achievement-progress" role="progressbar" aria-label="${escapeHtml(badge.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.progress}"><i style="width:${progress.progress}%"></i></div>`;
+  return `<button type="button" class="${classes}" data-achievement-id="${escapeHtml(badge.id)}" aria-label="${escapeHtml(badge.label)}: ${escapeHtml(progress.label)}">
+    <span class="achievement-art"><img src="${escapeHtml(badge.image)}" alt="" loading="lazy" decoding="async" /></span>
+    <span class="achievement-tile-copy"><small>${escapeHtml(progress.label)}</small><b>${escapeHtml(badge.label)}</b><span>${escapeHtml(badge.description || 'Verified campaign recognition')}</span>${progressMarkup}</span>
+    ${record?.rarityTier ? `<span class="achievement-rarity-chip rarity-${escapeHtml(record.rarityTier)}">${escapeHtml(record.rarityTier)}</span>` : ''}
+  </button>`;
+}
+
+function achievementTabsMarkup() {
+  const tabs = [['overview','Overview'],['collections','Collections'],['rarity','Rarity'],['history','History']];
+  return `<div class="achievement-tabs" role="tablist" aria-label="Achievement views">${tabs.map(([id,label]) => `<button type="button" role="tab" data-achievement-view="${id}" aria-selected="${state.achievementView === id}">${label}</button>`).join('')}</div>`;
+}
+
+function achievementCollectionMarkup(collection, definitions) {
+  const items = definitions.filter((item) => item.collection === collection.id);
+  if (!items.length) return `<section class="achievement-collection-row"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span>CLASSIFIED</span></header><p>Recognition for this collection will appear when its verified criteria are published.</p></section>`;
+  const earned = items.filter((item) => achievementProgress(item).state === 'earned').length;
+  return `<section class="achievement-collection-row"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span>${earned} / ${items.length} EARNED</span></header><div class="achievement-horizontal-rail">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div></section>`;
+}
+
+function achievementDetailMarkup(definition) {
+  const progress = achievementProgress(definition);
+  const record = progress.record;
+  const campaign = state.campaign || fallbackCampaign;
+  const rarity = record?.rarityTier
+    ? (campaign.achievementRarityTiers || []).find((tier) => tier.id === record.rarityTier)
+    : null;
+  const sync = record?.universalProfileSync || 'PENDING';
+  return `<section class="achievement-detail-view">
+    <button type="button" class="achievement-back" data-achievement-back>← ALL ACHIEVEMENTS</button>
+    <div class="achievement-detail-art ${record ? '' : 'locked'}"><img src="${escapeHtml(definition.image)}" alt="${escapeHtml(definition.label)} achievement artwork" /><span>${record ? escapeHtml(rarity?.label || 'VERIFIED') : escapeHtml(progress.label)}</span></div>
+    <div class="achievement-detail-copy"><span>PROJECT Q // ACHIEVEMENT RECORD</span><h2>${escapeHtml(definition.label)}</h2><p>${escapeHtml(definition.description || 'Verified campaign achievement')}</p>
+      ${progress.progress !== null && !record ? `<div class="achievement-detail-progress"><strong>${progress.current ? `CURRENT ${escapeHtml(progress.current)}` : 'PROGRESS'}</strong><span>${progress.progress}%</span><div class="achievement-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.progress}"><i style="width:${progress.progress}%"></i></div><small>${escapeHtml(progress.remaining || progress.detail)}</small></div>` : `<div class="achievement-status-note">${escapeHtml(progress.detail)}</div>`}
+      ${record ? `<dl class="achievement-receipt-fields"><div><dt>UNLOCKED</dt><dd>${escapeHtml(formatProfileDate(record.awardedAt))}</dd></div><div><dt>EARNED IN</dt><dd>${escapeHtml(campaign.name)} · ${escapeHtml(achievementOperationLabel(record.operationKey))}</dd></div><div><dt>VERIFICATION</dt><dd>Verified by Project Q</dd></div><div><dt>RARITY</dt><dd>${escapeHtml(rarity?.label || 'Assigned on verification')}</dd></div><div><dt>UNIVERSAL PROFILE</dt><dd>${escapeHtml(sync === 'DELIVERED' ? 'Synced' : 'Sync pending')}</dd></div>${record.holderSharePercent != null ? `<div><dt>HOLDERS</dt><dd>${Number(record.holderSharePercent).toFixed(2)}% of ${Number(record.eligibleParticipantCount || 0).toLocaleString()} eligible participants · ${Number(record.holderCount || 0).toLocaleString()} holders</dd></div>` : ''}${record.result ? `<div><dt>RESULT</dt><dd>${escapeHtml(record.result)}</dd></div>` : ''}</dl><button type="button" class="achievement-share" data-share-achievement="${escapeHtml(definition.id)}">SHARE ACHIEVEMENT</button>` : `<div class="achievement-requirement"><b>HOW TO EARN</b><p>${escapeHtml(progress.detail)}</p><small>Live standings are provisional. Only a verified receipt appears as earned in your history.</small></div>`}
+    </div>
+  </section>`;
+}
+
+function achievementHistoryMarkup(definitions) {
+  const records = [...(state.profile.achievementRecords || [])]
+    .filter((record) => record?.verificationState === 'VERIFIED')
+    .sort((a,b) => new Date(b.awardedAt || 0) - new Date(a.awardedAt || 0));
+  if (!state.profile.achievementRecordsAvailable) return `<div class="achievement-empty"><b>Achievement history is syncing</b><p>Open Project Q in Telegram. Your verified campaign records will load with your identity.</p></div>`;
+  if (!records.length) return `<div class="achievement-empty"><b>No verified achievements yet</b><p>Your campaign history will grow here as Project Q verifies and records achievements.</p></div>`;
+  const definitionsById = new Map(definitions.map((item) => [item.id, item]));
+  return `<ol class="achievement-history-list">${records.map((record) => {
+    const definition = definitionsById.get(record.achievementId);
+    return `<li><span class="history-marker">✓</span><div><small>${escapeHtml(formatProfileDate(record.awardedAt))} · ${escapeHtml(record.universalProfileSync === 'DELIVERED' ? 'UNIVERSAL PROFILE SYNCED' : 'UNIVERSAL PROFILE SYNC PENDING')}</small><b>${escapeHtml(definition?.label || record.achievementId)}</b><p>${escapeHtml(state.campaign?.name || 'Campaign')} · ${escapeHtml(achievementOperationLabel(record.operationKey))}</p></div>${definition ? `<button type="button" data-achievement-id="${escapeHtml(definition.id)}" aria-label="View ${escapeHtml(definition.label)}">VIEW →</button>` : ''}</li>`;
+  }).join('')}</ol>`;
+}
+
+function achievementsScreen() {
+  const campaign = state.campaign || fallbackCampaign;
+  const definitions = achievementDefinitions();
+  const records = (state.profile.achievementRecords || []).filter((record) => record.verificationState === 'VERIFIED');
+  if (state.selectedAchievementId) {
+    const selected = definitions.find((item) => item.id === state.selectedAchievementId);
+    if (selected) return achievementDetailMarkup(selected);
+  }
+  if (state.achievementView === 'history') return `<section class="achievement-center">${achievementTabsMarkup()}${achievementHistoryMarkup(definitions)}</section>`;
+  if (state.achievementView === 'collections') {
+    return `<section class="achievement-center">${achievementTabsMarkup()}<header class="achievement-page-heading"><span>PROJECT Q // COLLECTIONS</span><h2>Build your record.</h2><p>Verified campaign achievements stay connected to your Universal Profile.</p></header><div class="achievement-collections">${(campaign.achievementCollections || []).map((collection) => achievementCollectionMarkup(collection, definitions)).join('')}</div></section>`;
+  }
+  if (state.achievementView === 'rarity') {
+    const rarityTiers = campaign.achievementRarityTiers || [];
+    return `<section class="achievement-center">${achievementTabsMarkup()}<header class="achievement-page-heading"><span>PROJECT Q // RARITY</span><h2>Rarity follows verified results.</h2><p>Holder shares appear after campaign awards are finalized. No rarity statistics are estimated before then.</p></header><div class="achievement-rarity-list">${rarityTiers.map((tier) => {
+      const tierRecords = records.filter((record) => record.rarityTier === tier.id);
+      const items = tierRecords.map((record) => definitions.find((item) => item.id === record.achievementId)).filter(Boolean);
+      return `<section class="rarity-group rarity-${escapeHtml(tier.id)}"><header><b>${escapeHtml(tier.label)}</b><span>${items.length} VERIFIED</span></header>${items.length ? `<div class="achievement-horizontal-rail">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div>` : '<p>No finalized awards in this tier yet.</p>'}</section>`;
+    }).join('')}</div></section>`;
+  }
+  const earned = records.length;
+  const latest = [...records].sort((a,b) => new Date(b.awardedAt || 0) - new Date(a.awardedAt || 0))[0];
+  const next = definitions.map((definition) => ({ definition, progress: achievementProgress(definition) }))
+    .filter(({ progress }) => !['earned','classified','provisional'].includes(progress.state))
+    .sort((a,b) => (b.progress.progress ?? -1) - (a.progress.progress ?? -1))[0];
+  const availableRarityCount = records.filter((record) => record.rarityTier).length;
+  return `<section class="achievement-center">
+    ${achievementTabsMarkup()}
+    <header class="achievement-page-heading"><span>PROJECT Q // ACHIEVEMENTS</span><h2>Your operation record.</h2><p>Verified achievements add to your campaign history and Universal Profile.</p></header>
+    <section class="achievement-overview-hero"><div class="achievement-count-ring" style="--achievement-progress:${definitions.length ? Math.round(earned / definitions.length * 100) : 0}%" aria-label="${earned} of ${definitions.length} achievements earned"><strong>${earned}</strong><span>/ ${definitions.length}<small>VERIFIED</small></span></div><div><span>CAMPAIGN ACHIEVEMENTS</span><h3>${earned} / ${definitions.length} earned</h3><p>${definitions.length ? `${Math.round(earned / definitions.length * 100)}% of configured achievements verified` : 'Achievement criteria are being prepared.'}</p></div><div class="achievement-overview-rarity"><b>${availableRarityCount}</b><span>RARITY ASSIGNED</span></div></section>
+    ${next ? `<section class="achievement-next-intel"><header><span>NEXT INTEL</span><small>${escapeHtml(next.progress.label)}</small></header><div>${next.definition.image ? `<img src="${escapeHtml(next.definition.image)}" alt="" />` : ''}<div><b>${escapeHtml(next.definition.label)}</b><p>${escapeHtml(next.progress.detail)}</p>${next.progress.progress !== null ? `<div class="achievement-progress" role="progressbar" aria-label="${escapeHtml(next.definition.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${next.progress.progress}"><i style="width:${next.progress.progress}%"></i></div>` : ''}</div><button type="button" data-achievement-id="${escapeHtml(next.definition.id)}" aria-label="View ${escapeHtml(next.definition.label)}">›</button></div></section>` : ''}
+    ${latest ? `<section class="achievement-latest-unlock"><span>LATEST UNLOCK</span>${achievementCardMarkup(definitions.find((item) => item.id === latest.achievementId) || { id: latest.achievementId, label: latest.achievementId, image: '' }, { compact: true })}</section>` : `<section class="achievement-unlock-note"><b>YOUR LATEST UNLOCK WILL APPEAR HERE</b><p>Achievements are added only after Project Q verifies the requirement.</p></section>`}
+    <div class="achievement-collections-preview"><header><div><span>COLLECTIONS</span><b>Choose your next objective</b></div><button type="button" data-achievement-view="collections">VIEW ALL →</button></header>${(campaign.achievementCollections || []).map((collection) => achievementCollectionMarkup(collection, definitions)).join('')}</div>
+  </section>`;
+}
+
+function achievementUnlockMarkup(unlock) {
+  const record = unlock.record;
+  const definition = achievementDefinitions().find((item) => item.id === record.achievementId);
+  const campaign = state.campaign || fallbackCampaign;
+  const rarity = (campaign.achievementRarityTiers || []).find((tier) => tier.id === record.rarityTier);
+  return `<section class="achievement-unlock-event" aria-labelledby="achievement-unlock-title">
+    <button type="button" class="achievement-unlock-close" data-dismiss-achievement-unlock aria-label="Close achievement unlocked dialog">×</button>
+    <span class="achievement-unlock-kicker">PROJECT Q // VERIFIED RECORD</span>
+    <div class="achievement-unlock-glow"><img src="${escapeHtml(definition?.image || '/campaign-app/assets/system/q-id.webp')}" alt="" /></div>
+    <span class="achievement-unlock-eyebrow">ACHIEVEMENT UNLOCKED</span>
+    <h2 id="achievement-unlock-title">${escapeHtml(definition?.label || record.achievementId)}</h2>
+    <p>${escapeHtml(definition?.description || 'A verified campaign achievement has been added to your record.')}</p>
+    <div class="achievement-unlock-proof"><b>${escapeHtml(rarity?.label || 'VERIFIED')}</b><span>Verified for ${escapeHtml(campaign.name)} · ${escapeHtml(achievementOperationLabel(record.operationKey))}</span><small>${escapeHtml(record.universalProfileSync === 'DELIVERED' ? 'Added to your Universal Profile' : 'Universal Profile sync queued')}</small></div>
+    ${unlock.additionalCount ? `<p class="achievement-unlock-more">+${Number(unlock.additionalCount)} additional verified ${unlock.additionalCount === 1 ? 'achievement' : 'achievements'} added to your record.</p>` : ''}
+    <button type="button" class="achievement-unlock-action" data-view-achievement-unlock="${escapeHtml(record.achievementId)}">VIEW ACHIEVEMENT RECORD</button>
+  </section>`;
+}
+
+function maybeShowAchievementUnlock() {
+  const unlock = state.pendingAchievementUnlock;
+  const dialog = document.querySelector('#achievement-unlock-dialog');
+  if (!unlock || !dialog || dialog.open) return;
+  dialog.innerHTML = achievementUnlockMarkup(unlock);
+  dialog.onclick = (event) => { if (event.target === dialog) dialog.close(); };
+  dialog.onclose = () => { state.pendingAchievementUnlock = null; };
+  dialog.querySelector('[data-dismiss-achievement-unlock]')?.addEventListener('click', () => dialog.close());
+  dialog.querySelector('[data-view-achievement-unlock]')?.addEventListener('click', (event) => {
+    const achievementId = event.currentTarget.dataset.viewAchievementUnlock;
+    state.pendingAchievementUnlock = null;
+    dialog.close();
+    state.selectedAchievementId = achievementId;
+    go('record', { view: 'achievements' });
+  });
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+  state.telegram?.HapticFeedback?.notificationOccurred?.('success');
 }
 
 function contributionBreakdownMarkup() {
@@ -785,12 +1011,10 @@ function xpScreen({ embedded = false } = {}) {
       <section class="ledger xp-ledger">${activity.length ? activity.map(item => activityRow({ label: missionName(item.missionCode, item.source), timestamp: `${item.source || 'verified'} · Cycle ${Number(item.cycleId || 0)} · ${formatProfileDate(item.awardedAt)}`, xp: Number(item.amount || 0), icon: 'Q' })).join('') : '<div class="empty compact"><b>Awaiting verified activity</b><p>Entries appear only after eligible activity is verified and settled.</p></div>'}</section>
     </section>
 
-    ${embedded ? '' : `<section class="xp-achievement-section">
-      <div class="section-head">
-        <div><span class="label">Campaign milestones</span><h2>Planned badges</h2></div>
-        <button class="info-action" data-explainer="ranks" aria-label="How standings work">?</button>
-      </div>
-      ${badgeGallery(c.xpBadges)}
+    ${embedded ? '' : `<section class="xp-achievement-section xp-achievement-link">
+      <div class="section-head"><div><span class="label">Campaign milestones</span><h2>Achievements</h2></div></div>
+      <p>Verified achievements build your Bond the Duck history and Universal Profile.</p>
+      <button type="button" data-record-view="achievements">OPEN ACHIEVEMENT RECORD →</button>
     </section>`}
   </div>`;
 }
@@ -1224,9 +1448,8 @@ function recordScreen() {
   const c = state.campaign || fallbackCampaign;
   const p = state.profile;
   if (state.recordView === 'activity') state.recordView = 'xp';
-  const badges = [...new Map([...(c.xpBadges || []), ...(c.leaderboardBadges || [])].map(item => [item.id, item])).values()];
   const content = state.recordView === 'rank' ? leaderboardScreen() : state.recordView === 'achievements'
-    ? `<section class="record-panel"><div class="dossier-heading"><span>YOUR ACHIEVEMENTS</span><b>VERIFIED PROGRESS</b></div><p class="recognition-explanation">Explore objectives and recorded progress. Badge awards remain pending until their issuance rules and records are available.</p>${badgeGallery(badges)}</section>` : xpScreen({ embedded: true });
+    ? achievementsScreen() : xpScreen({ embedded: true });
   return `<div class="record-ui"><section class="record-header record-header-compact"><div><span>YOUR RECORD // ${escapeHtml(c.name)}</span><h2>${escapeHtml(p.name)}</h2><p>Settled XP, standing and operation history.</p></div><div class="record-score"><strong>${Number(p.xp || 0).toLocaleString()}</strong><span>OPERATION XP</span></div></section>${recordTabs()}${content}${pastOperationsMarkup()}</div>`;
 }
 
@@ -1707,6 +1930,7 @@ function render() {
   }
   document.title = `Project Q — ${c.name}`;
   bind();
+  maybeShowAchievementUnlock();
 }
 
 function syncTelegramViewport() {
@@ -2883,9 +3107,44 @@ function bind() {
     element.onclick = () => {
       const isTab = element.getAttribute('role') === 'tab';
       state.recordView = element.dataset.recordView === 'activity' ? 'xp' : element.dataset.recordView;
+      state.selectedAchievementId = null;
       if (isTab && state.screen === 'record') renderTabInPlace();
       else go('record', { view: element.dataset.recordView === 'activity' ? 'xp' : element.dataset.recordView });
       if (isTab) document.querySelector('.record-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
+    };
+  });
+  document.querySelectorAll('[data-achievement-view]').forEach((element) => {
+    element.onclick = () => {
+      state.achievementView = element.dataset.achievementView;
+      state.selectedAchievementId = null;
+      renderTabInPlace();
+      document.querySelector('.achievement-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
+    };
+  });
+  document.querySelectorAll('[data-achievement-id]').forEach((element) => {
+    element.onclick = () => {
+      state.selectedAchievementId = element.dataset.achievementId;
+      renderTabInPlace();
+      document.querySelector('.achievement-back')?.focus({ preventScroll: true });
+    };
+  });
+  document.querySelector('[data-achievement-back]')?.addEventListener('click', () => {
+    state.selectedAchievementId = null;
+    renderTabInPlace();
+  });
+  document.querySelectorAll('[data-share-achievement]').forEach((element) => {
+    element.onclick = async () => {
+      const definition = achievementDefinitions().find((item) => item.id === element.dataset.shareAchievement);
+      const record = achievementRecordById().get(element.dataset.shareAchievement);
+      if (!definition || !record) return;
+      const message = `I earned ${definition.label} in ${state.campaign?.name || 'Project Q'} — verified by Project Q.`;
+      try {
+        if (navigator.share) await navigator.share({ title: `${definition.label} · Project Q`, text: message });
+        else if (navigator.clipboard) { await navigator.clipboard.writeText(message); toast('Achievement text copied.'); }
+        else toast('Sharing is not available in this browser.');
+      } catch (error) {
+        if (error?.name !== 'AbortError') toast('Could not open sharing. Try again.');
+      }
     };
   });
   document.querySelector('#rail-toggle')?.addEventListener('click', toggleRail);
@@ -2929,12 +3188,13 @@ async function copyValue(value, successMessage) {
 
 async function loadCampaign() {
   try {
-    const registry = await fetch('/campaign-app/campaigns/index.json').then((response) => response.json());
+    const campaignAssetVersion = '20261001-achievements-v2';
+    const registry = await fetch(`/campaign-app/campaigns/index.json?v=${campaignAssetVersion}`, { cache: 'no-store' }).then((response) => response.json());
     const requested = new URLSearchParams(location.search).get('campaign') || registry.defaultCampaign;
     const record = registry.campaigns.find((campaign) => campaign.id === requested && campaign.visible);
     if (!record) { state.campaign = fallbackCampaign; return; }
     state.campaignRecord = record;
-    state.campaign = await fetch(`/campaign-app/campaigns/${record.file}?v=20260927-dossier-1`).then((response) => response.json());
+    state.campaign = await fetch(`/campaign-app/campaigns/${record.file}?v=${campaignAssetVersion}`, { cache: 'no-store' }).then((response) => response.json());
     if (record.archived) { state.campaign.status = 'ARCHIVED'; state.campaign.statusLabel = 'CAMPAIGN ARCHIVE'; }
     if (!record.enabled && !record.archived) state.campaign.status = 'DRAFT';
   } catch { state.campaign = fallbackCampaign; }
@@ -3098,6 +3358,13 @@ async function authenticateTelegram() {
     state.profile.xpByBucket = session.participant?.xpByBucket || state.profile.xpByBucket;
     state.profile.activity = session.participant?.recentActivity || [];
     state.profile.completedMissions = Number(session.participant?.completedMissionCount || 0);
+    state.profile.achievementRecords = Array.isArray(session.participant?.achievementRecords)
+      ? session.participant.achievementRecords : [];
+    state.profile.achievementRecordsAvailable = session.participant?.achievementRecordsAvailable === true;
+    state.pendingAchievementUnlock = detectNewAchievementUnlock(
+      state.profile.profileId,
+      state.profile.achievementRecords
+    );
     state.profile.allocation = session.participant?.allocationBaseUnits ?? null;
     state.profile.allocationByCategory = session.participant?.allocationByCategory || {};
     state.profile.rewards = session.participant?.rewards || state.profile.rewards;

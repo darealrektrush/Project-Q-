@@ -327,6 +327,56 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     client.select('campaigns', `?id=eq.${encodeURIComponent(id)}&select=state&limit=1`),
   ]);
 
+  let achievementRows = [];
+  let achievementSyncRows = [];
+  let achievementRecordsAvailable = false;
+  if (identity?.profile_id) {
+    try {
+      achievementRows = await client.select(
+        'campaign_achievement_records',
+        `?campaign_id=eq.${encodeURIComponent(id)}&profile_id=eq.${encodeURIComponent(identity.profile_id)}` +
+          '&select=record_id,achievement_id,collection_key,rarity_tier,operation_key,verification_state,verified_at,result' +
+          '&order=verified_at.desc,record_id.desc&limit=100'
+      );
+      achievementSyncRows = await client.select(
+        'oracle_platform_outbox',
+        `?campaign_id=eq.${encodeURIComponent(id)}&profile_id=eq.${encodeURIComponent(identity.profile_id)}` +
+          '&event_name=eq.campaign.achievement.earned&select=entity_id,status,delivered_at&limit=100'
+      );
+      achievementRecordsAvailable = true;
+    } catch {
+      // Older deployments may not have the additive achievement migration yet.
+      achievementRows = [];
+      achievementSyncRows = [];
+    }
+  }
+  const achievementSyncById = new Map(achievementSyncRows.map((row) => [String(row.entity_id), row]));
+  const achievementRecords = achievementRows.map((row) => {
+    const sync = achievementSyncById.get(String(row.record_id));
+    const settledXp = Number(row.result?.settled_xp);
+    const finalRank = Number(row.result?.final_rank);
+    const holderSharePercent = Number(row.result?.holder_share_percent);
+    return {
+      recordId: String(row.record_id),
+      achievementId: String(row.achievement_id),
+      collection: String(row.collection_key),
+      rarityTier: row.rarity_tier || null,
+      operationKey: String(row.operation_key),
+      verificationState: String(row.verification_state),
+      awardedAt: row.verified_at,
+      result: Number.isFinite(settledXp) && settledXp > 0
+        ? `${settledXp} XP settled`
+        : Number.isSafeInteger(finalRank) && finalRank > 0
+          ? `Final rank #${finalRank}` : null,
+      finalRank: Number.isSafeInteger(finalRank) && finalRank > 0 ? finalRank : null,
+      holderCount: Number.isSafeInteger(Number(row.result?.holder_count)) ? Number(row.result.holder_count) : null,
+      eligibleParticipantCount: Number.isSafeInteger(Number(row.result?.eligible_participant_count))
+        ? Number(row.result.eligible_participant_count) : null,
+      holderSharePercent: Number.isFinite(holderSharePercent) ? holderSharePercent : null,
+      universalProfileSync: sync?.status === 'delivered' ? 'DELIVERED' : 'PENDING',
+    };
+  });
+
   const allocationRows = latestAllocationRows(rawAllocationRows);
   const allocationIds = allocationRows.map(({ id: allocationId }) => Number(allocationId)).filter(Number.isSafeInteger);
   const releaseRows = allocationIds.length ? await client.select(
@@ -408,6 +458,8 @@ export async function getParticipantStatus(client, telegramUserId, { now = new D
     })),
     completedMissionCodes,
     completedMissionCount: completedMissionCodes.length,
+    achievementRecords,
+    achievementRecordsAvailable,
     allocationBaseUnits,
     allocationByCategory,
     rewards: {
