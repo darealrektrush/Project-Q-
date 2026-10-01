@@ -3204,7 +3204,8 @@ function bind() {
     element.onclick = () => {
       state.achievementView = element.dataset.achievementView;
       state.selectedAchievementId = null;
-      renderTabInPlace();
+      if (state.screen === 'record') renderTabInPlace();
+      else go('record', { view: 'achievements' });
       document.querySelector('.achievement-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
     };
     if (element.getAttribute('role') === 'tab') element.onkeydown = (event) => {
@@ -3222,7 +3223,9 @@ function bind() {
   document.querySelectorAll('[data-achievement-id]').forEach((element) => {
     element.onclick = () => {
       state.selectedAchievementId = element.dataset.achievementId;
-      renderTabInPlace();
+      state.recordView = 'achievements';
+      if (state.screen === 'record') renderTabInPlace();
+      else go('record', { view: 'achievements' });
       document.querySelector('.achievement-back')?.focus({ preventScroll: true });
     };
   });
