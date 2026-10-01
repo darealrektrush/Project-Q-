@@ -145,6 +145,40 @@ app.get('/campaign-app/api/burns/receipts/:receiptCode', async (req, res) => {
   }
 });
 
+async function getProjectQProfilePreferences(profileId) {
+  const rows = await supabase.select(
+    'project_q_profile_preferences',
+    `?profile_id=eq.${encodeURIComponent(profileId)}&select=profile_id,app_tour_version,app_tour_completed_at&limit=1`
+  );
+  const row = rows[0];
+  return {
+    appTourVersion: Number(row?.app_tour_version || 0),
+    appTourCompletedAt: row?.app_tour_completed_at || null,
+  };
+}
+
+async function saveProjectQTourCompletion(profileId, version) {
+  const normalizedVersion = Number(version);
+  if (!Number.isInteger(normalizedVersion) || normalizedVersion < 1 || normalizedVersion > 1000) {
+    throw new Error('invalid app tour version');
+  }
+  const rows = await supabase.upsert(
+    'project_q_profile_preferences',
+    [{
+      profile_id: profileId,
+      app_tour_version: normalizedVersion,
+      app_tour_completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }],
+    'profile_id'
+  );
+  const row = rows[0];
+  return {
+    appTourVersion: Number(row?.app_tour_version || normalizedVersion),
+    appTourCompletedAt: row?.app_tour_completed_at || null,
+  };
+}
+
 app.post('/campaign-app/api/session', async (req, res) => {
   try {
     const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
@@ -154,6 +188,7 @@ app.post('/campaign-app/api/session', async (req, res) => {
       telegramUserId: session.user.id,
     });
     const participant = await campaignService.getParticipantStatus(supabase, session.user.id);
+    let profilePreferences;
     let referralProfile;
     let communityProfile;
     let xInviteStatus;
@@ -161,6 +196,12 @@ app.post('/campaign-app/api/session', async (req, res) => {
     let missionEvidence;
     let websiteVotes;
     let telegramTrendingSources;
+    try {
+      profilePreferences = await getProjectQProfilePreferences(identity.profileId);
+    } catch (preferenceError) {
+      console.error('profile preferences unavailable', preferenceError.message);
+      profilePreferences = { appTourVersion: 0, appTourCompletedAt: null };
+    }
     try {
       await referrals.refreshReferralQualification(supabase, session.user.id);
       referralProfile = await referrals.getReferralProfile(supabase, session.user.id);
@@ -226,6 +267,7 @@ app.post('/campaign-app/api/session', async (req, res) => {
       missionEvidence,
       websiteVotes,
       telegramTrendingSources,
+      preferences: profilePreferences,
       capabilities: {
         walletManagedByOracle: true,
         websiteVoteReview: process.env.PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED === 'true',
@@ -239,6 +281,31 @@ app.post('/campaign-app/api/session', async (req, res) => {
     return res.status(unavailable || databaseFailure ? 503 : 401).json({
       ok: false,
       error: unavailable || databaseFailure ? 'session unavailable' : 'invalid telegram session',
+    });
+  }
+});
+
+app.post('/campaign-app/api/preferences/tour', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const identity = await ensureCampaignProfile(supabase, {
+      campaignId,
+      telegramUserId: session.user.id,
+    });
+    const preferences = await saveProjectQTourCompletion(identity.profileId, req.body?.version);
+    return res.status(200).json({ ok: true, preferences });
+  } catch (error) {
+    const message = String(error?.message || '');
+    const unauthorized = message.includes('telegram init data') || message.includes('telegram user');
+    const unavailable = message.startsWith('Supabase ') || message.includes('Oracle campaign identity unavailable');
+    if (unavailable) console.error('profile preference update failed', message);
+    return res.status(unauthorized ? 401 : unavailable ? 503 : 400).json({
+      ok: false,
+      error: unauthorized ? 'invalid telegram session'
+        : unavailable ? 'profile preferences unavailable'
+          : 'invalid profile preference update',
     });
   }
 });
