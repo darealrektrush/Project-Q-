@@ -232,6 +232,12 @@
 .achievement-collection-row>header>span{display:grid;justify-items:end;gap:2px;flex:0 0 auto;font:700 9px var(--q-display);letter-spacing:.06em;color:#765916}
 .achievement-collection-row>header>span>b{font:800 14px/1 var(--q-display);color:#2b2b25;letter-spacing:0}
 .achievement-collection-row>header>span>small{font:700 8px/1.2 var(--q-display);color:#527d8a;letter-spacing:.06em}
+.achievement-collection-row.is-complete{border-color:#cfb15d;background:linear-gradient(145deg,#fffdf5,#f8f1dc);box-shadow:0 7px 22px #7f632015}
+.achievement-collection-row.is-active{border-color:#a8cbd8;background:linear-gradient(145deg,#fffefa,#f2f9fb)}
+.achievement-collection-progress{height:3px;margin:-1px 0 10px;border-radius:999px;background:#e7e2d8;overflow:hidden}
+.achievement-collection-progress>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#b98d2b,#e2c46c);transition:width .2s ease}
+.achievement-collection-row.is-active .achievement-collection-progress>i{background:linear-gradient(90deg,#3588aa,#72bdd7)}
+.achievement-collection-row.is-complete>header>span>small{color:#8b6918}
 .achievement-tile.compact{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;align-content:start;justify-items:stretch;gap:7px;min-height:0;aspect-ratio:4/5;padding:7px;border-radius:10px;background:#fffdf8;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
 .achievement-tile.compact:hover{transform:translateY(-2px);border-color:#c4a044;box-shadow:0 7px 16px #15202a18}
 .achievement-tile.compact .achievement-art{position:relative;width:100%;height:auto;aspect-ratio:1/1;border-radius:7px;background:#10191d}
