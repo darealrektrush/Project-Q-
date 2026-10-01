@@ -31,6 +31,7 @@
         </div>
         <div class="top-actions">
           <span class="network" id="campaign-network-state"><i></i> SYNCING</span>
+          <button id="guide-control" class="guide-control" type="button" aria-label="Open app guide" title="Open app guide">?</button>
           <button id="account-control" class="account-control" aria-label="Open participant profile"><img src="/campaign-app/assets/system/q-id.webp" alt="" /><span class="account-copy"><b>Profile</b><small id="account-name">0/3 ID</small></span><i></i></button>
         </div>
       </header>
@@ -41,6 +42,9 @@
     <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav>
   </div>
   <dialog id="mission-dialog" class="mission-dialog" aria-label="Mission details"></dialog>
+  <div id="guide-overlay" class="guide-overlay" role="dialog" aria-modal="true" aria-labelledby="guide-title" hidden>
+    <div class="guide-card"><span id="guide-count"></span><h2 id="guide-title"></h2><p id="guide-description"></p><div class="guide-actions"><button id="guide-skip" type="button">Skip guide</button><span class="guide-step-actions"><button id="guide-back" type="button">Back</button><button id="guide-next" type="button">Next</button></span></div></div>
+  </div>
   <div id="toast" class="toast" role="status"></div>
   <script type="module" src="/campaign-app/app.js"></script>
 </body>

@@ -11,7 +11,7 @@ async function loadRuntime() {
     readFile(new URL('campaigns/bond-the-duck-2026.json', root), 'utf8').then(JSON.parse),
   ]);
   const context = {
-    window: { Telegram: null, scrollTo() {}, open() {}, sessionStorage: null },
+    window: { Telegram: null, scrollTo() {}, open() {}, sessionStorage: null, addEventListener() {} },
     location: { hash: '', search: '' },
     URLSearchParams,
     URL,
