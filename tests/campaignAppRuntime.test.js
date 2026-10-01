@@ -406,7 +406,7 @@ test('achievement center shows provisional standings progress but never labels i
   assert.match(overview, /NEXT INTEL[\s\S]*Top 10%[\s\S]*Currently around the top 14%/);
   assert.match(overview, /IN PROGRESS/);
   assert.doesNotMatch(overview, /data-achievement-id="top-10-percent"[^>]*VERIFIED · EARNED/);
-  assert.match(context.__achievementStateWith('collections'), /0 \/ 6 EARNED/);
+  assert.match(context.__achievementStateWith('collections'), /0 \/ 6 UNLOCKED/);
   assert.match(context.__achievementStateWith('rarity'), /No rarity statistics are estimated/);
 });
 
@@ -414,9 +414,18 @@ test('achievement detail explains standings and XP progress with the matching ve
   const context = await loadRuntime();
   const xpDetail = context.__achievementStateWith('overview', { selectedAchievementId: 'xp-earned' });
   assert.match(xpDetail, /Progress reflects settled, verified activity/);
+  assert.match(xpDetail, /achievement-detail-view is-locked/);
+  assert.doesNotMatch(xpDetail, /350\s*\/\s*1,000|REWARD/);
   assert.doesNotMatch(xpDetail, /Live standings are provisional/);
-  const standingsDetail = context.__achievementStateWith('overview', { selectedAchievementId: 'top-10-percent' });
+  const standingsDetail = context.__achievementStateWith('overview', {
+    selectedAchievementId: 'top-10-percent',
+    profile: { campaignState: 'ACTIVE' },
+    runtime: { schedule: { phase: 'ACTIVE' } },
+    leaderboards: { overall: { available: true, participantRank: 14, participantCount: 100 } },
+  });
   assert.match(standingsDetail, /Live standings are provisional/);
+  assert.match(standingsDetail, /YOUR PROGRESS[\s\S]*Top 14%[\s\S]*4 pp/);
+  assert.match(context.__achievementStateWith('overview', { selectedAchievementId: 'xp-master' }), /The requirement is classified/);
 });
 
 test('achievement record detail and history reflect only verified receipt and Oracle sync state', async () => {
@@ -430,7 +439,7 @@ test('achievement record detail and history reflect only verified receipt and Or
     selectedAchievementId: 'xp-earned',
     profile: { achievementRecords: [receipt], achievementRecordsAvailable: true },
   });
-  assert.match(detail, /PROJECT Q \/\/ ACHIEVEMENT RECORD/);
+  assert.match(detail, /PROJECT Q \/\/ ACHIEVEMENT/);
   assert.match(detail, /VERIFIED by Project Q|Verified by Project Q/);
   assert.match(detail, /UNIVERSAL PROFILE/);
   assert.match(detail, /Synced/);
