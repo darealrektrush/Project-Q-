@@ -1801,12 +1801,28 @@ function campaignPassportMarkup() {
   const cycle = Number(state.runtime?.schedule?.currentCycle || 0);
   const cycleXp = (p.xpByCycle || []).find(row=>Number(row.cycleId) === cycle)?.xp || 0;
   const nextRelease = (p.rewards?.releases || []).filter(row=>['scheduled','proposed','reserve'].includes(row.status) && Number.isFinite(Date.parse(row.scheduledAt || ''))).sort((a,b)=>Date.parse(a.scheduledAt)-Date.parse(b.scheduledAt))[0];
-  const first = (state.campaign?.xpBadges || []).find(badge=>badge.id === 'xp-earned');
-  const objective = first ? achievementProgress(first) : null;
+  const definitions = achievementDefinitions();
+  const verifiedRecords = (p.achievementRecords || []).filter(record=>record?.achievementId && record.verificationState === 'VERIFIED');
+  const verifiedIds = new Set(verifiedRecords.map(record=>record.achievementId));
+  const latestRecord = [...verifiedRecords].sort((a,b)=>Date.parse(b.awardedAt || 0)-Date.parse(a.awardedAt || 0))[0] || null;
+  const latestAchievement = latestRecord ? definitions.find(item=>item.id === latestRecord.achievementId) : null;
+  const nextAchievement = definitions.map(definition=>({ definition, progress: achievementProgress(definition) }))
+    .find(item=>!verifiedIds.has(item.definition.id) && item.progress.state !== 'classified');
+  const focus = latestAchievement
+    ? { definition: latestAchievement, progress: achievementProgress(latestAchievement), eyebrow: 'LATEST VERIFIED' }
+    : nextAchievement
+      ? { ...nextAchievement, eyebrow: 'NEXT ACHIEVEMENT' }
+      : null;
+  const syncedAchievements = verifiedRecords.filter(record=>record.universalProfileSync === 'DELIVERED').length;
+  const queuedAchievements = Math.max(0, verifiedRecords.length - syncedAchievements);
+  const universalStatus = !synced ? 'SYNC PENDING'
+    : verifiedRecords.length && queuedAchievements === 0 ? 'CURRENT'
+      : queuedAchievements ? 'SYNC QUEUED'
+        : 'NO AWARDS YET';
   return `<section class="campaign-passport"><header><div><span>OP ${operationNumber()} // CAMPAIGN PASSPORT</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3></div>${statePill(operationLifecycleState().label,operationLifecycleState().tone)}</header><div class="passport-live-metrics">${[['Operation XP',synced ? Number(p.xp || 0).toLocaleString() : '—'],['Standing',synced ? p.rank && p.rank !== '—' ? p.rank : 'UNRANKED' : '—'],['Current cycle',cycle ? `${cycle} / ${(state.campaign?.schedule?.cycles || []).length || 5}` : 'PENDING'],['Cycle XP',synced && cycle ? Number(cycleXp).toLocaleString() : '—']].map(([label,value])=>`<div><span>${label}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('')}</div><p>${synced ? 'Settled contribution builds your operation history.' : 'Your personal record loads after Telegram identity and Oracle synchronization.'}</p><details class="passport-contribution-detail"><summary>Contribution details <span>⌄</span></summary>${contributionBreakdownMarkup()}<small>${synced ? `${Number(p.completedMissions || 0)} mission codes with settled XP · ${(p.activity || []).length} recent ledger entries` : 'Mission progress awaiting synchronization.'}</small></details></section>
-  <section class="passport-recognition"><header><span>ACHIEVEMENT IN FOCUS</span><button data-record-view="achievements">VIEW ACHIEVEMENTS →</button></header>${first ? `<div><img src="${escapeHtml(first.image)}" alt="" /><div><b>${escapeHtml(first.label)}</b><p>${escapeHtml(objective.detail)}</p><small>${escapeHtml(objective.label)}</small></div></div>` : '<p>Recognition objectives are being prepared.</p>'}</section>
+  <section class="passport-recognition"><header><span>ACHIEVEMENT IN FOCUS</span><button data-record-view="achievements">VIEW ALL →</button></header>${focus ? `<button type="button" class="passport-recognition-focus" data-achievement-id="${escapeHtml(focus.definition.id)}"><img src="${escapeHtml(focus.definition.image)}" alt="" /><div><small>${escapeHtml(focus.eyebrow)}</small><b>${escapeHtml(focus.definition.label)}</b><p>${escapeHtml(focus.progress.detail)}</p><span>${escapeHtml(focus.progress.label)}</span></div><strong aria-hidden="true">›</strong></button>` : '<p>Recognition objectives are being prepared.</p>'}</section>
   <section class="passport-outcomes"><header><span>YOUR OUTCOMES</span><b>${synced ? 'OPERATION RECORD' : 'SYNC PENDING'}</b></header><div><span>Allocated rewards</span><strong>${synced && p.rewards?.recorded ? `${escapeHtml(compactPoolAmount(formatBaseUnits(p.rewards.allocatedBaseUnits)))} FAWKQ` : synced ? 'NOT RECORDED' : 'SYNC PENDING'}</strong></div><div><span>Next scheduled release</span><strong>${synced && nextRelease ? escapeHtml(formatProfileDate(nextRelease.scheduledAt)) : synced ? 'NOT SCHEDULED' : 'SYNC PENDING'}</strong></div><button data-screen="rewards">VIEW REWARDS →</button><p>Ocean contribution receipts remain distinct from documented conservation work.</p><button data-screen="ocean">OCEAN IMPACT →</button></section>
-  <section class="passport-universal"><span>UNIVERSAL RECORD</span><b>Contribution review & settlement</b><p>Project Q records operation outcomes. Qualifying lifetime XP, rank and reputation require Oracle confirmation; no lifetime award is inferred here.</p></section>`;
+  <section class="passport-universal"><header><div><span>UNIVERSAL RECORD</span><b>Contribution review & settlement</b></div>${statePill(universalStatus, queuedAchievements ? 'pending' : verifiedRecords.length ? 'success' : 'pending')}</header><p>Project Q records operation outcomes. Qualifying lifetime XP, rank and reputation require Oracle confirmation; no lifetime award is inferred here.</p><div class="passport-universal-stats"><span><b>${verifiedRecords.length}</b><small>VERIFIED ACHIEVEMENTS</small></span><span><b>${syncedAchievements}</b><small>PROFILE SYNCED</small></span></div><button type="button" data-achievement-view="history">VIEW VERIFIED HISTORY →</button></section>`;
 }
 
 function profileScreen() {
