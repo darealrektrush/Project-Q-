@@ -880,9 +880,14 @@ function achievementTabsMarkup() {
 function achievementCollectionMarkup(collection, definitions) {
   const items = definitions.filter((item) => item.collection === collection.id);
   if (!items.length) return '';
-  const earned = items.filter((item) => achievementProgress(item).state === 'earned').length;
-  const inProgress = items.filter((item) => ['in-progress', 'provisional'].includes(achievementProgress(item).state)).length;
-  return `<section class="achievement-collection-row" data-achievement-collection="${escapeHtml(collection.id)}"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span><b>${earned} / ${items.length}</b><small>${inProgress ? `${inProgress} IN PROGRESS` : 'EARNED'}</small></span></header><div class="achievement-tile-grid">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div></section>`;
+  const progressStates = items.map((item) => achievementProgress(item));
+  const earned = progressStates.filter((progress) => progress.state === 'earned').length;
+  const inProgress = progressStates.filter((progress) => ['in-progress', 'provisional', 'pending'].includes(progress.state)).length;
+  const complete = earned === items.length;
+  const progressPercent = Math.round((earned / items.length) * 100);
+  const collectionState = complete ? 'complete' : inProgress ? 'active' : earned ? 'started' : 'locked';
+  const stateLabel = complete ? 'COLLECTION COMPLETE' : inProgress ? `${inProgress} IN PROGRESS` : earned ? 'BUILDING' : 'LOCKED';
+  return `<section class="achievement-collection-row is-${collectionState}" data-achievement-collection="${escapeHtml(collection.id)}"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span><b>${earned} / ${items.length}</b><small>${stateLabel}</small></span></header><div class="achievement-collection-progress" aria-label="${escapeHtml(collection.label)} collection progress"><i style="width:${progressPercent}%"></i></div><div class="achievement-tile-grid">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div></section>`;
 }
 
 function achievementCollectionsComingMarkup(collections) {
