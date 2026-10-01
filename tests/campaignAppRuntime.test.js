@@ -391,6 +391,15 @@ test('achievement center shows provisional standings progress but never labels i
   assert.match(context.__achievementStateWith('rarity'), /No rarity statistics are estimated/);
 });
 
+test('achievement detail explains standings and XP progress with the matching verification note', async () => {
+  const context = await loadRuntime();
+  const xpDetail = context.__achievementStateWith('overview', { selectedAchievementId: 'xp-earned' });
+  assert.match(xpDetail, /Progress reflects settled, verified activity/);
+  assert.doesNotMatch(xpDetail, /Live standings are provisional/);
+  const standingsDetail = context.__achievementStateWith('overview', { selectedAchievementId: 'top-10-percent' });
+  assert.match(standingsDetail, /Live standings are provisional/);
+});
+
 test('achievement record detail and history reflect only verified receipt and Oracle sync state', async () => {
   const context = await loadRuntime();
   const receipt = {
