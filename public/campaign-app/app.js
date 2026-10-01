@@ -402,6 +402,29 @@ function readinessGroupMarkup(group, checks) {
   return `<article class="launch-group ${complete ? 'complete' : 'pending'}"><header><span>${escapeHtml(group.number)}</span><div><small>${escapeHtml(group.id)}</small><h3>${escapeHtml(group.label)}</h3><p>${escapeHtml(group.description)}</p></div>${statePill(complete ? 'VERIFIED' : `${passed}/${groupChecks.length} READY`, complete ? 'success' : 'pending')}</header><div class="launch-gates">${groupChecks.map(({ key, label, ready }) => `<div class="${ready ? 'complete' : 'pending'}" data-readiness-key="${escapeHtml(key)}"><i>${ready ? '✓' : '○'}</i><span>${escapeHtml(label)}</span><b>${ready ? 'Verified' : 'Pending'}</b></div>`).join('')}</div></article>`;
 }
 
+function readinessBlockersMarkup(checks = []) {
+  const pending = checks.filter(({ ready }) => !ready);
+  if (!pending.length) return '<section class="readiness-blocker-summary complete"><div><span>LAUNCH BLOCKERS</span><b>None in the public readiness report</b><p>Every public gate is verified. Founder activation approval remains a separate control.</p></div></section>';
+  const guidance = {
+    rules: ['FINALIZE RULES', 'Review and hash-match the final Bond ruleset.'],
+    funding: ['VERIFY FUNDING', 'Record the verified 17.5M FAWKQ Squads campaign commitment.'],
+    registry: ['COMPLETE REGISTRY', 'Finalize the deployment, vault and treasury registry evidence.'],
+    sources: ['CERTIFY SOURCES', 'Certify all configured voting sites and trending bots with current evidence.'],
+    dates: ['LOCK SCHEDULE', 'Keep all five 48-hour cycles valid for the approved launch window.'],
+    'draw-commitments': ['COMMIT DRAWS', 'Record all five pre-open deterministic draw commitments.'],
+    app: ['ENABLE APP', 'Enable the campaign application rail in the launch environment.'],
+    wallet: ['ENABLE WALLET EVENTS', 'Enable verified Oracle wallet events for campaign eligibility.'],
+    settlement: ['ENABLE SETTLEMENT', 'Enable campaign XP settlement only after launch rails are verified.'],
+    'burn-rules': ['PROVISION BURN', 'Provision approved creator-wallet source, founders and milestone rules.'],
+    'burn-progress': ['ENABLE BURN PROGRESS', 'Enable Earn-to-Burn progress after its rules are provisioned.'],
+    'burn-verification': ['ENABLE BURN VERIFICATION', 'Enable on-chain burn verification after rehearsal passes.'],
+  };
+  return `<section class="readiness-blocker-summary"><header><div><span>LAUNCH BLOCKERS</span><b>${pending.length} public ${pending.length === 1 ? 'gate' : 'gates'} remaining</b></div><small>Fail-closed until verified</small></header><div class="readiness-blocker-list">${pending.map((check) => {
+    const [title, detail] = guidance[check.key] || ['REVIEW GATE', check.label];
+    return `<article><i>○</i><div><b>${escapeHtml(title)}</b><p>${escapeHtml(detail)}</p><small>${escapeHtml(check.label)}</small></div></article>`;
+  }).join('')}</div></section>`;
+}
+
 function readinessScreen() {
   const c = state.campaign || fallbackCampaign;
   const readiness = state.readiness || {};
@@ -416,6 +439,7 @@ function readinessScreen() {
     : '<section class="command-card launch-unavailable"><b>No launch state is being inferred.</b><p>Project Q will retry the authoritative readiness service. Every operational action remains disabled.</p></section>';
   return `<section class="launch-command command-card"><div><span class="label">Operation 01 · Public launch readiness</span><h2>${launchState}</h2><p>${available ? `${Number(readiness.readyCount)} of ${Number(readiness.totalCount)} public gates are verified.` : 'The readiness service is unavailable.'} The campaign cannot open from this screen.</p>${statePill(launchState, launchTone)}</div><img src="/campaign-app/assets/system/q-campaigns.webp" alt="Project Q campaigns" /></section>
   <section class="launch-progress command-card"><div><span>Public readiness</span><strong>${available ? `${percent}%` : '—'}</strong></div><div class="progress" role="progressbar" aria-label="Public launch readiness" aria-valuemin="0" aria-valuemax="100" ${available ? `aria-valuenow="${percent}"` : ''}><span style="width:${percent}%"></span></div><small>${readiness.ready ? 'All public gates verified. Two founder approvals are still required for activation.' : 'Fail-closed until every required gate passes.'}</small></section>
+  ${available ? readinessBlockersMarkup(checks) : ''}
   <div class="section-head compact-head"><div><span class="label">Launch sequence</span><h2>Three controlled layers</h2></div><span>Evidence-bound</span></div>
   <section class="launch-groups">${groups}</section>
   <div class="section-head"><div><span class="label">Campaign commitments</span><h2>Separated by purpose</h2></div><span>No overlapping allocations</span></div>
