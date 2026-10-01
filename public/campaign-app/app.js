@@ -1608,8 +1608,15 @@ function rewardsScreen() {
   const releaseRows = actualReleases.map((release) => {
     const status = String(release.status || 'pending').toUpperCase();
     const failed = release.status === 'failed';
+    const sig = isSolanaSignature(release.transactionSignature) ? release.transactionSignature : null;
+    const confirmed = sig && release.confirmedBlockTime ? formatProfileDate(release.confirmedBlockTime) : null;
+    const timing = confirmed
+      ? `Confirmed ${confirmed}`
+      : ['paid','recovered'].includes(release.status)
+        ? `Scheduled ${formatProfileDate(release.scheduledAt)} · confirmation evidence pending`
+        : `Scheduled ${formatProfileDate(release.scheduledAt)}`;
     return `<article class="release-row${failed ? ' release-failed' : ''}">
-      <div><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · CYCLE ${Number(release.cycleId)}` : ''}</b><small>${escapeHtml(formatProfileDate(release.scheduledAt))} · ${Number(release.percent || 0)}% release</small></div>
+      <div><b>${escapeHtml(rewardCategoryLabel(release.category))}${release.cycleId ? ` · CYCLE ${Number(release.cycleId)}` : ''}</b><small>${escapeHtml(timing)} · ${Number(release.percent || 0)}% release</small></div>
       <div class="release-row-result"><strong>${formatBaseUnits(release.amountBaseUnits)} FAWKQ</strong><span>${escapeHtml(status)}</span></div>
     </article>`;
   }).join('');
