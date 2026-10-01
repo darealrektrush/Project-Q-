@@ -385,9 +385,13 @@ test('Profile owns identity while Record owns XP, standing and badges', async ()
   const badges = context.__renderRecordWith('achievements');
   assert.match(badges, /PROJECT Q \/\/ ACHIEVEMENTS/);
   assert.match(badges, /0 \/ 8 earned/);
-  assert.match(badges, /NEXT INTEL/);
+  assert.match(badges, /NEXT ACHIEVEMENT/);
   assert.match(badges, /VIEW ALL →/);
   assert.match(badges, /CLASSIFIED/);
+  assert.doesNotMatch(badges, /YOUR LATEST UNLOCK WILL APPEAR HERE/);
+  assert.match(badges, /achievement-collection-deck/);
+  assert.match(badges, /id="achievement-tab-overview" data-achievement-view="overview" aria-controls="achievement-panel" aria-selected="true" tabindex="0"/);
+  assert.match(badges, /role="tabpanel" aria-labelledby="achievement-tab-overview"/);
   assert.equal((badges.match(/class="achievement-tile(?: [^"]*)?" data-achievement-id/g) || []).length, 8);
   const xp = context.__renderRecordWith('xp');
   assert.match(xp, /680/);
@@ -403,11 +407,24 @@ test('achievement center shows provisional standings progress but never labels i
     runtime: { schedule: { phase: 'ACTIVE' } },
     leaderboards: { overall: { available: true, participantRank: 14, participantCount: 100 } },
   });
-  assert.match(overview, /NEXT INTEL[\s\S]*Top 10%[\s\S]*Currently around the top 14%/);
+  assert.match(overview, /NEXT ACHIEVEMENT[\s\S]*Top 10%[\s\S]*Currently around the top 14%/);
   assert.match(overview, /IN PROGRESS/);
   assert.doesNotMatch(overview, /data-achievement-id="top-10-percent"[^>]*VERIFIED · EARNED/);
-  assert.match(context.__achievementStateWith('collections'), /0 \/ 6 UNLOCKED/);
-  assert.match(context.__achievementStateWith('rarity'), /No rarity statistics are estimated/);
+  const collections = context.__achievementStateWith('collections');
+  assert.match(collections, /data-achievement-collection="xp"/);
+  assert.match(collections, /data-achievement-collection="standings"/);
+  assert.match(collections, /achievement-tile-grid/);
+  assert.match(collections, /Missions[\s\S]*Impact[\s\S]*Economic/);
+  assert.doesNotMatch(collections, /achievement-collection-empty/);
+  const rarity = context.__achievementStateWith('rarity');
+  assert.match(rarity, /Your verified trophy cabinet/);
+  assert.match(rarity, /rarity-tier-shelf/);
+  assert.match(rarity, /No rarity awards recorded yet/);
+  assert.match(rarity, /Holder statistics are shown only after finalization/);
+  assert.doesNotMatch(rarity, /No finalized awards in this tier yet/);
+  const history = context.__achievementStateWith('history');
+  assert.match(history, /Your campaign record/);
+  assert.match(history, /Open Project Q in Telegram/);
 });
 
 test('achievement detail explains standings and XP progress with the matching verification note', async () => {

@@ -856,7 +856,7 @@ function achievementCardMarkup(badge, { compact = false } = {}) {
   const statusMarkup = record
     ? '<span class="achievement-tile-status" aria-hidden="true">✓</span>'
     : progress.state === 'classified' || progress.state === 'locked'
-      ? '<span class="achievement-tile-status locked" aria-hidden="true">⌑</span>'
+      ? '<span class="achievement-tile-status locked" aria-hidden="true"><svg viewBox="0 0 16 16" focusable="false"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2M3 7h10v7H3z" /></svg></span>'
       : '';
   if (compact) return `<button type="button" class="${classes}" data-achievement-id="${escapeHtml(badge.id)}" aria-label="${escapeHtml(badge.label)}: ${escapeHtml(progress.label)}">
     <span class="achievement-art"><img src="${escapeHtml(badge.image)}" alt="" loading="lazy" decoding="async" />${progressMarkup}${statusMarkup}</span>
@@ -871,15 +871,27 @@ function achievementCardMarkup(badge, { compact = false } = {}) {
 
 function achievementTabsMarkup() {
   const tabs = [['overview','Overview'],['collections','Collections'],['rarity','Rarity'],['history','History']];
-  return `<div class="achievement-tabs" role="tablist" aria-label="Achievement views">${tabs.map(([id,label]) => `<button type="button" role="tab" data-achievement-view="${id}" aria-selected="${state.achievementView === id}">${label}</button>`).join('')}</div>`;
+  return `<div class="achievement-tabs" role="tablist" aria-label="Achievement views">${tabs.map(([id,label]) => {
+    const selected = state.achievementView === id;
+    return `<button type="button" role="tab" id="achievement-tab-${id}" data-achievement-view="${id}" aria-controls="achievement-panel" aria-selected="${selected}" tabindex="${selected ? '0' : '-1'}">${label}</button>`;
+  }).join('')}</div>`;
 }
 
 function achievementCollectionMarkup(collection, definitions) {
   const items = definitions.filter((item) => item.collection === collection.id);
-  if (!items.length) return `<section class="achievement-collection-row achievement-collection-empty"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span>RULES IN DEVELOPMENT</span></header><p>Verified awards will appear here when this collection’s criteria are published.</p></section>`;
+  if (!items.length) return '';
   const earned = items.filter((item) => achievementProgress(item).state === 'earned').length;
-  const inProgress = items.filter((item) => achievementProgress(item).state === 'in-progress').length;
-  return `<section class="achievement-collection-row"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span>${earned} / ${items.length} UNLOCKED${inProgress ? ` · ${inProgress} IN PROGRESS` : ''}</span></header><div class="achievement-horizontal-rail">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div></section>`;
+  const inProgress = items.filter((item) => ['in-progress', 'provisional'].includes(achievementProgress(item).state)).length;
+  return `<section class="achievement-collection-row" data-achievement-collection="${escapeHtml(collection.id)}"><header><div><b>${escapeHtml(collection.label)}</b><small>${escapeHtml(collection.description)}</small></div><span><b>${earned} / ${items.length}</b><small>${inProgress ? `${inProgress} IN PROGRESS` : 'EARNED'}</small></span></header><div class="achievement-tile-grid">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div></section>`;
+}
+
+function achievementCollectionsComingMarkup(collections) {
+  if (!collections.length) return '';
+  return `<aside class="achievement-collections-coming"><span>MORE COLLECTIONS</span><div>${collections.map((collection) => `<span>${escapeHtml(collection.label)}</span>`).join('')}</div><p>New achievements appear here as their campaign criteria are finalized.</p></aside>`;
+}
+
+function achievementViewPanel(content) {
+  return `<div class="achievement-view-panel" id="achievement-panel" role="tabpanel" aria-labelledby="achievement-tab-${escapeHtml(state.achievementView)}" tabindex="0">${content}</div>`;
 }
 
 function achievementDetailMarkup(definition) {
@@ -920,8 +932,8 @@ function achievementHistoryMarkup(definitions) {
   const records = [...(state.profile.achievementRecords || [])]
     .filter((record) => record?.verificationState === 'VERIFIED')
     .sort((a,b) => new Date(b.awardedAt || 0) - new Date(a.awardedAt || 0));
-  if (!state.profile.achievementRecordsAvailable) return `<div class="achievement-empty"><b>Achievement history is syncing</b><p>Open Project Q in Telegram. Your verified campaign records will load with your identity.</p></div>`;
-  if (!records.length) return `<div class="achievement-empty"><b>No verified achievements yet</b><p>Your campaign history will grow here as Project Q verifies and records achievements.</p></div>`;
+  if (!state.profile.achievementRecordsAvailable) return `<div class="achievement-empty"><span>PROJECT Q // HISTORY</span><b>Your verified record is waiting to sync.</b><p>Open Project Q in Telegram to load campaign achievements tied to your identity.</p></div>`;
+  if (!records.length) return `<div class="achievement-empty"><span>PROJECT Q // HISTORY</span><b>Your record starts with your first verified achievement.</b><p>Project Q adds campaign receipts here after each requirement is verified.</p></div>`;
   const definitionsById = new Map(definitions.map((item) => [item.id, item]));
   return `<ol class="achievement-history-list">${records.map((record) => {
     const definition = definitionsById.get(record.achievementId);
@@ -937,17 +949,24 @@ function achievementsScreen() {
     const selected = definitions.find((item) => item.id === state.selectedAchievementId);
     if (selected) return achievementDetailMarkup(selected);
   }
-  if (state.achievementView === 'history') return `<section class="achievement-center">${achievementTabsMarkup()}${achievementHistoryMarkup(definitions)}</section>`;
+  if (state.achievementView === 'history') return `<section class="achievement-center">${achievementTabsMarkup()}${achievementViewPanel(`<header class="achievement-page-heading"><span>PROJECT Q // HISTORY</span><h2>Your campaign record.</h2><p>Verified achievements, in the order you earned them.</p></header>${achievementHistoryMarkup(definitions)}`)}</section>`;
   if (state.achievementView === 'collections') {
-    return `<section class="achievement-center">${achievementTabsMarkup()}<header class="achievement-page-heading"><span>PROJECT Q // COLLECTIONS</span><h2>Build your record.</h2><p>Verified campaign achievements stay connected to your Universal Profile.</p></header><div class="achievement-collections">${(campaign.achievementCollections || []).map((collection) => achievementCollectionMarkup(collection, definitions)).join('')}</div></section>`;
+    const collections = campaign.achievementCollections || [];
+    const configured = collections.filter((collection) => definitions.some((item) => item.collection === collection.id));
+    const upcoming = collections.filter((collection) => !definitions.some((item) => item.collection === collection.id));
+    return `<section class="achievement-center">${achievementTabsMarkup()}${achievementViewPanel(`<header class="achievement-page-heading"><span>PROJECT Q // COLLECTIONS</span><h2>Build your record.</h2><p>Eight Bond the Duck achievements across progression and standings.</p></header><div class="achievement-collections">${configured.map((collection) => achievementCollectionMarkup(collection, definitions)).join('')}</div>${achievementCollectionsComingMarkup(upcoming)}`)}</section>`;
   }
   if (state.achievementView === 'rarity') {
     const rarityTiers = campaign.achievementRarityTiers || [];
-    return `<section class="achievement-center">${achievementTabsMarkup()}<header class="achievement-page-heading"><span>PROJECT Q // RARITY</span><h2>Rarity follows verified results.</h2><p>Holder shares appear after campaign awards are finalized. No rarity statistics are estimated before then.</p></header><div class="achievement-rarity-list">${rarityTiers.map((tier) => {
-      const tierRecords = records.filter((record) => record.rarityTier === tier.id);
-      const items = tierRecords.map((record) => definitions.find((item) => item.id === record.achievementId)).filter(Boolean);
-      return `<section class="rarity-group rarity-${escapeHtml(tier.id)}"><header><b>${escapeHtml(tier.label)}</b><span>${items.length} VERIFIED</span></header>${items.length ? `<div class="achievement-horizontal-rail">${items.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div>` : '<p>No finalized awards in this tier yet.</p>'}</section>`;
-    }).join('')}</div></section>`;
+    const tierMarkup = rarityTiers.map((tier) => {
+      const count = records.filter((record) => record.rarityTier === tier.id).length;
+      return `<div class="rarity-tier rarity-${escapeHtml(tier.id)}"><span>${escapeHtml(tier.label)}</span><b>${count}</b></div>`;
+    }).join('');
+    const earnedItems = records.map((record) => definitions.find((item) => item.id === record.achievementId)).filter(Boolean);
+    const cabinet = earnedItems.length
+      ? `<div class="achievement-tile-grid">${earnedItems.map((item) => achievementCardMarkup(item, { compact: true })).join('')}</div>`
+      : `<div class="achievement-empty"><span>VERIFIED TROPHY CABINET</span><b>No rarity awards recorded yet.</b><p>Achievement tiers appear here only after Project Q verifies an award. Holder statistics wait until campaign results are finalized.</p></div>`;
+    return `<section class="achievement-center">${achievementTabsMarkup()}${achievementViewPanel(`<header class="achievement-page-heading"><span>PROJECT Q // RARITY</span><h2>Your verified trophy cabinet.</h2><p>Rarity follows verified campaign results. Holder statistics are shown only after finalization.</p></header><div class="rarity-tier-shelf" aria-label="Verified awards by rarity">${tierMarkup}</div>${cabinet}`)}</section>`;
   }
   const earned = records.length;
   const latest = [...records].sort((a,b) => new Date(b.awardedAt || 0) - new Date(a.awardedAt || 0))[0];
@@ -955,13 +974,15 @@ function achievementsScreen() {
     .filter(({ progress }) => !['earned','classified','provisional'].includes(progress.state))
     .sort((a,b) => (b.progress.progress ?? -1) - (a.progress.progress ?? -1))[0];
   const availableRarityCount = records.filter((record) => record.rarityTier).length;
+  const collections = campaign.achievementCollections || [];
+  const configuredCollections = collections.filter((collection) => definitions.some((item) => item.collection === collection.id));
   return `<section class="achievement-center">
     ${achievementTabsMarkup()}
-    <header class="achievement-page-heading"><span>PROJECT Q // ACHIEVEMENTS</span><h2>Your operation record.</h2><p>Verified achievements add to your campaign history and Universal Profile.</p></header>
-    <section class="achievement-overview-hero"><div class="achievement-count-ring" style="--achievement-progress:${definitions.length ? Math.round(earned / definitions.length * 100) : 0}%" aria-label="${earned} of ${definitions.length} achievements earned"><strong>${earned}</strong><span>/ ${definitions.length}<small>VERIFIED</small></span></div><div><span>CAMPAIGN ACHIEVEMENTS</span><h3>${earned} / ${definitions.length} earned</h3><p>${definitions.length ? `${Math.round(earned / definitions.length * 100)}% of configured achievements verified` : 'Achievement criteria are being prepared.'}</p></div><div class="achievement-overview-rarity"><b>${availableRarityCount}</b><span>RARITY ASSIGNED</span></div></section>
-    ${next ? `<section class="achievement-next-intel"><header><span>NEXT INTEL</span><small>${escapeHtml(next.progress.label)}</small></header><div>${next.definition.image ? `<img src="${escapeHtml(next.definition.image)}" alt="" />` : ''}<div><b>${escapeHtml(next.definition.label)}</b><p>${escapeHtml(next.progress.detail)}</p>${next.progress.progress !== null ? `<div class="achievement-progress" role="progressbar" aria-label="${escapeHtml(next.definition.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${next.progress.progress}"><i style="width:${next.progress.progress}%"></i></div>` : ''}</div><button type="button" data-achievement-id="${escapeHtml(next.definition.id)}" aria-label="View ${escapeHtml(next.definition.label)}">›</button></div></section>` : ''}
-    ${latest ? `<section class="achievement-latest-unlock"><span>LATEST UNLOCK</span>${achievementCardMarkup(definitions.find((item) => item.id === latest.achievementId) || { id: latest.achievementId, label: latest.achievementId, image: '' }, { compact: true })}</section>` : `<section class="achievement-unlock-note"><b>YOUR LATEST UNLOCK WILL APPEAR HERE</b><p>Achievements are added only after Project Q verifies the requirement.</p></section>`}
-    <div class="achievement-collections-preview"><header><div><span>COLLECTIONS</span><b>Choose your next objective</b></div><button type="button" data-achievement-view="collections">VIEW ALL →</button></header>${(campaign.achievementCollections || []).map((collection) => achievementCollectionMarkup(collection, definitions)).join('')}</div>
+    ${achievementViewPanel(`<header class="achievement-page-heading"><span>PROJECT Q // ACHIEVEMENTS</span><h2>Your operation record.</h2><p>Verified achievements add to your campaign history and Universal Profile.</p></header>
+    <section class="achievement-overview-hero"><div class="achievement-count-ring" style="--achievement-progress:${definitions.length ? Math.round(earned / definitions.length * 100) : 0}%" aria-label="${earned} of ${definitions.length} achievements earned"><strong>${earned}</strong><span>/ ${definitions.length}<small>VERIFIED</small></span></div><div><span>CAMPAIGN ACHIEVEMENTS</span><h3>${earned} / ${definitions.length} earned</h3><p>${definitions.length ? `${Math.round(earned / definitions.length * 100)}% complete` : 'Achievement criteria are being prepared.'}</p></div>${availableRarityCount ? `<div class="achievement-overview-rarity"><b>${availableRarityCount}</b><span>RARITY AWARDS</span></div>` : ''}</section>
+    ${next ? `<section class="achievement-next-intel"><header><span>NEXT ACHIEVEMENT</span><small>${escapeHtml(next.progress.label)}</small></header><div>${next.definition.image ? `<img src="${escapeHtml(next.definition.image)}" alt="" />` : ''}<div><b>${escapeHtml(next.definition.label)}</b><p>${escapeHtml(next.progress.detail)}</p>${next.progress.progress !== null && ['in-progress', 'provisional'].includes(next.progress.state) ? `<div class="achievement-progress" role="progressbar" aria-label="${escapeHtml(next.definition.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${next.progress.progress}"><i style="width:${next.progress.progress}%"></i></div>` : ''}</div><button type="button" data-achievement-id="${escapeHtml(next.definition.id)}" aria-label="View ${escapeHtml(next.definition.label)}">›</button></div></section>` : ''}
+    ${latest ? `<section class="achievement-latest-unlock"><span>LATEST UNLOCK</span>${achievementCardMarkup(definitions.find((item) => item.id === latest.achievementId) || { id: latest.achievementId, label: latest.achievementId, image: '' }, { compact: true })}</section>` : ''}
+    <div class="achievement-collections-preview"><header><div><span>COLLECTIONS</span><b>Build your achievement set</b></div><button type="button" data-achievement-view="collections">VIEW ALL →</button></header><div class="achievement-collection-deck">${configuredCollections.map((collection) => achievementCollectionMarkup(collection, definitions)).join('')}</div></div>`) }
   </section>`;
 }
 
@@ -3164,6 +3185,17 @@ function bind() {
       state.selectedAchievementId = null;
       renderTabInPlace();
       document.querySelector('.achievement-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
+    };
+    if (element.getAttribute('role') === 'tab') element.onkeydown = (event) => {
+      const tabs = [...document.querySelectorAll('.achievement-tabs [role="tab"]')];
+      const current = tabs.indexOf(element);
+      const next = event.key === 'ArrowRight' ? (current + 1) % tabs.length
+        : event.key === 'ArrowLeft' ? (current - 1 + tabs.length) % tabs.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+      if (next < 0 || !tabs.length) return;
+      event.preventDefault();
+      tabs[next].focus();
+      tabs[next].click();
     };
   });
   document.querySelectorAll('[data-achievement-id]').forEach((element) => {
