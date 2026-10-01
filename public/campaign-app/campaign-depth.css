@@ -374,3 +374,22 @@
 .updates-dialog.updates-drawer .update-controls input.preference-toggle:checked{border-color:#74aecb;background:#247aa1}
 .updates-dialog.updates-drawer .update-controls small{color:#8bbdd4}
 @media(max-width:359px){.account-dialog.account-drawer,.updates-dialog.updates-drawer{padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}}
+
+/* Profile recognition handoff: keep the campaign passport connected to the verified record. */
+.passport-recognition-focus{width:100%;display:grid;grid-template-columns:58px minmax(0,1fr) 24px;gap:11px;align-items:center;padding:10px;border:1px solid var(--q-border);border-radius:11px;background:linear-gradient(145deg,#fffefa,#f7f4eb);color:var(--q-ink);text-align:left;cursor:pointer}
+.passport-recognition-focus:hover{border-color:#c6a24d;box-shadow:0 5px 16px #17232b12}
+.passport-recognition-focus>img{width:58px;height:66px;object-fit:cover;border-radius:8px;background:#10191d}
+.passport-recognition-focus>div{display:grid;gap:3px;min-width:0}
+.passport-recognition-focus small{font:800 8px var(--q-display);letter-spacing:.1em;color:#2c7895}
+.passport-recognition-focus b{font:800 17px/1.1 var(--q-display);color:var(--q-ink)}
+.passport-recognition-focus p{margin:0;font:400 11px/1.4 system-ui,sans-serif;color:var(--q-copy)}
+.passport-recognition-focus span{font:800 8px var(--q-display);letter-spacing:.06em;color:#80662f;text-transform:uppercase}
+.passport-recognition-focus>strong{font:800 24px var(--q-display);color:#80662f}
+.passport-universal header{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.passport-universal header>div{display:grid;gap:4px}
+.passport-universal-stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:11px}
+.passport-universal-stats>span{display:grid!important;gap:2px!important;padding:9px 10px;border:1px solid var(--q-border);border-radius:9px;background:#fffdf8}
+.passport-universal-stats b{font:800 18px/1 var(--q-display);color:var(--q-ink)}
+.passport-universal-stats small{font:700 8px/1.25 var(--q-display);letter-spacing:.06em;color:#557682}
+.passport-universal>button{min-height:42px;margin-top:9px;padding:6px 0;border:0;background:transparent;color:#765916;font:800 10px var(--q-display);letter-spacing:.05em;cursor:pointer}
+@media(max-width:360px){.passport-recognition-focus{grid-template-columns:52px minmax(0,1fr) 20px;padding:8px}.passport-recognition-focus>img{width:52px;height:60px}.passport-recognition-focus b{font-size:15px}.passport-universal header{align-items:start;flex-direction:column}}
