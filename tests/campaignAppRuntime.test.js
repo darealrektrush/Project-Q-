@@ -53,6 +53,14 @@ async function loadRuntime() {
       state.missionEvidence = evidence;
       return missionsScreen();
     };
+    globalThis.__preLaunchScheduleViews = () => {
+      state.runtime = {
+        databaseState: 'DRAFT', tone: 'pending', serverNow: '2026-10-01T00:00:00.000Z',
+        schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null },
+      };
+      state.runtimeLoadedAt = Date.now();
+      return { home: home(), operations: operationsScreen(), clock: campaignClockMarkup(state.campaign) };
+    };
     globalThis.__missionDetails = Object.fromEntries(state.campaign.missions.map((mission) => [mission.id, missionDetailMarkup(mission)]));
     globalThis.__missionById = (id) => state.campaign.missions.find((mission) => mission.id === id);
     globalThis.__renderMissionDetail = (mission) => missionDetailMarkup(mission);
@@ -351,6 +359,17 @@ test('Operations UI gives each bottom destination one job', async () => {
   assert.doesNotMatch(context.__profiles.overview, /passport-tabs|Campaign Records|dossier-live-record|passport-rewards-view/);
   assert.match(context.__profiles.wallet, /VERIFIED REWARD DESTINATION/);
   assert.match(context.__profiles.wallet, /Non-custodial by design/);
+});
+
+test('pre-launch UI distinguishes the October 5 target from final schedule approval', async () => {
+  const context = await loadRuntime();
+  const views = context.__preLaunchScheduleViews();
+  for (const screen of Object.values(views)) {
+    assert.match(screen, /Oct 5 target/);
+    assert.match(screen, /9:00 AM PT/);
+    assert.doesNotMatch(screen, /DATES PENDING|Campaign dates pending|8:00 AM PT/);
+  }
+  assert.match(views.home, /TARGET AWAITING APPROVAL/);
 });
 
 test('Profile owns identity while Record owns XP, standing and badges', async () => {
@@ -694,8 +713,9 @@ test('Terminal distinguishes a proposed target from authoritative campaign timin
     displayLabel: 'PRE-LAUNCH', tone: 'pending',
     schedule: { phase: 'PRE_LAUNCH', label: 'Campaign dates pending', targetAt: null, currentCycle: null },
   });
-  assert.match(pending, /DATES PENDING/);
-  assert.match(pending, /Campaign dates pending/);
+  assert.match(pending, /TARGET AWAITING APPROVAL/);
+  assert.match(pending, /Oct 5 target[\s\S]*9:00 AM PT/);
+  assert.doesNotMatch(pending, /Campaign dates pending|8:00 AM PT/);
   assert.doesNotMatch(pending, /00<\/strong><span>DAYS/);
   const live = context.__renderHomeWithRuntime({
     serverNow: '2026-09-29T15:00:00.000Z', databaseState: 'ACTIVE', operational: true,

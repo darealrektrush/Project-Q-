@@ -340,6 +340,17 @@ function runtimePill() {
   return statePill(lifecycle.label, lifecycle.tone);
 }
 
+function operationScheduleDisplayLabel(campaign = state.campaign || fallbackCampaign, schedule = state.runtime?.schedule) {
+  const configuredTarget = campaign.schedule?.activeOpensAt;
+  if (schedule?.phase === 'PRE_LAUNCH' && !schedule.targetAt
+      && Number.isFinite(Date.parse(configuredTarget || ''))
+      && Date.parse(configuredTarget) > runtimeNow()) {
+    const label = campaign.schedule?.activeLabel || `${formatOperationDate(configuredTarget)} target · readiness pending`;
+    return `${label} · ${formatOperationTime(configuredTarget, campaign.schedule?.timeZone)}`;
+  }
+  return schedule?.label || 'Checking campaign schedule';
+}
+
 function campaignClockMarkup(campaign) {
   const runtime = state.runtime;
   const schedule = runtime?.schedule;
@@ -362,7 +373,7 @@ function campaignClockMarkup(campaign) {
     : schedule.phase === 'ACTIVE'
       ? `Verified activity cycle ${cycle} of ${cycleCount}`
       : schedule.phase === 'PRE_LAUNCH'
-        ? `${campaign.schedule?.activeLabel || 'Final dates pending · 10 active days'} · 8:00 AM PT`
+        ? `${campaign.schedule?.activeLabel || 'Final dates pending · 10 active days'} · ${formatOperationTime(campaign.schedule?.activeOpensAt, campaign.schedule?.timeZone)}`
         : schedule.phase === 'HANDOFF'
           ? 'Campaign close reconciliation before final review'
           : ['REVIEW', 'REVIEW_EXTENSION'].includes(schedule.phase)
@@ -373,7 +384,8 @@ function campaignClockMarkup(campaign) {
     const status = number <= completedCycles ? 'complete' : number === cycle ? 'current' : '';
     return `<i class="${status}" title="Cycle ${number}">${number}</i>`;
   }).join('');
-  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(awaitingTargetApproval ? 'Campaign target awaiting approval' : schedule.label)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
+  const scheduleLabel = awaitingTargetApproval ? operationScheduleDisplayLabel(campaign, schedule) : schedule.label;
+  return `<section class="campaign-clock ${escapeHtml(runtime.tone || 'pending')}"><div class="clock-copy"><span>${escapeHtml(awaitingTargetApproval ? 'Campaign target awaiting approval' : scheduleLabel)}</span><strong data-countdown data-target-at="${escapeHtml(schedule.targetAt || '')}" data-empty-label="${escapeHtml(countdown)}">${escapeHtml(countdown)}</strong><small>${escapeHtml(detail)}</small></div><div class="cycle-rail" aria-label="${cycleCount} campaign cycles">${dots}</div></section>`;
 }
 
 function updateCountdownLabels() {
@@ -505,7 +517,7 @@ function home() {
         <div class="operation-summary-heading"><strong>OPERATION ${op}</strong>${terminalOperationPill()}</div>
         <div class="operation-summary-body">
           ${countdownState
-            ? `<div class="terminal-countdown-state"><strong>${escapeHtml(countdownState === 'TARGET PENDING' ? 'DATES PENDING' : countdownState)}</strong><small>${escapeHtml(schedule?.label || 'Checking campaign schedule')}</small></div>`
+            ? `<div class="terminal-countdown-state"><strong>${escapeHtml(countdownState === 'TARGET PENDING' ? 'TARGET AWAITING APPROVAL' : countdownState)}</strong><small>${escapeHtml(operationScheduleDisplayLabel(c, schedule))}</small></div>`
             : `<div class="terminal-countdown-strip" aria-label="Campaign countdown">${[[days,'DAYS'],[hours,'HOURS'],[minutes,'MINS'],[seconds,'SECS']].map(([value,label]) => `<div><strong>${String(value).padStart(2,'0')}</strong><span>${label}</span></div>`).join('')}</div>`}
           <div class="operation-impact-categories">${globe}<span>PEOPLE<br />COMMUNITY<br />DEFI<br />OCEAN IMPACT</span></div>
         </div>
@@ -1250,6 +1262,12 @@ function formatOperationDate(value) {
   }).toUpperCase();
 }
 
+function formatOperationTime(value, timeZone = 'America/Vancouver') {
+  const date = new Date(value || '');
+  if (!Number.isFinite(date.getTime())) return 'time pending';
+  return `${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone })} PT`;
+}
+
 function operationStartFact() {
   const schedule = state.runtime?.schedule;
   if (!schedule) return { label: 'START', date: 'PENDING' };
@@ -1399,7 +1417,7 @@ function operationsScreen() {
   else if (state.operationsView === 'economics') content = operationEconomicsMarkup(c);
   else content = `<section class="operation-content-panel operation-overview-panel">
     ${operationCurrentOrderMarkup()}
-    <div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(state.runtime?.schedule?.label || 'Status syncing')}${Number(state.runtime?.schedule?.currentCycle || 0) ? ` · CYCLE ${Number(state.runtime.schedule.currentCycle)} / 5` : ''}</strong></div>
+    <div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(operationScheduleDisplayLabel(c))}${Number(state.runtime?.schedule?.currentCycle || 0) ? ` · CYCLE ${Number(state.runtime.schedule.currentCycle)} / 5` : ''}</strong></div>
     <div class="briefing-clearance"><span>CLEARANCE ${clearanceCountLabel()}</span><button data-profile-view="overview">OPEN PROFILE →</button></div>
     <div class="briefing-story"><h3>The operation</h3><p>${escapeHtml(c.description || '')}</p><p>Complete eligible Mission Files. Project Q verifies and settles accepted activity before it contributes to XP, standing and rewards.</p></div>
     <details class="briefing-rules"><summary>Rules & verification <span>⌄</span></summary><p>One Telegram identity, one X account and one verified reward wallet per participant. Founders and admins are excluded from XP and public leaderboards.</p><p>Daily caps: ${Number(c.xpCaps?.participationDaily || 0)} participation XP, ${Number(c.xpCaps?.projectQDaily || 0)} mission XP, ${Number(c.xpCaps?.trendingBotsDaily || 0)} trending XP, and ${Number(c.xpCaps?.overallDaily || 0)} XP overall. Pending or rejected evidence earns no XP.</p><p>Each 48-hour cycle selects the top two eligible participants and three weighted winners from ranks 3–15. Previous-cycle winners have a one-cycle cooldown. Final review takes 48–72 hours.</p><p>Mission-specific instructions and verification rules appear inside each Mission File.</p></details>
@@ -2928,7 +2946,7 @@ function campaignUpdatesMarkup() {
   const lifecycle = state.runtime ? operationLifecycleState().label : 'STATUS UNAVAILABLE';
   return `<header><div><small>PROJECT Q // UPDATES</small><h2>Your operation inbox</h2></div><button aria-label="Close updates">×</button></header>
   <p class="updates-context">Current record summaries. This is not a chronological notification history.</p>
-  <article class="update-status"><span>OPERATION STATUS // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3><p>${escapeHtml(state.runtime?.schedule?.label || 'Live operation status is temporarily unavailable.')}</p></article>
+  <article class="update-status"><span>OPERATION STATUS // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3><p>${escapeHtml(operationScheduleDisplayLabel())}</p></article>
   <div class="personal-update-list">${items.map((item,index)=>`<button class="personal-update" data-update-index="${index}"><span>${escapeHtml(item.category.toUpperCase())}</span><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.text)}</p><small>OPEN →</small></button>`).join('') || `<p class="updates-empty">${state.sessionStatus === 'verified' ? 'No personal summaries in your selected categories.' : 'Open Project Q in Telegram to load your personal updates.'}</p>`}</div>
   <details class="update-controls"><summary>Personal update controls <span>⌄</span></summary><p>Choose which personal summaries appear here. Saved on this device for this profile. These controls do not subscribe you to Telegram messages.</p>${UPDATE_CATEGORIES.map(([key,label])=>`<label><span>${label}</span><input class="preference-toggle" type="checkbox" role="switch" data-update-category="${key}" ${preferences[key] ? 'checked' : ''} /></label>`).join('')}<small id="update-save-status" role="status"></small></details>`;
 }
