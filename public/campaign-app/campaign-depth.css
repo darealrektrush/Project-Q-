@@ -393,3 +393,16 @@
 .passport-universal-stats small{font:700 8px/1.25 var(--q-display);letter-spacing:.06em;color:#557682}
 .passport-universal>button{min-height:42px;margin-top:9px;padding:6px 0;border:0;background:transparent;color:#765916;font:800 10px var(--q-display);letter-spacing:.05em;cursor:pointer}
 @media(max-width:360px){.passport-recognition-focus{grid-template-columns:52px minmax(0,1fr) 20px;padding:8px}.passport-recognition-focus>img{width:52px;height:60px}.passport-recognition-focus b{font-size:15px}.passport-universal header{align-items:start;flex-direction:column}}
+
+/* Launch closeout: make fail-closed blockers readable without exposing admin actions. */
+.readiness-blocker-summary{display:grid;gap:10px;padding:14px;border:1px solid #d5bd75;border-radius:12px;background:linear-gradient(145deg,#fffaf0,#f8f2df)}
+.readiness-blocker-summary>header{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.readiness-blocker-summary>header>div{display:grid;gap:3px}.readiness-blocker-summary>header span,.readiness-blocker-summary.complete span{font:800 9px var(--q-display);letter-spacing:.12em;color:#80621a}
+.readiness-blocker-summary>header b,.readiness-blocker-summary.complete b{font:800 18px/1.1 var(--q-display);color:var(--q-ink)}
+.readiness-blocker-summary>header small{font:700 9px var(--q-display);letter-spacing:.06em;color:#9a7320;text-transform:uppercase}
+.readiness-blocker-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.readiness-blocker-list article{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;padding:10px;border:1px solid #dfd3b4;border-radius:9px;background:#fffdf8}
+.readiness-blocker-list i{display:grid;place-items:center;width:20px;height:20px;border:1px solid #b9a36b;border-radius:50%;color:#8a6b22;font:800 11px system-ui}
+.readiness-blocker-list article>div{display:grid;gap:3px}.readiness-blocker-list b{font:800 10px var(--q-display);letter-spacing:.055em;color:#6d5116}.readiness-blocker-list p{margin:0;font:500 11px/1.4 system-ui,sans-serif;color:var(--q-copy)}.readiness-blocker-list small{font:500 9px/1.35 system-ui,sans-serif;color:#76736b}
+.readiness-blocker-summary.complete{padding:14px;border-color:#9ec7af;background:#f3faf5}.readiness-blocker-summary.complete p{margin:4px 0 0;font:500 11px/1.45 system-ui,sans-serif;color:var(--q-copy)}
+@media(max-width:600px){.readiness-blocker-list{grid-template-columns:1fr}.readiness-blocker-summary>header{flex-direction:column;gap:5px}}
