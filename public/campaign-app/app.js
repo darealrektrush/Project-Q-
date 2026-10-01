@@ -851,7 +851,8 @@ function achievementCardMarkup(badge, { compact = false } = {}) {
   const progress = achievementProgress(badge);
   const record = progress.record;
   const classes = ['achievement-tile', `achievement-${progress.state}`, compact ? 'compact' : ''].filter(Boolean).join(' ');
-  const progressMarkup = progress.progress === null ? '' : `<span class="achievement-tile-meter" style="--tile-progress:${progress.progress}%" role="progressbar" aria-label="${escapeHtml(badge.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.progress}">${progress.progress}%</span>`;
+  const hasVisibleProgress = ['in-progress', 'provisional'].includes(progress.state) && progress.progress !== null;
+  const progressMarkup = !hasVisibleProgress ? '' : `<span class="achievement-tile-meter" style="--tile-progress:${progress.progress}%" role="progressbar" aria-label="${escapeHtml(badge.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.progress}">${progress.progress}%</span>`;
   const statusMarkup = record
     ? '<span class="achievement-tile-status" aria-hidden="true">✓</span>'
     : progress.state === 'classified' || progress.state === 'locked'
@@ -896,7 +897,7 @@ function achievementDetailMarkup(definition) {
       : 'Progress reflects settled, verified activity. Only a verified receipt appears as earned in your history.';
   const collection = (campaign.achievementCollections || []).find((item) => item.id === definition.collection);
   const meta = `<div class="achievement-detail-meta"><span>${escapeHtml(rarity?.label || (record ? 'VERIFIED' : 'RARITY ON VERIFICATION'))}</span><span>${escapeHtml(collection?.label || 'CAMPAIGN')}</span><span>${escapeHtml(campaign.name)}</span></div>`;
-  const progressBlock = progress.progress !== null && !record
+  const progressBlock = ['in-progress', 'provisional'].includes(progress.state) && progress.progress !== null && !record
     ? `<section class="achievement-detail-progress"><header><strong>YOUR PROGRESS</strong><span>${progress.progress}%</span></header>${progress.current ? `<p>${escapeHtml(progress.current)}</p>` : ''}<div class="achievement-progress" role="progressbar" aria-label="${escapeHtml(definition.label)} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.progress}"><i style="width:${progress.progress}%"></i></div><small>${escapeHtml(progress.remaining || progress.detail)}</small></section>`
     : record
       ? `<div class="achievement-verified-banner"><span aria-hidden="true">✓</span><div><b>ACHIEVEMENT VERIFIED</b><small>Earned ${escapeHtml(formatProfileDate(record.awardedAt))}</small></div></div>`

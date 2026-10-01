@@ -416,6 +416,7 @@ test('achievement detail explains standings and XP progress with the matching ve
   assert.match(xpDetail, /Progress reflects settled, verified activity/);
   assert.match(xpDetail, /achievement-detail-view is-locked/);
   assert.doesNotMatch(xpDetail, /350\s*\/\s*1,000|REWARD/);
+  assert.doesNotMatch(xpDetail, /YOUR PROGRESS[\s\S]*?0%/);
   assert.doesNotMatch(xpDetail, /Live standings are provisional/);
   const standingsDetail = context.__achievementStateWith('overview', {
     selectedAchievementId: 'top-10-percent',
