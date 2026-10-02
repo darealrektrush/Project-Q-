@@ -53,6 +53,15 @@ const EXPLAINERS = {
       { icon: '03', title: 'Eligibility', text: 'Campaign rules determine which participants and outcomes qualify.' },
     ],
   },
+  universal: {
+    eyebrow: 'Universal Profile', title: 'What is your Universal ID?',
+    description: 'Your Universal ID is the stable Oracle profile reference that keeps one person connected across Project Q and the wider CrabStar ecosystem.',
+    items: [
+      { icon: '01', title: 'One identity', text: 'Telegram, X and your verified wallet resolve back to one canonical Oracle profile.' },
+      { icon: '02', title: 'Portable history', text: 'Verified campaign outcomes can later contribute to your ecosystem-wide record without creating a second profile.' },
+      { icon: '03', title: 'Private by default', text: 'The short ID shown here is a reference, not a wallet secret, password or recovery credential.' },
+    ],
+  },
   profile: {
     eyebrow: 'Identity guide', title: 'How your profile works',
     description: 'Your Project Q profile ties campaign activity to one verified identity.',
@@ -1861,7 +1870,7 @@ function profileScreen() {
   const walletView = state.profileView === 'wallet';
   return `<div class="passport-ui profile-identity-ui">
     ${walletView ? '<button class="burn-back" data-profile-view="overview">← PROFILE</button>' : ''}
-    <section class="participant-passport profile-compact-header"><div class="passport-copy"><span class="passport-kicker">PROJECT Q // YOUR IDENTITY</span><h2>${escapeHtml(p.name)}</h2>${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}<div class="passport-id-line"><span>UNIVERSAL ID</span><b>${p.profileId ? escapeHtml(short(p.profileId)) : 'SYNC PENDING'}</b></div><small>Crab Army rank · Oracle sync pending</small></div><div class="passport-photo"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Your Telegram profile photo" /><span>${clearanceCountLabel()} CLEARANCE</span></div></section>
+    <section class="participant-passport profile-compact-header"><div class="passport-copy"><span class="passport-kicker">PROJECT Q // YOUR IDENTITY</span><h2>${escapeHtml(p.name)}</h2>${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}<div class="passport-id-line"><span>UNIVERSAL ID</span><b>${p.profileId ? escapeHtml(short(p.profileId)) : 'SYNC PENDING'}</b><button type="button" class="passport-id-help" data-explainer="universal">WHAT IS THIS?</button></div><small>Crab Army rank · Oracle sync pending</small></div><div class="passport-photo"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Your Telegram profile photo" /><span>${clearanceCountLabel()} CLEARANCE</span></div></section>
     ${walletView ? profileWallet() : `${campaignClearanceReady() ? '' : clearanceMarkup()}${campaignPassportMarkup()}${campaignClearanceReady() ? `<details class="passport-clearance-complete"><summary>Clearance ${clearanceCountLabel()} · verified <span>⌄</span></summary>${clearanceMarkup()}</details>` : ''}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button></details>`}
   </div>`;
 }
@@ -2053,7 +2062,7 @@ function render() {
 
 function syncTelegramViewport() {
   const tg = state.telegram;
-  const height = Number(tg?.viewportStableHeight || tg?.viewportHeight || window.innerHeight);
+  const height = Number(tg?.viewportHeight || tg?.viewportStableHeight || window.visualViewport?.height || window.innerHeight);
   if (Number.isFinite(height) && height > 0) {
     document.documentElement.style.setProperty('--tg-viewport-height', `${Math.round(height)}px`);
   }
@@ -3039,7 +3048,7 @@ function campaignUpdatesMarkup() {
   const preferences = updatePreferences();
   const items = campaignUpdateItems().filter(item => preferences[item.category]);
   const lifecycle = state.runtime ? operationLifecycleState().label : 'STATUS UNAVAILABLE';
-  return `<header><div><small>PROJECT Q // UPDATES</small><h2>Your operation inbox</h2></div><button aria-label="Close updates">×</button></header>
+  return `<header><button type="button" class="updates-back" aria-label="Back from updates">← BACK</button><div><small>PROJECT Q // UPDATES</small><h2>Your operation inbox</h2></div></header>
   <p class="updates-context">Current record summaries. This is not a chronological notification history.</p>
   <article class="update-status"><span>OPERATION STATUS // ${escapeHtml(lifecycle)}</span><h3>${escapeHtml(state.campaign?.name || 'Operation')}</h3><p>${escapeHtml(operationScheduleDisplayLabel())}</p></article>
   <div class="personal-update-list">${items.map((item,index)=>`<button class="personal-update" data-update-index="${index}"><span>${escapeHtml(item.category.toUpperCase())}</span><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.text)}</p><small>OPEN →</small></button>`).join('') || `<p class="updates-empty">${state.sessionStatus === 'verified' ? 'No personal summaries in your selected categories.' : 'Open Project Q in Telegram to load your personal updates.'}</p>`}</div>
@@ -3051,7 +3060,7 @@ function openCampaignUpdates() {
   if (!dialog) return;
   dialog.classList.add('updates-drawer');
   dialog.innerHTML = campaignUpdatesMarkup();
-  dialog.querySelector('[aria-label="Close updates"]').onclick = () => dialog.close();
+  dialog.querySelector('[aria-label="Back from updates"]').onclick = () => dialog.close();
   const items = campaignUpdateItems().filter(item => updatePreferences()[item.category]);
   dialog.querySelectorAll('[data-update-index]').forEach(button => { button.onclick = () => {
     const item = items[Number(button.dataset.updateIndex)];
