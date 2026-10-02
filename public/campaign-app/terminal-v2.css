@@ -999,3 +999,133 @@
   .q-shell-v2 .notification-control{width:34px;min-width:34px}
   .q-shell-v2 .account-menu-control{width:36px;min-width:36px;padding:7px}
 }
+
+
+/* ORACLE UNIVERSAL PROFILE HERO */
+.q-shell-v2 .universal-profile-hero{
+  position:relative;overflow:hidden;margin:0 0 10px;border:1px solid #245a75;border-radius:14px;
+  background:
+    radial-gradient(circle at 18% 18%,rgba(26,154,221,.18),transparent 30%),
+    radial-gradient(circle at 82% 0,rgba(228,179,60,.10),transparent 28%),
+    linear-gradient(145deg,#050b10,#081923 58%,#061016);
+  color:#f3f7f8;box-shadow:0 18px 44px rgba(11,40,55,.18),inset 0 0 0 1px rgba(72,189,238,.08);
+  font-family:var(--q-display)
+}
+.q-shell-v2 .universal-profile-hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(80,195,239,.08),transparent);
+  transform:translateX(-60%)
+}
+.q-shell-v2 .universal-profile-main{
+  position:relative;display:grid;grid-template-columns:92px minmax(0,1.5fr) minmax(112px,.6fr) minmax(142px,.8fr);
+  gap:16px;align-items:center;padding:18px
+}
+.q-shell-v2 .universal-profile-avatar{position:relative;width:86px;height:86px}
+.q-shell-v2 .universal-profile-avatar img{
+  width:86px;height:86px;display:block;object-fit:cover;border:2px solid #55c8ef;border-radius:50%;
+  box-shadow:0 0 0 4px #0a1e2a,0 0 0 6px #cda747,0 0 24px rgba(63,189,237,.4)
+}
+.q-shell-v2 .oracle-verified-mark{
+  position:absolute;right:-2px;bottom:3px;width:27px;height:27px;display:grid;place-items:center;
+  border:2px solid #07131a;border-radius:50%;background:#168fd1;color:white;font:700 14px/1 system-ui;
+  box-shadow:0 0 12px rgba(65,192,242,.45)
+}
+.q-shell-v2 .universal-profile-identity{min-width:0}
+.q-shell-v2 .universal-profile-identity>span{
+  color:#69c9ee;font:700 10px/1 var(--q-display);letter-spacing:.16em
+}
+.q-shell-v2 .universal-profile-identity h2{
+  margin:6px 0 2px;color:#f8fbfc;font:700 clamp(26px,4vw,38px)/.95 var(--q-display);
+  overflow-wrap:anywhere
+}
+.q-shell-v2 .universal-profile-identity>b{
+  color:#53c0e9;font:700 14px/1 var(--q-display);letter-spacing:.18em
+}
+.q-shell-v2 .universal-profile-identity>p{
+  margin:8px 0 0;color:#a9bdc8;font:500 11px/1.2 var(--q-display);letter-spacing:.04em
+}
+.q-shell-v2 .universal-badge-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.q-shell-v2 .universal-badge-row button{
+  min-height:27px;padding:5px 9px;border:1px solid #37677b;border-radius:14px;background:#07151d;
+  color:#dcecf2;font:700 10px/1 var(--q-display);cursor:pointer
+}
+.q-shell-v2 .universal-badge-row button span{margin-right:4px;color:#f1c85e}
+.q-shell-v2 .universal-badge-row small{color:#6f8996;font-size:10px}
+.q-shell-v2 .universal-rank-block{
+  min-height:112px;padding:9px 10px;display:grid;place-items:center;align-content:center;
+  border-left:1px solid #224756;border-right:1px solid #224756;text-align:center
+}
+.q-shell-v2 .universal-rank-medallion{
+  width:58px;height:58px;display:grid;place-items:center;clip-path:polygon(50% 0,88% 18%,82% 72%,50% 100%,18% 72%,12% 18%);
+  background:linear-gradient(145deg,#ffe398,#bb8125 52%,#704715);box-shadow:0 0 20px rgba(229,174,65,.25)
+}
+.q-shell-v2 .universal-rank-medallion::before{
+  content:"";position:absolute;width:44px;height:44px;clip-path:inherit;background:#09141b
+}
+.q-shell-v2 .universal-rank-medallion span{position:relative;z-index:2;color:#f2cb69;font:700 17px/1 var(--q-display)}
+.q-shell-v2 .universal-rank-block>small,.q-shell-v2 .universal-level-block>small{
+  margin-top:7px;color:#8ea7b2;font:700 9px/1 var(--q-display);letter-spacing:.12em
+}
+.q-shell-v2 .universal-rank-block>strong{margin-top:4px;color:#f3ca66;font:700 14px/1.05 var(--q-display);text-transform:uppercase}
+.q-shell-v2 .universal-level-block{min-width:0;display:grid;align-content:center}
+.q-shell-v2 .universal-level-block>strong{margin-top:3px;color:#62ccef;font:700 38px/.9 var(--q-display)}
+.q-shell-v2 .universal-level-block>b{margin-top:7px;color:#e9eef0;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .universal-rank-progress{height:7px;margin-top:9px;overflow:hidden;border-radius:8px;background:#102b37}
+.q-shell-v2 .universal-rank-progress i{height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,#1e97c9,#64d7f3);box-shadow:0 0 8px #45c4ec}
+.q-shell-v2 .universal-level-block>span{justify-self:end;margin-top:4px;color:#70cae9;font:700 10px/1 var(--q-display)}
+.q-shell-v2 .universal-level-block>em{margin-top:5px;color:#8ea5af;font:500 9px/1.2 var(--q-display);font-style:normal}
+.q-shell-v2 .universal-profile-stats{
+  position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #214252;border-bottom:1px solid #214252
+}
+.q-shell-v2 .universal-profile-stats>div{padding:11px 12px;border-right:1px solid #214252}
+.q-shell-v2 .universal-profile-stats>div:last-child{border-right:0}
+.q-shell-v2 .universal-profile-stats span{display:block;color:#7897a5;font:700 8px/1 var(--q-display);letter-spacing:.08em}
+.q-shell-v2 .universal-profile-stats strong{display:block;margin-top:5px;color:#eef6f7;font:700 17px/1 var(--q-display)}
+.q-shell-v2 .universal-profile-footer{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px
+}
+.q-shell-v2 .universal-profile-footer>div{display:grid;gap:3px}
+.q-shell-v2 .universal-profile-footer b{color:#e6c167;font:700 12px/1 var(--q-display)}
+.q-shell-v2 .universal-profile-footer small{color:#718d99;font:500 9px/1.2 var(--q-display)}
+.q-shell-v2 .universal-profile-footer button{
+  min-height:36px;padding:0 13px;border:1px solid #2b718f;border-radius:18px;background:#08202a;
+  color:#75d6f2;font:700 10px/1 var(--q-display);cursor:pointer;white-space:nowrap
+}
+@media(max-width:700px){
+  .q-shell-v2 .universal-profile-main{grid-template-columns:72px minmax(0,1fr) 88px;gap:10px;padding:14px}
+  .q-shell-v2 .universal-profile-avatar,.q-shell-v2 .universal-profile-avatar img{width:66px;height:66px}
+  .q-shell-v2 .universal-profile-identity h2{font-size:27px}
+  .q-shell-v2 .universal-rank-block{min-height:96px;padding:6px;border-right:0}
+  .q-shell-v2 .universal-rank-medallion{width:48px;height:48px}
+  .q-shell-v2 .universal-rank-medallion::before{width:36px;height:36px}
+  .q-shell-v2 .universal-level-block{grid-column:1/-1;display:grid;grid-template-columns:auto auto 1fr auto;gap:8px;align-items:center;padding-top:10px;border-top:1px solid #214252}
+  .q-shell-v2 .universal-level-block>small{margin:0}
+  .q-shell-v2 .universal-level-block>strong{margin:0;font-size:28px}
+  .q-shell-v2 .universal-level-block>b{margin:0}
+  .q-shell-v2 .universal-rank-progress{margin:0}
+  .q-shell-v2 .universal-level-block>span{margin:0}
+  .q-shell-v2 .universal-level-block>em{grid-column:2/-1;margin:0}
+  .q-shell-v2 .universal-profile-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .q-shell-v2 .universal-profile-stats>div:nth-child(3){border-right:0}
+  .q-shell-v2 .universal-profile-stats>div:nth-child(n+4){border-top:1px solid #214252}
+  .q-shell-v2 .universal-profile-footer{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:430px){
+  .q-shell-v2 .universal-profile-main{grid-template-columns:62px minmax(0,1fr);padding:12px}
+  .q-shell-v2 .universal-profile-avatar,.q-shell-v2 .universal-profile-avatar img{width:56px;height:56px}
+  .q-shell-v2 .oracle-verified-mark{width:23px;height:23px;font-size:12px}
+  .q-shell-v2 .universal-profile-identity h2{font-size:24px}
+  .q-shell-v2 .universal-rank-block{
+    grid-column:1/-1;display:grid;grid-template-columns:48px auto 1fr;justify-items:start;gap:8px;
+    min-height:0;padding:9px 0 0;border-left:0;border-top:1px solid #214252;text-align:left
+  }
+  .q-shell-v2 .universal-rank-block>small{margin:0;align-self:center}
+  .q-shell-v2 .universal-rank-block>strong{margin:0;align-self:center}
+  .q-shell-v2 .universal-level-block{grid-template-columns:auto auto 1fr auto}
+  .q-shell-v2 .universal-profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .q-shell-v2 .universal-profile-stats>div{border-top:1px solid #214252}
+  .q-shell-v2 .universal-profile-stats>div:nth-child(-n+2){border-top:0}
+  .q-shell-v2 .universal-profile-stats>div:nth-child(2n){border-right:0}
+  .q-shell-v2 .universal-profile-stats>div:nth-child(3){border-right:1px solid #214252}
+  .q-shell-v2 .universal-profile-stats>div:last-child{grid-column:1/-1;border-right:0}
+}
