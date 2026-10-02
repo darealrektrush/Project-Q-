@@ -1876,7 +1876,8 @@ function campaignPassportMarkup() {
 
 function universalProfileHeroMarkup() {
   const p = state.profile;
-  const army = p.crabArmy;
+  const synced = state.sessionStatus === 'verified';
+  const army = synced ? p.crabArmy : null;
   const identityLabel = p.username ? `@${p.username.replace(/^@/, '')}` : (p.name || 'Oracle identity syncing');
   const definitions = achievementDefinitions();
   const universalRecords = (p.achievementRecords || [])
@@ -1926,9 +1927,9 @@ function universalProfileHeroMarkup() {
     </div>
     <div class="universal-profile-stats">
       <div><span>LIFETIME XP</span><strong>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</strong></div>
-      <div><span>OPERATION XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></div>
-      <div><span>VERIFIED BADGES</span><strong>${universalRecords.length}</strong></div>
-      <div><span>QUALIFIED REFERRALS</span><strong>${qualifiedReferrals.toLocaleString()}</strong></div>
+      <div><span>OPERATION XP</span><strong>${synced ? Number(p.xp || 0).toLocaleString() : '—'}</strong></div>
+      <div><span>VERIFIED BADGES</span><strong>${synced ? universalRecords.length : '—'}</strong></div>
+      <div><span>QUALIFIED REFERRALS</span><strong>${synced ? qualifiedReferrals.toLocaleString() : '—'}</strong></div>
       <div><span>CLEARANCE</span><strong>${escapeHtml(clearanceCountLabel())}</strong></div>
     </div>
     <div class="universal-profile-footer">
