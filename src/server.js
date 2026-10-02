@@ -1229,7 +1229,10 @@ function sendHome(chatId, threadId, { isPrivate = false, referralCaptured = null
     defaultText += '\n\n_Referral attribution was not accepted. Existing participants, self-referrals and reused links do not create a new referral._';
   }
   return renderMenu(chatId, threadId, 'home', defaultText, {
-    replyMarkup: telegram.buildHomeMenu({ privateUrl }),
+    replyMarkup: telegram.buildHomeMenu({
+      privateUrl,
+      campaignAppUrl: campaignUi.resolveCampaignAppUrl(),
+    }),
   });
 }
 
