@@ -1230,11 +1230,12 @@ test('reward rows distinguish scheduled timing from confirmed on-chain timing', 
 });
 
 
-test('beta profile explains Universal ID and updates use a Back action', async () => {
+test('beta profile shows a human-readable Oracle identity and updates use a Back action', async () => {
   const context = await loadRuntime();
-  assert.match(context.__profiles.overview, /UNIVERSAL ID/);
+  assert.match(context.__profiles.overview, /ORACLE IDENTITY/);
   assert.match(context.__profiles.overview, /WHAT IS THIS\?/);
   assert.match(context.__profiles.overview, /data-explainer="universal"/);
+  assert.doesNotMatch(context.__profiles.overview, /UNIVERSAL ID/);
 
   const updates = context.__updatesWith('verified', { telegramVerified: true });
   assert.match(updates, /aria-label="Back from updates"/);
