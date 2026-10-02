@@ -62,3 +62,13 @@ test('General Chat is the canonical interactive community topic', () => {
     else process.env.TELEGRAM_TOPIC_IDS = previous;
   }
 });
+
+
+test('private home can surface Project Q as the primary Mini App action', () => {
+  const appUrl = 'https://project-q-dev.onrender.com/campaign-app/';
+  const rows = buildHomeMenu({ campaignAppUrl: appUrl }).inline_keyboard;
+  assert.equal(rows[0].length, 1);
+  assert.equal(rows[0][0].text, '🚀 OPEN PROJECT Q // CAMPAIGN APP');
+  assert.equal(rows[0][0].web_app.url, appUrl);
+  assert.equal(rows[1][0].callback_data, 'menu:market');
+});
