@@ -1228,3 +1228,28 @@ test('reward rows distinguish scheduled timing from confirmed on-chain timing', 
   assert.match(confirmed, /Confirmed/);
   assert.match(confirmed, /On-chain receipt confirmed/);
 });
+
+
+test('beta profile explains Universal ID and updates use a Back action', async () => {
+  const context = await loadRuntime();
+  assert.match(context.__profiles.overview, /UNIVERSAL ID/);
+  assert.match(context.__profiles.overview, /WHAT IS THIS\?/);
+  assert.match(context.__profiles.overview, /data-explainer="universal"/);
+
+  const updates = context.__updatesWith('verified', { telegramVerified: true });
+  assert.match(updates, /aria-label="Back from updates"/);
+  assert.match(updates, /← BACK/);
+  assert.doesNotMatch(updates, /aria-label="Close updates"/);
+});
+
+test('clearance presents one connected Oracle and wallet journey', async () => {
+  const context = await loadRuntime();
+  const clearance = context.__renderClearanceWith({ telegramVerified: true });
+  assert.match(clearance, /CONNECT X/);
+  assert.match(clearance, /VERIFY WALLET/);
+  assert.match(clearance, /One connected setup/);
+  assert.match(clearance, /minimum holding automatically/);
+  const wallet = context.__profiles.wallet;
+  assert.match(wallet, /VERIFY WALLET WITH ORACLE/);
+  assert.match(wallet, /signed message/);
+});
