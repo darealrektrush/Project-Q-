@@ -374,14 +374,23 @@ test('pre-launch UI distinguishes the October 5 target from final schedule appro
 
 test('Profile owns identity while Record owns XP, standing and badges', async () => {
   const context = await loadRuntime();
-  const profile = context.__renderDossierWith({ name: 'RektRush', username: 'darealrektrush', xp: 680, rank: '#14', completedMissions: 6 }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
-  assert.match(profile, /YOUR IDENTITY/);
+  const profile = context.__renderDossierWith({
+    name: 'RektRush', username: 'darealrektrush', xp: 680, rank: '#14', completedMissions: 6,
+    crabArmy: {
+      lifetimeXp: 115600, level: 18, rankName: 'Master Sergeant', division: 'Sergeant Command',
+      progressPct: 0, xpToNext: 14000, nextRankName: 'First Sergeant', nextRankXp: 129600,
+      badgeAssetKey: 'crab_army_rank_18', ladderVersion: 2,
+    },
+  }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
+  assert.match(profile, /ORACLE UNIVERSAL PROFILE/);
   assert.match(profile, /@darealrektrush/);
-  assert.match(profile, /Crab Army rank · Oracle sync pending/);
+  assert.match(profile, /LVL 18 · Master Sergeant/);
+  assert.match(profile, /115,600/);
+  assert.match(profile, /14,000 XP to First Sergeant/);
   assert.match(profile, /680/);
   assert.match(profile, /#14/);
   assert.match(profile, /CAMPAIGN PASSPORT/);
-  assert.doesNotMatch(profile, /Sergeant Major|passport-tabs/);
+  assert.doesNotMatch(profile, /passport-tabs/);
   const badges = context.__renderRecordWith('achievements');
   assert.match(badges, /PROJECT Q \/\/ ACHIEVEMENTS/);
   assert.match(badges, /0 \/ 8 earned/);
@@ -1230,12 +1239,12 @@ test('reward rows distinguish scheduled timing from confirmed on-chain timing', 
 });
 
 
-test('beta profile shows a human-readable Oracle identity and updates use a Back action', async () => {
+test('beta profile shows a human-readable Oracle Universal Profile and updates use a Back action', async () => {
   const context = await loadRuntime();
-  assert.match(context.__profiles.overview, /ORACLE IDENTITY/);
-  assert.match(context.__profiles.overview, /WHAT IS THIS\?/);
+  assert.match(context.__profiles.overview, /ORACLE UNIVERSAL PROFILE/);
+  assert.match(context.__profiles.overview, /ABOUT YOUR PROFILE/);
   assert.match(context.__profiles.overview, /data-explainer="universal"/);
-  assert.doesNotMatch(context.__profiles.overview, /UNIVERSAL ID/);
+  assert.doesNotMatch(context.__profiles.overview, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
 
   const updates = context.__updatesWith('verified', { telegramVerified: true });
   assert.match(updates, /aria-label="Back from updates"/);
@@ -1253,4 +1262,30 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   const wallet = context.__profiles.wallet;
   assert.match(wallet, /VERIFY WALLET WITH ORACLE/);
   assert.match(wallet, /signed message/);
+});
+
+
+test('Universal Profile hero keeps lifetime Crab Army progression separate from campaign XP', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderDossierWith({
+    name: 'Tester', username: 'tester',
+    xp: 725,
+    crabArmy: {
+      lifetimeXp: 78400, level: 15, rankName: 'Colour Sergeant', division: 'Sergeant Command',
+      progressPct: 0, xpToNext: 11600, nextRankName: 'Sergeant First Class', nextRankXp: 90000,
+      badgeAssetKey: 'crab_army_rank_15', ladderVersion: 2,
+    },
+    achievementRecords: [{
+      recordId: 'u-1', achievementId: 'xp-earned', verificationState: 'VERIFIED',
+      universalProfileSync: 'DELIVERED', awardedAt: '2026-10-02T10:00:00Z',
+    }],
+    achievementRecordsAvailable: true,
+  }, null, 'verified');
+
+  assert.match(html, /LIFETIME XP[\s\S]*78,400/);
+  assert.match(html, /OPERATION XP[\s\S]*725/);
+  assert.match(html, /Colour Sergeant/);
+  assert.match(html, /XP Earned/);
+  assert.match(html, /VERIFIED BADGES[\s\S]*1/);
+  assert.doesNotMatch(html, /78,400 operation XP|725 lifetime XP/i);
 });
