@@ -1158,3 +1158,73 @@ test('account tools keep core navigation separate and help search is safe', asyn
   assert.match(runtime.__helpResults('<script>'), /No matching answer/);
   assert.match(runtime.__accountPanel('help'), /Response times vary/);
 });
+
+
+test('launch readiness names unresolved public gates instead of only showing a percentage', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderReadinessWith({
+    available: true,
+    ready: false,
+    readyCount: 2,
+    totalCount: 12,
+    percent: 17,
+    checks: [
+      { key: 'rules', label: 'Final rules complete and hash-matched', ready: true },
+      { key: 'funding', label: '17,500,000 FAWKQ Squads vault commitment verified', ready: false },
+      { key: 'sources', label: 'Verification sources certified', ready: false },
+    ],
+  });
+  assert.match(html, /LAUNCH BLOCKERS/);
+  assert.match(html, /2 public gates remaining/);
+  assert.match(html, /VERIFY FUNDING/);
+  assert.match(html, /CERTIFY SOURCES/);
+});
+
+test('reward rows distinguish scheduled timing from confirmed on-chain timing', async () => {
+  const context = await loadRuntime();
+  const scheduled = context.__renderRewardsWith({
+    recorded: true,
+    allocatedBaseUnits: '1000000',
+    scheduledBaseUnits: '1000000',
+    distributedBaseUnits: '0',
+    failedBaseUnits: '0',
+    releaseCount: 1,
+    allocations: [],
+    releases: [{
+      id: 'release-scheduled',
+      category: 'activity',
+      cycleId: 1,
+      amountBaseUnits: '1000000',
+      percent: 25,
+      status: 'scheduled',
+      scheduledAt: '2026-10-20T16:00:00.000Z',
+      transactionSignature: null,
+      confirmedBlockTime: null,
+    }],
+  }).screen;
+  assert.match(scheduled, /Scheduled/);
+  assert.doesNotMatch(scheduled, /Confirmed [A-Z][a-z]{2}/);
+
+  const confirmed = context.__renderRewardsWith({
+    recorded: true,
+    allocatedBaseUnits: '1000000',
+    scheduledBaseUnits: '1000000',
+    distributedBaseUnits: '1000000',
+    failedBaseUnits: '0',
+    releaseCount: 1,
+    allocations: [],
+    releases: [{
+      id: 'release-paid',
+      category: 'activity',
+      cycleId: 1,
+      amountBaseUnits: '1000000',
+      percent: 25,
+      status: 'paid',
+      scheduledAt: '2026-10-20T16:00:00.000Z',
+      transactionSignature: '3333333333333333333333333333333333333333333333333333333333333333',
+      confirmedBlockTime: '2026-10-20T16:05:00.000Z',
+    }],
+  }).screen;
+  assert.match(confirmed, /Confirmed/);
+  assert.match(confirmed, /On-chain receipt confirmed/);
+});
