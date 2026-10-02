@@ -177,6 +177,7 @@ const state = {
     username: null,
     profileId: null,
     photoUrl: null,
+    crabArmy: null,
     telegramVerified: false,
     xVerified: false,
     walletVerified: false,
@@ -1873,12 +1874,76 @@ function campaignPassportMarkup() {
   <section class="passport-universal"><header><div><span>UNIVERSAL RECORD</span><b>Contribution review & settlement</b></div>${statePill(universalStatus, queuedAchievements ? 'pending' : verifiedRecords.length ? 'success' : 'pending')}</header><p>Project Q records operation outcomes. Qualifying lifetime XP, rank and reputation require Oracle confirmation; no lifetime award is inferred here.</p><div class="passport-universal-stats"><span><b>${verifiedRecords.length}</b><small>VERIFIED ACHIEVEMENTS</small></span><span><b>${syncedAchievements}</b><small>PROFILE SYNCED</small></span></div><button type="button" data-achievement-view="history">VIEW VERIFIED HISTORY →</button></section>`;
 }
 
+function universalProfileHeroMarkup() {
+  const p = state.profile;
+  const army = p.crabArmy;
+  const identityLabel = p.username ? `@${p.username.replace(/^@/, '')}` : (p.name || 'Oracle identity syncing');
+  const definitions = achievementDefinitions();
+  const universalRecords = (p.achievementRecords || [])
+    .filter(record => record?.verificationState === 'VERIFIED' && record?.universalProfileSync === 'DELIVERED');
+  const earned = universalRecords
+    .map(record => definitions.find(item => item.id === record.achievementId))
+    .filter(Boolean)
+    .slice(0, 3);
+  const progress = army ? Math.max(0, Math.min(100, Number(army.progressPct || 0))) : 0;
+  const rankLabel = army ? `LVL ${Number(army.level)} · ${army.rankName}` : 'CRAB ARMY SYNCING';
+  const nextLabel = army
+    ? army.nextRankName
+      ? `${Number(army.xpToNext || 0).toLocaleString()} XP to ${army.nextRankName}`
+      : 'Maximum Crab Army rank reached'
+    : 'Oracle progression unavailable';
+  const qualifiedReferrals = Number(state.referrals?.counts?.qualified || 0);
+  const photo = safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp';
+
+  return `<section class="universal-profile-hero" aria-label="Oracle Universal Profile">
+    <div class="universal-profile-main">
+      <div class="universal-profile-avatar">
+        <img src="${escapeHtml(photo)}" alt="Your Telegram profile photo" />
+        <span class="oracle-verified-mark" aria-label="Oracle verified">✓</span>
+      </div>
+      <div class="universal-profile-identity">
+        <span>ORACLE UNIVERSAL PROFILE</span>
+        <h2>${escapeHtml(identityLabel)}</h2>
+        <b>CRAB ARMY</b>
+        <p>${army ? escapeHtml(army.division) : 'Permanent ecosystem identity'}</p>
+        <div class="universal-badge-row">
+          ${earned.length ? earned.map(item => `<button type="button" data-achievement-id="${escapeHtml(item.id)}"><span>✦</span>${escapeHtml(item.label)}</button>`).join('') : '<small>Verified badges will appear here as they sync.</small>'}
+        </div>
+      </div>
+      <div class="universal-rank-block" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
+        <div class="universal-rank-medallion"><span>${army ? Number(army.level) : '—'}</span></div>
+        <small>CRAB ARMY RANK</small>
+        <strong>${escapeHtml(army?.rankName || 'SYNCING')}</strong>
+      </div>
+      <div class="universal-level-block">
+        <small>LEVEL</small>
+        <strong>${army ? Number(army.level) : '—'}</strong>
+        <b>${army ? Number(army.lifetimeXp).toLocaleString() + (army.nextRankXp ? ' / ' + Number(army.nextRankXp).toLocaleString() + ' XP' : ' XP') : 'Lifetime XP syncing'}</b>
+        <div class="universal-rank-progress" role="progressbar" aria-label="Crab Army rank progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div>
+        <span>${army ? progress + '%' : '—'}</span>
+        <em>${escapeHtml(nextLabel)}</em>
+      </div>
+    </div>
+    <div class="universal-profile-stats">
+      <div><span>LIFETIME XP</span><strong>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</strong></div>
+      <div><span>OPERATION XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></div>
+      <div><span>VERIFIED BADGES</span><strong>${universalRecords.length}</strong></div>
+      <div><span>QUALIFIED REFERRALS</span><strong>${qualifiedReferrals.toLocaleString()}</strong></div>
+      <div><span>CLEARANCE</span><strong>${escapeHtml(clearanceCountLabel())}</strong></div>
+    </div>
+    <div class="universal-profile-footer">
+      <div><b>${escapeHtml(rankLabel)}</b><small>Oracle owns lifetime progression · Project Q owns operation scoring.</small></div>
+      <button type="button" data-explainer="universal">ABOUT YOUR PROFILE →</button>
+    </div>
+  </section>`;
+}
+
 function profileScreen() {
   const p = state.profile;
   const walletView = state.profileView === 'wallet';
   return `<div class="passport-ui profile-identity-ui">
     ${walletView ? '<button class="burn-back" data-profile-view="overview">← PROFILE</button>' : ''}
-    <section class="participant-passport profile-compact-header"><div class="passport-copy"><span class="passport-kicker">PROJECT Q // YOUR IDENTITY</span><h2>${escapeHtml(p.name)}</h2>${p.username ? `<p class="passport-username">@${escapeHtml(p.username.replace(/^@/, ''))}</p>` : ''}<div class="passport-id-line"><span>ORACLE IDENTITY</span><b>${p.username ? '@' + escapeHtml(p.username.replace(/^@/, '')) : escapeHtml(p.name || 'Profile syncing')}</b><button type="button" class="passport-id-help" data-explainer="universal">WHAT IS THIS?</button></div><small>Crab Army rank · Oracle sync pending</small></div><div class="passport-photo"><img src="${escapeHtml(safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp')}" alt="Your Telegram profile photo" /><span>${clearanceCountLabel()} CLEARANCE</span></div></section>
+    ${universalProfileHeroMarkup()}
     ${walletView ? profileWallet() : `${campaignClearanceReady() ? '' : clearanceMarkup()}${campaignPassportMarkup()}${campaignClearanceReady() ? `<details class="passport-clearance-complete"><summary>Clearance ${clearanceCountLabel()} · verified <span>⌄</span></summary>${clearanceMarkup()}</details>` : ''}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button></details>`}
   </div>`;
 }
@@ -3486,6 +3551,7 @@ async function authenticateTelegram() {
     state.profile.username = session.user.username || null;
     state.profile.profileId = session.participant?.profileId || null;
     state.profile.photoUrl = safeHttpsUrl(session.user.photoUrl);
+    state.profile.crabArmy = session.identity?.crabArmy || null;
     state.profile.telegramVerified = true;
     state.profile.xVerified = Boolean(session.participant?.xVerified);
     state.profile.walletVerified = Boolean(session.participant?.walletVerified);
