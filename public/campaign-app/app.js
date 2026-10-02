@@ -648,6 +648,7 @@ function clearanceMarkup() {
   const checks = campaignEligibilityRequirements();
   const complete = checks.filter(item => item.complete).length;
   const oracleAvailable = Boolean(state.runtime?.oracleBotUrl && state.profile.telegramVerified);
+  const hasWalletChecks = checks.some(({ key }) => ['wallet', 'token-account', 'holder'].includes(key));
   return `<section class="clearance-panel profile-clearance"><div class="clearance-head"><div><span>CLEARANCE</span><h3>${complete === checks.length ? 'Ready for eligible missions' : 'Complete your operation setup'}</h3></div><b>${complete}/${checks.length}</b></div>
     <div class="dossier-clearance-track">${checks.map(item => `<i class="${item.complete ? 'complete' : ''}"></i>`).join('')}</div>
     <div class="clearance-list">${checks.map(item => {
@@ -657,7 +658,7 @@ function clearanceMarkup() {
             : 'OPEN TELEGRAM';
       return `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}"><i>${item.complete ? '✓' : '○'}</i><div><b>${escapeHtml(item.label)}</b><small>${item.complete ? 'Verified' : escapeHtml(item.action === 'oracle' && !oracleAvailable ? 'Oracle connection is not ready in this environment yet.' : item.detail)}</small></div>${item.complete ? '' : `<button data-clearance-action="${item.action}" ${item.action === 'oracle' && !oracleAvailable ? 'disabled' : ''}>${actionLabel} →</button>`}</article>`;
     }).join('')}</div>
-    <small class="clearance-observation">One connected setup: verify X and your reward wallet through Oracle once. Project Q then checks the FAWKQ token account and minimum holding automatically from that same wallet.</small>
+    <small class="clearance-observation">${hasWalletChecks ? 'One connected setup: verify X and your reward wallet through Oracle once. Project Q then checks the FAWKQ token account and minimum holding automatically from that same wallet.' : 'One connected setup: complete only the identity requirements configured for this operation.'}</small>
   </section>`;
 }
 
