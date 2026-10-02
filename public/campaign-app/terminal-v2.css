@@ -937,3 +937,65 @@
 .mission-file-sheet .referral-head{display:block}
 .mission-file-sheet .referral-brand-copy h2{font-size:22px}
 @media(max-width:359px){.profile-clearance{padding:12px}.profile-clearance .clearance-row{gap:6px;grid-template-columns:16px minmax(0,1fr) auto}.profile-clearance .clearance-row>button{max-width:85px;font-size:11px}.terminal-snapshot article strong{font-size:18px}.q-shell-v2 .profile-compact-header{padding:12px;grid-template-columns:minmax(0,1fr) 64px}.q-shell-v2 .profile-compact-header .passport-photo,.q-shell-v2 .profile-compact-header .passport-photo img{width:64px;height:64px}.q-shell-v2 .profile-compact-header .passport-copy h2{font-size:26px}}
+
+
+/* Team beta mobile cleanup — 2 Oct 2026 */
+.q-shell-v2 .account-menu-control{
+  width:40px;min-width:40px;min-height:44px;padding:8px;border:1px solid #d8d5c9;
+  border-radius:9px;background:#fffdf8;color:#14242c;display:grid;place-items:center;cursor:pointer
+}
+.q-shell-v2 .account-menu-control svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.q-shell-v2 .passport-id-help{
+  padding:0;border:0;background:transparent;color:#257da7;font:700 10px/1 var(--q-display);
+  letter-spacing:.04em;text-decoration:underline;text-underline-offset:2px;cursor:pointer
+}
+.q-shell-v2 .updates-back{
+  min-height:40px;padding:0 8px;border:0;background:transparent;color:#1e678c;
+  font:700 12px/1 var(--q-display);letter-spacing:.04em;cursor:pointer
+}
+.q-shell-v2 .updates-dialog header{justify-content:flex-start;gap:12px}
+.q-shell-v2 .updates-dialog header>div{min-width:0}
+.q-shell-v2 .updates-dialog p,
+.q-shell-v2 .passport-copy>small,
+.q-shell-v2 .passport-id-line,
+.q-shell-v2 .clearance-row small,
+.q-shell-v2 .terminal-actions small,
+.q-shell-v2 .terminal-next-step small{
+  font-weight:500
+}
+
+@media(max-width:860px){
+  html,body{min-height:var(--tg-viewport-height);overscroll-behavior-y:contain}
+  body{-webkit-overflow-scrolling:touch}
+  .q-shell-v2 .app-shell{min-height:var(--tg-viewport-height)}
+  .q-shell-v2 main,.q-shell-v2.rail-collapsed main{
+    padding-bottom:calc(146px + env(safe-area-inset-bottom))!important;
+  }
+  .q-shell-v2 .screen{padding-bottom:24px}
+  .q-shell-v2 .topbar{
+    background:#fffdf8;
+    border-bottom:1px solid #dedbd0;
+    box-shadow:0 5px 18px rgba(28,45,52,.07);
+    padding-top:calc(7px + env(safe-area-inset-top));
+    padding-bottom:7px;
+  }
+  .q-shell-v2 .compact-brand{width:48px;height:48px;flex-basis:48px}
+  .q-shell-v2 .brand-wordmark>b{font-size:24px}
+  .q-shell-v2 #screen-title{font-size:9px;margin-top:3px;color:#536b76}
+  .q-shell-v2 .topbar-identity{gap:8px}
+  .q-shell-v2 .top-actions{gap:7px;margin-left:auto}
+  .q-shell-v2 .notification-control{transform:none;width:36px;min-width:36px;padding:6px}
+  .q-shell-v2 .account-control{min-height:44px;padding:4px 6px 4px 4px}
+  .q-shell-v2 .account-control img{width:32px;height:32px}
+  .q-shell-v2 .account-menu-control{width:38px;min-width:38px}
+}
+@media(max-width:430px){
+  .q-shell-v2 .topbar{gap:5px;padding-left:8px;padding-right:8px}
+  .q-shell-v2 .brand-wordmark>b{font-size:22px}
+  .q-shell-v2 .compact-brand{width:43px;height:43px;flex-basis:43px}
+  .q-shell-v2 .account-copy{display:none}
+  .q-shell-v2 .account-control{min-width:42px;width:42px;padding:4px}
+  .q-shell-v2 .account-control::before,.q-shell-v2 .account-control::after{display:none}
+  .q-shell-v2 .notification-control{width:34px;min-width:34px}
+  .q-shell-v2 .account-menu-control{width:36px;min-width:36px;padding:7px}
+}
