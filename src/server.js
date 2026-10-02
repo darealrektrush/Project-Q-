@@ -1231,7 +1231,7 @@ function sendHome(chatId, threadId, { isPrivate = false, referralCaptured = null
   return renderMenu(chatId, threadId, 'home', defaultText, {
     replyMarkup: telegram.buildHomeMenu({
       privateUrl,
-      campaignAppUrl: campaignUi.resolveCampaignAppUrl(),
+      campaignAppUrl: isPrivate ? campaignUi.resolveCampaignAppUrl() : null,
     }),
   });
 }
