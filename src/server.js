@@ -1572,6 +1572,17 @@ app.listen(PORT, async () => {
     console.log('[oracle-identity] dev configuration:',
       `url=${process.env.ORACLE_PROJECT_Q_IDENTITY_URL ? 'present' : 'missing'}`,
       `secret=${process.env.ORACLE_PROJECT_Q_EVENT_SECRET ? 'present' : 'missing'}`);
+    console.log('[project-q-dev] tester rails', {
+      campaignApp: process.env.PROJECT_Q_CAMPAIGN_APP_ENABLED === 'true',
+      oracleBotUrl: /^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/.test(process.env.ORACLE_PROJECT_Q_BOT_URL || ''),
+      oracleWalletEvents: process.env.PROJECT_Q_ORACLE_WALLET_EVENTS_ENABLED === 'true',
+      campaignXpSettlement: process.env.PROJECT_Q_CAMPAIGN_XP_SETTLEMENT_ENABLED === 'true',
+      websiteVoteReview: process.env.PROJECT_Q_WEBSITE_VOTE_REVIEW_ENABLED === 'true',
+      telegramTrendingReceipts: telegramTrendingReceiptsEnabled(process.env),
+      earnToBurn: process.env.PROJECT_Q_EARN_TO_BURN_ENABLED === 'true',
+      burnVerification: process.env.PROJECT_Q_BURN_VERIFICATION_ENABLED === 'true',
+      support: support.supportEnabled(),
+    });
     try {
       const bot = await identifyTelegramBot();
       console.log(bot.configured
