@@ -650,8 +650,14 @@ function clearanceMarkup() {
   const oracleAvailable = Boolean(state.runtime?.oracleBotUrl && state.profile.telegramVerified);
   return `<section class="clearance-panel profile-clearance"><div class="clearance-head"><div><span>CLEARANCE</span><h3>${complete === checks.length ? 'Ready for eligible missions' : 'Complete your operation setup'}</h3></div><b>${complete}/${checks.length}</b></div>
     <div class="dossier-clearance-track">${checks.map(item => `<i class="${item.complete ? 'complete' : ''}"></i>`).join('')}</div>
-    <div class="clearance-list">${checks.map(item => `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}"><i>${item.complete ? '✓' : '○'}</i><div><b>${escapeHtml(item.label)}</b><small>${item.complete ? 'Verified' : escapeHtml(item.action === 'oracle' && !oracleAvailable ? 'Oracle connection is not ready in this environment yet.' : item.detail)}</small></div>${item.complete ? '' : `<button data-clearance-action="${item.action}" ${item.action === 'oracle' && !oracleAvailable ? 'disabled' : ''}>${item.action === 'oracle' ? 'CONNECT' : item.action === 'wallet' ? 'CHECK WALLET' : 'OPEN TELEGRAM'} →</button>`}</article>`).join('')}</div>
-    <small class="clearance-observation">Connections come from Oracle. Token-account and holding eligibility use the latest verified wallet observation.</small>
+    <div class="clearance-list">${checks.map(item => {
+      const actionLabel = item.key === 'x' ? 'CONNECT X'
+        : item.key === 'wallet' ? 'VERIFY WALLET'
+          : item.action === 'wallet' ? 'REFRESH'
+            : 'OPEN TELEGRAM';
+      return `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}"><i>${item.complete ? '✓' : '○'}</i><div><b>${escapeHtml(item.label)}</b><small>${item.complete ? 'Verified' : escapeHtml(item.action === 'oracle' && !oracleAvailable ? 'Oracle connection is not ready in this environment yet.' : item.detail)}</small></div>${item.complete ? '' : `<button data-clearance-action="${item.action}" ${item.action === 'oracle' && !oracleAvailable ? 'disabled' : ''}>${actionLabel} →</button>`}</article>`;
+    }).join('')}</div>
+    <small class="clearance-observation">One connected setup: verify X and your reward wallet through Oracle once. Project Q then checks the FAWKQ token account and minimum holding automatically from that same wallet.</small>
   </section>`;
 }
 
@@ -1783,6 +1789,7 @@ function profileWallet() {
       ${statePill(walletReady ? 'VERIFIED' : 'REQUIRED', walletReady ? 'success' : 'pending')}
     </section>
 
+    ${walletReady ? '' : `<section class="wallet-recovery-action"><b>Wallet verification required</b><p>Open Oracle to verify one reward wallet with a signed message. No transaction or fee is required.</p><button class="gold-action compact" data-clearance-action="oracle">VERIFY WALLET WITH ORACLE ↗</button><small>After Oracle confirms ownership, return here and tap Refresh Verification in Profile.</small></section>`}
     <section class="passport-wallet-balance">
       <div><span>FAWKQ BALANCE</span><strong>${balance}</strong><small>Observed ${escapeHtml(observed)}</small></div>
       <button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh</button>
