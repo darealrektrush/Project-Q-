@@ -1,6 +1,9 @@
 {
   "schema": "bond-team-smoke-v2",
   "environment": "ISOLATED_STAGING",
+  "app": "Project Q Dev",
+  "miniAppBot": "@testingCQ_bot",
+  "oracleBot": "@Oracle_Dev_cs_bot",
   "testerCount": 0,
   "completedAt": null,
   "criticalIssues": 0,
@@ -10,24 +13,52 @@
     {
       "id": "telegram-navigation",
       "status": "PENDING",
-      "notes": "Launch from the official Telegram Mini App. Verify bottom navigation, Telegram BackButton, safe areas, guided tour and return navigation."
+      "notes": "Launch from @testingCQ_bot on a real phone. Verify Terminal settles before the guide, bottom navigation, safe areas, Mission File open/back behavior and reopen state."
     },
     {
       "id": "x-oauth-link",
       "status": "PENDING",
-      "notes": "Use Oracle to connect/recover X identity. Confirm Project Q reflects the verified state without creating a competing identity record."
+      "notes": "Use Oracle Dev to connect/recover X identity. Return to Project Q Dev, refresh verification and confirm the same canonical profile is resolved."
     },
     {
       "id": "wallet-session",
       "status": "PENDING",
-      "notes": "Verify reward wallet through Oracle. Confirm token-account/holder clearance, wallet refresh, destination state and reconnect behavior."
+      "notes": "Verify the reward wallet through Oracle Dev. Confirm destination, FAWKQ token-account state, holder clearance, balance refresh and continuity after reopening Project Q."
     },
     {
       "id": "comprehension-recovery",
       "status": "PENDING",
-      "notes": "Tester must explain where they are, what is happening, what to do next, and recover from a simulated sync/error state without assistance."
+      "notes": "Without coaching, tester explains where they are, what is happening, what to do next, whether an action counted and where receipts/results live. Exercise a non-destructive Retry/recovery state."
     }
   ],
-  "testers": [],
-  "notes": "Do not mark PASSED until the scenario was actually completed in isolated staging. Qualification also requires at least 3 testers, zero critical/high issues, no production data touched, and evidence completed within 48 hours."
+  "testers": [
+    {
+      "alias": "tester-1",
+      "device": null,
+      "telegramNavigation": "PENDING",
+      "xOauthLink": "PENDING",
+      "walletSession": "PENDING",
+      "comprehensionRecovery": "PENDING",
+      "issues": []
+    },
+    {
+      "alias": "tester-2",
+      "device": null,
+      "telegramNavigation": "PENDING",
+      "xOauthLink": "PENDING",
+      "walletSession": "PENDING",
+      "comprehensionRecovery": "PENDING",
+      "issues": []
+    },
+    {
+      "alias": "tester-3",
+      "device": null,
+      "telegramNavigation": "PENDING",
+      "xOauthLink": "PENDING",
+      "walletSession": "PENDING",
+      "comprehensionRecovery": "PENDING",
+      "issues": []
+    }
+  ],
+  "notes": "Do not mark PASSED until actually completed in isolated staging. At least 3 testers, zero critical/high issues, no production data touched, and evidence completed within 48 hours are required."
 }
