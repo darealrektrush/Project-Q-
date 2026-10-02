@@ -40,6 +40,7 @@ test('resolves the permanent Oracle profile for a verified Telegram actor', asyn
     profileId: '11111111-1111-4111-8111-111111111111',
     profileState: 'provisional',
     telegramVerified: true,
+    crabArmy: null,
   });
 });
 
