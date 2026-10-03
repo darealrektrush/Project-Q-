@@ -864,6 +864,56 @@ test('Verification Center separates user actions from automatic eligibility chec
   assert.match(holderMissing, /Checking holding value/);
 });
 
+test('Round 2 access continuity advances X to wallet to finalizing to ready', async () => {
+  const context = await loadRuntime();
+
+  const xStep = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: false,
+    walletVerified: false,
+    tokenAccountReady: false,
+    holderEligible: false,
+  });
+  assert.match(xStep, /CONNECT X/);
+  assert.doesNotMatch(xStep, /VERIFY WALLET/);
+  assert.match(xStep, /2 STEPS REMAINING/);
+
+  const walletStep = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: true,
+    walletVerified: false,
+    tokenAccountReady: false,
+    holderEligible: false,
+  });
+  assert.match(walletStep, /X connected/);
+  assert.match(walletStep, /VERIFY WALLET/);
+  assert.doesNotMatch(walletStep, /CONNECT X/);
+  assert.match(walletStep, /1 STEP REMAINING/);
+
+  const finalizing = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: true,
+    walletVerified: true,
+    tokenAccountReady: false,
+    holderEligible: false,
+  });
+  assert.match(finalizing, /FINALIZING/);
+  assert.match(finalizing, /Primary verification complete/);
+  assert.doesNotMatch(finalizing, /CONNECT X|>VERIFY WALLET/);
+
+  const ready = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: true,
+    walletVerified: true,
+    tokenAccountReady: true,
+    holderEligible: true,
+  });
+  assert.match(ready, /OPERATION ACCESS/);
+  assert.match(ready, /<h3>Ready<\/h3>/);
+  assert.match(ready, /VERIFIED/);
+  assert.doesNotMatch(ready, /CONNECT X|VERIFY WALLET|FINALIZING/);
+});
+
 test('Verification Center only exposes actions configured by the operation', async () => {
   const context = await loadRuntime();
   const rendered = context.__renderClearanceWith({
