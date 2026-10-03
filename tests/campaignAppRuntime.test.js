@@ -929,6 +929,7 @@ test('Verification Center only exposes actions configured by the operation', asy
   assert.match(rendered, /Connect X/);
   assert.match(rendered, /Telegram/);
   assert.doesNotMatch(rendered, /Verify Solana Wallet/);
+  assert.doesNotMatch(rendered, /<b>Wallet<\/b>/);
   assert.doesNotMatch(rendered, /FAWKQ account/);
   assert.doesNotMatch(rendered, /\$2 FAWKQ minimum/);
 });
