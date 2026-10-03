@@ -2222,6 +2222,44 @@ function renderTabInPlace() {
   requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
 }
 
+async function postNativeConnection(path, body = {}) {
+  if (!state.telegram?.initData) throw new Error('Open Project Q from Telegram to continue.');
+  const response = await fetch('/campaign-app/api/connections/' + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+    body: JSON.stringify({ initData: state.telegram.initData, ...body }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error || 'Connection could not be completed.');
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
+
+async function startNativeXConnection() {
+  try {
+    const result = await postNativeConnection('x/start', { intent: 'link' });
+    sessionStorage.setItem('project-q:pending-verification', 'x');
+    toast('Opening X authorization…');
+    openExternal(result.authorizeUrl);
+  } catch (error) {
+    toast(error.message || 'X connection could not be started.');
+  }
+}
+
+async function startNativeWalletConnection() {
+  try {
+    toast('Preparing secure wallet verification…');
+    const result = await postNativeConnection('wallet/fallback');
+    sessionStorage.setItem('project-q:pending-verification', 'wallet');
+    openExternal(result.verificationUrl);
+  } catch (error) {
+    toast(error.message || 'Wallet verification could not be started.');
+  }
+}
 function openOracle() {
   const url = state.runtime?.oracleBotUrl;
   if (!/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/.test(url || '')) {
