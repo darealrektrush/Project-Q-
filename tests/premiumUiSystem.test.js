@@ -69,3 +69,12 @@ test('wallet picker uses provider identity styling and device-first discovery co
   assert.match(css, /data-wallet-brand="solflare"/);
   assert.match(css, /data-wallet-brand="backpack"/);
 });
+
+
+test('Rewards exposes wallet verification directly instead of forcing a Profile detour', () => {
+  assert.match(app, /reward-destination \$\{walletReady \? 'is-verified' : 'needs-wallet'\}/);
+  assert.match(app, /data-clearance-action="wallet-verify">VERIFY WALLET →/);
+  assert.match(app, /data-profile-view="wallet">VIEW WALLET →/);
+  assert.match(app, /Verify one reward wallet in Project Q/);
+  assert.doesNotMatch(app, /Verify one reward wallet through Oracle/);
+});
