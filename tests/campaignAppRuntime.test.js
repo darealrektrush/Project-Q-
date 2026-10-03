@@ -832,11 +832,12 @@ test('Verification Center separates user actions from automatic eligibility chec
   const context = await loadRuntime();
 
   const telegramMissing = context.__renderClearanceWith({});
-  assert.match(telegramMissing, /PROJECT Q \/\/ VERIFICATION CENTER/);
-  assert.match(telegramMissing, /AUTOMATIC CHECKS/);
+  assert.match(telegramMissing, /PROJECT Q \/\/ OPERATION ACCESS/);
+  assert.match(telegramMissing, /Automatic checks/);
   assert.match(telegramMissing, />Telegram</);
   assert.match(telegramMissing, /data-clearance-action="x"/);
-  assert.match(telegramMissing, /data-clearance-action="wallet-verify"/);
+  assert.doesNotMatch(telegramMissing, /data-clearance-action="wallet-verify"/);
+  assert.match(telegramMissing, /2 STEPS REMAINING/);
   assert.doesNotMatch(telegramMissing, /data-clearance-action="telegram"/);
   assert.doesNotMatch(telegramMissing, /\bIneligible\b/i);
 
@@ -845,9 +846,9 @@ test('Verification Center separates user actions from automatic eligibility chec
     xVerified: true,
     walletVerified: true,
   });
-  assert.match(tokenMissing, /Finishing automatic checks/);
+  assert.match(tokenMissing, /FINALIZING/);
+  assert.match(tokenMissing, /Primary verification complete/);
   assert.match(tokenMissing, /FAWKQ account/);
-  assert.match(tokenMissing, /2\/2/);
 
   const holderMissing = context.__renderClearanceWith({
     telegramVerified: true,
@@ -1262,10 +1263,11 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   const context = await loadRuntime();
   const clearance = context.__renderClearanceWith({ telegramVerified: true });
   assert.match(clearance, /CONNECT X/);
-  assert.match(clearance, /VERIFY WALLET/);
-  assert.match(clearance, /PROJECT Q \/\/ VERIFICATION CENTER/);
-  assert.match(clearance, /Two actions\. Everything else is automatic\./);
-  assert.match(clearance, /AUTOMATIC CHECKS/);
+  assert.doesNotMatch(clearance, /VERIFY WALLET/);
+  assert.match(clearance, /PROJECT Q \/\/ OPERATION ACCESS/);
+  assert.match(clearance, /2 STEPS REMAINING/);
+  assert.match(clearance, /verification-journey/);
+  assert.match(clearance, /Automatic checks/);
   assert.match(clearance, /\$2 FAWKQ minimum/);
   const wallet = context.__profiles.wallet;
   assert.match(wallet, /data-clearance-action="wallet-verify"[^>]*>VERIFY WALLET/);
@@ -1309,13 +1311,13 @@ test('Verification Center presents only X and wallet as participant actions', as
     holderEligible: false,
   }, null, 'verified');
 
-  assert.match(html, /PROJECT Q \/\/ VERIFICATION CENTER/);
-  assert.match(html, /Two actions\. Everything else is automatic\./);
+  assert.match(html, /PROJECT Q \/\/ OPERATION ACCESS/);
+  assert.match(html, /2 STEPS REMAINING/);
+  assert.match(html, /verification-journey/);
   assert.match(html, /data-clearance-action="x"/);
   assert.match(html, /CONNECT X/);
-  assert.match(html, /data-clearance-action="wallet-verify"/);
-  assert.match(html, /VERIFY WALLET/);
-  assert.match(html, /AUTOMATIC CHECKS/);
+  assert.doesNotMatch(html, /data-clearance-action="wallet-verify"/);
+  assert.match(html, /Automatic checks/);
   assert.match(html, /Telegram/);
   assert.match(html, /FAWKQ account/);
   assert.match(html, /\$2 FAWKQ minimum/);
