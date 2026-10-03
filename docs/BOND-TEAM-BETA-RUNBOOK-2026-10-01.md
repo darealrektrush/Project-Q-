@@ -19,8 +19,8 @@ Human beta should test the real participant experience that does not require pro
 1. Signed Telegram Mini App launch and identity.
 2. Terminal, Operations, Record, Rewards and Profile navigation.
 3. First-open guide, safe areas, back navigation and reopening.
-4. Oracle X connection/recovery reflected back into Project Q.
-5. Oracle reward-wallet continuity reflected back into Project Q.
+4. Project Q starts the X connection/recovery flow and returns with the canonical Oracle-verified X state.
+5. Project Q starts reward-wallet verification and returns with the canonical Oracle-verified reward wallet.
 6. FAWKQ token-account and minimum-holder clearance presentation.
 7. Profile → Achievements → verified-history navigation.
 8. Reward states that distinguish allocation, schedule, release and confirmed receipt.
@@ -59,24 +59,28 @@ Pass only when:
 - Telegram BackButton returns to the parent view before leaving Q.
 - Reopening the Mini App returns to a coherent state.
 
-### B. Oracle X identity
+### B. X connection from Project Q
 
 Pass only when:
 
-- tester opens Oracle Dev from Project Q;
-- connects or recovers their intended X account;
-- returns to Project Q;
-- Refresh Verification shows the canonical X state;
+- tester starts **Connect X** from Project Q;
+- the Oracle Dev verification handoff opens without requiring the tester to understand backend architecture;
+- tester connects or recovers their intended X account;
+- returning to Project Q resolves the canonical X state automatically or through the visible refresh control;
+- the next-action UI advances from X to wallet;
 - no duplicate Project Q identity is created.
 
-### C. Wallet session
+### C. Wallet verification from Project Q
 
 Pass only when:
 
-- one reward wallet is verified through Oracle Dev;
-- Project Q shows the same wallet as the reward destination;
-- wallet refresh works;
-- FAWKQ token-account and holder state are understandable;
+- tester starts **Verify Wallet** directly from Project Q Terminal, Rewards, or Profile;
+- the wallet chooser shows detected Wallet Standard providers first and recognizable branded choices for Phantom, Solflare and Backpack;
+- the tester sees **Signature only · 0 SOL · No claim transaction required** before verification;
+- one reward wallet is verified through the Oracle authority flow;
+- Project Q shows the same wallet as the verified reward destination;
+- Rewards changes from **VERIFY WALLET** to **VIEW WALLET** after verification;
+- FAWKQ token-account and minimum-holder checks remain automatic and understandable;
 - reopening Project Q resolves the same canonical wallet.
 
 ### D. Comprehension and recovery
@@ -126,3 +130,29 @@ Only after the human beta is clean should launch provisioning continue:
 10. perform the two-founder activation process.
 
 Production activation must remain fail-closed until those gates are actually evidenced.
+
+
+## Round 2 focus — premium access continuity
+
+This beta round is specifically intended to verify the post-Premium-V5 participant flow.
+
+A tester should not need to know which backend service owns a check. The visible journey is:
+
+1. Open Project Q from Telegram.
+2. Follow the single **Next Step**.
+3. Connect X.
+4. Verify reward wallet.
+5. Allow automatic eligibility checks to settle.
+6. Reach **OPERATION ACCESS · READY**.
+7. Enter Missions, Rewards, Record and Profile without seeing contradictory readiness language.
+
+Fail the round if Terminal, Operations, Rewards or Profile disagree about whether X or wallet verification is complete.
+
+### Issue severity
+
+- **Critical** — identity collision, wrong wallet, production data touched, unauthorized write, financial mutation, or security/privacy failure.
+- **High** — tester cannot complete X/wallet setup, gets trapped, sees contradictory readiness state, or cannot recover without manual admin intervention.
+- **Medium** — confusing copy, visual hierarchy, provider branding, layout or non-blocking state delay.
+- **Low** — cosmetic polish only.
+
+Only Critical and High issues block the beta gate, but Medium issues should be triaged before production activation when they materially affect comprehension.
