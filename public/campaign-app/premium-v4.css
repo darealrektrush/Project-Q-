@@ -484,3 +484,39 @@ body.q-shell-v2{background:var(--q-page);color:var(--q-ink-premium)}
   .q-shell-v2 .wallet-brand-option,
   .q-shell-v2 .native-wallet-option.premium{min-height:55px;padding:8px 10px}
 }
+
+
+/* Contextual system state — quiet unless action is required. */
+.q-shell-v2 .system-status-banner{
+  min-height:44px;margin:0 0 10px;padding:7px 9px;
+  border:0!important;border-radius:10px;
+  background:rgba(255,253,248,.8)!important;
+  box-shadow:var(--q-elev-1);
+}
+.q-shell-v2 .system-status-banner>div span{
+  font:800 7px/1 var(--q-display);letter-spacing:.09em;color:#76868c
+}
+.q-shell-v2 .system-status-banner>div b{
+  margin-top:2px;font:700 10px/1.1 var(--q-ui);color:#2b3d44
+}
+.q-shell-v2 .system-status-banner>div small{
+  margin-top:2px;font:500 8px/1.3 var(--q-ui);color:#7c8a90
+}
+.q-shell-v2 .system-status-banner>button{
+  min-height:30px;padding:0 9px;border:0;border-radius:8px;
+  background:#edf4f5;color:#3d6f82;font:700 8px/1 var(--q-ui)
+}
+.q-shell-v2 .system-status-banner.identity-sync{
+  border-left:3px solid var(--q-cyan)!important;
+  background:linear-gradient(90deg,#edf8fb,rgba(255,253,248,.88))!important
+}
+.q-shell-v2 .system-status-banner.identity-sync>div span{color:#3488aa}
+.q-shell-v2 .system-status-banner.session-error,
+.q-shell-v2 .system-status-banner.blocked:not(.identity-sync){
+  border-left:3px solid #b86d61!important;
+  background:linear-gradient(90deg,#fbefec,rgba(255,253,248,.9))!important
+}
+@media(max-width:430px){
+  .q-shell-v2 .system-status-banner{min-height:40px;padding:6px 8px}
+  .q-shell-v2 .system-status-banner>div small{display:none}
+}
