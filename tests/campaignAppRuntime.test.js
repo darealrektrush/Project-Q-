@@ -386,8 +386,8 @@ test('Profile owns identity while Record owns XP, standing and badges', async ()
   }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
   assert.match(profile, /ORACLE UNIVERSAL PROFILE/);
   assert.match(profile, /@darealrektrush/);
-  assert.match(profile, /<span>LEVEL<\/span><strong>18<\/strong>/);
-  assert.match(profile, /<span>ARMY RANK<\/span><b>Master Sergeant<\/b>/);
+  assert.match(profile, /<span>LEVEL<\/span>[\s\S]*<strong>18<\/strong>/);
+  assert.match(profile, /<span>ARMY RANK<\/span>[\s\S]*<b>Master Sergeant<\/b>/);
   assert.match(profile, /115,600/);
   assert.match(profile, /14,000 XP to First Sergeant/);
   assert.match(profile, /680/);
@@ -1254,7 +1254,7 @@ test('reward rows distinguish scheduled timing from confirmed on-chain timing', 
 test('beta profile shows a human-readable Oracle Universal Profile and updates use a Back action', async () => {
   const context = await loadRuntime();
   assert.match(context.__profiles.overview, /ORACLE UNIVERSAL PROFILE/);
-  assert.match(context.__profiles.overview, /PROFILE DETAILS/);
+  assert.match(context.__profiles.overview, /VIEW PROFILE/);
   assert.match(context.__profiles.overview, /data-explainer="universal"/);
   assert.doesNotMatch(context.__profiles.overview, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
 
@@ -1300,8 +1300,8 @@ test('Universal Profile hero keeps lifetime Crab Army progression separate from 
   assert.match(html, /LIFETIME XP[\s\S]*78,400/);
   assert.match(html, /OPERATION XP[\s\S]*725/);
   assert.match(html, /Colour Sergeant/);
-  assert.match(html, /XP Earned/);
-  assert.match(html, /BADGES[\s\S]*1/);
+  assert.match(html, /ACHIEVEMENTS[\s\S]*1/);
+  assert.doesNotMatch(html, /XP Earned[\s\S]*LIFETIME XP/);
   assert.doesNotMatch(html, /78,400 operation XP|725 lifetime XP/i);
 });
 
@@ -1344,9 +1344,9 @@ test('Universal Profile uses compact card hierarchy', async () => {
   }, null, 'verified');
 
   assert.match(html, /universal-profile-hero compact/);
-  assert.match(html, /universal-profile-compact-top/);
-  assert.match(html, /universal-profile-compact-stats/);
-  assert.match(html, /PROFILE DETAILS/);
+  assert.match(html, /universal-pass-main/);
+  assert.match(html, /universal-pass-rail/);
+  assert.match(html, /VIEW PROFILE/);
   assert.match(html, /ARMY RANK/);
 });
 
