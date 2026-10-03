@@ -355,7 +355,8 @@ test('Operations UI gives each bottom destination one job', async () => {
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation recorded yet/);
   assert.equal((context.__rendered.rewards.match(/OPEN WALLET/g) || []).length, 1);
-  assert.match(context.__profiles.overview, /CLEARANCE[\s\S]*0\/5/);
+  assert.match(context.__profiles.overview, /PROJECT Q \/\/ OPERATION ACCESS/);
+  assert.match(context.__profiles.overview, /2 STEPS REMAINING/);
   assert.doesNotMatch(context.__profiles.overview, /passport-tabs|Campaign Records|dossier-live-record|passport-rewards-view/);
   assert.match(context.__profiles.wallet, /VERIFIED REWARD DESTINATION/);
   assert.match(context.__profiles.wallet, /Non-custodial by design/);
@@ -384,12 +385,14 @@ test('Profile owns identity while Record owns XP, standing and badges', async ()
   }, { databaseState: 'ACTIVE', schedule: { phase: 'ACTIVE', currentCycle: 2 } });
   assert.match(profile, /ORACLE UNIVERSAL PROFILE/);
   assert.match(profile, /@darealrektrush/);
-  assert.match(profile, /LVL 18 · Master Sergeant/);
+  assert.match(profile, /<span>LEVEL<\/span><strong>18<\/strong>/);
+  assert.match(profile, /<span>ARMY RANK<\/span><b>Master Sergeant<\/b>/);
   assert.match(profile, /115,600/);
   assert.match(profile, /14,000 XP to First Sergeant/);
   assert.match(profile, /680/);
   assert.match(profile, /#14/);
-  assert.match(profile, /CAMPAIGN PASSPORT/);
+  assert.match(profile, /OP 01 \/\/ CURRENT OPERATION/);
+  assert.match(profile, /profile-operation-card/);
   assert.doesNotMatch(profile, /passport-tabs/);
   const badges = context.__renderRecordWith('achievements');
   assert.match(badges, /PROJECT Q \/\/ ACHIEVEMENTS/);
