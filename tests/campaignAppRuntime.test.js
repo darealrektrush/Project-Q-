@@ -1259,7 +1259,8 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   assert.match(clearance, /VERIFY WALLET/);
   assert.match(clearance, /PROJECT Q \/\/ VERIFICATION CENTER/);
   assert.match(clearance, /Two actions\. Everything else is automatic\./);
-  assert.match(clearance, /minimum holding automatically/);
+  assert.match(clearance, /AUTOMATIC CHECKS/);
+  assert.match(clearance, /\$2 FAWKQ minimum/);
   const wallet = context.__profiles.wallet;
   assert.match(wallet, /data-clearance-action="wallet-verify"[^>]*>VERIFY WALLET/);
   assert.match(wallet, /signed ownership message/);
