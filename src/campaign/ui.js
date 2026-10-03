@@ -107,10 +107,10 @@ export function buildCampaignReadinessText(readiness) {
 const SCREEN_TEXT = Object.freeze({
   how: [
     'ⓘ *How Project Q works*', '',
-    '1. Complete the five clearance requirements in Profile.',
-    '2. Open Operations to read the Briefing and choose a Mission File.',
-    '3. Follow settled XP and standing in Record.',
-    '4. Follow personal allocations and delivery receipts in Rewards.',
+    '1. Open the app and complete Operation Access: Connect X and verify your reward wallet.',
+    '2. Project Q checks Telegram, your FAWKQ account and minimum holding automatically.',
+    '3. Open Operations to read the Briefing and choose a Mission File.',
+    '4. Follow settled XP, standing and rewards in Record and Rewards.',
     '', 'Gold marks actions and earned value. Blue marks verification and progress.',
     'Oracle owns your permanent identity. Operation XP and standing are separate from lifetime Crab Army rank.',
   ].join('\n'),
@@ -123,12 +123,12 @@ const SCREEN_TEXT = Object.freeze({
   enroll: [
     '✅ *Enroll / Wallet Setup*', '',
     'Enrollment opens only after the public readiness gate passes.',
-    'You will link one Telegram account, one verified X identity and one reward wallet, then complete a 10-minute signed-message challenge.',
+    'You connect X once and verify one reward wallet with a readable signed ownership message. Telegram, FAWKQ token-account and holder checks run automatically.',
     '', '*Current state:* Not open',
   ].join('\n'),
   status: [
     '📈 *My Campaign Status*', '',
-    'This screen will show enrollment, identity verification, wallet readiness, FAWKQ token-account readiness, cycle eligibility, rank and next deadline.',
+    'This screen shows Operation Access, automatic eligibility checks, campaign XP, standing and the next action.',
     '', '*Current state:* Campaign not launched',
   ].join('\n'),
   xp: [
@@ -193,15 +193,23 @@ export function buildParticipantStatusText(status, { lifecycle = 'UPCOMING', ora
   if (status.unavailable) return '📈 *My Status*\n\nYour operation profile is temporarily unavailable. Open the app to retry verification.';
   const profile = { telegramVerified: true, xVerified: status.xVerified, walletVerified: status.walletVerified,
     tokenAccountReady: status.tokenAccountReady, holderEligible: status.holderEligible };
-  const checks = participantClearance(profile);
   const next = participantNextStep({ profile, lifecycle, oracleAvailable });
   const rewardStatus = status.rewards?.recorded ? (status.rewards.receiptCount > 0 ? 'Delivery receipts available' : 'Allocation recorded') : 'Awaiting allocation';
+  const actionCount = [status.xVerified, status.walletVerified].filter(Boolean).length;
+  const access = actionCount === 2 ? 'READY' : `${actionCount}/2`;
+  const automatic = [
+    'Telegram ✅',
+    `FAWKQ account ${yesNo(status.tokenAccountReady)}`,
+    `$2 minimum ${yesNo(status.holderEligible)}`,
+  ].join(' · ');
   return ['📈 *My Status*', '',
-    `*Clearance:* ${checks.filter(item => item.complete).length}/${checks.length}`,
+    `*Operation Access:* ${access}`,
+    `*Connections:* X ${yesNo(status.xVerified)} · Wallet ${yesNo(status.walletVerified)}`,
+    `*Automatic:* ${automatic}`,
     `*Operation XP:* ${Number(status.totalXp || 0).toLocaleString()}`,
     `*Standing:* ${standing ? '#' + Number(standing).toLocaleString() : 'Unranked'}`,
     `*Rewards:* ${rewardStatus}`, '', `*Next:* ${next.title}`, next.detail,
-    '', 'Open the app for clearance actions and your verified details.',
+    '', 'Open Project Q for the guided verification flow and your full record.',
   ].join('\n');
 }
 
