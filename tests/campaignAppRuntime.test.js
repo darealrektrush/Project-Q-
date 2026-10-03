@@ -1351,7 +1351,7 @@ test('Universal Profile hero keeps lifetime Crab Army progression separate from 
   }, null, 'verified');
 
   assert.match(html, /LIFETIME XP[\s\S]*78,400/);
-  assert.match(html, /OPERATION XP[\s\S]*725/);
+  assert.match(html, /profile-operation-card[\s\S]*725[\s\S]*OPERATION XP/);
   assert.match(html, /Colour Sergeant/);
   assert.match(html, /ACHIEVEMENTS[\s\S]*1/);
   assert.doesNotMatch(html, /XP Earned[\s\S]*LIFETIME XP/);
@@ -1398,7 +1398,9 @@ test('Universal Profile uses compact card hierarchy', async () => {
 
   assert.match(html, /universal-profile-hero compact/);
   assert.match(html, /universal-pass-main/);
-  assert.match(html, /universal-pass-rail/);
+  assert.match(html, /universal-pass-footer/);
+  assert.match(html, /universal-pass-metrics/);
+  assert.match(html, /universal-pass-connections/);
   assert.match(html, /DETAILS →/);
   assert.match(html, /ARMY RANK/);
 });
@@ -1455,12 +1457,12 @@ test('Universal Profile trust rail shows Oracle, X, Telegram and Solana truthful
       badgeAssetKey: 'crab_army_rank_03', ladderVersion: 2,
     },
   }, null, 'verified');
-  assert.match(html, /universal-pass-trust/);
-  assert.match(html, /IDENTITY SECURED BY/);
+  assert.match(html, /universal-pass-connections/);
+  assert.match(html, /SECURED BY/);
   assert.match(html, />ORACLE</);
-  assert.match(html, />X</);
-  assert.match(html, />Telegram</);
-  assert.match(html, />Solana</);
+  assert.match(html, /access-x-mark/);
+  assert.match(html, /telegram-mini-mark/);
+  assert.match(html, /access-solana-mark/);
   assert.match(html, /Linked/);
   assert.match(html, /Pending/);
 });
