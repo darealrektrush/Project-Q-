@@ -688,15 +688,18 @@ function clearanceMarkup() {
   const automaticLabels = automaticChecks.map(item => item.key === 'telegram' ? 'Telegram' : item.key === 'token-account' ? 'FAWKQ account' : '$2 minimum');
 
   const stepClass = (complete, current) => complete ? 'done' : current ? 'current' : '';
-  const stepMark = (complete, number) => complete ? '✓' : String(number);
-
-  const journey = `<div class="verification-journey" aria-label="Operation access progress">
-    <span class="${stepClass(xDone, !xDone)}"><i>${stepMark(xDone, 1)}</i><b>X</b></span>
-    <em></em>
-    <span class="${stepClass(walletDone, xDone && !walletDone)}"><i>${stepMark(walletDone, 2)}</i><b>Wallet</b></span>
-    <em></em>
-    <span class="${stepClass(allComplete, activeComplete)}"><i>${allComplete ? '✓' : '3'}</i><b>Ready</b></span>
-  </div>`;
+  const participantSteps = [
+    x ? { label: 'X', complete: xDone, current: !xDone } : null,
+    wallet ? { label: 'Wallet', complete: walletDone, current: xDone && !walletDone } : null,
+  ].filter(Boolean);
+  const journeySteps = [...participantSteps, {
+    label: 'Ready',
+    complete: allComplete,
+    current: activeComplete && !allComplete,
+  }];
+  const journey = `<div class="verification-journey" aria-label="Operation access progress">${journeySteps.map((step, index) =>
+    `<span class="${stepClass(step.complete, step.current)}"><i>${step.complete ? '✓' : index + 1}</i><b>${step.label}</b></span>${index < journeySteps.length - 1 ? '<em></em>' : ''}`
+  ).join('')}</div>`;
 
   const focusCard = (type) => {
     const isX = type === 'x';
@@ -745,7 +748,7 @@ function clearanceMarkup() {
     </section>`;
   }
 
-  const remaining = !xDone ? 2 : !walletDone ? 1 : 0;
+  const remaining = participantSteps.filter((step) => !step.complete).length;
   const statusLabel = activeComplete ? 'FINALIZING' : `${remaining} STEP${remaining === 1 ? '' : 'S'} REMAINING`;
   const primary = !xDone ? focusCard('x')
     : !walletDone ? completedIdentity + focusCard('wallet')
