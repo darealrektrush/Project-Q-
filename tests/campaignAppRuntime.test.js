@@ -1426,3 +1426,38 @@ test('Terminal shows one compact identity recovery state instead of duplicate sy
   assert.match(pending.home, /Reconnecting your profile/);
   assert.equal((pending.home.match(/IDENTITY SYNC/g) || []).length, 1);
 });
+
+
+test('Operation Access uses branded X and Solana actions with Oracle trust footer', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderClearanceWith({ telegramVerified: true, xVerified: false, walletVerified: false });
+  assert.match(html, /premium-access-pass/);
+  assert.match(html, /access-x-mark/);
+  assert.match(html, /access-solana-mark/);
+  assert.match(html, /Connect X account/);
+  assert.match(html, /Verify Solana wallet/);
+  assert.match(html, /verification-oracle-footer/);
+  assert.match(html, />ORACLE</);
+  assert.doesNotMatch(html, /Connect Telegram/);
+});
+
+test('Universal Profile trust rail shows Oracle, X, Telegram and Solana truthfully', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderDossierWith({
+    name: 'RektRush', username: 'darealrektrush',
+    telegramVerified: true, xVerified: true, walletVerified: false,
+    crabArmy: {
+      lifetimeXp: 1200, level: 3, rankName: 'Private', division: 'Enlisted Corps',
+      progressPct: 40, xpToNext: 300, nextRankName: 'Trooper', nextRankXp: 1500,
+      badgeAssetKey: 'crab_army_rank_03', ladderVersion: 2,
+    },
+  }, null, 'verified');
+  assert.match(html, /universal-pass-trust/);
+  assert.match(html, /IDENTITY SECURED BY/);
+  assert.match(html, />ORACLE</);
+  assert.match(html, />X</);
+  assert.match(html, />Telegram</);
+  assert.match(html, />Solana</);
+  assert.match(html, /Linked/);
+  assert.match(html, /Pending/);
+});
