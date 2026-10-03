@@ -90,8 +90,11 @@ export function getWebhookInfo() {
   return call('getWebhookInfo', {});
 }
 
-export function buildHomeMenu({ privateUrl } = {}) {
+export function buildHomeMenu({ privateUrl, campaignAppUrl } = {}) {
   const inlineKeyboard = [
+      ...(campaignAppUrl ? [[
+        { text: '🚀 OPEN PROJECT Q // CAMPAIGN APP', web_app: { url: campaignAppUrl } },
+      ]] : []),
       [
         { text: '📈 Market', callback_data: 'menu:market' },
         { text: '🏆 Leaderboard', callback_data: 'menu:leaderboard' },

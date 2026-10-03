@@ -1,3 +1,5 @@
+import { participantClearance, participantNextStep } from '../../public/campaign-app/participant-guidance.js';
+
 export const CAMPAIGN_CALLBACK_PREFIX = 'menu:campaign:bond';
 
 export function buildCampaignsMenu() {
@@ -16,37 +18,14 @@ export function resolveCampaignAppUrl(env = process.env) {
   return hostname ? `https://${hostname}/campaign-app/` : null;
 }
 
-export function buildBondTheDuckMenu(appUrl = resolveCampaignAppUrl()) {
-  const appButton = appUrl
-    ? [[{ text: '📱 Open Campaign App', web_app: { url: appUrl } }]]
-    : [];
-  return {
-    inline_keyboard: [
-      ...appButton,
-      [
-        { text: '🦆 Overview', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:overview` },
-        { text: '✅ Enroll', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:enroll` },
-      ],
-      [
-        { text: '📈 My Status', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:status` },
-        { text: '⚡ My XP', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:xp` },
-      ],
-      [
-        { text: '🏆 Leaderboard', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:leaderboard` },
-        { text: '🎯 Missions & Voting', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:missions` },
-      ],
-      [
-        { text: '📊 Buy-to-Earn', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:buy` },
-        { text: '🏁 Cycle Results', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:cycles` },
-      ],
-      [
-        { text: '🎁 Rewards', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:rewards` },
-        { text: '📜 Rules', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:rules` },
-      ],
-      [{ text: '🧾 Treasury & Receipts', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:treasury` }],
-      [{ text: '⬅️ Back to Campaigns', callback_data: 'menu:campaigns' }],
-    ],
-  };
+export function buildBondTheDuckMenu(appUrl = resolveCampaignAppUrl(), { enrollmentOpen = false, operationCount = 1 } = {}) {
+  return { inline_keyboard: [
+    ...(appUrl ? [[{ text: '📱 Open Campaign App', web_app: { url: appUrl } }]] : []),
+    [{ text: '📈 My Status', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:status` }],
+    [{ text: 'ⓘ How it works', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:how` }],
+    ...(enrollmentOpen ? [[{ text: '✅ Enroll', callback_data: `${CAMPAIGN_CALLBACK_PREFIX}:enroll` }]] : []),
+    ...(operationCount > 1 ? [[{ text: 'All operations', callback_data: 'menu:campaigns' }]] : []),
+  ] };
 }
 
 export const MISSIONS_CALLBACK_PREFIX = `${CAMPAIGN_CALLBACK_PREFIX}:missions`;
@@ -91,13 +70,13 @@ export function buildCampaignHomeText(campaign = { state: 'DRAFT' }) {
   return [
     '🦆 *Bond the Duck*',
     '',
-    'A 10-day verified-participation and holder-acquisition campaign powered by Project Q.',
+    'A 10-day operation powered by Project Q. Open the app for missions, XP, economics and rewards.',
     '',
     `*Status:* ${state}${state === 'DRAFT' ? ' / pre-launch' : ''}`,
     ...(campaign.displayLabel ? [`*Window:* ${campaign.displayLabel}`] : []),
     ...(campaign.schedule?.label ? [`*Next:* ${campaign.schedule.label}`] : []),
     ...(campaign.unavailable ? ['Campaign data is not connected yet; this screen is safely closed.'] : []),
-    ...(closed ? ['The campaign is not accepting enrollment, XP, buys or reward claims.'] : []),
+    ...(closed ? ['The operation is not accepting enrollment or new scoring.'] : []),
     '',
     '_Project Q calculates and verifies. Squads 2-of-3 controls every treasury transfer._',
   ].join('\n');
@@ -126,6 +105,15 @@ export function buildCampaignReadinessText(readiness) {
 }
 
 const SCREEN_TEXT = Object.freeze({
+  how: [
+    'ⓘ *How Project Q works*', '',
+    '1. Open the app and complete Operation Access: Connect X and verify your reward wallet.',
+    '2. Project Q checks Telegram, your FAWKQ account and minimum holding automatically.',
+    '3. Open Operations to read the Briefing and choose a Mission File.',
+    '4. Follow settled XP, standing and rewards in Record and Rewards.',
+    '', 'Gold marks actions and earned value. Blue marks verification and progress.',
+    'Oracle owns your permanent identity. Operation XP and standing are separate from lifetime Crab Army rank.',
+  ].join('\n'),
   overview: [
     '🦆 *Campaign Overview*', '',
     '10 active days · five 48-hour cycles · 15,000,000 FAWKQ main allocation. Final dates publish at launch readiness.',
@@ -135,12 +123,12 @@ const SCREEN_TEXT = Object.freeze({
   enroll: [
     '✅ *Enroll / Wallet Setup*', '',
     'Enrollment opens only after the public readiness gate passes.',
-    'You will link one Telegram account, one verified X identity and one reward wallet, then complete a 10-minute signed-message challenge.',
+    'You connect X once and verify one reward wallet with a readable signed ownership message. Telegram, FAWKQ token-account and holder checks run automatically.',
     '', '*Current state:* Not open',
   ].join('\n'),
   status: [
     '📈 *My Campaign Status*', '',
-    'This screen will show enrollment, identity verification, wallet readiness, FAWKQ token-account readiness, cycle eligibility, rank and next deadline.',
+    'This screen shows Operation Access, automatic eligibility checks, campaign XP, standing and the next action.',
     '', '*Current state:* Campaign not launched',
   ].join('\n'),
   xp: [
@@ -201,16 +189,27 @@ function yesNo(value) {
   return value ? '✅' : '—';
 }
 
-export function buildParticipantStatusText(status) {
-  if (status.unavailable) return SCREEN_TEXT.status;
-  return [
-    '📈 *My Campaign Status*', '',
-    `${yesNo(status.enrolled)} Enrolled`,
-    `${yesNo(status.xLinked)} X account linked`,
-    `${yesNo(status.xVerified)} X identity verified`,
-    `${yesNo(status.walletLinked)} Reward wallet linked`,
-    `${yesNo(status.walletVerified)} Reward wallet verified`,
-    `${yesNo(status.tokenAccountReady)} FAWKQ token account ready`,
+export function buildParticipantStatusText(status, { lifecycle = 'UPCOMING', oracleAvailable = false, standing = null } = {}) {
+  if (status.unavailable) return '📈 *My Status*\n\nYour operation profile is temporarily unavailable. Open the app to retry verification.';
+  const profile = { telegramVerified: true, xVerified: status.xVerified, walletVerified: status.walletVerified,
+    tokenAccountReady: status.tokenAccountReady, holderEligible: status.holderEligible };
+  const next = participantNextStep({ profile, lifecycle, oracleAvailable });
+  const rewardStatus = status.rewards?.recorded ? (status.rewards.receiptCount > 0 ? 'Delivery receipts available' : 'Allocation recorded') : 'Awaiting allocation';
+  const actionCount = [status.xVerified, status.walletVerified].filter(Boolean).length;
+  const access = actionCount === 2 ? 'READY' : `${actionCount}/2`;
+  const automatic = [
+    'Telegram ✅',
+    `FAWKQ account ${yesNo(status.tokenAccountReady)}`,
+    `$2 minimum ${yesNo(status.holderEligible)}`,
+  ].join(' · ');
+  return ['📈 *My Status*', '',
+    `*Operation Access:* ${access}`,
+    `*Connections:* X ${yesNo(status.xVerified)} · Wallet ${yesNo(status.walletVerified)}`,
+    `*Automatic:* ${automatic}`,
+    `*Operation XP:* ${Number(status.totalXp || 0).toLocaleString()}`,
+    `*Standing:* ${standing ? '#' + Number(standing).toLocaleString() : 'Unranked'}`,
+    `*Rewards:* ${rewardStatus}`, '', `*Next:* ${next.title}`, next.detail,
+    '', 'Open Project Q for the guided verification flow and your full record.',
   ].join('\n');
 }
 

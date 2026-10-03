@@ -65,13 +65,12 @@ test('Oracle raid screen reports credited and pending campaign actions', () => {
   assert.match(text, /Raid r1 · retweet · ✅ XP credited/);
 });
 
-test('Bond the Duck hub includes every required participant screen', () => {
-  const callbacks = buildBondTheDuckMenu().inline_keyboard.flat().map((button) => button.callback_data);
-  for (const screen of ['overview','enroll','status','xp','leaderboard','missions','buy','cycles','rewards','rules','treasury']) {
-    assert.ok(callbacks.includes(`${CAMPAIGN_CALLBACK_PREFIX}:${screen}`), `missing ${screen}`);
-    assert.ok(getCampaignScreen(screen), `missing copy for ${screen}`);
-  }
-  assert.ok(callbacks.includes('menu:campaigns'));
+test('operation bot is a launcher and enrollment remains hidden while closed', () => {
+  const callbacks = buildBondTheDuckMenu('https://example.com/campaign-app/').inline_keyboard.flat().map(button => button.callback_data).filter(Boolean);
+  assert.deepEqual(callbacks, [`${CAMPAIGN_CALLBACK_PREFIX}:status`, `${CAMPAIGN_CALLBACK_PREFIX}:how`]);
+  assert.ok(getCampaignScreen('how'));
+  const open = buildBondTheDuckMenu(null, { enrollmentOpen: true }).inline_keyboard.flat();
+  assert.ok(open.some(button => button.callback_data === `${CAMPAIGN_CALLBACK_PREFIX}:enroll`));
 });
 
 test('Bond the Duck hub can expose the reusable Mini App without changing callbacks', () => {
@@ -87,15 +86,15 @@ test('Bond the Duck hub can expose the reusable Mini App without changing callba
 
 test('Mini App publishes the locked five-step burn plan without exposing a signer', async () => {
   const app = await readFile(new URL('../public/campaign-app/app.js', import.meta.url), 'utf8');
-  assert.match(app, /Locked milestone plan/);
-  assert.match(app, /Five verified unlocks/);
-  assert.match(app, /one creator-wallet execution signature/);
+  assert.match(app, /FIVE COLLECTIVE UNLOCKS/);
+  assert.match(app, /A planned burn is not a confirmed transaction/);
+  assert.match(app, /Two founder approvals are recorded/);
   assert.doesNotMatch(app, /CREATOR_WALLET_SECRET|privateKey|secretKey/);
 });
 
 test('pre-launch campaign UI never represents the campaign as active', () => {
   assert.match(CAMPAIGN_HOME_TEXT, /DRAFT \/ pre-launch/);
-  assert.match(CAMPAIGN_HOME_TEXT, /not accepting enrollment, XP, buys or reward claims/);
+  assert.match(CAMPAIGN_HOME_TEXT, /not accepting enrollment or new scoring/);
 });
 
 test('authorized readiness view binds founder review to an exact report fingerprint', () => {
@@ -116,10 +115,12 @@ test('live campaign and participant data render without opening unavailable acti
   assert.match(buildCampaignHomeText({
     databaseState: 'DRAFT', displayLabel: 'PRE-LAUNCH', schedule: { label: 'Campaign opens' },
   }), /Window:\* PRE-LAUNCH[\s\S]*Next:\* Campaign opens/);
-  assert.match(buildParticipantStatusText({
+  const participant = buildParticipantStatusText({
     enrolled: true, xLinked: true, xVerified: true, walletLinked: true,
     walletVerified: false, tokenAccountReady: false,
-  }), /✅ Enrolled/);
+  });
+  assert.match(participant, /Operation Access:\* 1\/2/);
+  assert.match(participant, /Connections:\* X ✅ · Wallet —/);
   assert.match(buildParticipantXpText({
     totalXp: 9, xpByCycle: [{ cycleId: 1, xp: 9 }],
   }), /Cycle 1: 9 XP/);

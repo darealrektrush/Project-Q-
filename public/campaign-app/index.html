@@ -4,46 +4,63 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <title>Project Q Campaign Hub</title>
-  <link rel="icon" type="image/webp" href="/campaign-app/assets/project-q-app-icon.webp" />
-  <link rel="stylesheet" href="/campaign-app/styles.css" />
+  <title>Project Q — Operations Terminal</title>
+  <link rel="icon" type="image/jpeg" href="/campaign-app/assets/project-q-mark-20260929.jpg" />
+  <link rel="stylesheet" href="/campaign-app/styles.css?v=20260929-ia-1" />
+  <link rel="stylesheet" href="/campaign-app/terminal-v2.css?v=20261002-profile-v3" />
+  <link rel="stylesheet" href="/campaign-app/campaign-depth.css?v=20261001-achievement-ui-5" />
+  <link rel="stylesheet" href="/campaign-app/premium-v4.css?v=20261003-premium-v6-2" />
   <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 </head>
-<body class="loading">
+<body class="loading q-shell-v2">
   <div id="splash" class="splash" role="status" aria-label="Project Q is loading">
-    <img src="/campaign-app/assets/project-q-splash.webp" alt="Project Q — Built Different. Signal Only. Powering the FAWKQ ecosystem." />
+    <div class="splash-art">
+      <img src="/campaign-app/assets/project-q-splash-economic-layer.webp" alt="Project Q — Built Different. Economic Layer. Powering the FAWKQ ecosystem." />
+      <div class="splash-meter" role="progressbar" aria-label="Loading Operations Terminal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="splash-meter-track"><div id="splash-meter-fill" class="splash-meter-fill"></div></div>
+        <span id="splash-meter-value" class="splash-meter-value">0%</span>
+      </div>
+    </div>
   </div>
   <div class="noise" aria-hidden="true"></div>
   <div class="app-shell">
     <aside class="rail" aria-label="Primary navigation">
-      <button class="brand-banner" data-screen="home" aria-label="Project Q home">
-        <img src="/campaign-app/assets/project-q-horizontal-banner-v3.jpg" alt="Project Q — Identity, Participation, Distribution and Transparency" />
-      </button>
+      <div class="rail-brand-row">
+        <button class="brand-banner" data-screen="home" aria-label="Open Operations Terminal">
+          <img src="/campaign-app/assets/project-q-horizontal-banner-v3.jpg" alt="Project Q — Identity, Participation, Distribution and Transparency" />
+        </button>
+        <button id="rail-toggle" class="rail-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">‹</button>
+      </div>
       <nav id="desktop-nav"></nav>
-      <div class="rail-campaign"><span>CAMPAIGN 01</span><b id="rail-campaign-state">SYNCING</b></div>
+      <div class="rail-campaign"><span>OPERATION 01</span><b id="rail-campaign-state">SYNCING</b></div>
     </aside>
 
     <main>
       <header class="topbar">
         <div class="topbar-identity">
-          <button class="compact-brand" data-screen="home" aria-label="Project Q home"><img src="/campaign-app/assets/project-q-app-icon.webp" alt="" /></button>
-          <div><p class="eyebrow" id="campaign-sequence">PROJECT Q / CAMPAIGN HUB</p><h1 id="screen-title">Campaign Hub</h1></div>
+          <span class="compact-brand" aria-hidden="true"><img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="" /></span>
+          <div class="brand-wordmark"><b>PROJECT Q</b><h1 id="screen-title">Operations Terminal</h1><span class="sr-only" id="campaign-sequence">Project Q</span></div>
         </div>
         <div class="top-actions">
-          <span class="network" id="campaign-network-state"><i></i> SYNCING</span>
-          <button id="account-control" class="account-control" aria-label="Open participant profile"><img src="/campaign-app/assets/system/q-id.webp" alt="" /><span class="account-copy"><b>Profile</b><small id="account-name">0/3 ID</small></span><i></i></button>
+          <span class="network sr-only" id="campaign-network-state"><i></i> SYNCING</span>
+          <button id="campaign-updates" class="notification-control" aria-label="Open campaign updates"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4M12 2V1"/></svg></button>
+          <button type="button" id="account-control" class="account-control" data-screen="profile" aria-label="Open your profile"><img src="/campaign-app/assets/system/q-id.webp" alt="" /><span class="account-copy"><b>Profile</b><small id="account-name">Clearance syncing</small></span></button><button type="button" id="account-menu-control" class="account-menu-control" aria-label="Open account menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
         </div>
       </header>
 
       <section id="screen" class="screen" aria-live="polite"></section>
     </main>
 
-    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav>
+    <div class="mobile-dock"><nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation"></nav><div class="q-footer"><span>PROJECT Q // THE ECONOMIC ENGINE</span><i class="q-footer-signal" aria-hidden="true"></i><span>BUILT DIFFERENT. <svg class="q-footer-crown" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m2 7 5 4 5-7 5 7 5-4-2 12H4L2 7Zm2 15h16" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/><circle cx="2" cy="6" r="1" fill="currentColor"/><circle cx="12" cy="3" r="1" fill="currentColor"/><circle cx="22" cy="6" r="1" fill="currentColor"/></svg></span></div></div>
   </div>
   <dialog id="mission-dialog" class="mission-dialog" aria-label="Mission details"></dialog>
   <dialog id="explainer-dialog" class="explainer-dialog" aria-label="How it works"></dialog>
   <div id="app-tour" class="app-tour" hidden aria-live="polite"></div>
+  <dialog id="account-dialog" class="account-dialog" aria-label="Your account"></dialog>
+  <dialog id="updates-dialog" class="updates-dialog" aria-label="Campaign updates"></dialog>
+  <dialog id="achievement-unlock-dialog" class="achievement-unlock-dialog" aria-label="Achievement unlocked"></dialog>
+  <dialog id="connection-dialog" class="connection-dialog" aria-label="Connect identity or wallet"></dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script type="module" src="/campaign-app/app.js"></script>
+  <script type="module" src="/campaign-app/app.js?v=20261003-premium-v6-2"></script>
 </body>
 </html>

@@ -1,0 +1,65 @@
+{
+  "schema": "bond-team-smoke-v2",
+  "environment": "ISOLATED_STAGING",
+  "app": "Project Q Dev",
+  "miniAppBot": "@testingCQ_bot",
+  "oracleBot": "@Oracle_Dev_cs_bot",
+  "testerCount": 0,
+  "completedAt": null,
+  "criticalIssues": 0,
+  "highIssues": 0,
+  "productionDataTouched": false,
+  "scenarios": [
+    {
+      "id": "telegram-navigation",
+      "status": "PENDING",
+      "notes": "Launch from @testingCQ_bot on a real phone. Verify Terminal settles before the guide, bottom navigation, safe areas, Mission File open/back behavior and reopen state."
+    },
+    {
+      "id": "x-oauth-link",
+      "status": "PENDING",
+      "notes": "Start Connect X from Project Q. Complete/recover through Oracle Dev, return to Q, confirm canonical X state, next-action advancement, and no duplicate profile."
+    },
+    {
+      "id": "wallet-session",
+      "status": "PENDING",
+      "notes": "Start Verify Wallet from Project Q. Confirm branded/detected wallet chooser, Signature only · 0 SOL · No claim transaction required, canonical reward destination, automatic holder checks, Rewards -> VIEW WALLET, and continuity after reopen."
+    },
+    {
+      "id": "comprehension-recovery",
+      "status": "PENDING",
+      "notes": "Without coaching, tester explains location/current operation/next action/action receipt location. Verify Terminal, Operations, Rewards and Profile agree on access state; exercise safe Retry/recovery."
+    }
+  ],
+  "testers": [
+    {
+      "alias": "tester-1",
+      "device": null,
+      "telegramNavigation": "PENDING",
+      "xOauthLink": "PENDING",
+      "walletSession": "PENDING",
+      "comprehensionRecovery": "PENDING",
+      "issues": []
+    },
+    {
+      "alias": "tester-2",
+      "device": null,
+      "telegramNavigation": "PENDING",
+      "xOauthLink": "PENDING",
+      "walletSession": "PENDING",
+      "comprehensionRecovery": "PENDING",
+      "issues": []
+    },
+    {
+      "alias": "tester-3",
+      "device": null,
+      "telegramNavigation": "PENDING",
+      "xOauthLink": "PENDING",
+      "walletSession": "PENDING",
+      "comprehensionRecovery": "PENDING",
+      "issues": []
+    }
+  ],
+  "notes": "Round 2 premium-access beta. Start X and wallet from Project Q; Oracle remains authority behind the flow. At least 3 testers, zero critical/high issues, no production data touched, and evidence completed within 48 hours are required.",
+  "round": "ROUND_2_PREMIUM_ACCESS"
+}

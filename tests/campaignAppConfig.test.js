@@ -26,7 +26,7 @@ test('campaign registry points to a valid reusable default campaign', async () =
     ['ARCHIVED','COMPLETED','DISABLED','LOCKED']);
   assert.deepEqual(Object.keys(campaign.identityBadges).sort(),
     ['collective','full','fullHero','rewards','telegram','wallet','x']);
-  assert.equal(campaign.xpBadges.length, 4);
+  assert.deepEqual(campaign.xpBadges.map(({ id }) => id), ['xp-earned', 'xp-master']);
   assert.equal(campaign.leaderboardBadges.length, 6);
   assert.ok(Array.isArray(campaign.missions));
   assert.equal(campaign.earnToBurn.status, 'DRAFT');
@@ -133,8 +133,8 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.equal(campaign.draw.weightedDrawPool, 'RANKS_3_TO_15');
   assert.equal(campaign.draw.priorWinnerCooldownCycles, 1);
   assert.equal(campaign.schedule.timeZone, 'America/Vancouver');
-  assert.equal(campaign.schedule.activeLabel, 'Sep 29 target · readiness pending · 10 active days');
-  assert.equal(campaign.schedule.reviewLabel, 'Oct 10–13 target · 48–72h review');
+  assert.equal(campaign.schedule.activeLabel, 'Oct 5 target · readiness pending · 10 active days');
+  assert.equal(campaign.schedule.reviewLabel, 'Oct 16–19 target · 48–72h review');
   assert.equal(campaign.schedule.cycles.length, 5);
   assert.equal(campaign.schedule.postReviewRelease.condition, 'FINAL_REVIEW_CLEARED');
   assert.equal('readinessPercent' in campaign, false);
@@ -187,35 +187,45 @@ test('campaign reward schedule and mission identifiers are internally consistent
   assert.equal(campaign.missions.some(({ id }) => id === 'content'), false);
 });
 
-test('Bond the Duck V3 uses the cinematic campaign hero without duplicate visible heading copy', async () => {
+test('Bond the Duck Operations UI uses campaign artwork without duplicate visible heading copy', async () => {
   const campaign = await readJson('bond-the-duck-2026.json');
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
   const styles = await readFile(new URL('../styles.css', campaignRoot), 'utf8');
   assert.equal(campaign.banner, '/campaign-app/assets/bond-the-duck-campaign-hero-v5.jpg');
-  assert.match(app, /<h2 class="sr-only">Bond the Duck<\/h2>/);
-  assert.match(styles, /\.command-hero::before[\s\S]*background-image: var\(--campaign-art\)/);
+  assert.match(app, /terminal-campaign-art/);
+  assert.match(app, /operation-cover/);
+  assert.doesNotMatch(app, /home-hero-title[\s\S]*<h2>/);
+  assert.match(styles, /\.terminal-campaign-art/);
+  assert.match(styles, /\.operation-cover/);
 });
-
-test('Mini App escapes Telegram display names and delegates wallet connection to Oracle', async () => {
+test('Mini App escapes identity copy and uses Oracle-authorized native wallet verification', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
+  const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
   assert.match(app, /escapeHtml\(p\.name\)/);
-  assert.match(app, /Connect in Oracle/);
-  assert.doesNotMatch(app, /wallet\/challenge|wallet\/verify|provider\.connect|signMessage/);
+  assert.match(app, /Oracle Ownership/);
+  assert.match(app, /oracle-logo\.jpg/);
+  assert.match(app, /data-clearance-action/);
+  assert.match(app, /wallet\/challenge/);
+  assert.match(app, /solana:signMessage/);
+  assert.match(app, /wallet-standard:app-ready/);
+  assert.match(server, /\/campaign-app\/api\/connections\/wallet\/challenge/);
+  assert.match(server, /\/campaign-app\/api\/connections\/wallet\/complete/);
+  assert.doesNotMatch(app, /ORACLE_PROJECT_Q_EVENT_SECRET|SUPABASE_SERVICE_ROLE_KEY/);
 });
-
-test('Mini App exposes a guided verified onboarding path without activating participation', async () => {
+test('Mini App exposes an intentional guided onboarding path without activating participation', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
-  assert.match(app, /Complete Project Q ID/);
-  assert.match(app, /Refresh verification status/);
-  assert.match(app, />Telegram</);
-  assert.match(app, /Oracle X/);
-  assert.match(app, /Reward wallet/);
-  assert.match(app, /Campaign identity complete/);
+  assert.match(app, /tourWelcomeMarkup/);
+  assert.match(app, /Begin Tour/);
+  assert.match(app, /Explore on my own/);
+  assert.match(app, /YOUR IDENTITY/);
+  assert.match(app, /REFRESH STATUS/);
+  assert.match(app, /Telegram/);
+  assert.match(app, /participantClearance/);
+  assert.match(app, /Reward Wallet/);
   assert.match(app, /walletManagedByOracle/);
-  assert.match(app, /Project Q cannot connect, replace or verify wallets/);
+  assert.match(app, /Non-custodial by design/);
   assert.match(app, /onEvent\?\.\('activated'/);
 });
-
 test('website vote evidence stays behind Telegram authentication and server-only storage', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
   const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
@@ -229,53 +239,44 @@ test('website vote evidence stays behind Telegram authentication and server-only
   assert.doesNotMatch(app, /SUPABASE_SERVICE_ROLE_KEY|sb_secret_|proof_storage_key/);
 });
 
-test('Mini App V3 uses the five-screen command center and canonical Oracle branding', async () => {
+test('Mini App uses the five-screen Operations architecture and canonical Oracle branding', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
   const index = await readFile(new URL('../index.html', campaignRoot), 'utf8');
   const styles = await readFile(new URL('../styles.css', campaignRoot), 'utf8');
   const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
-  assert.match(app, /Your next actions/);
-  assert.match(app, /View all \$\{c\.missions\.length\}/);
-  assert.match(app, /Eight individual lanes/);
-  assert.match(app, /kind !== 'COLLECTIVE'/);
-  assert.match(app, /XP ledger/);
-  assert.match(app, /Other verified activity/);
-  assert.match(app, /Community Pulse/);
-  assert.match(app, /One-time X invite bonus/);
-  assert.match(app, /Earn-to-Burn/);
-  assert.match(app, /No placeholder scores or identities are shown/);
+  assert.match(app, /\['home', 'Terminal'\]/);
+  assert.match(app, /\['operations', 'Operations'\]/);
+  assert.match(app, /\['record', 'Record'\]/);
+  assert.match(app, /\['rewards', 'Rewards'\]/);
+  assert.match(app, /\['profile', 'Profile'\]/);
+  assert.match(app, /Mission Files/);
+  assert.match(app, /YOUR RECORD/);
+  assert.match(app, /Reward Pipeline/);
+  assert.match(app, /universal-profile-hero/);
   assert.match(app, /oracle-logo\.jpg/);
   assert.match(app, /const NAV_ICONS =/);
-  assert.match(app, /<span class="nav-icon">\$\{NAV_ICONS\[id\]\}<\/span>/);
-  assert.match(index, /class="splash"[\s\S]*project-q-splash\.webp/);
+  assert.match(index, /class="splash"[\s\S]*project-q-splash-economic-layer\.webp/);
+  assert.match(index, /role="progressbar"[^>]*aria-valuenow="0"/);
   assert.match(index, /project-q-horizontal-banner-v3\.jpg/);
-  assert.match(index, /class="brand-banner"/);
-  assert.match(index, /Open participant profile/);
+  assert.match(index, /id="rail-toggle"/);
   assert.match(index, /id="mission-dialog"/);
-  assert.match(index, /<b>Profile<\/b><small id="account-name">0\/3 ID<\/small>/);
-  assert.match(app, /Top Duck prize/);
   assert.match(app, /\/campaign-app\/api\/runtime/);
   assert.match(app, /\/campaign-app\/api\/readiness/);
   assert.match(server, /app\.get\('\/campaign-app\/api\/readiness'/);
   assert.match(server, /public campaign readiness unavailable[\s\S]*closedPublicCampaignReadiness/);
   assert.match(server, /Cache-Control', 'no-store'/);
-  assert.match(app, /LAUNCH BLOCKED|operations remain closed until every activation gate passes/);
-  assert.match(index, /id="rail-campaign-state"/);
-  assert.match(index, /id="campaign-network-state"/);
-  assert.match(app, /topContributorPrize\.amountSol/);
+  assert.match(app, /campaignEligibilityRequirements/);
+  assert.match(app, /operationLifecycleState/);
   assert.match(styles, /grid-template-columns: repeat\(5, 1fr\)/);
-  assert.match(styles, /\.mobile-nav \.nav-label \{ display: block/);
-  assert.match(styles, /\.mission-dialog/);
-  assert.match(styles, /\.campaign-clock[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(238px, \.7fr\)/);
-  assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.campaign-clock \{ grid-template-columns: 1fr/);
-  assert.match(styles, /\.readiness-gates[\s\S]*grid-template-columns: repeat\(2/);
-  assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.readiness-gates \{ grid-template-columns: 1fr/);
+  assert.match(styles, /\.rail-toggle/);
+  assert.match(styles, /rail-collapsed/);
+  assert.match(styles, /MOBILE CANONICAL VIEWPORT FIX/);
+  assert.match(styles, /TELEGRAM VIEWPORT HEIGHT LOCK/);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.mission-dialog/);
 });
-
 test('Mini App exposes a read-only Earn to Burn ledger without signer controls', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
-  assert.match(app, /Collective mission/);
+  assert.match(app, /COLLECTIVE PROGRESS/);
   assert.match(app, /No Earn to Burn transaction has been executed or confirmed/);
   assert.match(app, /Project Q never stores its private key/);
   assert.match(app, /loadBurnSummary/);

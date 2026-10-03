@@ -36,7 +36,9 @@
     "schedule:bond-final-cycles": "node scripts/schedule-bond-final-cycles.js",
     "rehearse:bond-launch": "node scripts/rehearse-bond-launch.js",
     "submit:bond-funding-proposal": "node scripts/submit-bond-funding-proposal.js",
-    "submit:bond-source-certifications": "node scripts/submit-bond-source-certifications.js"
+    "submit:bond-source-certifications": "node scripts/submit-bond-source-certifications.js",
+    "validate:bond-team-beta": "node scripts/validate-bond-team-beta.js",
+    "rehearse:bond-devnet-full": "BOND_REHEARSAL_FULL_LEDGER=true node scripts/rehearse-bond-devnet.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.95.3",

@@ -134,6 +134,21 @@ test('participant status derives verification readiness and sums XP', async () =
       }];
       if (table === 'positions') return [{ tier: 1, weight: 1, eligible: true, snapshot_usd: '12.50' }];
       if (table === 'campaigns') return [{ state: 'ACTIVE' }];
+      if (table === 'campaign_achievement_records') return [
+        { record_id: 'receipt-1', achievement_id: 'xp-earned', collection_key: 'xp',
+          rarity_tier: 'standard', operation_key: 'operation-01', verification_state: 'VERIFIED',
+          verified_at: '2026-08-25T12:00:00Z', result: { settled_xp: 19 } },
+        { record_id: 'receipt-2', achievement_id: 'top-10-percent', collection_key: 'standings',
+          rarity_tier: 'rare', operation_key: 'operation-01', verification_state: 'VERIFIED',
+          verified_at: '2026-08-25T12:00:00Z', result: {
+            final_rank: 9, holder_count: 10, eligible_participant_count: 100,
+            holder_share_percent: 10,
+          } },
+      ];
+      if (table === 'oracle_platform_outbox') return [
+        { entity_id: 'receipt-1', status: 'delivered', delivered_at: '2026-08-25T12:01:00Z' },
+        { entity_id: 'receipt-2', status: 'pending', delivered_at: null },
+      ];
       return [];
     },
   };
@@ -150,6 +165,10 @@ test('participant status derives verification readiness and sums XP', async () =
   assert.equal(status.completedMissionCount, 3);
   assert.equal(status.allocationBaseUnits, '4000000');
   assert.deepEqual(status.allocationByCategory, { activity: '1500000', buy_to_earn: '2500000' });
+  assert.deepEqual(status.rewards.allocations.map(item => item.id), ['2', '3']);
+  assert.equal(status.rewards.allocations[0].amountBaseUnits, '1500000');
+  assert.equal(status.rewards.allocations[0].createdAt, '2026-08-25T12:00:00Z');
+  assert.doesNotMatch(JSON.stringify(status.rewards.allocations), /reward_wallet|payment_key|eligibility_status/);
   assert.equal(status.rewards.allocatedBaseUnits, '4000000');
   assert.equal(status.rewards.scheduledBaseUnits, '1750000');
   assert.equal(status.rewards.distributedBaseUnits, '375000');
@@ -167,6 +186,28 @@ test('participant status derives verification readiness and sums XP', async () =
   assert.equal(status.buyToEarn.eligible, true);
   assert.equal(status.campaignState, 'ACTIVE');
   assert.equal(status.recentActivity[0].missionCode, 'oracle-raids');
+  assert.equal(status.achievementRecordsAvailable, true);
+  assert.deepEqual(status.achievementRecords, [
+    { recordId: 'receipt-1', achievementId: 'xp-earned', collection: 'xp', rarityTier: 'standard',
+      operationKey: 'operation-01', verificationState: 'VERIFIED', awardedAt: '2026-08-25T12:00:00Z',
+      result: '19 XP settled', finalRank: null, holderCount: null, eligibleParticipantCount: null,
+      holderSharePercent: null, universalProfileSync: 'DELIVERED' },
+    { recordId: 'receipt-2', achievementId: 'top-10-percent', collection: 'standings', rarityTier: 'rare',
+      operationKey: 'operation-01', verificationState: 'VERIFIED', awardedAt: '2026-08-25T12:00:00Z',
+      result: 'Final rank #9', finalRank: 9, holderCount: 10, eligibleParticipantCount: 100,
+      holderSharePercent: 10, universalProfileSync: 'PENDING' },
+  ]);
+});
+
+test('achievement receipt query failure degrades to unavailable history without blocking participant session', async () => {
+  const client = { select: async (table) => {
+    if (table === 'identity_links') return [{ profile_id: '11111111-1111-4111-8111-111111111111' }];
+    if (table === 'campaign_achievement_records') throw new Error('schema cache missing table');
+    return [];
+  } };
+  const status = await getParticipantStatus(client, 123, { now: '2026-08-25T18:00:00Z' });
+  assert.deepEqual(status.achievementRecords, []);
+  assert.equal(status.achievementRecordsAvailable, false);
 });
 
 test('closed fallback never reports live campaign state', () => {
