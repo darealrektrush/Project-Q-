@@ -2239,11 +2239,11 @@ async function postNativeConnection(path, body = {}) {
   return payload;
 }
 
-async function startNativeXConnection() {
+async function startNativeXConnection(intent = 'link') {
   try {
-    const result = await postNativeConnection('x/start', { intent: 'link' });
+    const result = await postNativeConnection('x/start', { intent });
     sessionStorage.setItem('project-q:pending-verification', 'x');
-    toast('Opening X authorization…');
+    toast(intent === 'identity_recovery' ? 'Opening secure X recovery…' : 'Opening X authorization…');
     openExternal(result.authorizeUrl);
   } catch (error) {
     toast(error.message || 'X connection could not be started.');
