@@ -355,7 +355,7 @@ test('Operations UI gives each bottom destination one job', async () => {
   assert.doesNotMatch(context.__rendered.record, /record-proof-links|record-operation-context|>Activity<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation recorded yet/);
-  assert.equal((context.__rendered.rewards.match(/Verify Solana Wallet/g) || []).length, 1);
+  assert.equal((context.__rendered.rewards.match(/VERIFY WALLET/g) || []).length, 1);
   assert.match(context.__profiles.overview, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(context.__profiles.overview, /2 STEPS REMAINING/);
   assert.doesNotMatch(context.__profiles.overview, /passport-tabs|Campaign Records|dossier-live-record|passport-rewards-view/);
@@ -513,7 +513,7 @@ test('Rewards pending state shows one wallet action and no invented receipts', a
   assert.match(screen, /Verify Your Reward Wallet/);
   assert.match(screen, /Required before a reward can be released/);
   assert.match(screen, /No allocation recorded yet/);
-  assert.equal((screen.match(/Verify Solana Wallet/g) || []).length, 1);
+  assert.equal((screen.match(/VERIFY WALLET/g) || []).length, 1);
   assert.doesNotMatch(screen, /reward-summary-grid|allocation-receipt|Verified Reward Wallet/);
   assert.doesNotMatch(profile, /No allocation recorded yet|ECONOMIC RECORD/);
 });
@@ -875,7 +875,8 @@ test('Round 2 access continuity advances X to wallet to finalizing to ready', as
     holderEligible: false,
   });
   assert.match(xStep, /Connect X/);
-  assert.doesNotMatch(xStep, /Verify Solana Wallet/);
+  assert.match(xStep, /Verify Solana Wallet/);
+  assert.doesNotMatch(xStep, /data-clearance-action="wallet-verify"/);
   assert.match(xStep, /2 STEPS REMAINING/);
 
   const walletStep = context.__renderClearanceWith({
@@ -1319,7 +1320,8 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   const context = await loadRuntime();
   const clearance = context.__renderClearanceWith({ telegramVerified: true });
   assert.match(clearance, /Connect X/);
-  assert.doesNotMatch(clearance, /Verify Solana Wallet/);
+  assert.match(clearance, /Verify Solana Wallet/);
+  assert.doesNotMatch(clearance, /data-clearance-action="wallet-verify"/);
   assert.match(clearance, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(clearance, /2 STEPS REMAINING/);
   assert.match(clearance, /verification-journey/);
