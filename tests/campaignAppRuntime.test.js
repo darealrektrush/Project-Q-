@@ -1415,7 +1415,9 @@ test('Universal Profile renders as one compact CrabStar ecosystem identity pass'
   assert.match(html, /Built different\. Built to last\./);
   assert.match(html, /universal-pass-rank/);
   assert.match(html, /universal-pass-level/);
-  assert.match(html, /universal-pass-rail/);
+  assert.match(html, /universal-pass-footer/);
+  assert.match(html, /universal-pass-metrics/);
+  assert.match(html, /universal-pass-connections/);
   assert.match(html, /DETAILS →/);
   assert.doesNotMatch(html, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
 });
