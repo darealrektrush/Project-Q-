@@ -2400,12 +2400,12 @@ function bytesToBase64(bytes) {
 }
 
 const PROJECT_Q_WALLET_BRANDS = {
-  phantom: { label: 'Phantom', logo: 'https://phantom.com/favicon.ico', note: 'Recommended' },
-  solflare: { label: 'Solflare', logo: 'https://www.solflare.com/favicon.ico', note: 'Recommended' },
-  backpack: { label: 'Backpack', logo: 'https://backpack.app/favicon.ico', note: 'Recommended' },
-  jupiter: { label: 'Jupiter', logo: 'https://jup.ag/favicon.ico', note: 'More wallets' },
-  metamask: { label: 'MetaMask', logo: 'https://metamask.io/favicon.ico', note: 'More wallets' },
-  other: { label: 'Other Solana Wallet', logo: null, note: 'Wallet Standard' },
+  phantom: { label: 'Phantom', logo: 'https://phantom.com/favicon.ico', note: 'Recommended', fallback: 'P' },
+  solflare: { label: 'Solflare', logo: 'https://www.solflare.com/favicon.ico', note: 'Recommended', fallback: 'S' },
+  backpack: { label: 'Backpack', logo: 'https://backpack.app/favicon.ico', note: 'Recommended', fallback: 'B' },
+  jupiter: { label: 'Jupiter', logo: 'https://jup.ag/favicon.ico', note: 'More wallets', fallback: 'J' },
+  metamask: { label: 'MetaMask', logo: 'https://metamask.io/favicon.ico', note: 'More wallets', fallback: 'M' },
+  other: { label: 'Other Solana Wallet', logo: null, note: 'Wallet Standard', fallback: '◎' },
 };
 
 function walletIconSource(wallet) {
@@ -2418,9 +2418,9 @@ function walletBrandButton(provider, compact = false) {
   const brand = PROJECT_Q_WALLET_BRANDS[provider];
   if (!brand) return '';
   const mark = brand.logo
-    ? `<span class="wallet-brand-mark" data-brand-fallback="${escapeHtml(brand.label.slice(0,1))}"><img src="${escapeHtml(brand.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`
+    ? `<span class="wallet-brand-mark" data-brand-fallback="${escapeHtml(brand.fallback || brand.label.slice(0,1))}"><img src="${escapeHtml(brand.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`
     : '<span class="wallet-brand-mark wallet-generic-mark">◎</span>';
-  return `<button type="button" class="wallet-brand-option ${compact ? 'compact' : ''}" data-wallet-provider="${provider}">
+  return `<button type="button" class="wallet-brand-option ${compact ? 'compact' : ''}" data-wallet-provider="${provider}" data-wallet-brand="${provider}" aria-label="${escapeHtml(brand.label)} wallet">
     ${mark}<span><b>${escapeHtml(brand.label)}</b><small>${compact ? 'Open wallet verification' : escapeHtml(brand.note)}</small></span><i aria-hidden="true">→</i>
   </button>`;
 }
@@ -2434,7 +2434,7 @@ function renderProjectQWalletDialog(message = '') {
     const icon = walletIconSource(wallet);
     return `<button type="button" class="native-wallet-option premium" data-wallet-index="${index}">
       <span class="wallet-brand-mark" data-brand-fallback="◎">${icon ? `<img src="${escapeHtml(icon)}" alt="" />` : '◎'}</span>
-      <span><b>${escapeHtml(wallet.name)}</b><small>Detected in Telegram</small></span>
+      <span><b>${escapeHtml(wallet.name)}</b><small>Available on this device</small></span>
       <i>CONNECT →</i>
     </button>`;
   }).join('');

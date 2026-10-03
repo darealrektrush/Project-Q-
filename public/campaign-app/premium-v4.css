@@ -781,3 +781,36 @@ body.q-shell-v2{background:var(--q-page);color:var(--q-ink-premium)}
   .q-shell-v2 .verification-focus-icon{width:36px;height:36px}
   .q-shell-v2 .verification-focus-card>button{grid-column:1/-1;width:100%;min-height:36px}
 }
+
+
+/* Wallet provider identity — keep choices recognizable without adding dashboard chrome. */
+.q-shell-v2 .wallet-brand-option{
+  position:relative;overflow:hidden;
+}
+.q-shell-v2 .wallet-brand-option::before{
+  content:"";position:absolute;inset:0 auto 0 0;width:3px;
+  background:var(--wallet-brand-accent,#a88a3a);opacity:.9;
+}
+.q-shell-v2 .wallet-brand-option[data-wallet-brand="phantom"]{--wallet-brand-accent:#8f7bf7}
+.q-shell-v2 .wallet-brand-option[data-wallet-brand="solflare"]{--wallet-brand-accent:#f2a23a}
+.q-shell-v2 .wallet-brand-option[data-wallet-brand="backpack"]{--wallet-brand-accent:#e45f5a}
+.q-shell-v2 .wallet-brand-option[data-wallet-brand="jupiter"]{--wallet-brand-accent:#62bda7}
+.q-shell-v2 .wallet-brand-option[data-wallet-brand="metamask"]{--wallet-brand-accent:#e58b49}
+.q-shell-v2 .wallet-brand-option[data-wallet-brand="other"]{--wallet-brand-accent:#7f9098}
+.q-shell-v2 .wallet-brand-option .wallet-brand-mark{
+  width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+  background:#fff;box-shadow:inset 0 0 0 1px rgba(27,45,53,.08);
+  font:800 13px/1 var(--q-ui);color:#1d3038;overflow:hidden;
+}
+.q-shell-v2 .wallet-brand-option .wallet-brand-mark img{
+  width:24px;height:24px;object-fit:contain;display:block;
+}
+.q-shell-v2 .wallet-brand-option .wallet-brand-mark.wallet-generic-mark{
+  background:color-mix(in srgb,var(--wallet-brand-accent,#8b98a0) 13%,#fff);
+  color:var(--wallet-brand-accent,#65747a);
+}
+.q-shell-v2 .native-wallet-option .wallet-brand-mark{
+  width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:#fff;
+  box-shadow:inset 0 0 0 1px rgba(27,45,53,.08);overflow:hidden;
+}
+.q-shell-v2 .native-wallet-option .wallet-brand-mark img{width:24px;height:24px;object-fit:contain}

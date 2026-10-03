@@ -57,3 +57,15 @@ test('Profile uses compact identity, guided Operation Access, and one current-op
   assert.match(app, /OPERATION ACCESS/);
   assert.doesNotMatch(app, /Complete your operation setup|class="clearance-row/);
 });
+
+
+test('wallet picker uses provider identity styling and device-first discovery copy', () => {
+  for (const provider of ['phantom','solflare','backpack','jupiter','metamask','other']) {
+    assert.match(app, new RegExp('data-wallet-brand="\\$\\{provider\\}"|data-wallet-brand'));
+  }
+  assert.match(app, /Available on this device/);
+  assert.doesNotMatch(app, /Detected in Telegram/);
+  assert.match(css, /data-wallet-brand="phantom"/);
+  assert.match(css, /data-wallet-brand="solflare"/);
+  assert.match(css, /data-wallet-brand="backpack"/);
+});
