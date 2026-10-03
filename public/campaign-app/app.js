@@ -2020,60 +2020,58 @@ function universalProfileHeroMarkup() {
   const qualifiedReferrals = Number(state.referrals?.counts?.qualified || 0);
   const photo = safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   const rankAsset = crabArmyRankAssetUrl(army?.badgeAssetKey);
-  const verificationChips = [
-    p.telegramVerified ? 'TELEGRAM VERIFIED' : null,
-    p.xVerified ? 'X VERIFIED' : null,
-    p.walletVerified ? 'WALLET VERIFIED' : null,
-  ].filter(Boolean);
-  const chips = verificationChips.length
-    ? verificationChips.map((label) => `<span>${escapeHtml(label)}</span>`).join('')
-    : '<span class="sync-chip">IDENTITY SYNCING</span>';
+  const lifetimeXp = army ? Number(army.lifetimeXp || 0) : null;
+  const nextRankXp = army?.nextRankXp ? Number(army.nextRankXp) : null;
+  const rankName = army?.rankName || 'SYNCING';
+  const connection = (label, mark, linked, extraClass = '') =>
+    `<span class="v63-connection ${linked ? 'linked' : 'pending'} ${extraClass}" aria-label="${escapeHtml(label + (linked ? ' linked' : ' pending'))}">${mark}<i></i></span>`;
 
-  return `<section class="universal-profile-hero compact universal-profile-pass" aria-label="Oracle Universal Profile">
-    <div class="universal-pass-main">
-      <div class="universal-pass-avatar">
+  return `<section class="universal-profile-hero compact universal-profile-pass universal-profile-v63" aria-label="Oracle Universal Profile">
+    <div class="universal-pass-main v63-main">
+      <div class="universal-pass-avatar v63-avatar">
         <div class="universal-pass-avatar-ring"><img src="${escapeHtml(photo)}" alt="Your Telegram profile photo" /></div>
         <span class="oracle-verified-mark" aria-label="${p.telegramVerified ? 'Telegram verified' : 'Identity syncing'}">${p.telegramVerified ? '✓' : '·'}</span>
       </div>
 
-      <div class="universal-pass-identity">
-        <span>CRABSTAR // ORACLE UNIVERSAL PROFILE</span>
+      <div class="v63-identity">
+        <span>CRABSTAR // UNIVERSAL PROFILE</span>
         <h2>${escapeHtml(identityLabel)}</h2>
-        <b>CRAB ARMY</b>
+        <div><b>CRAB ARMY</b><i></i><strong>${escapeHtml(rankName)}</strong></div>
         <small>Built different. Built to last.</small>
-        <div class="universal-pass-chips">${chips}</div>
-        <button class="universal-pass-details" type="button" data-explainer="universal">DETAILS →</button>
       </div>
 
-      <div class="universal-pass-rank" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
-        <div class="universal-pass-rank-art">
-          <div class="universal-rank-medallion compact"><span>${army ? Number(army.level) : '—'}</span></div>
-          ${rankAsset ? `<img class="universal-rank-insignia" data-rank-insignia src="${escapeHtml(rankAsset)}" alt="${escapeHtml((army?.rankName || 'Crab Army rank') + ' insignia')}" />` : ''}
-        </div>
+      <button class="v63-profile-action" type="button" data-explainer="universal">DETAILS →</button>
+    </div>
+
+    <div class="v63-progression" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
+      <div class="v63-rank-art">
+        ${rankAsset
+          ? `<img data-rank-insignia src="${escapeHtml(rankAsset)}" alt="${escapeHtml(rankName + ' insignia')}" />`
+          : `<span>${army ? Number(army.level) : '—'}</span>`}
+      </div>
+      <div class="v63-rank-copy">
         <span>ARMY RANK</span>
-        <b>${escapeHtml(army?.rankName || 'SYNCING')}</b>
+        <b>${escapeHtml(rankName)}</b>
       </div>
-
-      <div class="universal-pass-level">
+      <div class="v63-level">
         <span>LEVEL</span>
-        <strong>${army ? Number(army.level) : '—'}</strong>
-        <small>${army ? Number(army.lifetimeXp).toLocaleString() + (army.nextRankXp ? ' / ' + Number(army.nextRankXp).toLocaleString() + ' XP' : ' XP') : 'Lifetime XP syncing'}</small>
+        <b>${army ? Number(army.level) : '—'}</b>
+      </div>
+      <div class="v63-xp">
+        <div><span>LIFETIME XP</span><b>${lifetimeXp === null ? '—' : lifetimeXp.toLocaleString()}${nextRankXp ? ` / ${nextRankXp.toLocaleString()}` : ''}</b></div>
         <div class="universal-rank-progress compact"><i style="width:${progress}%"></i></div>
-        <em>${escapeHtml(nextLabel)}</em>
+        <small>${escapeHtml(nextLabel)}</small>
       </div>
     </div>
 
-    <div class="universal-pass-footer">
-      <div class="universal-pass-metrics">
-        <div><span>LIFETIME XP</span><b>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</b></div>
-        <div><span>ACHIEVEMENTS</span><b>${synced ? universalRecords.length : '—'}</b></div>
-        <div><span>REFERRALS</span><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b></div>
-      </div>
-      <div class="universal-pass-connections">
-        <div class="universal-pass-oracle compact"><span>◈</span><small>SECURED BY</small><b>ORACLE</b></div>
-        <div class="universal-pass-link ${p.xVerified ? 'linked' : ''}"><span class="access-x-mark">𝕏</span><small>${p.xVerified ? 'Linked' : 'Pending'}</small></div>
-        <div class="universal-pass-link ${p.telegramVerified ? 'linked' : ''}"><span class="telegram-mini-mark">➤</span><small>${p.telegramVerified ? 'Linked' : 'Pending'}</small></div>
-        <div class="universal-pass-link ${p.walletVerified ? 'linked' : ''}"><span class="access-solana-mark mini"><i></i><i></i><i></i></span><small>${p.walletVerified ? 'Linked' : 'Pending'}</small></div>
+    <div class="v63-footer">
+      <div class="v63-stat"><b>${synced ? universalRecords.length : '—'}</b><span>ACHIEVEMENTS</span></div>
+      <div class="v63-stat"><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b><span>REFERRALS</span></div>
+      <div class="v63-connections">
+        <span class="v63-oracle"><i>◈</i><b>ORACLE</b></span>
+        ${connection('X', '𝕏', p.xVerified, 'x')}
+        ${connection('Telegram', '➤', p.telegramVerified, 'telegram')}
+        ${connection('Solana', '<em></em><em></em><em></em>', p.walletVerified, 'solana')}
       </div>
     </div>
   </section>`;
