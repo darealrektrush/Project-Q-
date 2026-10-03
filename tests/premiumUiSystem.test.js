@@ -44,13 +44,16 @@ test('premium surfaces reduce chrome rather than adding new dashboard borders', 
   assert.match(css, /border:1px solid rgba\(72,83,86,.075\)!important/);
   assert.match(css, /mission-file-row[\s\S]*border:0!important/);
   assert.match(css, /reward-summary-grid article[\s\S]*border:0!important/);
-  assert.match(css, /verification-action-card[\s\S]*border:0!important/);
+  assert.match(css, /verification-focus-card[\s\S]*border:0/);
 });
 
-test('Profile uses compact identity, Verification Center, and one current-operation object', () => {
+test('Profile uses compact identity, guided Operation Access, and one current-operation object', () => {
   assert.match(app, /universal-profile-hero compact/);
-  assert.match(app, /PROJECT Q \/\/ VERIFICATION CENTER/);
+  assert.match(app, /PROJECT Q \/\/ OPERATION ACCESS/);
+  assert.match(app, /verification-journey/);
+  assert.match(app, /verification-focus-card/);
+  assert.match(app, /verification-auto-disclosure/);
   assert.match(app, /profile-operation-card/);
   assert.match(app, /OPERATION ACCESS/);
-  assert.doesNotMatch(app, /Complete your operation setup/);
+  assert.doesNotMatch(app, /Complete your operation setup|class="clearance-row/);
 });
