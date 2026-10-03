@@ -1,0 +1,167 @@
+/* Project Q Premium V6.3 — Universal Profile compression */
+.q-shell-v2 .universal-profile-pass{
+  overflow:hidden;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-main{
+  padding:10px 11px 8px!important;
+  gap:8px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-avatar,
+.q-shell-v2 .universal-profile-pass .universal-pass-avatar-ring{
+  width:56px!important;
+  height:56px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-avatar .oracle-verified-mark{
+  width:19px!important;
+  height:19px!important;
+  border-width:2px!important;
+  font-size:9px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-identity h2{
+  margin:3px 0 1px!important;
+  font-size:22px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-identity>span{
+  font-size:6px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-identity>small{
+  margin-top:3px!important;
+  font-size:6px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-chips{
+  display:none!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-details{
+  margin-top:4px!important;
+  font-size:6px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-rank,
+.q-shell-v2 .universal-profile-pass .universal-pass-level{
+  min-height:48px!important;
+  padding:6px 8px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-rank-art{
+  width:26px!important;
+  height:26px!important;
+  margin-bottom:2px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-rank-art .universal-rank-medallion{
+  width:26px!important;
+  height:26px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-rank-art .universal-rank-insignia{
+  width:25px!important;
+  height:25px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-rank>b{
+  font-size:10px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-level>strong{
+  font-size:21px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-level>small{
+  margin-top:3px!important;
+  font-size:6px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-level .universal-rank-progress{
+  margin-top:4px!important;
+  height:4px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-level>em{
+  margin-top:3px!important;
+  font-size:5.5px!important;
+}
+
+/* Merge the two footer bands into one compact rail. */
+.q-shell-v2 .universal-profile-pass .universal-pass-footer{
+  display:grid!important;
+  grid-template-columns:128px minmax(0,1fr)!important;
+  align-items:stretch!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-metrics{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  border-right:1px solid rgba(103,172,198,.10);
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-metrics>div{
+  padding:7px 5px!important;
+  text-align:center!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-metrics>div:first-child{
+  display:none!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-metrics span{
+  font-size:5px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-metrics b{
+  font-size:12px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-connections{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:5px!important;
+  padding:5px 7px!important;
+  border-top:0!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-oracle.compact{
+  margin-right:auto!important;
+  min-height:27px!important;
+  padding:3px 5px!important;
+  border:0!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-oracle.compact small{
+  display:none!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-oracle.compact b{
+  font-size:6.5px!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-link{
+  min-height:25px!important;
+  width:25px!important;
+  padding:0!important;
+  border:0!important;
+  justify-content:center!important;
+  border-radius:8px!important;
+  background:rgba(80,150,175,.06);
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-link b,
+.q-shell-v2 .universal-profile-pass .universal-pass-link small{
+  display:none!important;
+}
+.q-shell-v2 .universal-profile-pass .universal-pass-link>span{
+  width:21px!important;
+  height:21px!important;
+}
+
+/* Keep the access card visually subordinate to the permanent identity card. */
+.q-shell-v2 .premium-access-pass{
+  padding:11px!important;
+}
+.q-shell-v2 .premium-access-pass .verification-center-head.guided{
+  padding-bottom:8px!important;
+}
+.q-shell-v2 .premium-access-pass .verification-journey{
+  margin:9px 0 8px!important;
+}
+.q-shell-v2 .premium-access-pass .verification-access-row{
+  min-height:54px!important;
+  padding:7px 9px!important;
+}
+.q-shell-v2 .premium-access-pass .verification-oracle-footer{
+  margin-top:8px!important;
+}
+
+@media(max-width:390px){
+  .q-shell-v2 .universal-profile-pass .universal-pass-main{
+    grid-template-columns:52px minmax(0,1fr)!important;
+  }
+  .q-shell-v2 .universal-profile-pass .universal-pass-avatar,
+  .q-shell-v2 .universal-profile-pass .universal-pass-avatar-ring{
+    width:50px!important;
+    height:50px!important;
+  }
+  .q-shell-v2 .universal-profile-pass .universal-pass-footer{
+    grid-template-columns:112px minmax(0,1fr)!important;
+  }
+}
