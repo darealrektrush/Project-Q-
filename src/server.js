@@ -334,6 +334,17 @@ app.get('/campaign-app/api/rank-assets/:filename', async (req, res) => {
   }
 });
 
+app.get('/campaign-app/assets/ranks/:filename', (req, res) => {
+  const filename = String(req.params.filename || '');
+  if (!/^crab_army_rank_(0[1-9]|[1-4][0-9]|50)\.webp$/.test(filename)) {
+    return res.status(404).end();
+  }
+  if (process.env.RENDER_EXTERNAL_HOSTNAME !== 'project-q-dev.onrender.com') {
+    return res.status(404).end();
+  }
+  return res.redirect(307, '/campaign-app/api/rank-assets/' + filename);
+});
+
 app.get('/campaign-app/api/runtime', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
