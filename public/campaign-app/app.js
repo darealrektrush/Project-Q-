@@ -2042,6 +2042,7 @@ function universalProfileHeroMarkup() {
         <b>CRAB ARMY</b>
         <small>Built different. Built to last.</small>
         <div class="universal-pass-chips">${chips}</div>
+        <button class="universal-pass-details" type="button" data-explainer="universal">DETAILS →</button>
       </div>
 
       <div class="universal-pass-rank" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
@@ -2062,18 +2063,18 @@ function universalProfileHeroMarkup() {
       </div>
     </div>
 
-    <div class="universal-pass-rail">
-      <div><span>LIFETIME XP</span><b>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</b></div>
-      <div><span>OPERATION XP</span><b>${synced ? Number(p.xp || 0).toLocaleString() : '—'}</b></div>
-      <div><span>ACHIEVEMENTS</span><b>${synced ? universalRecords.length : '—'}</b></div>
-      <div><span>REFERRALS</span><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b></div>
-      <button type="button" data-explainer="universal">VIEW PROFILE <span aria-hidden="true">→</span></button>
-    </div>
-    <div class="universal-pass-trust">
-      <div class="universal-pass-oracle"><span>◈</span><small>IDENTITY SECURED BY</small><b>ORACLE</b></div>
-      <div class="universal-pass-link ${p.xVerified ? 'linked' : ''}"><span class="access-x-mark">𝕏</span><b>X</b><small>${p.xVerified ? 'Linked' : 'Pending'}</small></div>
-      <div class="universal-pass-link ${p.telegramVerified ? 'linked' : ''}"><span class="telegram-mini-mark">➤</span><b>Telegram</b><small>${p.telegramVerified ? 'Linked' : 'Pending'}</small></div>
-      <div class="universal-pass-link ${p.walletVerified ? 'linked' : ''}"><span class="access-solana-mark mini"><i></i><i></i><i></i></span><b>Solana</b><small>${p.walletVerified ? 'Linked' : 'Pending'}</small></div>
+    <div class="universal-pass-footer">
+      <div class="universal-pass-metrics">
+        <div><span>LIFETIME XP</span><b>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</b></div>
+        <div><span>ACHIEVEMENTS</span><b>${synced ? universalRecords.length : '—'}</b></div>
+        <div><span>REFERRALS</span><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b></div>
+      </div>
+      <div class="universal-pass-connections">
+        <div class="universal-pass-oracle compact"><span>◈</span><small>SECURED BY</small><b>ORACLE</b></div>
+        <div class="universal-pass-link ${p.xVerified ? 'linked' : ''}"><span class="access-x-mark">𝕏</span><small>${p.xVerified ? 'Linked' : 'Pending'}</small></div>
+        <div class="universal-pass-link ${p.telegramVerified ? 'linked' : ''}"><span class="telegram-mini-mark">➤</span><small>${p.telegramVerified ? 'Linked' : 'Pending'}</small></div>
+        <div class="universal-pass-link ${p.walletVerified ? 'linked' : ''}"><span class="access-solana-mark mini"><i></i><i></i><i></i></span><small>${p.walletVerified ? 'Linked' : 'Pending'}</small></div>
+      </div>
     </div>
   </section>`;
 }
