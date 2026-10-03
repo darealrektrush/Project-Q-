@@ -640,10 +640,17 @@ function clearanceCountLabel() {
   return `${checks.filter(item => item.complete).length}/${checks.length}`;
 }
 
+function operationAccessLabel() {
+  const actions = campaignEligibilityRequirements().filter(item => ['x', 'wallet-verify'].includes(item.action));
+  if (!actions.length) return 'READY';
+  const complete = actions.filter(item => item.complete).length;
+  return complete === actions.length ? 'READY' : `${complete}/${actions.length}`;
+}
+
 function terminalSnapshotMarkup() {
   const p = state.profile;
   return `<section class="terminal-snapshot" aria-label="Your snapshot"><header><span>YOUR SNAPSHOT</span><b>${escapeHtml(p.name)}</b></header><div>
-    <article><span>Clearance</span><strong>${clearanceCountLabel()}</strong></article>
+    <article><span>Access</span><strong>${operationAccessLabel()}</strong></article>
     <article><span>Operation XP</span><strong>${Number(p.xp || 0).toLocaleString()}</strong></article>
     <article><span>Standing</span><strong>${escapeHtml(p.rank && p.rank !== '—' ? p.rank : 'UNRANKED')}</strong></article>
   </div></section>`;
@@ -1538,13 +1545,13 @@ function operationMissionsMarkup(c) {
   const missions = Array.isArray(c.missions) ? c.missions : [];
     const missionRows = missions.map((mission, index) => ({ mission, index, telemetry: missionTelemetry(mission) })).filter(({ mission }) => !['participation-xp', 'earn-to-burn'].includes(mission.id));
     const availableCount = missionRows.filter(({ mission, telemetry }) => missionListCategory(mission, telemetry) === 'available').length;
-    const remaining = campaignEligibilityRequirements().filter(({ complete }) => !complete).length;
+    const remaining = campaignClearanceReady() ? 0 : 1;
     const filteredRows = missionRows.filter(({ mission, telemetry }) => state.missionFilter === 'all' || missionListCategory(mission, telemetry) === state.missionFilter);
     return `<section class="operation-content-panel" data-tour-target="mission-files">
       <div class="operation-section-head">
         <div><span>MISSION FILES</span><h3>Choose your next objective.</h3></div>
       </div>
-      <div class="mission-file-stats"><span><b>${missions.length}</b> OPERATION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> CLEARANCE PENDING</span></div>
+      <div class="mission-file-stats"><span><b>${missions.length}</b> OPERATION FILES</span><span><b>${availableCount}</b> AVAILABLE</span><span><b>${remaining}</b> ACCESS PENDING</span></div>
       <p class="mission-catalogue-note">${missionRows.length} action missions · ${missions.length - missionRows.length} progress files. Progress tracks accepted activity; opening a file does not award XP.</p>
       <div class="mission-file-filters" role="group" aria-label="Filter mission files">${[['all','All'],['available','Available'],['active','Active'],['completed','Completed']].map(([key,label])=>`<button type="button" data-mission-filter="${key}" class="${state.missionFilter === key ? 'active' : ''}" aria-pressed="${state.missionFilter === key}">${label}</button>`).join('')}</div>
       <div class="mission-file-index">${filteredRows.length ? filteredRows.map(({ mission, index, telemetry }) => {
@@ -1578,7 +1585,7 @@ function operationsScreen() {
   else content = `<section class="operation-content-panel operation-overview-panel">
     ${operationCurrentOrderMarkup()}
     <div class="operation-progress-line"><span>OPERATION STATUS</span><strong>${escapeHtml(operationScheduleDisplayLabel(c))}${Number(state.runtime?.schedule?.currentCycle || 0) ? ` · CYCLE ${Number(state.runtime.schedule.currentCycle)} / 5` : ''}</strong></div>
-    <div class="briefing-clearance"><span>CLEARANCE ${clearanceCountLabel()}</span><button data-profile-view="overview">OPEN PROFILE →</button></div>
+    <div class="briefing-clearance"><span>OPERATION ACCESS · ${operationAccessLabel()}</span><button data-profile-view="overview">${campaignClearanceReady() ? 'VIEW PROFILE' : 'VERIFY ACCESS'} →</button></div>
     <div class="briefing-story"><h3>The operation</h3><p>${escapeHtml(c.description || '')}</p><p>Complete eligible Mission Files. Project Q verifies and settles accepted activity before it contributes to XP, standing and rewards.</p></div>
     <details class="briefing-rules"><summary>Rules & verification <span>⌄</span></summary><p>One Telegram identity, one X account and one verified reward wallet per participant. Founders and admins are excluded from XP and public leaderboards.</p><p>Daily caps: ${Number(c.xpCaps?.participationDaily || 0)} participation XP, ${Number(c.xpCaps?.projectQDaily || 0)} mission XP, ${Number(c.xpCaps?.trendingBotsDaily || 0)} trending XP, and ${Number(c.xpCaps?.overallDaily || 0)} XP overall. Pending or rejected evidence earns no XP.</p><p>Each 48-hour cycle selects the top two eligible participants and three weighted winners from ranks 3–15. Previous-cycle winners have a one-cycle cooldown. Final review takes 48–72 hours.</p><p>Mission-specific instructions and verification rules appear inside each Mission File.</p></details>
     <button class="operation-pool-teaser" data-operation-view="economics"><span><b>OPERATION ECONOMICS</b><strong>Four operation pools</strong><small>Rewards · Diamond Duck · Earn to Burn · Top Duck</small></span><span class="pool-teaser-action">SEE POOLS →</span></button>
@@ -2778,8 +2785,22 @@ function missionStatusSummaryMarkup(mission, telemetry) {
 
 function missionClearanceMarkup() {
   const checks = campaignEligibilityRequirements();
-  const next = checks.find(item => !item.complete);
-  return `<section class="mission-clearance"><div class="mission-clearance-head"><div><span>CLEARANCE</span><b>${next ? escapeHtml(next.label) + ' pending' : 'Clearance complete'}</b></div><strong>${clearanceCountLabel()}</strong></div>${next ? '<button class="outline-action" data-screen="profile">VIEW CLEARANCE →</button>' : '<p>Availability also depends on the operation and source status.</p>'}</section>`;
+  const nextAction = checks.find(item => !item.complete && ['x', 'wallet-verify'].includes(item.action));
+  const automaticPending = checks.find(item => !item.complete && !['x', 'wallet-verify'].includes(item.action));
+  const ready = !nextAction && !automaticPending;
+  const title = ready ? 'Operation access ready'
+    : nextAction ? (nextAction.action === 'x' ? 'Connect X to continue' : 'Verify wallet to continue')
+      : 'Automatic eligibility checks pending';
+  const detail = ready
+    ? 'Mission availability now depends on operation and source status.'
+    : nextAction
+      ? 'Complete the next verification step in the Verification Center.'
+      : 'Project Q is checking Telegram, token-account and holder eligibility automatically.';
+  return `<section class="mission-clearance ${ready ? 'is-ready' : ''}">
+    <div class="mission-clearance-head"><div><span>OPERATION ACCESS</span><b>${escapeHtml(title)}</b></div><strong>${escapeHtml(operationAccessLabel())}</strong></div>
+    <p>${escapeHtml(detail)}</p>
+    ${ready ? '' : '<button class="outline-action" data-screen="profile">OPEN VERIFICATION CENTER →</button>'}
+  </section>`;
 }
 
 function missionDetailMarkup(mission) {
