@@ -665,7 +665,10 @@ function clearanceMarkup() {
   const holder = byKey.holder;
   const total = checks.length || 1;
   const complete = checks.filter(item => item.complete).length;
-  const percent = Math.round((complete / total) * 100);
+  const actionChecks = [x, wallet].filter(Boolean);
+  const actionTotal = actionChecks.length || 1;
+  const actionComplete = actionChecks.filter(item => item.complete).length;
+  const percent = Math.round((actionComplete / actionTotal) * 100);
   const nativeConnectionReady = Boolean(state.telegram?.initData);
   const activeComplete = Boolean((!x || x.complete) && (!wallet || wallet.complete));
   const allComplete = complete === total;
@@ -710,7 +713,7 @@ function clearanceMarkup() {
   return `<section class="verification-center">
     <header class="verification-center-head">
       <div><span>PROJECT Q // VERIFICATION CENTER</span><h3>${activeComplete ? 'Finishing automatic checks' : 'Secure your operation access'}</h3><p>${activeComplete ? 'Project Q is resolving token-account and holder eligibility from your verified wallet.' : 'Two actions. Everything else is automatic.'}</p></div>
-      <div class="verification-progress-orb"><strong>${percent}%</strong><small>${complete}/${total}</small></div>
+      <div class="verification-progress-orb"><strong>${actionComplete}/${actionTotal}</strong><small>ACTIONS</small></div>
     </header>
     <div class="verification-progress-track"><i style="width:${percent}%"></i></div>
     <div class="verification-primary-actions">
