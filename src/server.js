@@ -298,6 +298,42 @@ app.post('/campaign-app/api/ocean/recognition-preference', async (req, res) => {
   }
 });
 
+app.get('/campaign-app/api/rank-assets/:filename', async (req, res) => {
+  const filename = String(req.params.filename || '');
+  if (!/^crab_army_rank_(0[1-9]|[1-4][0-9]|50)\.webp$/.test(filename)) {
+    return res.status(404).end();
+  }
+  if (process.env.RENDER_EXTERNAL_HOSTNAME !== 'project-q-dev.onrender.com') {
+    return res.status(404).end();
+  }
+  try {
+    const upstream = await fetch(
+      'https://crabstar-webhooks-dev.onrender.com/public/crab-army-ranks/' + filename,
+      {
+        redirect: 'error',
+        signal: AbortSignal.timeout(20_000),
+        headers: { 'user-agent': 'Project-Q-Rank-Proxy/1.0' },
+      }
+    );
+    if (!upstream.ok) return res.status(upstream.status === 404 ? 404 : 503).end();
+    const contentType = String(upstream.headers.get('content-type') || '').toLowerCase();
+    if (!contentType.startsWith('image/webp')) return res.status(502).end();
+    const body = Buffer.from(await upstream.arrayBuffer());
+    if (!body.length || body.length > 1_000_000 || body.subarray(0, 4).toString('ascii') !== 'RIFF') {
+      return res.status(502).end();
+    }
+    res.set({
+      'Content-Type': 'image/webp',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return res.send(body);
+  } catch (error) {
+    console.error('rank artwork proxy unavailable', error.name || 'error');
+    return res.status(503).end();
+  }
+});
+
 app.get('/campaign-app/api/runtime', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
