@@ -5,8 +5,8 @@ export function participantClearance(profile = {}, eligibility = {}) {
   const walletRequired = eligibility.walletRequiredForRewards !== false || minimumUsd > 0;
   return [
     eligibility.telegramRequired !== false && { key: 'telegram', label: 'Telegram identity', complete: Boolean(profile.telegramVerified), detail: 'Open Project Q from the official Telegram bot.', action: 'telegram' },
-    eligibility.oracleXRequired !== false && { key: 'x', label: 'X linked through Oracle', complete: Boolean(profile.xVerified), detail: 'Connect the X account used for eligible operation activity.', action: 'oracle' },
-    walletRequired && { key: 'wallet', label: 'Reward wallet', complete: Boolean(profile.walletVerified), detail: 'Verify your reward wallet through Oracle.', action: 'oracle' },
+    eligibility.oracleXRequired !== false && { key: 'x', label: 'X linked through Oracle', complete: Boolean(profile.xVerified), detail: 'Connect the X account used for eligible operation activity.', action: 'x' },
+    walletRequired && { key: 'wallet', label: 'Reward wallet', complete: Boolean(profile.walletVerified), detail: 'Verify your reward wallet through Oracle.', action: 'wallet-verify' },
     walletRequired && minimumUsd > 0 && { key: 'token-account', label: 'FAWKQ token account', complete: Boolean(profile.tokenAccountReady), detail: 'Check the FAWKQ token account on your verified reward wallet.', action: 'wallet' },
     minimumUsd > 0 && { key: 'holder', label: `Minimum $${minimumUsd} FAWKQ`, complete: Boolean(profile.holderEligible), detail: `Hold at least $${minimumUsd} of FAWKQ in your verified reward wallet.`, action: 'wallet' },
   ].filter(Boolean);
@@ -16,8 +16,9 @@ export function participantNextStep({ profile = {}, eligibility, lifecycle = 'UP
   if (sessionStatus === 'identity-unavailable') return { label: 'Identity Sync', title: 'Sync Oracle Identity', detail: 'Telegram is confirmed. Your operation profile is temporarily unavailable.', action: 'RETRY', retry: true, brand: 'q' };
   const next = participantClearance(profile, eligibility).find(item => !item.complete);
   if (next) {
-    const oraclePending = next.action === 'oracle' && !oracleAvailable;
-    return { label: 'Next Step', title: oraclePending ? 'Oracle connection pending' : `Complete ${next.label}`, detail: oraclePending ? 'Oracle connection is not available in this environment yet.' : next.detail, action: next.action === 'wallet' ? 'OPEN WALLET' : 'COMPLETE CLEARANCE', screen: 'profile', profileView: next.action === 'wallet' ? 'wallet' : 'overview', brand: next.action === 'oracle' ? 'oracle' : 'q' };
+    const oracleAction = ['x', 'wallet-verify'].includes(next.action);
+    const oraclePending = oracleAction && !oracleAvailable;
+    return { label: 'Next Step', title: oraclePending ? 'Oracle connection pending' : `Complete ${next.label}`, detail: oraclePending ? 'Oracle connection is not available in this environment yet.' : next.detail, action: next.action === 'wallet' ? 'OPEN WALLET' : next.action === 'x' ? 'CONNECT X' : next.action === 'wallet-verify' ? 'VERIFY WALLET' : 'COMPLETE CLEARANCE', screen: 'profile', profileView: next.action === 'wallet' ? 'wallet' : 'overview', brand: oracleAction ? 'oracle' : 'q' };
   }
   const steps = {
     ACTIVE: ['Choose a Mission File', 'Complete an available objective and follow its verified result in Record.', 'VIEW MISSIONS', 'operations', 'missions'],
