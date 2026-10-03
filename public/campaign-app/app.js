@@ -1777,7 +1777,7 @@ function rewardsScreen() {
     </section>` : '<section class="reward-awaiting"><b>No allocation recorded yet.</b><p>Your reward amounts appear after participation is verified and the campaign allocation is finalized.</p></section>'}
 
     <section class="reward-destination ${walletReady ? 'is-verified' : 'needs-wallet'}">
-      <div><span>DESTINATION</span><b>${walletReady ? 'Verified Reward Wallet' : 'Verify Your Reward Wallet'}</b><small>${walletReady ? walletLabel : 'Required before a reward can be released.'}</small><em>Signature only · 0 SOL · no claim transaction required.</em></div>
+      <div><span>DESTINATION</span><b>${walletReady ? 'Verified Reward Wallet' : 'Verify Your Reward Wallet'}</b><small>${walletReady ? walletLabel : 'Required before a reward can be released.'}</small><em>Signature only · 0 SOL · No claim transaction required.</em></div>
       ${walletReady
         ? '<button class="outline-action" data-screen="profile" data-profile-view="wallet">VIEW WALLET →</button>'
         : '<button class="gold-action compact" data-clearance-action="wallet-verify">VERIFY WALLET →</button>'}
