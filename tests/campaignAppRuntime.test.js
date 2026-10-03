@@ -1306,7 +1306,7 @@ test('reward rows distinguish scheduled timing from confirmed on-chain timing', 
 test('beta profile shows a human-readable Oracle Universal Profile and updates use a Back action', async () => {
   const context = await loadRuntime();
   assert.match(context.__profiles.overview, /ORACLE UNIVERSAL PROFILE/);
-  assert.match(context.__profiles.overview, /VIEW PROFILE/);
+  assert.match(context.__profiles.overview, /DETAILS →/);
   assert.match(context.__profiles.overview, /data-explainer="universal"/);
   assert.doesNotMatch(context.__profiles.overview, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
 
@@ -1399,7 +1399,7 @@ test('Universal Profile uses compact card hierarchy', async () => {
   assert.match(html, /universal-profile-hero compact/);
   assert.match(html, /universal-pass-main/);
   assert.match(html, /universal-pass-rail/);
-  assert.match(html, /VIEW PROFILE/);
+  assert.match(html, /DETAILS →/);
   assert.match(html, /ARMY RANK/);
 });
 
@@ -1414,7 +1414,7 @@ test('Universal Profile renders as one compact CrabStar ecosystem identity pass'
   assert.match(html, /universal-pass-rank/);
   assert.match(html, /universal-pass-level/);
   assert.match(html, /universal-pass-rail/);
-  assert.match(html, /VIEW PROFILE/);
+  assert.match(html, /DETAILS →/);
   assert.doesNotMatch(html, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
 });
 
@@ -1478,4 +1478,16 @@ test('Operation Access previews the future wallet step without making it actiona
   assert.match(html, /Verify Solana Wallet/);
   assert.doesNotMatch(html, /data-clearance-action="wallet-verify"/);
   assert.match(html, /data-clearance-action="x"/);
+});
+
+
+test('Universal Profile V6.2 stays compact with one combined metrics and trust footer', async () => {
+  const context = await loadRuntime();
+  const html = context.__profiles.overview;
+  assert.match(html, /universal-pass-footer/);
+  assert.match(html, /universal-pass-metrics/);
+  assert.match(html, /universal-pass-connections/);
+  assert.match(html, /DETAILS →/);
+  assert.doesNotMatch(html, /universal-pass-rail/);
+  assert.doesNotMatch(html, /universal-pass-trust/);
 });
