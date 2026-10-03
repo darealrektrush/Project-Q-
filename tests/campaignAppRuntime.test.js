@@ -981,7 +981,7 @@ test('every mission has a native detail sheet with safe readiness actions', asyn
     assert.match(detail, /<summary>Verification /);
     assert.match(detail, /<summary>Reward /);
     assert.match(detail, /Opening a destination alone does not create verified credit/);
-    assert.match(detail, /VIEW CLEARANCE/);
+    assert.match(detail, /OPEN VERIFICATION CENTER/);
     assert.doesNotMatch(detail, /View all requirements/);
   }
   assert.match(context.__missionDetails['website-voting'], /1 XP per accepted source/);
