@@ -355,7 +355,7 @@ test('Operations UI gives each bottom destination one job', async () => {
   assert.doesNotMatch(context.__rendered.record, /record-proof-links|record-operation-context|>Activity<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation recorded yet/);
-  assert.equal((context.__rendered.rewards.match(/OPEN WALLET/g) || []).length, 1);
+  assert.equal((context.__rendered.rewards.match(/VERIFY WALLET/g) || []).length, 1);
   assert.match(context.__profiles.overview, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(context.__profiles.overview, /2 STEPS REMAINING/);
   assert.doesNotMatch(context.__profiles.overview, /passport-tabs|Campaign Records|dossier-live-record|passport-rewards-view/);
@@ -510,10 +510,10 @@ test('achievement unlock event fires only for new verified receipts and can summ
 test('Rewards pending state shows one wallet action and no invented receipts', async () => {
   const context = await loadRuntime();
   const { screen, profile } = context.__renderRewardsWith({ recorded: false, releaseCount: 0, releases: [] });
-  assert.match(screen, /Reward Wallet Pending/);
-  assert.match(screen, /Reward Wallet Pending/);
+  assert.match(screen, /Verify Your Reward Wallet/);
+  assert.match(screen, /Required before a reward can be released/);
   assert.match(screen, /No allocation recorded yet/);
-  assert.equal((screen.match(/OPEN WALLET/g) || []).length, 1);
+  assert.equal((screen.match(/VERIFY WALLET/g) || []).length, 1);
   assert.doesNotMatch(screen, /reward-summary-grid|allocation-receipt|Verified Reward Wallet/);
   assert.doesNotMatch(profile, /No allocation recorded yet|ECONOMIC RECORD/);
 });
