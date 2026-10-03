@@ -2250,15 +2250,122 @@ async function startNativeXConnection(intent = 'link') {
   }
 }
 
-async function startNativeWalletConnection() {
+const projectQWallets = [];
+let walletDiscoveryInitialized = false;
+
+function projectQWalletCompatible(wallet) {
+  return Boolean(wallet?.features?.['standard:connect'] && wallet?.features?.['solana:signMessage']);
+}
+
+function registerProjectQWallet(wallet) {
+  if (!projectQWalletCompatible(wallet) || projectQWallets.some(item => item.name === wallet.name)) return;
+  projectQWallets.push(wallet);
+  const dialog = document.querySelector('#connection-dialog');
+  if (dialog?.open && dialog.dataset.mode === 'wallet') renderProjectQWalletDialog();
+}
+
+function initProjectQWalletDiscovery() {
+  if (walletDiscoveryInitialized) return;
+  walletDiscoveryInitialized = true;
+  const api = Object.freeze({
+    register(...wallets) { wallets.forEach(registerProjectQWallet); return () => {}; },
+    get() { return projectQWallets.slice(); },
+    on() { return () => {}; },
+  });
+  window.addEventListener('wallet-standard:register-wallet', event => {
+    try { event.detail(api); } catch {}
+  });
+  window.dispatchEvent(new CustomEvent('wallet-standard:app-ready', { detail: api }));
+}
+
+function bytesToBase64(bytes) {
+  let out = '';
+  for (const byte of bytes) out += String.fromCharCode(byte);
+  return btoa(out);
+}
+
+function renderProjectQWalletDialog(message = '') {
+  const dialog = document.querySelector('#connection-dialog');
+  if (!dialog) return;
+  dialog.dataset.mode = 'wallet';
+  const detected = projectQWallets.map((wallet, index) =>
+    '<button type="button" class="native-wallet-option" data-wallet-index="' + index + '"><b>' + escapeHtml(wallet.name) + '</b><small>Detected in this browser</small><span>CONNECT →</span></button>'
+  ).join('');
+  dialog.innerHTML = '<header><div><small>PROJECT Q // WALLET VERIFICATION</small><h2>Choose your Solana wallet</h2></div><button type="button" aria-label="Close wallet connection">×</button></header>' +
+    '<p class="native-connection-copy">Sign one readable ownership message. No transaction, token approval or SOL fee is created.</p>' +
+    (message ? '<div class="native-connection-status">' + escapeHtml(message) + '</div>' : '') +
+    '<section class="native-wallet-detected"><span>DETECTED WALLETS</span><div class="native-wallet-options">' +
+      (detected || '<p>No compatible wallet is visible inside Telegram yet.</p>') + '</div></section>' +
+    '<section class="native-wallet-fallback"><span>MOBILE WALLET HANDOFF</span><p>Project Q prepares the private verification session before opening your wallet, so backend/server screens stay hidden.</p><div class="native-wallet-grid">' +
+      '<button type="button" data-wallet-provider="phantom">Phantom</button>' +
+      '<button type="button" data-wallet-provider="solflare">Solflare</button>' +
+      '<button type="button" data-wallet-provider="backpack">Backpack</button>' +
+      '<button type="button" data-wallet-provider="jupiter">Jupiter</button>' +
+      '<button type="button" data-wallet-provider="metamask">MetaMask</button>' +
+      '<button type="button" data-wallet-provider="other">Other Solana Wallet</button>' +
+    '</div></section><footer><small>Never enter a seed phrase or private key. Oracle verifies signatures only.</small></footer>';
+  dialog.querySelector('[aria-label="Close wallet connection"]').onclick = () => dialog.close();
+  dialog.querySelectorAll('[data-wallet-index]').forEach(button => {
+    button.onclick = () => verifyProjectQDetectedWallet(projectQWallets[Number(button.dataset.walletIndex)]);
+  });
+  dialog.querySelectorAll('[data-wallet-provider]').forEach(button => {
+    button.onclick = () => openProjectQWalletFallback(button.dataset.walletProvider);
+  });
+}
+
+async function verifyProjectQDetectedWallet(wallet) {
   try {
-    toast('Preparing secure wallet verification…');
-    const result = await postNativeConnection('wallet/fallback');
-    sessionStorage.setItem('project-q:pending-verification', 'wallet');
-    openExternal(result.verificationUrl);
+    renderProjectQWalletDialog('Connecting ' + wallet.name + '…');
+    const connected = await wallet.features['standard:connect'].connect();
+    const account = (connected.accounts || []).find(item =>
+      (item.features || []).includes('solana:signMessage') &&
+      (!(item.chains || []).length || (item.chains || []).some(chain => String(chain).startsWith('solana:'))
+    );
+    if (!account) throw new Error('Choose a Solana account that supports message signing.');
+    const challenge = await postNativeConnection('wallet/challenge', { walletAddress: account.address });
+    renderProjectQWalletDialog('Review the readable ownership message in your wallet. This costs 0 SOL.');
+    const signed = await wallet.features['solana:signMessage'].signMessage({
+      account,
+      message: new TextEncoder().encode(challenge.message),
+    });
+    const signature = bytesToBase64(signed[0].signature);
+    await postNativeConnection('wallet/complete', { challengeId: challenge.challengeId, signature });
+    const dialog = document.querySelector('#connection-dialog');
+    if (dialog?.open) dialog.close();
+    await authenticateTelegram();
+    await loadWalletStatus();
+    render();
+    toast('Wallet verified ✓');
   } catch (error) {
-    toast(error.message || 'Wallet verification could not be started.');
+    renderProjectQWalletDialog(error.status === 409
+      ? 'This wallet is already verified to another Oracle identity. Use identity recovery or support instead of creating a duplicate profile.'
+      : (error.message || 'Wallet verification could not be completed.'));
   }
+}
+
+async function openProjectQWalletFallback(provider) {
+  try {
+    renderProjectQWalletDialog('Preparing your private wallet session…');
+    const result = await postNativeConnection('wallet/fallback');
+    const verificationUrl = result.verificationUrl;
+    const encoded = encodeURIComponent(verificationUrl);
+    const ref = encodeURIComponent(location.origin);
+    let destination = verificationUrl;
+    if (provider === 'phantom') destination = 'https://phantom.app/ul/browse/' + encoded + '?ref=' + ref;
+    if (provider === 'solflare') destination = 'https://solflare.com/ul/v1/browse/' + encoded + '?ref=' + ref;
+    if (provider === 'backpack') destination = 'https://backpack.app/ul/v1/browse/' + encoded + '?ref=' + ref;
+    sessionStorage.setItem('project-q:pending-verification', 'wallet');
+    toast(provider === 'other' ? 'Opening secure wallet verification…' : 'Opening ' + provider + '…');
+    openExternal(destination);
+  } catch (error) {
+    renderProjectQWalletDialog(error.message || 'Wallet handoff could not be prepared.');
+  }
+}
+async function startNativeWalletConnection() {
+  initProjectQWalletDiscovery();
+  renderProjectQWalletDialog(projectQWallets.length ? '' : 'Checking for wallets available inside Telegram…');
+  const dialog = document.querySelector('#connection-dialog');
+  if (dialog && !dialog.open) dialog.showModal();
 }
 function openOracle() {
   const url = state.runtime?.oracleBotUrl;
@@ -3666,6 +3773,7 @@ async function boot() {
   markStartup(10);
   state.telegram?.ready();
   state.telegram?.expand();
+  initProjectQWalletDiscovery();
   syncTelegramViewport();
   state.telegram?.setHeaderColor?.('#e9e2d3');
   state.telegram?.setBackgroundColor?.('#e9e2d3');
