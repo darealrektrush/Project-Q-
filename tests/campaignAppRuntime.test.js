@@ -1286,6 +1286,51 @@ test('Universal Profile hero keeps lifetime Crab Army progression separate from 
   assert.match(html, /OPERATION XP[\s\S]*725/);
   assert.match(html, /Colour Sergeant/);
   assert.match(html, /XP Earned/);
-  assert.match(html, /VERIFIED BADGES[\s\S]*1/);
+  assert.match(html, /BADGES[\s\S]*1/);
   assert.doesNotMatch(html, /78,400 operation XP|725 lifetime XP/i);
+});
+
+
+test('Verification Center presents only X and wallet as participant actions', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderDossierWith({
+    telegramVerified: true,
+    xVerified: false,
+    walletVerified: false,
+    tokenAccountReady: false,
+    holderEligible: false,
+  }, null, 'verified');
+
+  assert.match(html, /PROJECT Q \/\/ VERIFICATION CENTER/);
+  assert.match(html, /Two actions\. Everything else is automatic\./);
+  assert.match(html, /data-clearance-action="x"/);
+  assert.match(html, /CONNECT X/);
+  assert.match(html, /data-clearance-action="wallet-verify"/);
+  assert.match(html, /VERIFY WALLET/);
+  assert.match(html, /AUTOMATIC CHECKS/);
+  assert.match(html, /Telegram/);
+  assert.match(html, /FAWKQ account/);
+  assert.match(html, /\$2 FAWKQ minimum/);
+  assert.doesNotMatch(html, /class="clearance-row/);
+  assert.doesNotMatch(html, />REFRESH →<\/button>/);
+});
+
+test('Universal Profile uses compact card hierarchy', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderDossierWith({
+    name: 'RektRush',
+    username: 'darealrektrush',
+    xp: 680,
+    crabArmy: {
+      lifetimeXp: 115600, level: 18, rankName: 'Master Sergeant', division: 'Sergeant Command',
+      progressPct: 0, xpToNext: 14000, nextRankName: 'First Sergeant', nextRankXp: 129600,
+      badgeAssetKey: 'crab_army_rank_18', ladderVersion: 2,
+    },
+  }, null, 'verified');
+
+  assert.match(html, /universal-profile-hero compact/);
+  assert.match(html, /universal-profile-compact-top/);
+  assert.match(html, /universal-profile-compact-stats/);
+  assert.match(html, /PROFILE DETAILS/);
+  assert.match(html, /ARMY RANK/);
 });
