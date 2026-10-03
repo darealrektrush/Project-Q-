@@ -520,3 +520,90 @@ body.q-shell-v2{background:var(--q-page);color:var(--q-ink-premium)}
   .q-shell-v2 .system-status-banner{min-height:40px;padding:6px 8px}
   .q-shell-v2 .system-status-banner>div small{display:none}
 }
+
+
+/* Mission Files — one command surface, quiet supporting details. */
+.q-shell-v2 .mission-dialog{
+  border:0!important;border-radius:18px;background:var(--q-surface)!important;
+  box-shadow:0 30px 90px rgba(12,28,36,.28)!important
+}
+.q-shell-v2 .mission-file-sheet{padding:14px!important}
+.q-shell-v2 .mission-file-sheet .mission-sheet-close{
+  border:0!important;background:var(--q-navy)!important;color:#f4d277!important;
+  box-shadow:0 4px 12px rgba(4,17,24,.15)
+}
+.q-shell-v2 .mission-current-order{
+  padding:13px;border:0!important;border-radius:12px;
+  background:linear-gradient(120deg,#07161d,#0d2732)!important;
+  box-shadow:var(--q-elev-1)
+}
+.q-shell-v2 .mission-current-order h3{margin:5px 0 8px;font-size:18px}
+.q-shell-v2 .mission-current-order>small{font-family:var(--q-ui)!important;font-size:10px!important;line-height:1.4}
+.q-shell-v2 .mission-current-order>button,
+.q-shell-v2 .mission-next-requirement>button{
+  min-height:36px;border:0!important;border-radius:18px;
+  background:#e3bd5f!important;font:750 10px/1 var(--q-ui)!important
+}
+.q-shell-v2 .mission-clearance{
+  margin:9px 0;padding:9px 10px;border:0!important;border-radius:10px;
+  background:var(--q-surface-soft)!important
+}
+.q-shell-v2 .mission-clearance-head span{font-size:8px}
+.q-shell-v2 .mission-clearance-head b{font-size:12px}
+.q-shell-v2 .mission-clearance-head strong{font-size:16px}
+.q-shell-v2 .mission-source-list{gap:5px}
+.q-shell-v2 .mission-source-list>a,
+.q-shell-v2 .mission-source-list>div,
+.q-shell-v2 .mission-source-list>button{
+  border:0!important;border-radius:10px;background:#f7f5ef!important;
+  box-shadow:0 1px 0 var(--q-hairline)
+}
+.q-shell-v2 .mission-source-list b{font-family:var(--q-ui)!important;font-size:10px!important}
+.q-shell-v2 .mission-source-list small{font-family:var(--q-ui)!important;font-size:8px!important}
+
+/* Account, help and updates — one drawer language. */
+.q-shell-v2 .account-dialog.account-drawer,
+.q-shell-v2 .updates-dialog.updates-drawer{
+  border:0!important;background:linear-gradient(155deg,#07141b,#0c2029)!important;
+  box-shadow:0 28px 100px rgba(4,15,22,.48)!important
+}
+.q-shell-v2 .account-dialog.account-drawer header>button,
+.q-shell-v2 .updates-dialog.updates-drawer header button{
+  border:0!important;background:rgba(255,255,255,.06)!important
+}
+.q-shell-v2 .account-dialog.account-drawer .account-back,
+.q-shell-v2 .account-dialog.account-drawer .account-settings-section button,
+.q-shell-v2 .account-dialog.account-drawer .support-availability button{
+  border:0!important;border-radius:10px!important;background:rgba(255,255,255,.055)!important;
+  font-family:var(--q-ui)!important
+}
+.q-shell-v2 .account-dialog.account-drawer .account-settings-section button[data-account-action="tour"],
+.q-shell-v2 .account-dialog.account-drawer .support-availability button{
+  background:#d8b657!important;color:#131b1e!important
+}
+.q-shell-v2 .updates-dialog article{
+  border:0!important;border-radius:11px;background:rgba(255,255,255,.055)!important
+}
+
+/* Guided onboarding — calm focus, not a floating admin card. */
+.q-shell-v2 .tour-card,
+.q-shell-v2 .tour-welcome-card{
+  border:0!important;border-radius:16px!important;
+  box-shadow:0 24px 70px rgba(8,24,32,.25)!important
+}
+.q-shell-v2 .tour-card p,
+.q-shell-v2 .tour-welcome-card p{font-family:var(--q-ui)!important;line-height:1.5}
+
+/* Readiness is an audit surface, so density is allowed but visual noise is not. */
+.q-shell-v2 .readiness-blocker-summary{
+  border:0!important;border-radius:14px!important;background:var(--q-surface)!important;
+  box-shadow:var(--q-elev-1)!important
+}
+.q-shell-v2 .readiness-blocker-list article{
+  border:0!important;border-radius:10px;background:var(--q-surface-soft)!important
+}
+.q-shell-v2 .readiness-details{
+  border:0!important;border-radius:12px!important;box-shadow:var(--q-elev-1)!important
+}
+.q-shell-v2 .readiness-gate{border-color:rgba(82,92,94,.07)!important}
+.q-shell-v2 .readiness-fingerprint{border:0!important;border-radius:12px!important;box-shadow:var(--q-elev-1)!important}
