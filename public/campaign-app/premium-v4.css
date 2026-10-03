@@ -607,3 +607,67 @@ body.q-shell-v2{background:var(--q-page);color:var(--q-ink-premium)}
 }
 .q-shell-v2 .readiness-gate{border-color:rgba(82,92,94,.07)!important}
 .q-shell-v2 .readiness-fingerprint{border:0!important;border-radius:12px!important;box-shadow:var(--q-elev-1)!important}
+
+
+/* Compact current-operation object inside Profile */
+.q-shell-v2 .profile-operation-card{
+  position:relative;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(120px,.65fr);
+  min-height:154px;overflow:hidden;border-radius:14px;
+  background:linear-gradient(125deg,#07141b,#0b2732);color:#f5f2e8;
+  box-shadow:var(--q-elev-2)
+}
+.q-shell-v2 .profile-operation-copy{position:relative;z-index:2;padding:14px}
+.q-shell-v2 .profile-operation-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:9px
+}
+.q-shell-v2 .profile-operation-heading>span{
+  color:#e1bd67;font:800 8px/1 var(--q-display);letter-spacing:.11em
+}
+.q-shell-v2 .profile-operation-heading .state-pill{
+  min-height:18px;padding:3px 6px;border:0;background:rgba(255,255,255,.07);font-size:7px
+}
+.q-shell-v2 .profile-operation-card h3{
+  margin:7px 0 3px;font:700 24px/1 var(--q-display);color:#fffaf0
+}
+.q-shell-v2 .profile-operation-card p{
+  max-width:320px;margin:0;color:#a9c0ca;font:500 9px/1.4 var(--q-ui)
+}
+.q-shell-v2 .profile-operation-stats{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:12px;
+  background:rgba(255,255,255,.09);border-radius:9px;overflow:hidden
+}
+.q-shell-v2 .profile-operation-stats>div{
+  min-width:0;padding:8px;background:rgba(4,17,24,.82)
+}
+.q-shell-v2 .profile-operation-stats b{
+  display:block;color:#f6f4ed;font:700 15px/1 var(--q-display);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.q-shell-v2 .profile-operation-stats span{
+  display:block;margin-top:3px;color:#789aaa;font:700 7px/1 var(--q-display);letter-spacing:.07em
+}
+.q-shell-v2 .profile-operation-actions{display:flex;gap:7px;margin-top:10px}
+.q-shell-v2 .profile-operation-actions button{
+  min-height:31px;padding:0 9px;border:0;border-radius:8px;
+  background:rgba(255,255,255,.07);color:#b9d9e6;font:700 8px/1 var(--q-ui)
+}
+.q-shell-v2 .profile-operation-actions button:first-child{
+  background:#d9b65a;color:#162026
+}
+.q-shell-v2 .profile-operation-art{position:relative;min-width:0}
+.q-shell-v2 .profile-operation-art::before{
+  content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,#0a222d 0,rgba(10,34,45,.25) 42%,transparent 74%)
+}
+.q-shell-v2 .profile-operation-art img{
+  width:100%;height:100%;display:block;object-fit:cover;filter:saturate(.92) contrast(1.04)
+}
+@media(max-width:430px){
+  .q-shell-v2 .profile-operation-card{grid-template-columns:minmax(0,1.55fr) minmax(90px,.45fr);min-height:144px}
+  .q-shell-v2 .profile-operation-copy{padding:12px}
+  .q-shell-v2 .profile-operation-card h3{font-size:21px}
+  .q-shell-v2 .profile-operation-card p{font-size:8px}
+  .q-shell-v2 .profile-operation-art{opacity:.78}
+  .q-shell-v2 .profile-operation-actions{gap:5px}
+  .q-shell-v2 .profile-operation-actions button{font-size:7px;padding:0 7px}
+}
