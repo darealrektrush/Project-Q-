@@ -2010,13 +2010,42 @@ function universalProfileHeroMarkup() {
   </section>`;
 }
 
+function profileOperationCardMarkup() {
+  const c = state.campaign || fallbackCampaign;
+  const p = state.profile;
+  const synced = state.sessionStatus === 'verified';
+  const lifecycle = operationLifecycleState();
+  const verifiedAchievements = (p.achievementRecords || []).filter(record => record?.verificationState === 'VERIFIED').length;
+  const standing = synced && p.rank && p.rank !== '—' ? p.rank : synced ? 'UNRANKED' : '—';
+  const art = String(c.name || '').trim().toLowerCase() === 'bond the duck'
+    ? '/campaign-app/assets/bond-the-duck-terminal-hero-20260927.jpg'
+    : safeHttpsUrl(c.banner);
+  return `<section class="profile-operation-card">
+    <div class="profile-operation-copy">
+      <div class="profile-operation-heading"><span>OP ${operationNumber()} // CURRENT OPERATION</span>${statePill(lifecycle.label, lifecycle.tone)}</div>
+      <h3>${escapeHtml(c.name || 'Operation')}</h3>
+      <p>${escapeHtml(c.tagline || 'Verified participation. Transparent outcomes.')}</p>
+      <div class="profile-operation-stats">
+        <div><b>${synced ? Number(p.xp || 0).toLocaleString() : '—'}</b><span>OPERATION XP</span></div>
+        <div><b>${escapeHtml(standing)}</b><span>STANDING</span></div>
+        <div><b>${synced ? verifiedAchievements : '—'}</b><span>ACHIEVEMENTS</span></div>
+      </div>
+      <div class="profile-operation-actions">
+        <button type="button" data-screen="record">VIEW RECORD →</button>
+        <button type="button" data-screen="operations">OPEN OPERATION →</button>
+      </div>
+    </div>
+    ${art ? `<div class="profile-operation-art"><img src="${escapeHtml(art)}" alt="" /></div>` : ''}
+  </section>`;
+}
+
 function profileScreen() {
   const p = state.profile;
   const walletView = state.profileView === 'wallet';
   return `<div class="passport-ui profile-identity-ui">
     ${walletView ? '<button class="burn-back" data-profile-view="overview">← PROFILE</button>' : ''}
     ${universalProfileHeroMarkup()}
-    ${walletView ? profileWallet() : `${clearanceMarkup()}${campaignPassportMarkup()}${p.walletVerified ? '<button class="profile-wallet-entry outline-action" data-profile-view="wallet">VIEW VERIFIED WALLET →</button>' : ''}<div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH STATUS</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. Project Q starts connection flows here while Oracle verifies identity and wallet ownership behind the scenes.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>OPEN ORACLE SUPPORT ↗</button><button class="text-action" id="recover-oracle-identity" ${p.telegramVerified ? '' : 'disabled'}>RECOVER EXISTING ORACLE IDENTITY</button><small>Use recovery only if your X account belongs to an older Oracle profile you can no longer access.</small></details>`}
+    ${walletView ? profileWallet() : `${clearanceMarkup()}${profileOperationCardMarkup()}${p.walletVerified ? '<button class="profile-wallet-entry outline-action" data-profile-view="wallet">VIEW VERIFIED WALLET →</button>' : ''}<div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH STATUS</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. Project Q starts connection flows here while Oracle verifies identity and wallet ownership behind the scenes.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>OPEN ORACLE SUPPORT ↗</button><button class="text-action" id="recover-oracle-identity" ${p.telegramVerified ? '' : 'disabled'}>RECOVER EXISTING ORACLE IDENTITY</button><small>Use recovery only if your X account belongs to an older Oracle profile you can no longer access.</small></details>`}
   </div>`;
 }
 
