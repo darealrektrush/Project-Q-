@@ -355,7 +355,7 @@ test('Operations UI gives each bottom destination one job', async () => {
   assert.doesNotMatch(context.__rendered.record, /record-proof-links|record-operation-context|>Activity<\/button>/);
   assert.match(context.__rendered.rewards, /Reward Pipeline/);
   assert.match(context.__rendered.rewards, /No allocation recorded yet/);
-  assert.equal((context.__rendered.rewards.match(/VERIFY WALLET/g) || []).length, 1);
+  assert.equal((context.__rendered.rewards.match(/Verify Solana Wallet/g) || []).length, 1);
   assert.match(context.__profiles.overview, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(context.__profiles.overview, /2 STEPS REMAINING/);
   assert.doesNotMatch(context.__profiles.overview, /passport-tabs|Campaign Records|dossier-live-record|passport-rewards-view/);
@@ -513,7 +513,7 @@ test('Rewards pending state shows one wallet action and no invented receipts', a
   assert.match(screen, /Verify Your Reward Wallet/);
   assert.match(screen, /Required before a reward can be released/);
   assert.match(screen, /No allocation recorded yet/);
-  assert.equal((screen.match(/VERIFY WALLET/g) || []).length, 1);
+  assert.equal((screen.match(/Verify Solana Wallet/g) || []).length, 1);
   assert.doesNotMatch(screen, /reward-summary-grid|allocation-receipt|Verified Reward Wallet/);
   assert.doesNotMatch(profile, /No allocation recorded yet|ECONOMIC RECORD/);
 });
@@ -874,8 +874,8 @@ test('Round 2 access continuity advances X to wallet to finalizing to ready', as
     tokenAccountReady: false,
     holderEligible: false,
   });
-  assert.match(xStep, /CONNECT X/);
-  assert.doesNotMatch(xStep, /VERIFY WALLET/);
+  assert.match(xStep, /Connect X/);
+  assert.doesNotMatch(xStep, /Verify Solana Wallet/);
   assert.match(xStep, /2 STEPS REMAINING/);
 
   const walletStep = context.__renderClearanceWith({
@@ -886,8 +886,8 @@ test('Round 2 access continuity advances X to wallet to finalizing to ready', as
     holderEligible: false,
   });
   assert.match(walletStep, /X connected/);
-  assert.match(walletStep, /VERIFY WALLET/);
-  assert.doesNotMatch(walletStep, /CONNECT X/);
+  assert.match(walletStep, /Verify Solana Wallet/);
+  assert.doesNotMatch(walletStep, /Connect X/);
   assert.match(walletStep, /1 STEP REMAINING/);
 
   const finalizing = context.__renderClearanceWith({
@@ -926,9 +926,9 @@ test('Verification Center only exposes actions configured by the operation', asy
     minimumFawkqUsd: 0,
   });
 
-  assert.match(rendered, /CONNECT X/);
+  assert.match(rendered, /Connect X/);
   assert.match(rendered, /Telegram/);
-  assert.doesNotMatch(rendered, /VERIFY WALLET/);
+  assert.doesNotMatch(rendered, /Verify Solana Wallet/);
   assert.doesNotMatch(rendered, /FAWKQ account/);
   assert.doesNotMatch(rendered, /\$2 FAWKQ minimum/);
 });
@@ -1317,8 +1317,8 @@ test('beta profile shows a human-readable Oracle Universal Profile and updates u
 test('clearance presents one connected Oracle and wallet journey', async () => {
   const context = await loadRuntime();
   const clearance = context.__renderClearanceWith({ telegramVerified: true });
-  assert.match(clearance, /CONNECT X/);
-  assert.doesNotMatch(clearance, /VERIFY WALLET/);
+  assert.match(clearance, /Connect X/);
+  assert.doesNotMatch(clearance, /Verify Solana Wallet/);
   assert.match(clearance, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(clearance, /2 STEPS REMAINING/);
   assert.match(clearance, /verification-journey/);
@@ -1370,7 +1370,7 @@ test('Verification Center presents only X and wallet as participant actions', as
   assert.match(html, /2 STEPS REMAINING/);
   assert.match(html, /verification-journey/);
   assert.match(html, /data-clearance-action="x"/);
-  assert.match(html, /CONNECT X/);
+  assert.match(html, /Connect X/);
   assert.doesNotMatch(html, /data-clearance-action="wallet-verify"/);
   assert.match(html, /Automatic checks/);
   assert.match(html, /Telegram/);
@@ -1434,8 +1434,8 @@ test('Operation Access uses branded X and Solana actions with Oracle trust foote
   assert.match(html, /premium-access-pass/);
   assert.match(html, /access-x-mark/);
   assert.match(html, /access-solana-mark/);
-  assert.match(html, /Connect X account/);
-  assert.match(html, /Verify Solana wallet/);
+  assert.match(html, /Connect X/);
+  assert.match(html, /Verify Solana Wallet/);
   assert.match(html, /verification-oracle-footer/);
   assert.match(html, />ORACLE</);
   assert.doesNotMatch(html, /Connect Telegram/);
@@ -1460,4 +1460,19 @@ test('Universal Profile trust rail shows Oracle, X, Telegram and Solana truthful
   assert.match(html, />Solana</);
   assert.match(html, /Linked/);
   assert.match(html, /Pending/);
+});
+
+
+test('Operation Access previews the future wallet step without making it actionable early', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: false,
+    walletVerified: false,
+    tokenAccountReady: false,
+    holderEligible: false,
+  });
+  assert.match(html, /Verify Solana Wallet/);
+  assert.doesNotMatch(html, /data-clearance-action="wallet-verify"/);
+  assert.match(html, /data-clearance-action="x"/);
 });
