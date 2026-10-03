@@ -218,7 +218,7 @@ test('Mini App exposes an intentional guided onboarding path without activating 
   assert.match(app, /Begin Tour/);
   assert.match(app, /Explore on my own/);
   assert.match(app, /YOUR IDENTITY/);
-  assert.match(app, /REFRESH VERIFICATION/);
+  assert.match(app, /REFRESH STATUS/);
   assert.match(app, /Telegram/);
   assert.match(app, /participantClearance/);
   assert.match(app, /Reward Wallet/);
