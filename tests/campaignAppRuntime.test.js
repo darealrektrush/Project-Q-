@@ -1261,7 +1261,7 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   assert.match(clearance, /minimum holding automatically/);
   const wallet = context.__profiles.wallet;
   assert.match(wallet, /VERIFY WALLET WITH ORACLE/);
-  assert.match(wallet, /signed message/);
+  assert.match(wallet, /signed ownership message/);
 });
 
 
