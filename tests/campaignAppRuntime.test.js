@@ -329,7 +329,8 @@ test('verified Telegram identity can show its portrait while Oracle campaign ide
   assert.equal(pending.profile.xVerified, false);
   assert.equal(pending.profile.walletVerified, false);
   assert.match(pending.banner, /campaign record pending/);
-  assert.match(pending.screen, /0\/5/);
+  assert.match(pending.screen, /PROJECT Q \/\/ OPERATION ACCESS/);
+  assert.match(pending.screen, /2 STEPS REMAINING/);
   assert.match(pending.home, /Sync Oracle Identity/);
   assert.match(pending.home, /data-retry-session/);
 });
