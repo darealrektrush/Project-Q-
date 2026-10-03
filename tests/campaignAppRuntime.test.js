@@ -611,7 +611,7 @@ test('Briefing repeats the shared next step and links to the sole clearance chec
   const context = await loadRuntime();
   const upcoming = context.__renderOperationOverviewWith({ databaseState: 'DRAFT', operational: false, schedule: { phase: 'PRE_LAUNCH' } });
   assert.match(upcoming, /NEXT STEP[\s\S]*(Secure connection unavailable|Connect your X account)/);
-  assert.match(upcoming, /CLEARANCE 0\/5/);
+  assert.match(upcoming, /OPERATION ACCESS · 0\/2/);
   assert.match(upcoming, /data-profile-view="overview"/);
   assert.match(upcoming, /PUBLIC LAUNCH READINESS/);
   assert.match(upcoming, /data-operation-view="economics"/);
@@ -775,10 +775,10 @@ test('Telegram identity paints the participant passport and advances the Oracle 
   const walletStep = context.__renderIdentityState({ user, xVerified: true });
   assert.match(walletStep.home, /(Verify your reward wallet|Secure connection unavailable)/);
   const pending = context.__renderIdentityState({ user, oracleAvailable: false });
-  assert.match(pending.home, /Oracle connection pending/);
+  assert.match(pending.home, /Secure connection unavailable/);
   assert.doesNotMatch(pending.home, /<b>Connect Oracle X<\/b>/);
   const pendingWallet = context.__renderIdentityState({ user, xVerified: true, oracleAvailable: false });
-  assert.match(pendingWallet.home, /Oracle connection is not available/);
+  assert.match(pendingWallet.home, /Secure connection unavailable/);
   const privatePhoto = context.__renderIdentityState({ user: { firstName: 'Duck', photoUrl: null } });
   assert.match(privatePhoto.profile, /assets\/system\/q-id\.webp/);
 });
