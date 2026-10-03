@@ -688,15 +688,18 @@ function clearanceMarkup() {
   const automaticLabels = automaticChecks.map(item => item.key === 'telegram' ? 'Telegram' : item.key === 'token-account' ? 'FAWKQ account' : '$2 minimum');
 
   const stepClass = (complete, current) => complete ? 'done' : current ? 'current' : '';
-  const stepMark = (complete, number) => complete ? '✓' : String(number);
-
-  const journey = `<div class="verification-journey" aria-label="Operation access progress">
-    <span class="${stepClass(xDone, !xDone)}"><i>${stepMark(xDone, 1)}</i><b>X</b></span>
-    <em></em>
-    <span class="${stepClass(walletDone, xDone && !walletDone)}"><i>${stepMark(walletDone, 2)}</i><b>Wallet</b></span>
-    <em></em>
-    <span class="${stepClass(allComplete, activeComplete)}"><i>${allComplete ? '✓' : '3'}</i><b>Ready</b></span>
-  </div>`;
+  const participantSteps = [
+    x ? { label: 'X', complete: xDone, current: !xDone } : null,
+    wallet ? { label: 'Wallet', complete: walletDone, current: xDone && !walletDone } : null,
+  ].filter(Boolean);
+  const journeySteps = [...participantSteps, {
+    label: 'Ready',
+    complete: allComplete,
+    current: activeComplete && !allComplete,
+  }];
+  const journey = `<div class="verification-journey" aria-label="Operation access progress">${journeySteps.map((step, index) =>
+    `<span class="${stepClass(step.complete, step.current)}"><i>${step.complete ? '✓' : index + 1}</i><b>${step.label}</b></span>${index < journeySteps.length - 1 ? '<em></em>' : ''}`
+  ).join('')}</div>`;
 
   const focusCard = (type) => {
     const isX = type === 'x';
@@ -706,8 +709,11 @@ function clearanceMarkup() {
       ? 'One secure X consent. Project Q refreshes when you return.'
       : 'Sign one readable ownership message. No transaction or SOL fee.';
     const button = isX ? 'CONNECT X' : 'VERIFY WALLET';
+    const icon = isX
+      ? '<span class="access-brand-mark access-x-mark" aria-hidden="true">𝕏</span>'
+      : '<span class="access-brand-mark access-solana-mark" aria-hidden="true"><i></i><i></i><i></i></span>';
     return `<article class="verification-focus-card ${isX ? 'x-focus' : 'wallet-focus'}">
-      <div class="verification-focus-icon">${isX ? '𝕏' : '◎'}</div>
+      <div class="verification-focus-icon">${icon}</div>
       <div class="verification-focus-copy"><span>NEXT STEP</span><h4>${title}</h4><p>${detail}</p></div>
       <button type="button" data-clearance-action="${action}" ${nativeConnectionReady ? '' : 'disabled'}>${button} →</button>
     </article>`;
@@ -742,21 +748,45 @@ function clearanceMarkup() {
     </section>`;
   }
 
-  const remaining = !xDone ? 2 : !walletDone ? 1 : 0;
+  const remaining = participantSteps.filter((step) => !step.complete).length;
   const statusLabel = activeComplete ? 'FINALIZING' : `${remaining} STEP${remaining === 1 ? '' : 'S'} REMAINING`;
   const primary = !xDone ? focusCard('x')
     : !walletDone ? completedIdentity + focusCard('wallet')
       : `<div class="verification-finalizing"><i>✓</i><div><b>Primary verification complete</b><small>Project Q is finishing automatic eligibility checks.</small></div></div>`;
 
-  return `<section class="verification-center verification-guided">
+  const xRowState = xDone ? 'LINKED' : !xDone ? 'NEXT' : 'PENDING';
+  const walletRowState = walletDone ? 'LINKED' : xDone ? 'NEXT' : 'PENDING';
+  const telegramState = telegram?.complete ? 'SECURED' : 'SYNCING';
+
+  const accessRows = `<div class="verification-access-rows">
+    ${x ? `<button type="button" class="verification-access-row ${xDone ? 'done' : 'current'}" ${!xDone ? 'data-clearance-action="x"' : ''} ${xDone || !nativeConnectionReady ? 'disabled' : ''}>
+      <span class="access-brand-mark access-x-mark" aria-hidden="true">𝕏</span>
+      <span><b>${xDone ? 'X account linked' : 'Connect X'}</b><small>${xDone ? 'Verified by Oracle' : 'Secure X consent · returns to Project Q'}</small></span>
+      <strong>${xRowState}</strong>
+    </button>` : ''}
+    ${wallet ? `<button type="button" class="verification-access-row ${walletDone ? 'done' : xDone ? 'current' : ''}" ${xDone && !walletDone ? 'data-clearance-action="wallet-verify"' : ''} ${walletDone || !xDone || !nativeConnectionReady ? 'disabled' : ''}>
+      <span class="access-brand-mark access-solana-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span><b>${walletDone ? 'Solana wallet verified' : 'Verify Solana Wallet'}</b><small>${walletDone ? 'Canonical reward destination' : 'Signature only · 0 SOL · no transaction'}</small></span>
+      <strong>${walletRowState}</strong>
+    </button>` : ''}
+  </div>`;
+
+  const oracleTrust = `<footer class="verification-oracle-footer">
+    <div><span class="oracle-shield-mark" aria-hidden="true">◈</span><small>Identity ${escapeHtml(telegramState.toLowerCase())} by</small><b>ORACLE</b></div>
+    <span>Canonical identity · wallet ownership · X verification</span>
+  </footer>`;
+
+  return `<section class="verification-center verification-guided premium-access-pass">
     <header class="verification-center-head guided">
       <div><span>PROJECT Q // OPERATION ACCESS</span><h3>Verify once. Participate everywhere.</h3></div>
       <b class="verification-remaining">${statusLabel}</b>
     </header>
     ${journey}
-    ${primary}
+    ${accessRows}
+    ${activeComplete ? primary : ''}
     ${automatic}
     ${nativeConnectionReady ? '' : '<div class="verification-session-warning">Open Project Q from the official Telegram bot to start verification.</div>'}
+    ${oracleTrust}
   </section>`;
 }
 
@@ -2038,6 +2068,12 @@ function universalProfileHeroMarkup() {
       <div><span>ACHIEVEMENTS</span><b>${synced ? universalRecords.length : '—'}</b></div>
       <div><span>REFERRALS</span><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b></div>
       <button type="button" data-explainer="universal">VIEW PROFILE <span aria-hidden="true">→</span></button>
+    </div>
+    <div class="universal-pass-trust">
+      <div class="universal-pass-oracle"><span>◈</span><small>IDENTITY SECURED BY</small><b>ORACLE</b></div>
+      <div class="universal-pass-link ${p.xVerified ? 'linked' : ''}"><span class="access-x-mark">𝕏</span><b>X</b><small>${p.xVerified ? 'Linked' : 'Pending'}</small></div>
+      <div class="universal-pass-link ${p.telegramVerified ? 'linked' : ''}"><span class="telegram-mini-mark">➤</span><b>Telegram</b><small>${p.telegramVerified ? 'Linked' : 'Pending'}</small></div>
+      <div class="universal-pass-link ${p.walletVerified ? 'linked' : ''}"><span class="access-solana-mark mini"><i></i><i></i><i></i></span><b>Solana</b><small>${p.walletVerified ? 'Linked' : 'Pending'}</small></div>
     </div>
   </section>`;
 }

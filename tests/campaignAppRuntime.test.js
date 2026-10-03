@@ -874,8 +874,9 @@ test('Round 2 access continuity advances X to wallet to finalizing to ready', as
     tokenAccountReady: false,
     holderEligible: false,
   });
-  assert.match(xStep, /CONNECT X/);
-  assert.doesNotMatch(xStep, /VERIFY WALLET/);
+  assert.match(xStep, /Connect X/);
+  assert.match(xStep, /Verify Solana Wallet/);
+  assert.doesNotMatch(xStep, /data-clearance-action="wallet-verify"/);
   assert.match(xStep, /2 STEPS REMAINING/);
 
   const walletStep = context.__renderClearanceWith({
@@ -885,9 +886,9 @@ test('Round 2 access continuity advances X to wallet to finalizing to ready', as
     tokenAccountReady: false,
     holderEligible: false,
   });
-  assert.match(walletStep, /X connected/);
-  assert.match(walletStep, /VERIFY WALLET/);
-  assert.doesNotMatch(walletStep, /CONNECT X/);
+  assert.match(walletStep, /X account linked/);
+  assert.match(walletStep, /Verify Solana Wallet/);
+  assert.doesNotMatch(walletStep, /Connect X/);
   assert.match(walletStep, /1 STEP REMAINING/);
 
   const finalizing = context.__renderClearanceWith({
@@ -926,9 +927,10 @@ test('Verification Center only exposes actions configured by the operation', asy
     minimumFawkqUsd: 0,
   });
 
-  assert.match(rendered, /CONNECT X/);
+  assert.match(rendered, /Connect X/);
   assert.match(rendered, /Telegram/);
-  assert.doesNotMatch(rendered, /VERIFY WALLET/);
+  assert.doesNotMatch(rendered, /Verify Solana Wallet/);
+  assert.doesNotMatch(rendered, /<b>Wallet<\/b>/);
   assert.doesNotMatch(rendered, /FAWKQ account/);
   assert.doesNotMatch(rendered, /\$2 FAWKQ minimum/);
 });
@@ -1317,8 +1319,9 @@ test('beta profile shows a human-readable Oracle Universal Profile and updates u
 test('clearance presents one connected Oracle and wallet journey', async () => {
   const context = await loadRuntime();
   const clearance = context.__renderClearanceWith({ telegramVerified: true });
-  assert.match(clearance, /CONNECT X/);
-  assert.doesNotMatch(clearance, /VERIFY WALLET/);
+  assert.match(clearance, /Connect X/);
+  assert.match(clearance, /Verify Solana Wallet/);
+  assert.doesNotMatch(clearance, /data-clearance-action="wallet-verify"/);
   assert.match(clearance, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(clearance, /2 STEPS REMAINING/);
   assert.match(clearance, /verification-journey/);
@@ -1370,7 +1373,7 @@ test('Verification Center presents only X and wallet as participant actions', as
   assert.match(html, /2 STEPS REMAINING/);
   assert.match(html, /verification-journey/);
   assert.match(html, /data-clearance-action="x"/);
-  assert.match(html, /CONNECT X/);
+  assert.match(html, /Connect X/);
   assert.doesNotMatch(html, /data-clearance-action="wallet-verify"/);
   assert.match(html, /Automatic checks/);
   assert.match(html, /Telegram/);
@@ -1425,4 +1428,54 @@ test('Terminal shows one compact identity recovery state instead of duplicate sy
   assert.match(pending.home, /terminal-sync-strip/);
   assert.match(pending.home, /Reconnecting your profile/);
   assert.equal((pending.home.match(/IDENTITY SYNC/g) || []).length, 1);
+});
+
+
+test('Operation Access uses branded X and Solana actions with Oracle trust footer', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderClearanceWith({ telegramVerified: true, xVerified: false, walletVerified: false });
+  assert.match(html, /premium-access-pass/);
+  assert.match(html, /access-x-mark/);
+  assert.match(html, /access-solana-mark/);
+  assert.match(html, /Connect X/);
+  assert.match(html, /Verify Solana Wallet/);
+  assert.match(html, /verification-oracle-footer/);
+  assert.match(html, />ORACLE</);
+  assert.doesNotMatch(html, /Connect Telegram/);
+});
+
+test('Universal Profile trust rail shows Oracle, X, Telegram and Solana truthfully', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderDossierWith({
+    name: 'RektRush', username: 'darealrektrush',
+    telegramVerified: true, xVerified: true, walletVerified: false,
+    crabArmy: {
+      lifetimeXp: 1200, level: 3, rankName: 'Private', division: 'Enlisted Corps',
+      progressPct: 40, xpToNext: 300, nextRankName: 'Trooper', nextRankXp: 1500,
+      badgeAssetKey: 'crab_army_rank_03', ladderVersion: 2,
+    },
+  }, null, 'verified');
+  assert.match(html, /universal-pass-trust/);
+  assert.match(html, /IDENTITY SECURED BY/);
+  assert.match(html, />ORACLE</);
+  assert.match(html, />X</);
+  assert.match(html, />Telegram</);
+  assert.match(html, />Solana</);
+  assert.match(html, /Linked/);
+  assert.match(html, /Pending/);
+});
+
+
+test('Operation Access previews the future wallet step without making it actionable early', async () => {
+  const context = await loadRuntime();
+  const html = context.__renderClearanceWith({
+    telegramVerified: true,
+    xVerified: false,
+    walletVerified: false,
+    tokenAccountReady: false,
+    holderEligible: false,
+  });
+  assert.match(html, /Verify Solana Wallet/);
+  assert.doesNotMatch(html, /data-clearance-action="wallet-verify"/);
+  assert.match(html, /data-clearance-action="x"/);
 });
