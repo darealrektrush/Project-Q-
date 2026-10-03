@@ -1260,7 +1260,7 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   assert.match(clearance, /One connected setup/);
   assert.match(clearance, /minimum holding automatically/);
   const wallet = context.__profiles.wallet;
-  assert.match(wallet, /VERIFY WALLET WITH ORACLE/);
+  assert.match(wallet, /data-clearance-action="wallet-verify"[^>]*>VERIFY WALLET/);
   assert.match(wallet, /signed message/);
 });
 
