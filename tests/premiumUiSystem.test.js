@@ -71,12 +71,10 @@ test('wallet picker uses provider identity styling and device-first discovery co
 });
 
 
-test('achievement collection renders as an artwork-first collectible deck', () => {
-  assert.match(css, /Premium V5 — achievement deck/);
-  assert.match(css, /\.achievement-tile-grid[\s\S]*repeat\(4,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.achievement-art[\s\S]*aspect-ratio:4\/5/);
-  assert.match(css, /\.achievement-detail-art[\s\S]*aspect-ratio:4\/5/);
-  assert.match(css, /\.achievement-collection-row[\s\S]*border:0!important/);
-  assert.match(css, /achievement-earned \.achievement-art::after/);
-  assert.match(css, /@media\(max-width:760px\)[\s\S]*repeat\(2,minmax\(0,1fr\)\)/);
+test('Rewards exposes wallet verification directly instead of forcing a Profile detour', () => {
+  assert.match(app, /reward-destination \$\{walletReady \? 'is-verified' : 'needs-wallet'\}/);
+  assert.match(app, /data-clearance-action="wallet-verify">VERIFY WALLET →/);
+  assert.match(app, /data-profile-view="wallet">VIEW WALLET →/);
+  assert.match(app, /Verify one reward wallet in Project Q/);
+  assert.doesNotMatch(app, /Verify one reward wallet through Oracle/);
 });
