@@ -623,7 +623,7 @@ function campaignEligibilityRequirements() {
 function currentNextStep() {
   return participantNextStep({ profile: state.profile, eligibility: (state.campaign || fallbackCampaign).eligibility,
     lifecycle: operationLifecycleState().label, sessionStatus: state.sessionStatus,
-    oracleAvailable: Boolean(state.runtime?.oracleBotUrl) });
+    oracleAvailable: Boolean(state.telegram?.initData) });
 }
 
 function nextStepActionAttrs(next) {
@@ -657,20 +657,75 @@ function campaignClearanceReady() {
 
 function clearanceMarkup() {
   const checks = campaignEligibilityRequirements();
+  const byKey = Object.fromEntries(checks.map(item => [item.key, item]));
+  const telegram = byKey.telegram;
+  const x = byKey.x;
+  const wallet = byKey.wallet;
+  const token = byKey['token-account'];
+  const holder = byKey.holder;
+  const total = checks.length || 1;
   const complete = checks.filter(item => item.complete).length;
-  const oracleAvailable = Boolean(state.runtime?.oracleBotUrl && state.profile.telegramVerified);
-  const nativeConnectionReady = Boolean(state.profile.telegramVerified && state.telegram?.initData);
-  const hasWalletChecks = checks.some(({ key }) => ['wallet', 'token-account', 'holder'].includes(key));
-  return `<section class="clearance-panel profile-clearance"><div class="clearance-head"><div><span>CLEARANCE</span><h3>${complete === checks.length ? 'Ready for eligible missions' : 'Complete your operation setup'}</h3></div><b>${complete}/${checks.length}</b></div>
-    <div class="dossier-clearance-track">${checks.map(item => `<i class="${item.complete ? 'complete' : ''}"></i>`).join('')}</div>
-    <div class="clearance-list">${checks.map(item => {
-      const actionLabel = item.key === 'x' ? 'CONNECT X'
-        : item.key === 'wallet' ? 'VERIFY WALLET'
-          : item.action === 'wallet' ? 'REFRESH'
-            : 'OPEN TELEGRAM';
-      return `<article class="clearance-row ${item.complete ? 'complete' : 'incomplete'}"><i>${item.complete ? '✓' : '○'}</i><div><b>${escapeHtml(item.label)}</b><small>${item.complete ? 'Verified' : escapeHtml(['x','wallet-verify'].includes(item.action) && !nativeConnectionReady ? 'Open Project Q from Telegram to continue.' : item.detail)}</small></div>${item.complete ? '' : `<button data-clearance-action="${item.action}" ${['x','wallet-verify'].includes(item.action) && !nativeConnectionReady ? 'disabled' : ''}>${actionLabel} →</button>`}</article>`;
-    }).join('')}</div>
-    <small class="clearance-observation">${hasWalletChecks ? 'One connected setup: verify X and your reward wallet through Oracle once. Project Q then checks the FAWKQ token account and minimum holding automatically from that same wallet.' : 'One connected setup: complete only the identity requirements configured for this operation.'}</small>
+  const percent = Math.round((complete / total) * 100);
+  const nativeConnectionReady = Boolean(state.telegram?.initData);
+  const activeComplete = Boolean((!x || x.complete) && (!wallet || wallet.complete));
+  const allComplete = complete === total;
+
+  const actionCard = (item, type) => {
+    if (!item) return '';
+    const verified = Boolean(item.complete);
+    const label = type === 'x' ? 'X ACCOUNT' : 'REWARD WALLET';
+    const title = type === 'x'
+      ? (verified ? 'X connected' : 'Connect your X account')
+      : (verified ? 'Wallet verified' : 'Verify your reward wallet');
+    const detail = type === 'x'
+      ? (verified ? 'Oracle identity connection confirmed.' : 'One secure X consent. No bot commands required.')
+      : (verified ? 'Signed ownership proof confirmed by Oracle.' : 'Sign one readable ownership message. No transaction or SOL fee.');
+    const action = type === 'x' ? 'x' : 'wallet-verify';
+    const button = type === 'x' ? 'CONNECT X' : 'VERIFY WALLET';
+    return `<article class="verification-action-card ${verified ? 'verified' : ''}">
+      <div class="verification-action-icon">${verified ? '✓' : type === 'x' ? '𝕏' : '◎'}</div>
+      <div class="verification-action-copy"><span>${label}</span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></div>
+      ${verified
+        ? '<span class="verification-state verified">VERIFIED</span>'
+        : `<button type="button" data-clearance-action="${action}" ${nativeConnectionReady ? '' : 'disabled'}>${button} →</button>`}
+    </article>`;
+  };
+
+  const autoState = (item, label, waitingCopy) => {
+    if (!item) return '';
+    const ready = Boolean(item.complete);
+    return `<div class="verification-auto-item ${ready ? 'ready' : ''}">
+      <i>${ready ? '✓' : '·'}</i><span><b>${escapeHtml(label)}</b><small>${escapeHtml(ready ? 'Verified automatically' : waitingCopy)}</small></span>
+    </div>`;
+  };
+
+  if (allComplete) {
+    return `<section class="verification-center verification-complete">
+      <div class="verification-complete-mark">✓</div>
+      <div><span>PROJECT Q // VERIFICATION CENTER</span><h3>Operation setup complete</h3><p>Your identity, reward wallet and FAWKQ eligibility checks are verified.</p></div>
+      <b>READY</b>
+    </section>`;
+  }
+
+  return `<section class="verification-center">
+    <header class="verification-center-head">
+      <div><span>PROJECT Q // VERIFICATION CENTER</span><h3>${activeComplete ? 'Finishing automatic checks' : 'Secure your operation access'}</h3><p>${activeComplete ? 'Project Q is resolving token-account and holder eligibility from your verified wallet.' : 'Two actions. Everything else is automatic.'}</p></div>
+      <div class="verification-progress-orb"><strong>${percent}%</strong><small>${complete}/${total}</small></div>
+    </header>
+    <div class="verification-progress-track"><i style="width:${percent}%"></i></div>
+    <div class="verification-primary-actions">
+      ${actionCard(x, 'x')}
+      ${actionCard(wallet, 'wallet')}
+    </div>
+    <div class="verification-auto-strip">
+      <span>AUTOMATIC CHECKS</span>
+      <div class="verification-auto-grid">
+        ${autoState(telegram, 'Telegram', 'Signed Mini App session')}
+        ${autoState(token, 'FAWKQ account', wallet?.complete ? 'Checking verified wallet' : 'Waiting for wallet')}
+        ${autoState(holder, '$2 FAWKQ minimum', wallet?.complete ? 'Checking holding value' : 'Waiting for wallet')}
+      </div>
+    </div>
+    ${nativeConnectionReady ? '' : '<div class="verification-session-warning">Open Project Q from the official Telegram bot to start verification.</div>'}
   </section>`;
 }
 
@@ -1898,58 +1953,47 @@ function universalProfileHeroMarkup() {
     .filter(Boolean)
     .slice(0, 3);
   const progress = army ? Math.max(0, Math.min(100, Number(army.progressPct || 0))) : 0;
-  const rankLabel = army ? `LVL ${Number(army.level)} · ${army.rankName}` : 'CRAB ARMY SYNCING';
   const nextLabel = army
     ? army.nextRankName
       ? `${Number(army.xpToNext || 0).toLocaleString()} XP to ${army.nextRankName}`
-      : 'Maximum Crab Army rank reached'
-    : 'Oracle progression unavailable';
+      : 'MAX RANK'
+    : 'Oracle progression syncing';
   const qualifiedReferrals = Number(state.referrals?.counts?.qualified || 0);
   const photo = safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   const rankAsset = crabArmyRankAssetUrl(army?.badgeAssetKey);
+  const badgeMarkup = earned.length
+    ? earned.map(item => `<button type="button" data-achievement-id="${escapeHtml(item.id)}"><span>✦</span>${escapeHtml(item.label)}</button>`).join('')
+    : '<small>Recognition syncs here as you earn it.</small>';
 
-  return `<section class="universal-profile-hero" aria-label="Oracle Universal Profile">
-    <div class="universal-profile-main">
-      <div class="universal-profile-avatar">
-        <img src="${escapeHtml(photo)}" alt="Your Telegram profile photo" />
-        <span class="oracle-verified-mark" aria-label="Oracle verified">✓</span>
-      </div>
-      <div class="universal-profile-identity">
+  return `<section class="universal-profile-hero compact" aria-label="Oracle Universal Profile">
+    <div class="universal-profile-compact-top">
+      <div class="universal-profile-avatar compact"><img src="${escapeHtml(photo)}" alt="Your Telegram profile photo" /><span class="oracle-verified-mark">✓</span></div>
+      <div class="universal-profile-identity compact">
         <span>ORACLE UNIVERSAL PROFILE</span>
         <h2>${escapeHtml(identityLabel)}</h2>
         <b>CRAB ARMY</b>
-        <p>${army ? escapeHtml(army.division) : 'Permanent ecosystem identity'}</p>
-        <div class="universal-badge-row">
-          ${earned.length ? earned.map(item => `<button type="button" data-achievement-id="${escapeHtml(item.id)}"><span>✦</span>${escapeHtml(item.label)}</button>`).join('') : '<small>Verified badges will appear here as they sync.</small>'}
-        </div>
+        <div class="universal-badge-row compact">${badgeMarkup}</div>
       </div>
-      <div class="universal-rank-block" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
-        <div class="universal-rank-art">
-          <div class="universal-rank-medallion"><span>${army ? Number(army.level) : '—'}</span></div>
+      <div class="universal-rank-compact" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
+        <div class="universal-rank-art compact">
+          <div class="universal-rank-medallion compact"><span>${army ? Number(army.level) : '—'}</span></div>
           ${rankAsset ? `<img class="universal-rank-insignia" data-rank-insignia src="${escapeHtml(rankAsset)}" alt="${escapeHtml((army?.rankName || 'Crab Army rank') + ' insignia')}" />` : ''}
         </div>
-        <small>CRAB ARMY RANK</small>
-        <strong>${escapeHtml(army?.rankName || 'SYNCING')}</strong>
+        <span>ARMY RANK</span><b>${escapeHtml(army?.rankName || 'SYNCING')}</b>
       </div>
-      <div class="universal-level-block">
-        <small>LEVEL</small>
-        <strong>${army ? Number(army.level) : '—'}</strong>
-        <b>${army ? Number(army.lifetimeXp).toLocaleString() + (army.nextRankXp ? ' / ' + Number(army.nextRankXp).toLocaleString() + ' XP' : ' XP') : 'Lifetime XP syncing'}</b>
-        <div class="universal-rank-progress" role="progressbar" aria-label="Crab Army rank progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div>
-        <span>${army ? progress + '%' : '—'}</span>
+      <div class="universal-level-compact">
+        <span>LEVEL</span><strong>${army ? Number(army.level) : '—'}</strong>
+        <small>${army ? Number(army.lifetimeXp).toLocaleString() + (army.nextRankXp ? ' / ' + Number(army.nextRankXp).toLocaleString() + ' XP' : ' XP') : 'Lifetime XP syncing'}</small>
+        <div class="universal-rank-progress compact"><i style="width:${progress}%"></i></div>
         <em>${escapeHtml(nextLabel)}</em>
       </div>
     </div>
-    <div class="universal-profile-stats">
-      <div><span>LIFETIME XP</span><strong>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</strong></div>
-      <div><span>OPERATION XP</span><strong>${synced ? Number(p.xp || 0).toLocaleString() : '—'}</strong></div>
-      <div><span>VERIFIED BADGES</span><strong>${synced ? universalRecords.length : '—'}</strong></div>
-      <div><span>QUALIFIED REFERRALS</span><strong>${synced ? qualifiedReferrals.toLocaleString() : '—'}</strong></div>
-      <div><span>CLEARANCE</span><strong>${escapeHtml(clearanceCountLabel())}</strong></div>
-    </div>
-    <div class="universal-profile-footer">
-      <div><b>${escapeHtml(rankLabel)}</b><small>Oracle owns lifetime progression · Project Q owns operation scoring.</small></div>
-      <button type="button" data-explainer="universal">ABOUT YOUR PROFILE →</button>
+    <div class="universal-profile-compact-stats">
+      <div><span>LIFETIME XP</span><b>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</b></div>
+      <div><span>OPERATION XP</span><b>${synced ? Number(p.xp || 0).toLocaleString() : '—'}</b></div>
+      <div><span>BADGES</span><b>${synced ? universalRecords.length : '—'}</b></div>
+      <div><span>REFERRALS</span><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b></div>
+      <button type="button" data-explainer="universal">PROFILE DETAILS →</button>
     </div>
   </section>`;
 }
