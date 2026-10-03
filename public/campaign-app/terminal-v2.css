@@ -1129,3 +1129,15 @@
   .q-shell-v2 .universal-profile-stats>div:nth-child(3){border-right:1px solid #214252}
   .q-shell-v2 .universal-profile-stats>div:last-child{grid-column:1/-1;border-right:0}
 }
+
+
+/* Beta pass 2 — notifications back control */
+.q-shell-v2 .updates-back{
+  min-width:auto;min-height:34px;padding:0 10px 0 8px;display:inline-flex;align-items:center;gap:5px;
+  border:1px solid #cfd8d9;border-radius:17px;background:#fffdf8;color:#1f6688;
+  font:700 10px/1 var(--q-display);letter-spacing:.045em;box-shadow:0 2px 8px rgba(24,74,94,.06)
+}
+.q-shell-v2 .updates-back::first-letter{font-size:15px}
+@media(max-width:430px){
+  .q-shell-v2 .updates-back{min-height:32px;padding:0 9px 0 7px}
+}
