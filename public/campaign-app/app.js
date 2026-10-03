@@ -679,6 +679,7 @@ function clearanceMarkup() {
   const allComplete = checks.every(item => item.complete);
   const automaticChecks = [telegram, token, holder].filter(Boolean);
   const automaticComplete = automaticChecks.filter(item => item.complete).length;
+  const automaticLabels = automaticChecks.map(item => item.key === 'telegram' ? 'Telegram' : item.key === 'token-account' ? 'FAWKQ account' : '$2 minimum');
 
   const stepClass = (complete, current) => complete ? 'done' : current ? 'current' : '';
   const stepMark = (complete, number) => complete ? '✓' : String(number);
@@ -719,7 +720,7 @@ function clearanceMarkup() {
   };
 
   const automatic = automaticChecks.length ? `<details class="verification-auto-disclosure">
-    <summary><span><b>Automatic checks</b><small>Telegram · FAWKQ account · holder minimum</small></span><strong>${automaticComplete}/${automaticChecks.length}</strong><i>⌄</i></summary>
+    <summary><span><b>Automatic checks</b><small>${escapeHtml(automaticLabels.join(' · '))}</small></span><strong>${automaticComplete}/${automaticChecks.length}</strong><i>⌄</i></summary>
     <div class="verification-auto-grid">
       ${autoState(telegram, 'Telegram', 'Signed Mini App session')}
       ${autoState(token, 'FAWKQ account', walletDone ? 'Checking verified wallet' : 'Waiting for wallet')}
