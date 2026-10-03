@@ -312,14 +312,14 @@ function systemStatusMarkup() {
   }
 
   if (state.sessionStatus === 'error') {
-    return `<section class="system-status-banner blocked">
+    return `<section class="system-status-banner blocked session-error">
       <div><span>IDENTITY SYNC</span><b>Participant session unavailable</b><small>Project Q could not confirm the Telegram session. No identity or reward state is being inferred.</small></div>
       <button data-retry-session>Retry</button>
     </section>`;
   }
 
   if (state.sessionStatus === 'identity-unavailable') {
-    return `<section class="system-status-banner blocked">
+    return `<section class="system-status-banner identity-sync">
       <div><span>IDENTITY SYNC</span><b>Telegram confirmed · campaign record pending</b><small>Your signed Telegram name is shown. Your photo appears if Telegram supplies it. Oracle identity and rewards are unavailable; participation remains closed.</small></div>
       <button data-retry-session>Retry</button>
     </section>`;
