@@ -1,0 +1,365 @@
+/* Project Q Premium V4 — product-wide restraint and hierarchy.
+   This layer intentionally sits after legacy screen styles so the product can
+   converge on one visual system without changing campaign/runtime behavior. */
+
+.q-shell-v2{
+  --q-page:#f2eee3;
+  --q-surface:#fffdf8;
+  --q-surface-soft:#f7f3e9;
+  --q-surface-muted:#eeeae0;
+  --q-navy:#06131b;
+  --q-navy-2:#0a202b;
+  --q-navy-3:#102d39;
+  --q-cyan:#43acd4;
+  --q-cyan-soft:#eaf6fa;
+  --q-gold-premium:#d2aa4e;
+  --q-gold-soft:#f1e3bc;
+  --q-ink-premium:#15252c;
+  --q-copy-premium:#65767d;
+  --q-hairline:#e2ded3;
+  --q-ui:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --q-elev-1:0 4px 16px rgba(28,43,50,.055);
+  --q-elev-2:0 10px 28px rgba(18,39,49,.09);
+  --q-radius-premium:14px;
+  background:var(--q-page);
+}
+
+body.q-shell-v2{background:var(--q-page);color:var(--q-ink-premium)}
+.q-shell-v2 .screen{animation:premium-enter .16s ease}
+@keyframes premium-enter{from{opacity:.55;transform:translateY(3px)}}
+@media(prefers-reduced-motion:reduce){.q-shell-v2 .screen{animation:none!important}.q-shell-v2 *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Functional type uses a neutral sans. Display language stays condensed. */
+.q-shell-v2 p,
+.q-shell-v2 small,
+.q-shell-v2 input,
+.q-shell-v2 select,
+.q-shell-v2 textarea,
+.q-shell-v2 .verification-action-copy small,
+.q-shell-v2 .verification-auto-item small,
+.q-shell-v2 .native-connection-copy,
+.q-shell-v2 .native-connection-status,
+.q-shell-v2 .mission-file-copy small,
+.q-shell-v2 .operation-content-panel p,
+.q-shell-v2 .record-header p,
+.q-shell-v2 .rewards-command p,
+.q-shell-v2 .reward-next-action small,
+.q-shell-v2 .reward-awaiting p,
+.q-shell-v2 .achievement-page-heading p,
+.q-shell-v2 .achievement-next-intel p,
+.q-shell-v2 .achievement-empty p,
+.q-shell-v2 .profile-settings p{
+  font-family:var(--q-ui)!important;
+}
+
+/* Shell — Telegram already provides chrome, so Project Q stays compact. */
+.q-shell-v2 .topbar{
+  min-height:60px;
+  padding:6px 10px;
+  gap:8px;
+  background:rgba(250,249,244,.96);
+  border-bottom:1px solid rgba(59,72,77,.07);
+  box-shadow:0 3px 14px rgba(24,41,49,.035);
+  backdrop-filter:blur(14px);
+}
+.q-shell-v2 .compact-brand{width:42px;height:42px;flex-basis:42px}
+.q-shell-v2 .brand-wordmark>b{font-size:23px;letter-spacing:.015em}
+.q-shell-v2 #screen-title{margin-top:2px;font-size:8px;letter-spacing:.14em;color:#718087}
+.q-shell-v2 .topbar-identity{gap:8px}
+.q-shell-v2 .top-actions{gap:4px}
+.q-shell-v2 .notification-control,
+.q-shell-v2 .account-menu-control{
+  width:36px;min-width:36px;min-height:40px;padding:7px;
+  border:0;border-radius:10px;background:transparent;color:#25373e;
+}
+.q-shell-v2 .notification-control{transform:none!important}
+.q-shell-v2 .account-control{
+  min-height:40px;padding:3px;border:0;border-radius:10px;background:transparent;
+}
+.q-shell-v2 .account-control img{width:33px;height:33px;border:1px solid #aa8c48}
+.q-shell-v2 .account-copy{display:none}
+
+/* Mobile dock — navigation only, no permanent marketing footer. */
+@media(max-width:860px){
+  .q-shell-v2 main,.q-shell-v2.rail-collapsed main{
+    padding-bottom:calc(66px + env(safe-area-inset-bottom))!important;
+  }
+  .q-shell-v2 .mobile-dock{
+    background:rgba(4,12,17,.985);
+    border-top:1px solid rgba(92,143,168,.16);
+    box-shadow:0 -8px 24px rgba(5,16,23,.12);
+  }
+  .q-shell-v2 .q-footer{display:none!important}
+  .q-shell-v2 .mobile-nav{
+    min-height:57px;padding:3px 6px 5px;gap:1px;
+    background:transparent;border:0;
+  }
+  .q-shell-v2 .mobile-nav .nav-button{
+    position:relative;min-height:52px;padding:5px 2px;gap:2px;
+    border:0!important;border-radius:8px;background:transparent!important;
+    color:#91a4b0;box-shadow:none!important;
+    transition:color .16s ease,transform .16s ease;
+  }
+  .q-shell-v2 .mobile-nav .nav-button::before{
+    content:"";position:absolute;left:32%;right:32%;top:0;height:2px;border-radius:3px;
+    background:transparent;transition:background .16s ease,box-shadow .16s ease;
+  }
+  .q-shell-v2 .mobile-nav .nav-button.active{color:#e3bd62}
+  .q-shell-v2 .mobile-nav .nav-button.active::before{
+    background:#e3bd62;box-shadow:0 0 9px rgba(227,189,98,.4)
+  }
+  .q-shell-v2 .mobile-nav .nav-icon{width:23px;height:23px}
+  .q-shell-v2 .mobile-nav .nav-icon svg{width:21px;height:21px;stroke-width:1.65}
+  .q-shell-v2 .mobile-nav .nav-label{
+    font:600 9px/1 var(--q-ui);letter-spacing:.045em;
+  }
+  .q-shell-v2 .mobile-nav .nav-button:active{transform:translateY(1px)}
+}
+
+/* Shared functional surfaces. */
+.q-shell-v2 .operation-content-panel,
+.q-shell-v2 .operation-lifecycle,
+.q-shell-v2 .operation-phase-brief,
+.q-shell-v2 .record-ui .xp-daily,
+.q-shell-v2 .record-ui .community-pulse,
+.q-shell-v2 .record-ui .record-panel,
+.q-shell-v2 .record-ui .rank-list,
+.q-shell-v2 .record-ui .rank-verification-note,
+.q-shell-v2 .reward-pipeline,
+.q-shell-v2 .release-schedule,
+.q-shell-v2 .receipt-section,
+.q-shell-v2 .receipt-empty,
+.q-shell-v2 .reward-awaiting,
+.q-shell-v2 .verification-center,
+.q-shell-v2 .terminal-snapshot{
+  border:1px solid rgba(72,83,86,.075)!important;
+  border-radius:var(--q-radius-premium)!important;
+  background:var(--q-surface)!important;
+  box-shadow:var(--q-elev-1)!important;
+}
+
+/* Tabs are quiet controls, not mini banners. */
+.q-shell-v2 .operation-tabs,
+.q-shell-v2 .record-tabs{
+  gap:3px;padding:3px;
+  border:0!important;border-radius:11px;
+  background:rgba(255,255,255,.55);
+  box-shadow:inset 0 0 0 1px rgba(57,72,77,.07);
+}
+.q-shell-v2 .operation-tabs button,
+.q-shell-v2 .record-tabs button{
+  min-height:38px!important;border:0!important;border-radius:8px!important;
+  background:transparent!important;color:#71848d!important;
+  font:650 12px/1 var(--q-ui)!important;
+  letter-spacing:0!important;
+  box-shadow:none!important;
+}
+.q-shell-v2 .operation-tabs button.active,
+.q-shell-v2 .record-tabs button.active{
+  background:var(--q-navy)!important;color:#f7f3e8!important;
+  box-shadow:0 3px 10px rgba(5,19,27,.12)!important;
+}
+
+/* Buttons: cyan = connection/progress, gold = scarce campaign action. */
+.q-shell-v2 .outline-action,
+.q-shell-v2 .verification-action-card>button,
+.q-shell-v2 .native-wallet-grid button,
+.q-shell-v2 .reward-transparency-link button,
+.q-shell-v2 .profile-utilities button{
+  font-family:var(--q-ui)!important;
+  font-weight:700!important;
+  letter-spacing:.01em!important;
+}
+.q-shell-v2 button{transition:transform .12s ease,box-shadow .12s ease,background .12s ease,border-color .12s ease}
+.q-shell-v2 button:active:not(:disabled){transform:translateY(1px)}
+
+/* Terminal */
+.terminal-v2{gap:10px}
+.terminal-v2 .operation-summary{
+  margin:0 10px;padding:10px 11px 11px;border-radius:12px 12px 0 0;
+}
+.terminal-v2 .terminal-countdown-state,
+.terminal-v2 .terminal-countdown-strip{
+  border:0!important;background:var(--q-surface-soft);border-radius:9px;
+}
+.terminal-v2 .terminal-countdown-strip>div{border-right-color:#ddd8cc}
+.terminal-v2 .terminal-next-step{
+  margin:0 10px;min-height:68px;padding:9px 10px;
+  border:0!important;border-radius:12px;
+  background:linear-gradient(120deg,#06131b,#0b2029);
+  box-shadow:var(--q-elev-2)!important;
+}
+.terminal-v2 .terminal-next-step>div:nth-child(2)>small{font-family:var(--q-ui);line-height:1.35}
+.terminal-v2 .terminal-next-step>button{
+  min-height:34px;border:0;border-radius:18px;
+  background:#e4bd5d;box-shadow:none;
+  font-family:var(--q-ui);font-size:10px;font-weight:750;
+}
+.q-shell-v2 .terminal-snapshot{
+  margin:0 10px;padding:10px 11px;
+  background:rgba(255,253,248,.72)!important;
+}
+.terminal-snapshot header{padding-bottom:7px;font-family:var(--q-ui);font-size:9px}
+.terminal-snapshot>div{gap:5px}
+.terminal-snapshot article{
+  padding:8px 9px;border:0!important;border-radius:9px;background:rgba(255,255,255,.55)
+}
+.terminal-snapshot article:first-child{padding-left:9px}
+.terminal-snapshot article span{font:500 9px/1.1 var(--q-ui);color:#718087}
+.terminal-snapshot article strong{margin-top:3px;font-size:18px}
+.terminal-v2 .terminal-ocean-banner{margin:0 10px;width:calc(100% - 20px);border:0!important;box-shadow:var(--q-elev-1)}
+
+/* Operations */
+.q-shell-v2 .operations-ui{gap:10px}
+.q-shell-v2 .operation-reference .bond-cover{
+  border-radius:14px;overflow:hidden;box-shadow:var(--q-elev-2)
+}
+.q-shell-v2 .operation-reference .bond-cover .operation-cover-copy{padding:10px 12px 12px}
+.q-shell-v2 .operation-reference .bond-cover .operation-facts{gap:4px}
+.q-shell-v2 .operation-reference .bond-cover .operation-facts>div{
+  padding:7px;border:0;border-radius:8px;background:rgba(255,255,255,.055)
+}
+.q-shell-v2 .operation-content-panel{padding:14px!important}
+.q-shell-v2 .operation-section-head h3{font-size:21px}
+.q-shell-v2 .operation-current-order{
+  border:0!important;border-radius:11px;background:var(--q-surface-soft);
+  box-shadow:none!important;
+}
+.q-shell-v2 .operation-pool-row{
+  border:0!important;border-bottom:1px solid var(--q-hairline)!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+.q-shell-v2 .operation-pool-row:last-child{border-bottom:0!important}
+.q-shell-v2 .mission-file-row{
+  border:0!important;border-radius:11px;
+  background:#fffefb!important;
+  box-shadow:0 1px 0 var(--q-hairline),0 5px 14px rgba(38,53,59,.035)!important;
+}
+.q-shell-v2 .mission-file-row:hover,.q-shell-v2 .mission-file-row:focus-visible{
+  box-shadow:0 0 0 1px rgba(56,148,190,.28),0 6px 18px rgba(38,53,59,.055)!important;
+}
+.q-shell-v2 .mission-file-row.mission-file-locked{background:#f6f3ec!important;opacity:.88}
+.q-shell-v2 .mission-file-row.mission-file-available{border-left:3px solid var(--q-cyan)!important}
+.q-shell-v2 .mission-file-row.reward-file{border-top:0!important}
+.q-shell-v2 .mission-file-row .mission-file-copy small{font-family:var(--q-ui)!important}
+
+/* Record */
+.q-shell-v2 .record-ui{gap:10px}
+.q-shell-v2 .record-header-compact{
+  min-height:0;padding:13px 14px;border:0;border-radius:14px;
+  background:linear-gradient(125deg,#06131b,#0b2632);
+  box-shadow:var(--q-elev-2);
+}
+.q-shell-v2 .record-header-compact h2{font-size:25px}
+.q-shell-v2 .record-header-compact p{font-size:10px!important;color:#a8bec8}
+.q-shell-v2 .record-header-compact .record-score{
+  min-width:72px;padding:8px;border:0;border-radius:10px;background:rgba(255,255,255,.06)
+}
+.q-shell-v2 .record-header-compact .record-score strong{font-size:25px}
+.q-shell-v2 .record-proof-links{border:0!important;background:transparent}
+.q-shell-v2 .record-proof-links button{
+  border:0!important;border-radius:8px;background:var(--q-surface-soft)!important;
+  font-family:var(--q-ui)!important;font-weight:700!important;
+}
+.q-shell-v2 .record-next-action{border:0!important;border-radius:12px;box-shadow:var(--q-elev-1)!important}
+.q-shell-v2 .record-xp-shortcuts button{
+  border:0!important;border-radius:10px;background:var(--q-surface-soft)!important;
+  font-family:var(--q-ui)!important;
+}
+
+/* Rewards */
+.q-shell-v2 .rewards-operations-ui{gap:10px}
+.q-shell-v2 .rewards-command{
+  min-height:0;padding:14px;border:0!important;border-radius:14px;
+  background:linear-gradient(125deg,#071319,#101c21);
+  box-shadow:var(--q-elev-2)!important;
+}
+.q-shell-v2 .rewards-command h2{font-size:clamp(28px,7vw,38px);margin-top:5px}
+.q-shell-v2 .rewards-command p{font-size:10px!important;line-height:1.45}
+.q-shell-v2 .reward-status-card{
+  min-width:145px;border:0;background:rgba(255,255,255,.055);border-radius:10px
+}
+.q-shell-v2 .reward-next-action{
+  border:0!important;border-left:3px solid var(--q-cyan)!important;border-radius:12px;
+  box-shadow:var(--q-elev-1)
+}
+.q-shell-v2 .reward-summary-grid{gap:7px}
+.q-shell-v2 .reward-summary-grid article{
+  border:0!important;border-radius:10px;background:var(--q-surface)!important;
+  box-shadow:var(--q-elev-1)
+}
+.q-shell-v2 .reward-destination{
+  border:0!important;border-radius:12px;box-shadow:var(--q-elev-1)
+}
+.q-shell-v2 .release-row{border-bottom-color:var(--q-hairline)!important}
+
+/* Achievements — keep the collectible feel, reduce chrome around it. */
+.q-shell-v2 .achievement-center{gap:10px}
+.q-shell-v2 .achievement-page-heading{padding-left:2px;padding-right:2px}
+.q-shell-v2 .achievement-page-heading p{font-size:10px!important;line-height:1.45}
+.q-shell-v2 .achievement-overview-hero,
+.q-shell-v2 .achievement-next-intel,
+.q-shell-v2 .achievement-collections-preview,
+.q-shell-v2 .achievement-empty{
+  border-color:rgba(72,83,86,.08)!important;
+  border-radius:14px!important;
+  box-shadow:var(--q-elev-1)!important;
+}
+.q-shell-v2 .achievement-next-intel{background:var(--q-surface)!important}
+
+/* Profile */
+.q-shell-v2 .passport-ui{gap:10px}
+.q-shell-v2 .universal-profile-hero.compact{
+  box-shadow:var(--q-elev-2)!important;
+  border-color:rgba(76,150,181,.26)!important;
+}
+.q-shell-v2 .verification-center{box-shadow:var(--q-elev-1)!important}
+.q-shell-v2 .verification-action-card{
+  border:0!important;background:#fffefb!important;box-shadow:0 1px 0 var(--q-hairline)
+}
+.q-shell-v2 .verification-auto-item{background:#f4f1e9}
+.q-shell-v2 .profile-settings{
+  border:0!important;background:transparent!important;box-shadow:none!important
+}
+.q-shell-v2 .profile-settings summary{font-family:var(--q-ui)!important}
+
+/* Dialogs and sheets */
+.q-shell-v2 .connection-dialog,
+.q-shell-v2 .updates-dialog,
+.q-shell-v2 .account-dialog,
+.q-shell-v2 .explainer-dialog{
+  border:0!important;border-radius:18px;
+  box-shadow:0 28px 90px rgba(12,28,36,.26)!important;
+}
+.q-shell-v2 .connection-dialog header,
+.q-shell-v2 .updates-dialog header{
+  border-bottom:1px solid rgba(63,79,84,.08)!important;
+}
+.q-shell-v2 .native-wallet-option{
+  border:0!important;border-radius:12px;background:#fffefb!important;
+  box-shadow:0 1px 0 var(--q-hairline),var(--q-elev-1)
+}
+.q-shell-v2 .native-wallet-grid button{
+  border:0!important;border-radius:12px;background:#fffefb!important;
+  box-shadow:0 1px 0 var(--q-hairline),var(--q-elev-1)
+}
+
+/* Smaller phones: protect first viewport hierarchy. */
+@media(max-width:430px){
+  .q-shell-v2 .topbar{min-height:56px;padding:5px 9px}
+  .q-shell-v2 .compact-brand{width:38px;height:38px;flex-basis:38px}
+  .q-shell-v2 .brand-wordmark>b{font-size:21px}
+  .q-shell-v2 #screen-title{font-size:7px}
+  .q-shell-v2 .notification-control,
+  .q-shell-v2 .account-menu-control{width:34px;min-width:34px;min-height:38px}
+  .q-shell-v2 .account-control img{width:30px;height:30px}
+  .q-shell-v2 .screen{padding-top:10px}
+  .terminal-v2 .terminal-next-step{grid-template-columns:54px minmax(0,1fr) auto}
+  .terminal-v2 .terminal-identity-art>img{width:38px;height:38px}
+  .terminal-v2 .identity-channel{display:none}
+  .terminal-v2 .terminal-next-step>div:nth-child(2)>b{font-size:14px}
+  .terminal-v2 .terminal-next-step>button{padding:0 9px;font-size:9px}
+  .q-shell-v2 .operation-content-panel{padding:12px!important}
+  .q-shell-v2 .record-header-compact h2{font-size:23px}
+  .q-shell-v2 .rewards-command h2{font-size:30px}
+}
