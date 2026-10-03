@@ -1792,7 +1792,7 @@ function profileWallet() {
       ${statePill(walletReady ? 'VERIFIED' : 'REQUIRED', walletReady ? 'success' : 'pending')}
     </section>
 
-    ${walletReady ? '' : `<section class="wallet-recovery-action"><b>Wallet verification required</b><p>Open Oracle to verify one reward wallet with a signed message. No transaction or fee is required.</p><button class="gold-action compact" data-clearance-action="wallet-verify">VERIFY WALLET</button><small>Project Q will refresh automatically after Oracle verifies the signed ownership message.</small></section>`}
+    ${walletReady ? '' : `<section class="wallet-recovery-action"><b>Wallet verification required</b><p>Verify one reward wallet with a signed ownership message. No transaction or fee is required.</p><button class="gold-action compact" data-clearance-action="wallet-verify">VERIFY WALLET</button><small>Project Q will refresh automatically after Oracle verifies the signed ownership message.</small></section>`}
     <section class="passport-wallet-balance">
       <div><span>FAWKQ BALANCE</span><strong>${balance}</strong><small>Observed ${escapeHtml(observed)}</small></div>
       <button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh</button>
