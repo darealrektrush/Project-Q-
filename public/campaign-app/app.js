@@ -2319,7 +2319,7 @@ async function verifyProjectQDetectedWallet(wallet) {
     const connected = await wallet.features['standard:connect'].connect();
     const account = (connected.accounts || []).find(item =>
       (item.features || []).includes('solana:signMessage') &&
-      (!(item.chains || []).length || (item.chains || []).some(chain => String(chain).startsWith('solana:'))
+      (!(item.chains || []).length || (item.chains || []).some(chain => String(chain).startsWith('solana:')))
     );
     if (!account) throw new Error('Choose a Solana account that supports message signing.');
     const challenge = await postNativeConnection('wallet/challenge', { walletAddress: account.address });
