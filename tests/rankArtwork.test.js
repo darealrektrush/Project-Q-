@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const app = fs.readFileSync('public/campaign-app/app.js', 'utf8');
 const css = fs.readFileSync('public/campaign-app/terminal-v2.css', 'utf8');
 const contract = fs.readFileSync('public/campaign-app/assets/ranks/README.md', 'utf8');
+const server = fs.readFileSync('src/server.js', 'utf8');
 
 test('Universal Profile resolves only canonical Crab Army badge keys', () => {
   assert.match(app, /CRAB_ARMY_RANK_ASSET_KEY/);
@@ -27,4 +28,15 @@ test('Project Q documents Oracle as the artwork authority', () => {
   assert.match(contract, /CrabStarRanks_by_CrabStar_Oraacle_Bot/);
   assert.match(contract, /sticker 1 = Level 1 Recruit/);
   assert.match(contract, /sticker 50 = Level 50 Supreme Commander/);
+});
+
+
+test('Dev rank artwork fallback is allowlisted and production closed', () => {
+  assert.match(server, /\/campaign-app\/api\/rank-assets\/:filename/);
+  assert.match(server, /\/campaign-app\/assets\/ranks\/:filename/);
+  assert.match(server, /crabstar-webhooks-dev\.onrender\.com\/public\/crab-army-ranks/);
+  assert.match(server, /project-q-dev\.onrender\.com/);
+  assert.match(server, /image\/webp/);
+  assert.match(server, /1_000_000/);
+  assert.match(server, /redirect\(307/);
 });
