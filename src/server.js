@@ -72,7 +72,7 @@ const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
 const ORACLE_CAMPAIGN_SECRET = process.env.ORACLE_CAMPAIGN_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
-const ORACLE_CONNECTION_TIMEOUT_MS = 12_000;
+const ORACLE_CONNECTION_TIMEOUT_MS = 45_000;
 const SOLANA_ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 function oracleConnectionsBaseUrl(env = process.env) {
@@ -91,16 +91,25 @@ async function oracleConnectionRequest(pathname, payload, env = process.env) {
     throw new Error('Oracle connection bridge unavailable');
   }
   const url = new URL(pathname.replace(/^\//, ''), base);
-  const response = await fetch(url, {
-    method: 'POST',
-    redirect: 'error',
-    headers: {
-      authorization: `Bearer ${secret}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(ORACLE_CONNECTION_TIMEOUT_MS),
-  });
+  let response;
+  const startedAt = Date.now();
+  let attempt = 0;
+  do {
+    attempt += 1;
+    response = await fetch(url, {
+      method: 'POST',
+      redirect: 'error',
+      headers: {
+        authorization: `Bearer ${secret}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(Math.max(5_000, ORACLE_CONNECTION_TIMEOUT_MS - (Date.now() - startedAt))),
+    });
+    if (response.status !== 503 || Date.now() - startedAt >= 30_000) break;
+    await new Promise(resolve => setTimeout(resolve, Math.min(2_500 * attempt, 5_000)));
+  } while (Date.now() - startedAt < ORACLE_CONNECTION_TIMEOUT_MS);
+
   const raw = await response.text();
   if (raw.length > 16_384) throw new Error('Oracle connection bridge unavailable');
   let data = {};
