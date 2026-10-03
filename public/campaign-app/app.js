@@ -3123,7 +3123,7 @@ function openAccountPanel(view = 'menu') {
     if (action === 'updates') return openCampaignUpdates();
     if (action === 'oracle') return openOracle();
     if (action === 'tour') return showTourWelcome('manual');
-    if (action === 'wallet') return go('profile', {view:'wallet'});
+    if (action === 'wallet') return state.profile.walletVerified ? go('profile', {view:'wallet'}) : startNativeWalletConnection();
     go(action);
   };});
   const search = dialog.querySelector('#help-search');
@@ -3194,6 +3194,8 @@ function openCampaignUpdates() {
 function bind() {
   document.querySelectorAll('[data-clearance-action]').forEach(element => {
     element.onclick = () => {
+      if (element.dataset.clearanceAction === 'x') return startNativeXConnection();
+      if (element.dataset.clearanceAction === 'wallet-verify') return startNativeWalletConnection();
       if (element.dataset.clearanceAction === 'oracle') return openOracle();
       if (element.dataset.clearanceAction === 'wallet') return go('profile', { view: 'wallet' });
       if (state.runtime?.projectQBotUrl) return openExternal(state.runtime.projectQBotUrl);
@@ -3666,7 +3668,19 @@ async function boot() {
   syncTelegramViewport();
   state.telegram?.setHeaderColor?.('#e9e2d3');
   state.telegram?.setBackgroundColor?.('#e9e2d3');
-  state.telegram?.onEvent?.('activated', async () => { await authenticateTelegram(); await loadWalletStatus(); render(); });
+  state.telegram?.onEvent?.('activated', async () => {
+    const pending = sessionStorage.getItem('project-q:pending-verification');
+    await authenticateTelegram();
+    await loadWalletStatus();
+    render();
+    if (pending) {
+      sessionStorage.removeItem('project-q:pending-verification');
+      const verified = pending === 'x' ? state.profile.xVerified : state.profile.walletVerified;
+      toast(verified
+        ? (pending === 'x' ? 'X connected ✓' : 'Wallet verified ✓')
+        : (pending === 'x' ? 'X verification is still pending.' : 'Wallet verification is still pending.'));
+    }
+  });
   state.telegram?.onEvent?.('viewportChanged', syncTelegramViewport);
   state.telegram?.BackButton?.onClick?.(navigateBack);
   window.addEventListener('resize', syncTelegramViewport);
