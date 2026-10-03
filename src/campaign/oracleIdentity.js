@@ -47,7 +47,7 @@ function parseCrabArmyProjection(value) {
 export async function ensureCampaignProfile(client, {
   campaignId,
   telegramUserId,
-}, { env = process.env, fetchImpl = fetch } = {}) {
+}, { env = process.env, fetchImpl = fetch, waitImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
   if (typeof campaignId !== 'string' || !campaignId.trim()) {
     throw new Error('invalid campaign identity request');
   }
@@ -67,14 +67,26 @@ export async function ensureCampaignProfile(client, {
       secret.length < 32 || secret.trim() !== secret) {
     throw new Error('Oracle campaign identity unavailable');
   }
-  const response = await fetchImpl(url, {
-    method: 'POST',
-    redirect: 'error',
-    headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ campaign_id: campaignId, telegram_user_id: telegramUserId }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!response.ok) throw new Error('Oracle campaign identity unavailable');
+  let response = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      response = await fetchImpl(url, {
+        method: 'POST',
+        redirect: 'error',
+        headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaignId, telegram_user_id: telegramUserId }),
+        signal: AbortSignal.timeout(7_000),
+      });
+    } catch {
+      response = null;
+    }
+    if (response?.ok) break;
+    const status = Number(response?.status || 0);
+    const transient = !response || status === 408 || status === 429 || status >= 500;
+    if (!transient || attempt === 2) throw new Error('Oracle campaign identity unavailable');
+    await waitImpl(attempt === 0 ? 150 : 400);
+  }
+  if (!response?.ok) throw new Error('Oracle campaign identity unavailable');
   const raw = await response.text();
   if (raw.length > 16_384) throw new Error('Oracle campaign identity unavailable');
   let oracle;
