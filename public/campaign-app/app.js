@@ -1946,7 +1946,7 @@ function profileScreen() {
   return `<div class="passport-ui profile-identity-ui">
     ${walletView ? '<button class="burn-back" data-profile-view="overview">← PROFILE</button>' : ''}
     ${universalProfileHeroMarkup()}
-    ${walletView ? profileWallet() : `${campaignClearanceReady() ? '' : clearanceMarkup()}${campaignPassportMarkup()}${campaignClearanceReady() ? `<details class="passport-clearance-complete"><summary>Clearance ${clearanceCountLabel()} · verified <span>⌄</span></summary>${clearanceMarkup()}</details>` : ''}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button></details>`}
+    ${walletView ? profileWallet() : `${campaignClearanceReady() ? '' : clearanceMarkup()}${campaignPassportMarkup()}${campaignClearanceReady() ? `<details class="passport-clearance-complete"><summary>Clearance ${clearanceCountLabel()} · verified <span>⌄</span></summary>${clearanceMarkup()}</details>` : ''}<button class="profile-wallet-entry outline-action" data-profile-view="wallet">OPEN WALLET →</button><div class="profile-utilities"><button class="outline-action" id="identity-refresh" ${p.telegramVerified ? '' : 'disabled'}>REFRESH VERIFICATION</button><button class="outline-action" data-replay-tour>REPLAY GUIDE →</button></div><details class="profile-settings"><summary>Profile settings <span>⌄</span></summary><p>Your display name and photo come from Telegram. X and wallet connections are managed through Oracle.</p><button class="outline-action" data-clearance-action="oracle" ${p.telegramVerified && state.runtime?.oracleBotUrl ? '' : 'disabled'}>MANAGE ORACLE CONNECTIONS ↗</button><button class="text-action" id="recover-oracle-identity" ${p.telegramVerified ? '' : 'disabled'}>RECOVER EXISTING ORACLE IDENTITY</button><small>Use recovery only if your X account belongs to an older Oracle profile you can no longer access.</small></details>`}
   </div>`;
 }
 
@@ -3205,6 +3205,7 @@ function bind() {
   document.querySelectorAll('[data-pool-id]').forEach(element => {
     element.onclick = () => { state.activePool = element.dataset.poolId; go('operations', { view: 'economics' }); };
   });
+  document.querySelector('#recover-oracle-identity')?.addEventListener('click', () => startNativeXConnection('identity_recovery'));
   document.querySelector('#standing-filter')?.addEventListener('change', event => {
     state.leaderboardView = event.currentTarget.value;
     renderTabInPlace();
