@@ -1141,3 +1141,54 @@
 @media(max-width:430px){
   .q-shell-v2 .updates-back{min-height:32px;padding:0 9px 0 7px}
 }
+
+
+/* Native Project Q connection dialog */
+.q-shell-v2 .connection-dialog{
+  width:min(92vw,480px);max-height:min(82vh,760px);padding:0;overflow:auto;
+  border:1px solid #ccd8da;border-radius:18px;background:#f8f4ea;color:#17252c;
+  box-shadow:0 24px 80px rgba(22,45,56,.24)
+}
+.q-shell-v2 .connection-dialog::backdrop{background:rgba(10,20,26,.54);backdrop-filter:blur(4px)}
+.q-shell-v2 .connection-dialog header{
+  position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 16px 13px;border-bottom:1px solid #d9d5c9;background:rgba(248,244,234,.96);backdrop-filter:blur(12px)
+}
+.q-shell-v2 .connection-dialog header small{display:block;color:#2c82a8;font:750 9px/1 var(--q-display);letter-spacing:.13em}
+.q-shell-v2 .connection-dialog header h2{margin:4px 0 0;color:#14242c;font:700 21px/1.05 var(--q-display)}
+.q-shell-v2 .connection-dialog header button{
+  width:36px;height:36px;display:grid;place-items:center;border:1px solid #d2d5cf;border-radius:50%;
+  background:#fffdf8;color:#35515d;font-size:20px;cursor:pointer
+}
+.q-shell-v2 .native-connection-copy{margin:0;padding:15px 16px 4px;color:#526973;font-size:12px;line-height:1.55}
+.q-shell-v2 .native-connection-status{
+  margin:10px 16px 0;padding:11px 12px;border:1px solid #c8dce4;border-radius:10px;
+  background:#eef8fb;color:#245f79;font-size:11px;line-height:1.45
+}
+.q-shell-v2 .native-wallet-detected,.q-shell-v2 .native-wallet-fallback{padding:15px 16px 0}
+.q-shell-v2 .native-wallet-detected>span,.q-shell-v2 .native-wallet-fallback>span{
+  color:#9a761f;font:800 9px/1 var(--q-display);letter-spacing:.11em
+}
+.q-shell-v2 .native-wallet-options{display:grid;gap:8px;margin-top:9px}
+.q-shell-v2 .native-wallet-options>p,.q-shell-v2 .native-wallet-fallback>p{
+  margin:8px 0 0;color:#6f7f85;font-size:11px;line-height:1.5
+}
+.q-shell-v2 .native-wallet-option{
+  min-height:54px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;
+  align-items:center;border:1px solid #cdd8da;border-radius:11px;background:#fffdf8;color:#18303a;text-align:left;cursor:pointer
+}
+.q-shell-v2 .native-wallet-option b{font-size:13px}
+.q-shell-v2 .native-wallet-option small{grid-column:1;color:#74858b;font-size:9px}
+.q-shell-v2 .native-wallet-option span{grid-column:2;grid-row:1/3;color:#2382aa;font:800 9px/1 var(--q-display)}
+.q-shell-v2 .native-wallet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.q-shell-v2 .native-wallet-grid button{
+  min-height:46px;padding:9px;border:1px solid #d0d8d6;border-radius:10px;background:#fffdf8;color:#1f3943;
+  font:700 11px/1.1 var(--q-display);cursor:pointer
+}
+.q-shell-v2 .native-wallet-grid button:hover{border-color:#3c9bc0;color:#1e779c}
+.q-shell-v2 .connection-dialog footer{padding:16px}
+.q-shell-v2 .connection-dialog footer small{display:block;color:#728087;font-size:9px;line-height:1.5}
+@media(max-width:430px){
+  .q-shell-v2 .connection-dialog{width:100%;max-width:none;max-height:88vh;margin:auto 0 0;border-radius:18px 18px 0 0}
+  .q-shell-v2 .native-wallet-grid{grid-template-columns:1fr 1fr}
+}
