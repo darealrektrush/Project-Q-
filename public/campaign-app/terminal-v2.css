@@ -1055,6 +1055,13 @@
   min-height:112px;padding:9px 10px;display:grid;place-items:center;align-content:center;
   border-left:1px solid #224756;border-right:1px solid #224756;text-align:center
 }
+.q-shell-v2 .universal-rank-art{
+  position:relative;width:64px;height:64px;display:grid;place-items:center
+}
+.q-shell-v2 .universal-rank-insignia{
+  position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;
+  filter:drop-shadow(0 0 12px rgba(229,174,65,.24))
+}
 .q-shell-v2 .universal-rank-medallion{
   width:58px;height:58px;display:grid;place-items:center;clip-path:polygon(50% 0,88% 18%,82% 72%,50% 100%,18% 72%,12% 18%);
   background:linear-gradient(145deg,#ffe398,#bb8125 52%,#704715);box-shadow:0 0 20px rgba(229,174,65,.25)
@@ -1096,6 +1103,7 @@
   .q-shell-v2 .universal-profile-avatar,.q-shell-v2 .universal-profile-avatar img{width:66px;height:66px}
   .q-shell-v2 .universal-profile-identity h2{font-size:27px}
   .q-shell-v2 .universal-rank-block{min-height:96px;padding:6px;border-right:0}
+  .q-shell-v2 .universal-rank-art{width:52px;height:52px}
   .q-shell-v2 .universal-rank-medallion{width:48px;height:48px}
   .q-shell-v2 .universal-rank-medallion::before{width:36px;height:36px}
   .q-shell-v2 .universal-level-block{grid-column:1/-1;display:grid;grid-template-columns:auto auto 1fr auto;gap:8px;align-items:center;padding-top:10px;border-top:1px solid #214252}
@@ -1116,7 +1124,7 @@
   .q-shell-v2 .oracle-verified-mark{width:23px;height:23px;font-size:12px}
   .q-shell-v2 .universal-profile-identity h2{font-size:24px}
   .q-shell-v2 .universal-rank-block{
-    grid-column:1/-1;display:grid;grid-template-columns:48px auto 1fr;justify-items:start;gap:8px;
+    grid-column:1/-1;display:grid;grid-template-columns:52px auto 1fr;justify-items:start;gap:8px;
     min-height:0;padding:9px 0 0;border-left:0;border-top:1px solid #214252;text-align:left
   }
   .q-shell-v2 .universal-rank-block>small{margin:0;align-self:center}
