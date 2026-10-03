@@ -628,6 +628,8 @@ function currentNextStep() {
 
 function nextStepActionAttrs(next) {
   if (next.retry) return 'data-retry-session';
+  if (next.action === 'CONNECT X') return 'data-clearance-action="x"';
+  if (next.action === 'VERIFY WALLET') return 'data-clearance-action="wallet-verify"';
   if (next.screen === 'operations') return `data-operation-view="${next.operationsView || 'overview'}"`;
   if (next.screen === 'profile') return `data-profile-view="${next.profileView || 'overview'}"`;
   return `data-screen="${next.screen}"`;
