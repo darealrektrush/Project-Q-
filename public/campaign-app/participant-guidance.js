@@ -14,12 +14,40 @@ export function participantClearance(profile = {}, eligibility = {}) {
 
 export function participantNextStep({ profile = {}, eligibility, lifecycle = 'UPCOMING', sessionStatus, oracleAvailable = false } = {}) {
   if (sessionStatus === 'identity-unavailable') return { label: 'Identity Sync', title: 'Sync Oracle Identity', detail: 'Telegram is confirmed. Your operation profile is temporarily unavailable.', action: 'RETRY', retry: true, brand: 'q' };
-  const next = participantClearance(profile, eligibility).find(item => !item.complete);
-  if (next) {
-    const oracleAction = ['x', 'wallet-verify'].includes(next.action);
-    const oraclePending = oracleAction && !oracleAvailable;
-    return { label: 'Next Step', title: oraclePending ? 'Oracle connection pending' : `Complete ${next.label}`, detail: oraclePending ? 'Oracle connection is not available in this environment yet.' : next.detail, action: next.action === 'wallet' ? 'OPEN WALLET' : next.action === 'x' ? 'CONNECT X' : next.action === 'wallet-verify' ? 'VERIFY WALLET' : 'COMPLETE CLEARANCE', screen: 'profile', profileView: next.action === 'wallet' ? 'wallet' : 'overview', brand: oracleAction ? 'oracle' : 'q' };
+
+  const clearance = participantClearance(profile, eligibility);
+  const nextAction = clearance.find(item => !item.complete && ['x', 'wallet-verify'].includes(item.action));
+  if (nextAction) {
+    const oraclePending = !oracleAvailable;
+    const isX = nextAction.action === 'x';
+    return {
+      label: 'Operation Access',
+      title: oraclePending ? 'Secure connection unavailable' : isX ? 'Connect your X account' : 'Verify your reward wallet',
+      detail: oraclePending ? 'Open Project Q from Telegram to continue.' : isX
+        ? 'One secure X consent. Project Q refreshes when you return.'
+        : 'Sign one readable ownership message. No transaction or SOL fee.',
+      action: isX ? 'CONNECT X' : 'VERIFY WALLET',
+      screen: 'profile',
+      profileView: 'overview',
+      brand: 'oracle',
+    };
   }
+
+  const automaticPending = clearance.find(item => !item.complete);
+  if (automaticPending) {
+    return {
+      label: 'Operation Access',
+      title: 'Finishing automatic checks',
+      detail: automaticPending.key === 'telegram'
+        ? 'Telegram identity is synchronizing from the signed Mini App session.'
+        : 'Project Q is checking token-account and holder eligibility from your verified wallet.',
+      action: 'VIEW STATUS',
+      screen: 'profile',
+      profileView: 'overview',
+      brand: 'oracle',
+    };
+  }
+
   const steps = {
     ACTIVE: ['Choose a Mission File', 'Complete an available objective and follow its verified result in Record.', 'VIEW MISSIONS', 'operations', 'missions'],
     REVIEWING: ['Follow final review', 'New scoring is closed while verified activity and allocations are reconciled.', 'OPEN BRIEFING', 'operations', 'overview'],
@@ -29,7 +57,7 @@ export function participantNextStep({ profile = {}, eligibility, lifecycle = 'UP
     TERMINATED: ['Operation closed', 'Participation has ended. Review existing outcomes and receipts.', 'OPEN RECORD', 'record'],
     PAUSED: ['Operation paused', 'Participation is closed. Follow the status in Briefing.', 'OPEN BRIEFING', 'operations', 'overview'],
     'LAUNCH BLOCKED': ['Launch gates incomplete', 'Participation remains closed until the operation passes its launch gates.', 'OPEN BRIEFING', 'operations', 'overview'],
-    UPCOMING: ['Prepare for the operation', 'Your clearance is complete. Review Mission Files before participation opens.', 'VIEW MISSIONS', 'operations', 'missions'],
+    UPCOMING: ['Prepare for the operation', 'Your access is ready. Review Mission Files before participation opens.', 'VIEW MISSIONS', 'operations', 'missions'],
   };
   const [title, detail, action, screen, operationsView] = steps[lifecycle] || ['Check operation status', 'The operation status is being synchronized.', 'OPEN BRIEFING', 'operations', 'overview'];
   return { label: 'Next Step', title, detail, action, screen, operationsView, brand: 'q' };
