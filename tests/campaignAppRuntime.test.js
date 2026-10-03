@@ -886,7 +886,7 @@ test('Round 2 access continuity advances X to wallet to finalizing to ready', as
     tokenAccountReady: false,
     holderEligible: false,
   });
-  assert.match(walletStep, /X connected/);
+  assert.match(walletStep, /X account linked/);
   assert.match(walletStep, /Verify Solana Wallet/);
   assert.doesNotMatch(walletStep, /Connect X/);
   assert.match(walletStep, /1 STEP REMAINING/);
