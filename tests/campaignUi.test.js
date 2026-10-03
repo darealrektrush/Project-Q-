@@ -115,10 +115,12 @@ test('live campaign and participant data render without opening unavailable acti
   assert.match(buildCampaignHomeText({
     databaseState: 'DRAFT', displayLabel: 'PRE-LAUNCH', schedule: { label: 'Campaign opens' },
   }), /Window:\* PRE-LAUNCH[\s\S]*Next:\* Campaign opens/);
-  assert.match(buildParticipantStatusText({
+  const participant = buildParticipantStatusText({
     enrolled: true, xLinked: true, xVerified: true, walletLinked: true,
     walletVerified: false, tokenAccountReady: false,
-  }), /Clearance:\* 2\/5/);
+  });
+  assert.match(participant, /Operation Access:\* 1\/2/);
+  assert.match(participant, /Connections:\* X ✅ · Wallet —/);
   assert.match(buildParticipantXpText({
     totalXp: 9, xpByCycle: [{ cycleId: 1, xp: 9 }],
   }), /Cycle 1: 9 XP/);
