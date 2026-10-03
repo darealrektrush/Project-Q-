@@ -26,24 +26,27 @@ Each tester launches Project Q from the official Telegram Mini App entry point a
 
 ### 2. x-oauth-link
 
-Using Oracle:
+From Project Q:
 
-- connect or recover the tester's X identity;
+- start the visible **Connect X** action;
+- complete or recover the tester's intended X identity through the Oracle Dev authority flow;
 - return to Q;
-- refresh verification status;
-- confirm X shows verified;
-- confirm Oracle remains the identity authority and Q only consumes the verified state.
+- confirm X shows verified and the primary next action advances;
+- confirm no duplicate profile is created;
+- confirm the tester never needs to understand which service owns the identity record.
 
 ### 3. wallet-session
 
-Using Oracle and the verified reward wallet:
+From Project Q:
 
-- connect/verify the reward wallet;
-- return to Q;
-- confirm reward destination;
+- start **Verify Wallet** from Terminal, Rewards, or Profile;
+- confirm detected Wallet Standard wallets are prioritized and major branded providers are recognizable;
+- confirm the trust copy states **Signature only · 0 SOL · No claim transaction required**;
+- complete reward-wallet verification through the Oracle authority flow;
+- return to Q and confirm the same reward destination;
+- confirm Rewards changes to **VIEW WALLET** after verification;
 - refresh wallet balance;
-- confirm FAWKQ token-account state;
-- confirm minimum-holder clearance state;
+- confirm FAWKQ token-account and minimum-holder checks remain automatic;
 - reopen the Mini App and verify the same canonical wallet is resolved.
 
 ### 4. comprehension-recovery
@@ -91,3 +94,19 @@ npm run rehearse:bond-devnet-full
 ```
 
 Capture its JSON output to the evidence file used by `BOND_ONCHAIN_REHEARSAL_EVIDENCE_FILE`.
+
+
+## Round 2 acceptance emphasis
+
+The current participant contract is **Project Q owns the experience; Oracle owns canonical verification**.
+
+Across Terminal, Operations, Rewards and Profile:
+
+- the same X state must be shown;
+- the same reward wallet must be shown;
+- automatic checks must never look like additional setup tasks;
+- READY must mean the two participant actions and all authoritative automatic checks are complete;
+- no screen may instruct the participant to run a bot command for normal onboarding;
+- no screen may expose Render/server implementation detail.
+
+Treat any contradiction between these screens as a High issue.
