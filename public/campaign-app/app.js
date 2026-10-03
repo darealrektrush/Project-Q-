@@ -2348,26 +2348,79 @@ function bytesToBase64(bytes) {
   return btoa(out);
 }
 
+const PROJECT_Q_WALLET_BRANDS = {
+  phantom: { label: 'Phantom', logo: 'https://phantom.com/favicon.ico', note: 'Recommended' },
+  solflare: { label: 'Solflare', logo: 'https://www.solflare.com/favicon.ico', note: 'Recommended' },
+  backpack: { label: 'Backpack', logo: 'https://backpack.app/favicon.ico', note: 'Recommended' },
+  jupiter: { label: 'Jupiter', logo: 'https://jup.ag/favicon.ico', note: 'More wallets' },
+  metamask: { label: 'MetaMask', logo: 'https://metamask.io/favicon.ico', note: 'More wallets' },
+  other: { label: 'Other Solana Wallet', logo: null, note: 'Wallet Standard' },
+};
+
+function walletIconSource(wallet) {
+  const icon = String(wallet?.icon || '');
+  if (/^data:image\/(svg\+xml|png|webp);base64,[A-Za-z0-9+/=]+$/.test(icon) && icon.length < 180000) return icon;
+  return safeHttpsUrl(icon);
+}
+
+function walletBrandButton(provider, compact = false) {
+  const brand = PROJECT_Q_WALLET_BRANDS[provider];
+  if (!brand) return '';
+  const mark = brand.logo
+    ? `<span class="wallet-brand-mark"><img src="${escapeHtml(brand.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`
+    : '<span class="wallet-brand-mark wallet-generic-mark">◎</span>';
+  return `<button type="button" class="wallet-brand-option ${compact ? 'compact' : ''}" data-wallet-provider="${provider}">
+    ${mark}<span><b>${escapeHtml(brand.label)}</b><small>${compact ? 'Open wallet verification' : escapeHtml(brand.note)}</small></span><i aria-hidden="true">→</i>
+  </button>`;
+}
+
 function renderProjectQWalletDialog(message = '') {
   const dialog = document.querySelector('#connection-dialog');
   if (!dialog) return;
   dialog.dataset.mode = 'wallet';
-  const detected = projectQWallets.map((wallet, index) =>
-    '<button type="button" class="native-wallet-option" data-wallet-index="' + index + '"><b>' + escapeHtml(wallet.name) + '</b><small>Detected in this browser</small><span>CONNECT →</span></button>'
-  ).join('');
-  dialog.innerHTML = '<header><div><small>PROJECT Q // WALLET VERIFICATION</small><h2>Choose your Solana wallet</h2></div><button type="button" aria-label="Close wallet connection">×</button></header>' +
-    '<p class="native-connection-copy">Sign one readable ownership message. No transaction, token approval or SOL fee is created.</p>' +
-    (message ? '<div class="native-connection-status">' + escapeHtml(message) + '</div>' : '') +
-    '<section class="native-wallet-detected"><span>DETECTED WALLETS</span><div class="native-wallet-options">' +
-      (detected || '<p>No compatible wallet is visible inside Telegram yet.</p>') + '</div></section>' +
-    '<section class="native-wallet-fallback"><span>MOBILE WALLET HANDOFF</span><p>Project Q prepares the private verification session before opening your wallet, so backend/server screens stay hidden.</p><div class="native-wallet-grid">' +
-      '<button type="button" data-wallet-provider="phantom">Phantom</button>' +
-      '<button type="button" data-wallet-provider="solflare">Solflare</button>' +
-      '<button type="button" data-wallet-provider="backpack">Backpack</button>' +
-      '<button type="button" data-wallet-provider="jupiter">Jupiter</button>' +
-      '<button type="button" data-wallet-provider="metamask">MetaMask</button>' +
-      '<button type="button" data-wallet-provider="other">Other Solana Wallet</button>' +
-    '</div></section><footer><small>Never enter a seed phrase or private key. Oracle verifies signatures only.</small></footer>';
+
+  const detected = projectQWallets.map((wallet, index) => {
+    const icon = walletIconSource(wallet);
+    return `<button type="button" class="native-wallet-option premium" data-wallet-index="${index}">
+      <span class="wallet-brand-mark">${icon ? `<img src="${escapeHtml(icon)}" alt="" />` : '◎'}</span>
+      <span><b>${escapeHtml(wallet.name)}</b><small>Detected in Telegram</small></span>
+      <i>CONNECT →</i>
+    </button>`;
+  }).join('');
+
+  const detectedBlock = detected
+    ? `<section class="wallet-picker-section detected"><div class="wallet-picker-label"><span>DETECTED WALLET</span><small>Fastest path</small></div><div class="native-wallet-options">${detected}</div></section>`
+    : '<div class="wallet-detection-note"><span>○</span><div><b>No wallet detected inside Telegram</b><small>Choose a wallet below and Project Q will prepare the secure handoff first.</small></div></div>';
+
+  dialog.innerHTML = `<header class="wallet-dialog-head">
+      <div><small>PROJECT Q // WALLET VERIFICATION</small><h2>Verify reward wallet</h2><p>Choose the wallet you use for FAWKQ.</p></div>
+      <button type="button" aria-label="Close wallet connection">×</button>
+    </header>
+    ${message ? `<div class="native-connection-status">${escapeHtml(message)}</div>` : ''}
+    <div class="wallet-dialog-body">
+      ${detectedBlock}
+      <section class="wallet-picker-section">
+        <div class="wallet-picker-label"><span>RECOMMENDED</span><small>Solana wallets</small></div>
+        <div class="wallet-recommended-list">
+          ${walletBrandButton('phantom')}
+          ${walletBrandButton('solflare')}
+          ${walletBrandButton('backpack')}
+        </div>
+      </section>
+      <details class="wallet-more-options">
+        <summary>More wallets <span>⌄</span></summary>
+        <div class="wallet-more-grid">
+          ${walletBrandButton('jupiter', true)}
+          ${walletBrandButton('metamask', true)}
+          ${walletBrandButton('other', true)}
+        </div>
+      </details>
+    </div>
+    <footer class="wallet-trust-footer">
+      <span>✓ Signature only</span><span>0 SOL</span><span>No transaction</span>
+      <small>Never share a seed phrase or private key.</small>
+    </footer>`;
+
   dialog.querySelector('[aria-label="Close wallet connection"]').onclick = () => dialog.close();
   dialog.querySelectorAll('[data-wallet-index]').forEach(button => {
     button.onclick = () => verifyProjectQDetectedWallet(projectQWallets[Number(button.dataset.walletIndex)]);
