@@ -756,16 +756,16 @@ function clearanceMarkup() {
   const telegramState = telegram?.complete ? 'SECURED' : 'SYNCING';
 
   const accessRows = `<div class="verification-access-rows">
-    <button type="button" class="verification-access-row ${xDone ? 'done' : !xDone ? 'current' : ''}" data-clearance-action="x" ${xDone || !nativeConnectionReady ? 'disabled' : ''}>
+    ${x ? `<button type="button" class="verification-access-row ${xDone ? 'done' : 'current'}" ${!xDone ? 'data-clearance-action="x"' : ''} ${xDone || !nativeConnectionReady ? 'disabled' : ''}>
       <span class="access-brand-mark access-x-mark" aria-hidden="true">𝕏</span>
-      <span><b>${xDone ? 'X account linked' : 'Connect X account'}</b><small>${xDone ? 'Verified by Oracle' : 'Secure X consent · returns to Project Q'}</small></span>
+      <span><b>${xDone ? 'X account linked' : 'Connect X'}</b><small>${xDone ? 'Verified by Oracle' : 'Secure X consent · returns to Project Q'}</small></span>
       <strong>${xRowState}</strong>
-    </button>
-    <button type="button" class="verification-access-row ${walletDone ? 'done' : xDone && !walletDone ? 'current' : ''}" data-clearance-action="wallet-verify" ${walletDone || !xDone || !nativeConnectionReady ? 'disabled' : ''}>
+    </button>` : ''}
+    ${wallet ? `<button type="button" class="verification-access-row ${walletDone ? 'done' : xDone ? 'current' : ''}" ${xDone && !walletDone ? 'data-clearance-action="wallet-verify"' : ''} ${walletDone || !xDone || !nativeConnectionReady ? 'disabled' : ''}>
       <span class="access-brand-mark access-solana-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span><b>${walletDone ? 'Solana wallet verified' : 'Verify Solana wallet'}</b><small>${walletDone ? 'Canonical reward destination' : 'Signature only · 0 SOL · no transaction'}</small></span>
+      <span><b>${walletDone ? 'Solana wallet verified' : 'Verify Solana Wallet'}</b><small>${walletDone ? 'Canonical reward destination' : 'Signature only · 0 SOL · no transaction'}</small></span>
       <strong>${walletRowState}</strong>
-    </button>
+    </button>` : ''}
   </div>`;
 
   const oracleTrust = `<footer class="verification-oracle-footer">
