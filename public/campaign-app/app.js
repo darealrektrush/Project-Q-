@@ -1776,9 +1776,11 @@ function rewardsScreen() {
       <article><span>Outstanding</span><strong>${escapeHtml(compactPoolAmount(outstanding))}</strong><small>${escapeHtml(outstanding)} FAWKQ · remaining</small></article>
     </section>` : '<section class="reward-awaiting"><b>No allocation recorded yet.</b><p>Your reward amounts appear after participation is verified and the campaign allocation is finalized.</p></section>'}
 
-    <section class="reward-destination">
-      <div><span>DESTINATION</span><b>${walletReady ? 'Verified Reward Wallet' : 'Reward Wallet Pending'}</b><small>${walletLabel}</small><em>No claim transaction required.</em></div>
-      <button data-screen="profile" data-profile-view="wallet">OPEN WALLET →</button>
+    <section class="reward-destination ${walletReady ? 'is-verified' : 'needs-wallet'}">
+      <div><span>DESTINATION</span><b>${walletReady ? 'Verified Reward Wallet' : 'Verify Your Reward Wallet'}</b><small>${walletReady ? walletLabel : 'Required before a reward can be released.'}</small><em>Signature only · 0 SOL · no claim transaction required.</em></div>
+      ${walletReady
+        ? '<button class="outline-action" data-screen="profile" data-profile-view="wallet">VIEW WALLET →</button>'
+        : '<button class="gold-action compact" data-clearance-action="wallet-verify">VERIFY WALLET →</button>'}
     </section>
 
     ${releaseRows ? `<section class="release-schedule"><div class="dossier-heading"><span>Release Schedule</span><b>${actualReleases.length} RECORD${actualReleases.length === 1 ? '' : 'S'}</b></div><div class="release-rows">${releaseRows}</div></section>` : ''}
@@ -1877,12 +1879,12 @@ function profileWallet() {
         <h3>${walletReady ? escapeHtml(short(wallet)) : 'No Verified Wallet'}</h3>
         <p>${walletReady
           ? 'This wallet is the current Project Q destination for campaign eligibility and distributions.'
-          : 'Verify one reward wallet through Oracle before campaign rewards can be finalized.'}</p>
+          : 'Verify one reward wallet in Project Q before campaign rewards can be finalized.'}</p>
       </div>
       ${statePill(walletReady ? 'VERIFIED' : 'REQUIRED', walletReady ? 'success' : 'pending')}
     </section>
 
-    ${walletReady ? '' : `<section class="wallet-recovery-action"><b>Wallet verification required</b><p>Verify one reward wallet with a signed ownership message. No transaction or fee is required.</p><button class="gold-action compact" data-clearance-action="wallet-verify">VERIFY WALLET</button><small>Project Q will refresh automatically after Oracle verifies the signed ownership message.</small></section>`}
+    ${walletReady ? '' : `<section class="wallet-recovery-action"><b>Wallet verification required</b><p>Verify one reward wallet with a signed ownership message. No transaction or fee is required.</p><button class="gold-action compact" data-clearance-action="wallet-verify">VERIFY WALLET</button><small>Project Q refreshes automatically after the signed ownership message is verified.</small></section>`}
     <section class="passport-wallet-balance">
       <div><span>FAWKQ BALANCE</span><strong>${balance}</strong><small>Observed ${escapeHtml(observed)}</small></div>
       <button class="outline-action" id="refresh-wallet-balance" ${wallet ? '' : 'disabled'}>Refresh</button>
