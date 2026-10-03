@@ -72,6 +72,49 @@ const BAGWORK_SECRET = process.env.BAGWORK_SECRET;
 const ORACLE_CAMPAIGN_SECRET = process.env.ORACLE_CAMPAIGN_SECRET;
 const FAWKQ_WEBSITE_URL = process.env.FAWKQ_WEBSITE_URL ?? 'https://fawkq.com';
 const FAWKQ_BAGWORK_URL = process.env.FAWKQ_BAGWORK_URL ?? 'https://fawkq.com/bagwork';
+const ORACLE_CONNECTION_TIMEOUT_MS = 12_000;
+const SOLANA_ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+function oracleConnectionsBaseUrl(env = process.env) {
+  let url;
+  try { url = new URL(env.ORACLE_PROJECT_Q_CONNECTIONS_URL || ''); }
+  catch { return null; }
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) return null;
+  if (!url.pathname.endsWith('/platform/integrations/project-q/connections/')) return null;
+  return url;
+}
+
+async function oracleConnectionRequest(pathname, payload, env = process.env) {
+  const base = oracleConnectionsBaseUrl(env);
+  const secret = String(env.ORACLE_PROJECT_Q_EVENT_SECRET || '');
+  if (!base || secret.length < 32 || secret.trim() !== secret) {
+    throw new Error('Oracle connection bridge unavailable');
+  }
+  const url = new URL(pathname.replace(/^\//, ''), base);
+  const response = await fetch(url, {
+    method: 'POST',
+    redirect: 'error',
+    headers: {
+      authorization: `Bearer ${secret}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(ORACLE_CONNECTION_TIMEOUT_MS),
+  });
+  const raw = await response.text();
+  if (raw.length > 16_384) throw new Error('Oracle connection bridge unavailable');
+  let data = {};
+  try { data = raw ? JSON.parse(raw) : {}; } catch {}
+  if (!response.ok) {
+    const detail = typeof data?.detail === 'string' && data.detail.length <= 200
+      ? data.detail : 'Oracle connection bridge unavailable';
+    const error = new Error(detail);
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
 const READINESS_CACHE_MS = 15_000;
 let readinessCache = { value: null, expiresAt: 0, pending: null };
 const OCEAN_VAULT_CACHE_MS = 120_000;
@@ -470,6 +513,140 @@ app.post('/campaign-app/api/session', async (req, res) => {
       ok: false,
       error: unavailable || databaseFailure || identityFailure ? 'session unavailable' : 'invalid telegram session',
       ...(identityFailure && telegramUser ? { telegramUser } : {}),
+    });
+  }
+});
+
+
+app.post('/campaign-app/api/connections/x/start', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    await ensureCampaignProfile(supabase, { campaignId, telegramUserId: session.user.id });
+    const intent = req.body?.intent === 'identity_recovery' ? 'identity_recovery' : 'link';
+    const result = await oracleConnectionRequest('x/start', {
+      telegram_user_id: session.user.id,
+      intent,
+    });
+    let authorizeUrl;
+    try { authorizeUrl = new URL(result.authorize_url); } catch {}
+    if (!authorizeUrl || authorizeUrl.protocol !== 'https:' || authorizeUrl.hostname !== 'x.com' ||
+        authorizeUrl.pathname !== '/i/oauth2/authorize') {
+      throw new Error('Oracle returned an invalid X authorization route');
+    }
+    return res.json({ ok: true, authorizeUrl: authorizeUrl.toString(), expiresInSeconds: 600, intent });
+  } catch (error) {
+    const message = String(error?.message || '');
+    const auth = /telegram init data|telegram user/.test(message);
+    console.error('native X connection start failed', auth ? 'invalid Telegram session' : message);
+    return res.status(auth ? 401 : error.status === 409 ? 409 : 503).json({
+      ok: false,
+      error: auth ? 'Open Project Q from Telegram to connect X.'
+        : 'X connection could not be started. Please try again.',
+    });
+  }
+});
+
+app.post('/campaign-app/api/connections/wallet/challenge', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const walletAddress = String(req.body?.walletAddress || '').trim();
+    if (!SOLANA_ADDRESS_PATTERN.test(walletAddress)) {
+      return res.status(400).json({ ok: false, error: 'Choose a valid Solana wallet.' });
+    }
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    await ensureCampaignProfile(supabase, { campaignId, telegramUserId: session.user.id });
+    const result = await oracleConnectionRequest('wallet/challenge', {
+      telegram_user_id: session.user.id,
+      wallet_address: walletAddress,
+    });
+    if (typeof result.challenge_id !== 'string' || result.challenge_id.length !== 36 ||
+        typeof result.message !== 'string' || result.message.length > 2000) {
+      throw new Error('Oracle returned an invalid wallet challenge');
+    }
+    return res.json({
+      ok: true,
+      challengeId: result.challenge_id,
+      message: result.message,
+      expiresAt: result.expires_at || null,
+    });
+  } catch (error) {
+    const message = String(error?.message || '');
+    const auth = /telegram init data|telegram user/.test(message);
+    console.error('native wallet challenge failed', auth ? 'invalid Telegram session' : message);
+    return res.status(auth ? 401 : error.status === 400 ? 400 : 503).json({
+      ok: false,
+      error: auth ? 'Open Project Q from Telegram to verify a wallet.'
+        : error.status === 400 ? message : 'Wallet verification could not be started. Please try again.',
+    });
+  }
+});
+
+app.post('/campaign-app/api/connections/wallet/complete', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const challengeId = String(req.body?.challengeId || '');
+    const signature = String(req.body?.signature || '');
+    if (!/^[0-9a-f-]{36}$/i.test(challengeId) || signature.length < 64 || signature.length > 256) {
+      return res.status(400).json({ ok: false, error: 'Wallet signature response is invalid.' });
+    }
+    const result = await oracleConnectionRequest('wallet/complete', {
+      telegram_user_id: session.user.id,
+      challenge_id: challengeId,
+      signature,
+    });
+    if (!SOLANA_ADDRESS_PATTERN.test(String(result.wallet_address || '')) || !result.verified_at) {
+      throw new Error('Oracle returned an invalid verified wallet');
+    }
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    const event = validateOracleWalletEvent({
+      telegram_user_id: session.user.id,
+      wallet_address: result.wallet_address,
+      verified_at: result.verified_at,
+    });
+    await recordOracleWallet(supabase, event, campaignId);
+    return res.json({ ok: true, walletAddress: event.walletAddress, verifiedAt: event.verifiedAt });
+  } catch (error) {
+    const message = String(error?.message || '');
+    const auth = /telegram init data|telegram user/.test(message);
+    const conflict = error.status === 409 || /already verified by another Oracle member/i.test(message);
+    console.error('native wallet completion failed', auth ? 'invalid Telegram session' : conflict ? 'wallet ownership conflict' : message);
+    return res.status(auth ? 401 : conflict ? 409 : error.status === 400 ? 400 : 503).json({
+      ok: false,
+      error: auth ? 'Open Project Q from Telegram to verify a wallet.'
+        : conflict ? 'This wallet is already verified to another Oracle identity.'
+          : error.status === 400 ? 'That signature could not be verified. Please try again.'
+            : 'Wallet verification could not be completed. Please try again.',
+    });
+  }
+});
+
+app.post('/campaign-app/api/connections/wallet/fallback', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  try {
+    const session = validateTelegramInitData(req.body?.initData, process.env.TELEGRAM_BOT_TOKEN);
+    const campaignId = process.env.BOND_THE_DUCK_CAMPAIGN_ID ?? campaignService.DEFAULT_CAMPAIGN_ID;
+    await ensureCampaignProfile(supabase, { campaignId, telegramUserId: session.user.id });
+    const result = await oracleConnectionRequest('wallet/fallback', { telegram_user_id: session.user.id });
+    let verificationUrl;
+    try { verificationUrl = new URL(result.verification_url); } catch {}
+    if (!verificationUrl || verificationUrl.protocol !== 'https:' ||
+        verificationUrl.hostname !== 'crabstar-webhooks-dev.onrender.com' ||
+        verificationUrl.pathname !== '/wallet/verify' || !verificationUrl.hash.startsWith('#session=')) {
+      throw new Error('Oracle returned an invalid wallet fallback route');
+    }
+    return res.json({ ok: true, verificationUrl: verificationUrl.toString(), expiresAt: result.expires_at || null });
+  } catch (error) {
+    const message = String(error?.message || '');
+    const auth = /telegram init data|telegram user/.test(message);
+    console.error('wallet fallback start failed', auth ? 'invalid Telegram session' : message);
+    return res.status(auth ? 401 : 503).json({
+      ok: false,
+      error: auth ? 'Open Project Q from Telegram to verify a wallet.'
+        : 'Wallet app handoff could not be prepared. Please try again.',
     });
   }
 });
