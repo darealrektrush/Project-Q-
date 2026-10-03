@@ -69,3 +69,14 @@ test('wallet picker uses provider identity styling and device-first discovery co
   assert.match(css, /data-wallet-brand="solflare"/);
   assert.match(css, /data-wallet-brand="backpack"/);
 });
+
+
+test('achievement collection renders as an artwork-first collectible deck', () => {
+  assert.match(css, /Premium V5 — achievement deck/);
+  assert.match(css, /\.achievement-tile-grid[\s\S]*repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.achievement-art[\s\S]*aspect-ratio:4\/5/);
+  assert.match(css, /\.achievement-detail-art[\s\S]*aspect-ratio:4\/5/);
+  assert.match(css, /\.achievement-collection-row[\s\S]*border:0!important/);
+  assert.match(css, /achievement-earned \.achievement-art::after/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*repeat\(2,minmax\(0,1fr\)\)/);
+});
