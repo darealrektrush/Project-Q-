@@ -331,7 +331,7 @@ test('verified Telegram identity can show its portrait while Oracle campaign ide
   assert.match(pending.banner, /campaign record pending/);
   assert.match(pending.screen, /PROJECT Q \/\/ OPERATION ACCESS/);
   assert.match(pending.screen, /2 STEPS REMAINING/);
-  assert.match(pending.home, /Sync Oracle Identity/);
+  assert.match(pending.home, /Reconnecting your profile/);
   assert.match(pending.home, /data-retry-session/);
 });
 
@@ -1348,4 +1348,31 @@ test('Universal Profile uses compact card hierarchy', async () => {
   assert.match(html, /universal-profile-compact-stats/);
   assert.match(html, /PROFILE DETAILS/);
   assert.match(html, /ARMY RANK/);
+});
+
+
+test('Universal Profile renders as one compact CrabStar ecosystem identity pass', async () => {
+  const context = await loadRuntime();
+  const html = context.__profiles.overview;
+  assert.match(html, /universal-profile-pass/);
+  assert.match(html, /CRABSTAR \/\/ ORACLE UNIVERSAL PROFILE/);
+  assert.match(html, /CRAB ARMY/);
+  assert.match(html, /Built different\. Built to last\./);
+  assert.match(html, /universal-pass-rank/);
+  assert.match(html, /universal-pass-level/);
+  assert.match(html, /universal-pass-rail/);
+  assert.match(html, /VIEW PROFILE/);
+  assert.doesNotMatch(html, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
+});
+
+test('Terminal shows one compact identity recovery state instead of duplicate sync cards', async () => {
+  const context = await loadRuntime();
+  context.fetch = async () => ({ status: 503, ok: false, json: async () => ({
+    error: 'session unavailable',
+    telegramUser: { firstName: 'Duck', lastName: 'Recruit' },
+  }) });
+  const pending = await context.__identityPending();
+  assert.match(pending.home, /terminal-sync-strip/);
+  assert.match(pending.home, /Reconnecting your profile/);
+  assert.equal((pending.home.match(/IDENTITY SYNC/g) || []).length, 1);
 });
