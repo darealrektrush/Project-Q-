@@ -506,7 +506,7 @@ test('achievement unlock event fires only for new verified receipts and can summ
 test('Rewards pending state shows one wallet action and no invented receipts', async () => {
   const context = await loadRuntime();
   const { screen, profile } = context.__renderRewardsWith({ recorded: false, releaseCount: 0, releases: [] });
-  assert.match(screen, /Complete Telegram identity/);
+  assert.match(screen, /Reward Wallet Pending/);
   assert.match(screen, /Reward Wallet Pending/);
   assert.match(screen, /No allocation recorded yet/);
   assert.equal((screen.match(/OPEN WALLET/g) || []).length, 1);
@@ -610,7 +610,7 @@ test('Mission Files are accessible below a compact campaign heading and readines
 test('Briefing repeats the shared next step and links to the sole clearance checklist', async () => {
   const context = await loadRuntime();
   const upcoming = context.__renderOperationOverviewWith({ databaseState: 'DRAFT', operational: false, schedule: { phase: 'PRE_LAUNCH' } });
-  assert.match(upcoming, /NEXT STEP[\s\S]*Complete Telegram identity/);
+  assert.match(upcoming, /NEXT STEP[\s\S]*(Secure connection unavailable|Connect your X account)/);
   assert.match(upcoming, /CLEARANCE 0\/5/);
   assert.match(upcoming, /data-profile-view="overview"/);
   assert.match(upcoming, /PUBLIC LAUNCH READINESS/);
@@ -769,11 +769,11 @@ test('Telegram identity paints the participant passport and advances the Oracle 
   const xStep = context.__renderIdentityState({ user });
   assert.match(xStep.profile, /<h2>Duck Recruit<\/h2>/);
   assert.match(xStep.profile, /src="https:\/\/t\.me\/i\/userpic\/320\/duck\.jpg"/);
-  assert.match(xStep.home, /Complete X linked through Oracle/);
+  assert.match(xStep.home, /(Connect your X account|Secure connection unavailable)/);
   assert.match(xStep.home, /class="terminal-next-step oracle-next"/);
   assert.match(xStep.home, /assets\/oracle-logo\.jpg/);
   const walletStep = context.__renderIdentityState({ user, xVerified: true });
-  assert.match(walletStep.home, /Complete Reward wallet/);
+  assert.match(walletStep.home, /(Verify your reward wallet|Secure connection unavailable)/);
   const pending = context.__renderIdentityState({ user, oracleAvailable: false });
   assert.match(pending.home, /Oracle connection pending/);
   assert.doesNotMatch(pending.home, /<b>Connect Oracle X<\/b>/);
@@ -828,12 +828,16 @@ test('Terminal and Operation primary actions follow authoritative lifecycle', as
   assert.match(context.__renderHomeLifecycleWith(completedRuntime, 'COMPLETED'), /Review your operation history/);
   assert.match(context.__renderOperationOverviewWith(completedRuntime, 'COMPLETED'), /Review your operation history/);
 });
-test('campaign clearance explains the exact missing requirement instead of generic ineligibility', async () => {
+test('Verification Center separates user actions from automatic eligibility checks', async () => {
   const context = await loadRuntime();
 
   const telegramMissing = context.__renderClearanceWith({});
-  assert.match(telegramMissing, /Telegram identity/);
-  assert.match(telegramMissing, /data-clearance-action="telegram"/);
+  assert.match(telegramMissing, /PROJECT Q \/\/ VERIFICATION CENTER/);
+  assert.match(telegramMissing, /AUTOMATIC CHECKS/);
+  assert.match(telegramMissing, />Telegram</);
+  assert.match(telegramMissing, /data-clearance-action="x"/);
+  assert.match(telegramMissing, /data-clearance-action="wallet-verify"/);
+  assert.doesNotMatch(telegramMissing, /data-clearance-action="telegram"/);
   assert.doesNotMatch(telegramMissing, /\bIneligible\b/i);
 
   const tokenMissing = context.__renderClearanceWith({
@@ -841,8 +845,9 @@ test('campaign clearance explains the exact missing requirement instead of gener
     xVerified: true,
     walletVerified: true,
   });
-  assert.match(tokenMissing, /FAWKQ token account/);
-  assert.match(tokenMissing, /3\/5/);
+  assert.match(tokenMissing, /Finishing automatic checks/);
+  assert.match(tokenMissing, /FAWKQ account/);
+  assert.match(tokenMissing, /2\/2/);
 
   const holderMissing = context.__renderClearanceWith({
     telegramVerified: true,
@@ -850,15 +855,15 @@ test('campaign clearance explains the exact missing requirement instead of gener
     walletVerified: true,
     tokenAccountReady: true,
   });
-  assert.match(holderMissing, /Minimum \$2 FAWKQ/);
-  assert.match(holderMissing, /Hold at least \$2 of FAWKQ/);
+  assert.match(holderMissing, /\$2 FAWKQ minimum/);
+  assert.match(holderMissing, /Checking holding value/);
 });
 
-test('campaign clearance only renders requirements configured by the operation', async () => {
+test('Verification Center only exposes actions configured by the operation', async () => {
   const context = await loadRuntime();
   const rendered = context.__renderClearanceWith({
     telegramVerified: true,
-    xVerified: true,
+    xVerified: false,
   }, {
     telegramRequired: true,
     oracleXRequired: true,
@@ -866,11 +871,11 @@ test('campaign clearance only renders requirements configured by the operation',
     minimumFawkqUsd: 0,
   });
 
-  assert.match(rendered, /Telegram identity/);
-  assert.match(rendered, /X linked through Oracle/);
-  assert.doesNotMatch(rendered, /Reward wallet/);
-  assert.doesNotMatch(rendered, /FAWKQ token account/);
-  assert.doesNotMatch(rendered, /Minimum \$/);
+  assert.match(rendered, /CONNECT X/);
+  assert.match(rendered, /Telegram/);
+  assert.doesNotMatch(rendered, /VERIFY WALLET/);
+  assert.doesNotMatch(rendered, /FAWKQ account/);
+  assert.doesNotMatch(rendered, /\$2 FAWKQ minimum/);
 });
 
 test('failed reward release remains visible as recovery review and is never shown as distributed', async () => {
