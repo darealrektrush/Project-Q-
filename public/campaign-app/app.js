@@ -672,36 +672,43 @@ function clearanceMarkup() {
   const wallet = byKey.wallet;
   const token = byKey['token-account'];
   const holder = byKey.holder;
-  const total = checks.length || 1;
-  const complete = checks.filter(item => item.complete).length;
-  const actionChecks = [x, wallet].filter(Boolean);
-  const actionTotal = actionChecks.length || 1;
-  const actionComplete = actionChecks.filter(item => item.complete).length;
-  const percent = Math.round((actionComplete / actionTotal) * 100);
   const nativeConnectionReady = Boolean(state.telegram?.initData);
-  const activeComplete = Boolean((!x || x.complete) && (!wallet || wallet.complete));
-  const allComplete = complete === total;
+  const xDone = !x || Boolean(x.complete);
+  const walletDone = !wallet || Boolean(wallet.complete);
+  const activeComplete = xDone && walletDone;
+  const allComplete = checks.every(item => item.complete);
+  const automaticChecks = [telegram, token, holder].filter(Boolean);
+  const automaticComplete = automaticChecks.filter(item => item.complete).length;
 
-  const actionCard = (item, type) => {
-    if (!item) return '';
-    const verified = Boolean(item.complete);
-    const label = type === 'x' ? 'X ACCOUNT' : 'REWARD WALLET';
-    const title = type === 'x'
-      ? (verified ? 'X connected' : 'Connect your X account')
-      : (verified ? 'Wallet verified' : 'Verify your reward wallet');
-    const detail = type === 'x'
-      ? (verified ? 'Oracle identity connection confirmed.' : 'One secure X consent. No bot commands required.')
-      : (verified ? 'Signed ownership proof confirmed by Oracle.' : 'Sign one readable ownership message. No transaction or SOL fee.');
-    const action = type === 'x' ? 'x' : 'wallet-verify';
-    const button = type === 'x' ? 'CONNECT X' : 'VERIFY WALLET';
-    return `<article class="verification-action-card ${verified ? 'verified' : ''}">
-      <div class="verification-action-icon">${verified ? '✓' : type === 'x' ? '𝕏' : '◎'}</div>
-      <div class="verification-action-copy"><span>${label}</span><b>${escapeHtml(title)}</b><small>${escapeHtml(detail)}</small></div>
-      ${verified
-        ? '<span class="verification-state verified">VERIFIED</span>'
-        : `<button type="button" data-clearance-action="${action}" ${nativeConnectionReady ? '' : 'disabled'}>${button} →</button>`}
+  const stepClass = (complete, current) => complete ? 'done' : current ? 'current' : '';
+  const stepMark = (complete, number) => complete ? '✓' : String(number);
+
+  const journey = `<div class="verification-journey" aria-label="Operation access progress">
+    <span class="${stepClass(xDone, !xDone)}"><i>${stepMark(xDone, 1)}</i><b>X</b></span>
+    <em></em>
+    <span class="${stepClass(walletDone, xDone && !walletDone)}"><i>${stepMark(walletDone, 2)}</i><b>Wallet</b></span>
+    <em></em>
+    <span class="${stepClass(allComplete, activeComplete)}"><i>${allComplete ? '✓' : '3'}</i><b>Ready</b></span>
+  </div>`;
+
+  const focusCard = (type) => {
+    const isX = type === 'x';
+    const action = isX ? 'x' : 'wallet-verify';
+    const title = isX ? 'Connect your X account' : 'Verify your reward wallet';
+    const detail = isX
+      ? 'One secure X consent. Project Q refreshes when you return.'
+      : 'Sign one readable ownership message. No transaction or SOL fee.';
+    const button = isX ? 'CONNECT X' : 'VERIFY WALLET';
+    return `<article class="verification-focus-card ${isX ? 'x-focus' : 'wallet-focus'}">
+      <div class="verification-focus-icon">${isX ? '𝕏' : '◎'}</div>
+      <div class="verification-focus-copy"><span>NEXT STEP</span><h4>${title}</h4><p>${detail}</p></div>
+      <button type="button" data-clearance-action="${action}" ${nativeConnectionReady ? '' : 'disabled'}>${button} →</button>
     </article>`;
   };
+
+  const completedIdentity = xDone && x
+    ? '<div class="verification-completed-step"><i>✓</i><span><b>X connected</b><small>Oracle identity confirmed</small></span></div>'
+    : '';
 
   const autoState = (item, label, waitingCopy) => {
     if (!item) return '';
@@ -711,32 +718,37 @@ function clearanceMarkup() {
     </div>`;
   };
 
+  const automatic = automaticChecks.length ? `<details class="verification-auto-disclosure">
+    <summary><span><b>Automatic checks</b><small>Telegram · FAWKQ account · holder minimum</small></span><strong>${automaticComplete}/${automaticChecks.length}</strong><i>⌄</i></summary>
+    <div class="verification-auto-grid">
+      ${autoState(telegram, 'Telegram', 'Signed Mini App session')}
+      ${autoState(token, 'FAWKQ account', walletDone ? 'Checking verified wallet' : 'Waiting for wallet')}
+      ${autoState(holder, '$2 FAWKQ minimum', walletDone ? 'Checking holding value' : 'Waiting for wallet')}
+    </div>
+  </details>` : '';
+
   if (allComplete) {
     return `<section class="verification-center verification-complete">
       <div class="verification-complete-mark">✓</div>
-      <div><span>PROJECT Q // VERIFICATION CENTER</span><h3>Operation setup complete</h3><p>Your identity, reward wallet and FAWKQ eligibility checks are verified.</p></div>
-      <b>READY</b>
+      <div><span>OPERATION ACCESS</span><h3>Ready</h3><p>X, wallet and automatic eligibility checks are verified.</p></div>
+      <b>VERIFIED</b>
     </section>`;
   }
 
-  return `<section class="verification-center">
-    <header class="verification-center-head">
-      <div><span>PROJECT Q // VERIFICATION CENTER</span><h3>${activeComplete ? 'Finishing automatic checks' : 'Secure your operation access'}</h3><p>${activeComplete ? 'Project Q is resolving token-account and holder eligibility from your verified wallet.' : 'Two actions. Everything else is automatic.'}</p></div>
-      <div class="verification-progress-orb"><strong>${actionComplete}/${actionTotal}</strong><small>ACTIONS</small></div>
+  const remaining = !xDone ? 2 : !walletDone ? 1 : 0;
+  const statusLabel = activeComplete ? 'FINALIZING' : `${remaining} STEP${remaining === 1 ? '' : 'S'} REMAINING`;
+  const primary = !xDone ? focusCard('x')
+    : !walletDone ? completedIdentity + focusCard('wallet')
+      : `<div class="verification-finalizing"><i>✓</i><div><b>Primary verification complete</b><small>Project Q is finishing automatic eligibility checks.</small></div></div>`;
+
+  return `<section class="verification-center verification-guided">
+    <header class="verification-center-head guided">
+      <div><span>PROJECT Q // OPERATION ACCESS</span><h3>Verify once. Participate everywhere.</h3></div>
+      <b class="verification-remaining">${statusLabel}</b>
     </header>
-    <div class="verification-progress-track"><i style="width:${percent}%"></i></div>
-    <div class="verification-primary-actions">
-      ${actionCard(x, 'x')}
-      ${actionCard(wallet, 'wallet')}
-    </div>
-    <div class="verification-auto-strip">
-      <span>AUTOMATIC CHECKS</span>
-      <div class="verification-auto-grid">
-        ${autoState(telegram, 'Telegram', 'Signed Mini App session')}
-        ${autoState(token, 'FAWKQ account', wallet?.complete ? 'Checking verified wallet' : 'Waiting for wallet')}
-        ${autoState(holder, '$2 FAWKQ minimum', wallet?.complete ? 'Checking holding value' : 'Waiting for wallet')}
-      </div>
-    </div>
+    ${journey}
+    ${primary}
+    ${automatic}
     ${nativeConnectionReady ? '' : '<div class="verification-session-warning">Open Project Q from the official Telegram bot to start verification.</div>'}
   </section>`;
 }
