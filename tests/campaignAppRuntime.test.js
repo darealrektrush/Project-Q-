@@ -1126,16 +1126,17 @@ test('pool taps open pool rules rather than personal allocation status', async (
 });
 
 
-test('passport keeps pending identity distinct from a recorded zero and prioritizes Verification Center', async () => {
+test('Profile keeps pending identity distinct from a recorded zero and prioritizes Operation Access', async () => {
   const context = await loadRuntime();
   const unknown = context.__renderDossierWith({xp: 680,rank: '#14'}, null, 'identity-unavailable');
   assert.doesNotMatch(unknown, /680|#14|OBJECTIVE RECORDED/);
-  assert.match(unknown, /personal record loads after Telegram identity/);
-  assert.ok(unknown.indexOf('verification-center') < unknown.indexOf('campaign-passport'));
+  assert.match(unknown, /Oracle identity syncing|Lifetime XP syncing/);
+  assert.ok(unknown.indexOf('verification-center') < unknown.indexOf('profile-operation-card'));
   const complete = context.__renderDossierWith({telegramVerified:true,xVerified:true,walletVerified:true,tokenAccountReady:true,holderEligible:true,xp:20},null,'verified');
   assert.match(complete, /verification-center verification-complete/);
-  assert.match(complete, /Operation setup complete/);
-  assert.doesNotMatch(complete, /class="clearance-list"/);
+  assert.match(complete, /<h3>Ready<\/h3>/);
+  assert.match(complete, /profile-operation-card/);
+  assert.doesNotMatch(complete, /class="clearance-list"|campaign-passport/);
 });
 
 test('delivery confirmation date never substitutes the scheduled date', async () => {
