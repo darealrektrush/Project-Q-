@@ -198,13 +198,19 @@ test('Bond the Duck Operations UI uses campaign artwork without duplicate visibl
   assert.match(styles, /\.terminal-campaign-art/);
   assert.match(styles, /\.operation-cover/);
 });
-test('Mini App escapes Telegram display names and delegates wallet connection to Oracle', async () => {
+test('Mini App escapes identity copy and uses Oracle-authorized native wallet verification', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
+  const server = await readFile(new URL('../src/server.js', import.meta.url), 'utf8');
   assert.match(app, /escapeHtml\(p\.name\)/);
   assert.match(app, /Oracle Ownership/);
   assert.match(app, /oracle-logo\.jpg/);
   assert.match(app, /data-clearance-action/);
-  assert.doesNotMatch(app, /wallet\/challenge|wallet\/verify|provider\.connect|signMessage/);
+  assert.match(app, /wallet\/challenge/);
+  assert.match(app, /solana:signMessage/);
+  assert.match(app, /wallet-standard:app-ready/);
+  assert.match(server, /\/campaign-app\/api\/connections\/wallet\/challenge/);
+  assert.match(server, /\/campaign-app\/api\/connections\/wallet\/complete/);
+  assert.doesNotMatch(app, /ORACLE_PROJECT_Q_EVENT_SECRET|SUPABASE_SERVICE_ROLE_KEY/);
 });
 test('Mini App exposes an intentional guided onboarding path without activating participation', async () => {
   const app = await readFile(new URL('../app.js', campaignRoot), 'utf8');
