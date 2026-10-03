@@ -1242,7 +1242,7 @@ test('reward rows distinguish scheduled timing from confirmed on-chain timing', 
 test('beta profile shows a human-readable Oracle Universal Profile and updates use a Back action', async () => {
   const context = await loadRuntime();
   assert.match(context.__profiles.overview, /ORACLE UNIVERSAL PROFILE/);
-  assert.match(context.__profiles.overview, /ABOUT YOUR PROFILE/);
+  assert.match(context.__profiles.overview, /PROFILE DETAILS/);
   assert.match(context.__profiles.overview, /data-explainer="universal"/);
   assert.doesNotMatch(context.__profiles.overview, /UNIVERSAL ID|[0-9a-f]{8}-[0-9a-f]{4}-/i);
 
@@ -1257,7 +1257,8 @@ test('clearance presents one connected Oracle and wallet journey', async () => {
   const clearance = context.__renderClearanceWith({ telegramVerified: true });
   assert.match(clearance, /CONNECT X/);
   assert.match(clearance, /VERIFY WALLET/);
-  assert.match(clearance, /One connected setup/);
+  assert.match(clearance, /PROJECT Q \/\/ VERIFICATION CENTER/);
+  assert.match(clearance, /Two actions\. Everything else is automatic\./);
   assert.match(clearance, /minimum holding automatically/);
   const wallet = context.__profiles.wallet;
   assert.match(wallet, /data-clearance-action="wallet-verify"[^>]*>VERIFY WALLET/);
