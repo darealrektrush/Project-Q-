@@ -319,8 +319,8 @@ function systemStatusMarkup() {
   }
 
   if (state.sessionStatus === 'identity-unavailable') {
-    return `<section class="system-status-banner identity-sync">
-      <div><span>IDENTITY SYNC</span><b>Telegram confirmed · campaign record pending</b><small>Your signed Telegram name is shown. Your photo appears if Telegram supplies it. Oracle identity and rewards are unavailable; participation remains closed.</small></div>
+    return `<section class="system-status-banner identity-sync compact-sync">
+      <div><span>IDENTITY SYNC</span><b>Profile syncing</b><small>Telegram confirmed · campaign record pending. Participation stays safely paused until the verified profile reconnects.</small></div>
       <button data-retry-session>Retry</button>
     </section>`;
   }
@@ -493,8 +493,8 @@ function nextIdentityAction() {
   const p = state.profile;
   if (state.sessionStatus === 'identity-unavailable') return 'Sync Oracle identity';
   if (!p.telegramVerified) return 'Verify Telegram';
-  if (!p.xVerified) return 'Connect Oracle X';
-  if (!p.walletVerified) return 'Connect wallet in Oracle';
+  if (!p.xVerified) return 'Connect X';
+  if (!p.walletVerified) return 'Verify wallet';
   return 'Open missions';
 }
 
@@ -510,10 +510,10 @@ function nextStatusCard() {
     if (!state.runtime?.oracleBotUrl) {
       return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Oracle Dev setup pending</b><small>X connection will open here when the isolated Oracle flow is ready.</small></div><button class="outline-action" data-screen="profile">Review</button></article>`;
     }
-    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Connect Oracle X</b><small>Verify your X identity to unlock social missions.</small></div><button class="outline-action" id="oracle-home-link">Connect</button></article>`;
+    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Connect X</b><small>Verify your X identity to unlock social missions.</small></div><button class="outline-action" id="oracle-home-link">Connect</button></article>`;
   }
   if (!p.walletVerified) {
-    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Verify wallet in Oracle</b><small>Oracle owns the single canonical payout-wallet connection.</small></div><button class="outline-action" data-screen="profile">Open profile</button></article>`;
+    return `<article class="next-status oracle"><img src="${ORACLE_LOGO}" alt="Oracle" /><div><span>Next status</span><b>Verify reward wallet</b><small>Oracle owns the single canonical payout-wallet connection.</small></div><button class="outline-action" data-screen="profile">Open profile</button></article>`;
   }
   return `<article class="next-status"><img src="/campaign-app/assets/system/q-campaigns.webp" alt="" /><div><span>Identity ready</span><b>Choose your next mission</b><small>Every accepted action settles into one Project Q record.</small></div><button class="outline-action" data-operation-view="missions">Open</button></article>`;
 }
@@ -567,11 +567,17 @@ function home() {
         </div>
       </div>
     </section>
-    <section class="terminal-next-step ${nextMove.brand === 'oracle' ? 'oracle-next' : ''}">
-      <div class="terminal-identity-art"><span class="identity-channel">${identitySymbol}</span>${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" />'}</div>
-      <div><span>${escapeHtml(nextMove.label)}</span><b>${escapeHtml(nextMove.title)}</b><small>${escapeHtml(nextMove.detail)}</small></div>
-      <button ${actionAttrs}>${escapeHtml(nextMove.action)} <span aria-hidden="true">→</span></button>
-    </section>
+    ${state.sessionStatus === 'identity-unavailable'
+      ? `<section class="terminal-sync-strip" aria-label="Sync Oracle Identity">
+          <div class="terminal-sync-mark"><img src="${ORACLE_LOGO}" alt="" /></div>
+          <div><span>IDENTITY SYNC</span><b>Reconnecting your profile</b><small>Telegram confirmed · verified ecosystem identity is syncing.</small></div>
+          <button type="button" data-retry-session>RETRY <span aria-hidden="true">→</span></button>
+        </section>`
+      : `<section class="terminal-next-step ${nextMove.brand === 'oracle' ? 'oracle-next' : ''}">
+          <div class="terminal-identity-art"><span class="identity-channel">${identitySymbol}</span>${nextMove.brand === 'oracle' ? `<img src="${ORACLE_LOGO}" alt="Oracle" />` : '<img src="/campaign-app/assets/project-q-mark-20260929.jpg" alt="Project Q" />'}</div>
+          <div><span>${escapeHtml(nextMove.label)}</span><b>${escapeHtml(nextMove.title)}</b><small>${escapeHtml(nextMove.detail)}</small></div>
+          <button ${actionAttrs}>${escapeHtml(nextMove.action)} <span aria-hidden="true">→</span></button>
+        </section>`}
     ${terminalSnapshotMarkup()}
     <button class="terminal-ocean-banner ocean-impact-entry" data-screen="ocean" aria-label="Explore the CrabStar Ocean Impact mission"><img src="/campaign-app/assets/crabstar-ocean-impact-card-20260929.jpg" alt="CrabStar Ocean Impact. Cleaner oceans. Brighter tomorrows. Community-powered conservation. Explore the mission." /></button>
   </div>`;
@@ -1971,14 +1977,10 @@ function universalProfileHeroMarkup() {
   const p = state.profile;
   const synced = state.sessionStatus === 'verified';
   const army = synced ? p.crabArmy : null;
-  const identityLabel = p.username ? `@${p.username.replace(/^@/, '')}` : (p.name || 'Oracle identity syncing');
+  const identityLabel = p.username ? `@${p.username.replace(/^@/, '')}` : (p.name || 'Identity syncing');
   const definitions = achievementDefinitions();
   const universalRecords = (p.achievementRecords || [])
     .filter(record => record?.verificationState === 'VERIFIED' && record?.universalProfileSync === 'DELIVERED');
-  const earned = universalRecords
-    .map(record => definitions.find(item => item.id === record.achievementId))
-    .filter(Boolean)
-    .slice(0, 3);
   const progress = army ? Math.max(0, Math.min(100, Number(army.progressPct || 0))) : 0;
   const nextLabel = army
     ? army.nextRankName
@@ -1988,39 +1990,54 @@ function universalProfileHeroMarkup() {
   const qualifiedReferrals = Number(state.referrals?.counts?.qualified || 0);
   const photo = safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp';
   const rankAsset = crabArmyRankAssetUrl(army?.badgeAssetKey);
-  const badgeMarkup = earned.length
-    ? earned.map(item => `<button type="button" data-achievement-id="${escapeHtml(item.id)}"><span>✦</span>${escapeHtml(item.label)}</button>`).join('')
-    : '<small>Recognition syncs here as you earn it.</small>';
+  const verificationChips = [
+    p.telegramVerified ? 'TELEGRAM VERIFIED' : null,
+    p.xVerified ? 'X VERIFIED' : null,
+    p.walletVerified ? 'WALLET VERIFIED' : null,
+  ].filter(Boolean);
+  const chips = verificationChips.length
+    ? verificationChips.map((label) => `<span>${escapeHtml(label)}</span>`).join('')
+    : '<span class="sync-chip">IDENTITY SYNCING</span>';
 
-  return `<section class="universal-profile-hero compact" aria-label="Oracle Universal Profile">
-    <div class="universal-profile-compact-top">
-      <div class="universal-profile-avatar compact"><img src="${escapeHtml(photo)}" alt="Your Telegram profile photo" /><span class="oracle-verified-mark">✓</span></div>
-      <div class="universal-profile-identity compact">
-        <span>ORACLE UNIVERSAL PROFILE</span>
+  return `<section class="universal-profile-hero compact universal-profile-pass" aria-label="Oracle Universal Profile">
+    <div class="universal-pass-main">
+      <div class="universal-pass-avatar">
+        <div class="universal-pass-avatar-ring"><img src="${escapeHtml(photo)}" alt="Your Telegram profile photo" /></div>
+        <span class="oracle-verified-mark" aria-label="${p.telegramVerified ? 'Telegram verified' : 'Identity syncing'}">${p.telegramVerified ? '✓' : '·'}</span>
+      </div>
+
+      <div class="universal-pass-identity">
+        <span>CRABSTAR // ORACLE UNIVERSAL PROFILE</span>
         <h2>${escapeHtml(identityLabel)}</h2>
         <b>CRAB ARMY</b>
-        <div class="universal-badge-row compact">${badgeMarkup}</div>
+        <small>Built different. Built to last.</small>
+        <div class="universal-pass-chips">${chips}</div>
       </div>
-      <div class="universal-rank-compact" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
-        <div class="universal-rank-art compact">
+
+      <div class="universal-pass-rank" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
+        <div class="universal-pass-rank-art">
           <div class="universal-rank-medallion compact"><span>${army ? Number(army.level) : '—'}</span></div>
           ${rankAsset ? `<img class="universal-rank-insignia" data-rank-insignia src="${escapeHtml(rankAsset)}" alt="${escapeHtml((army?.rankName || 'Crab Army rank') + ' insignia')}" />` : ''}
         </div>
-        <span>ARMY RANK</span><b>${escapeHtml(army?.rankName || 'SYNCING')}</b>
+        <span>ARMY RANK</span>
+        <b>${escapeHtml(army?.rankName || 'SYNCING')}</b>
       </div>
-      <div class="universal-level-compact">
-        <span>LEVEL</span><strong>${army ? Number(army.level) : '—'}</strong>
+
+      <div class="universal-pass-level">
+        <span>LEVEL</span>
+        <strong>${army ? Number(army.level) : '—'}</strong>
         <small>${army ? Number(army.lifetimeXp).toLocaleString() + (army.nextRankXp ? ' / ' + Number(army.nextRankXp).toLocaleString() + ' XP' : ' XP') : 'Lifetime XP syncing'}</small>
         <div class="universal-rank-progress compact"><i style="width:${progress}%"></i></div>
         <em>${escapeHtml(nextLabel)}</em>
       </div>
     </div>
-    <div class="universal-profile-compact-stats">
+
+    <div class="universal-pass-rail">
       <div><span>LIFETIME XP</span><b>${army ? Number(army.lifetimeXp).toLocaleString() : '—'}</b></div>
       <div><span>OPERATION XP</span><b>${synced ? Number(p.xp || 0).toLocaleString() : '—'}</b></div>
-      <div><span>BADGES</span><b>${synced ? universalRecords.length : '—'}</b></div>
+      <div><span>ACHIEVEMENTS</span><b>${synced ? universalRecords.length : '—'}</b></div>
       <div><span>REFERRALS</span><b>${synced ? qualifiedReferrals.toLocaleString() : '—'}</b></div>
-      <button type="button" data-explainer="universal">PROFILE DETAILS →</button>
+      <button type="button" data-explainer="universal">VIEW PROFILE <span aria-hidden="true">→</span></button>
     </div>
   </section>`;
 }
@@ -2205,7 +2222,8 @@ function render() {
   const markup = screens[state.screen]();
   screen.classList.add('screen-rendering');
   document.body.classList.toggle('q-terminal', state.screen === 'home');
-  screen.innerHTML = state.screen === 'home' ? `${markup}${systemStatusMarkup()}` : `${systemStatusMarkup()}${markup}`;
+  const statusMarkup = state.screen === 'home' && state.sessionStatus === 'identity-unavailable' ? '' : systemStatusMarkup();
+  screen.innerHTML = state.screen === 'home' ? `${markup}${statusMarkup}` : `${statusMarkup}${markup}`;
   screen.querySelectorAll('img[data-rank-insignia]').forEach((image) => {
     image.addEventListener('error', () => image.remove(), { once: true });
   });
