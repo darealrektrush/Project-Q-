@@ -2405,7 +2405,7 @@ function walletBrandButton(provider, compact = false) {
   const brand = PROJECT_Q_WALLET_BRANDS[provider];
   if (!brand) return '';
   const mark = brand.logo
-    ? `<span class="wallet-brand-mark"><img src="${escapeHtml(brand.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`
+    ? `<span class="wallet-brand-mark" data-brand-fallback="${escapeHtml(brand.label.slice(0,1))}"><img src="${escapeHtml(brand.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer" /></span>`
     : '<span class="wallet-brand-mark wallet-generic-mark">◎</span>';
   return `<button type="button" class="wallet-brand-option ${compact ? 'compact' : ''}" data-wallet-provider="${provider}">
     ${mark}<span><b>${escapeHtml(brand.label)}</b><small>${compact ? 'Open wallet verification' : escapeHtml(brand.note)}</small></span><i aria-hidden="true">→</i>
@@ -2420,7 +2420,7 @@ function renderProjectQWalletDialog(message = '') {
   const detected = projectQWallets.map((wallet, index) => {
     const icon = walletIconSource(wallet);
     return `<button type="button" class="native-wallet-option premium" data-wallet-index="${index}">
-      <span class="wallet-brand-mark">${icon ? `<img src="${escapeHtml(icon)}" alt="" />` : '◎'}</span>
+      <span class="wallet-brand-mark" data-brand-fallback="◎">${icon ? `<img src="${escapeHtml(icon)}" alt="" />` : '◎'}</span>
       <span><b>${escapeHtml(wallet.name)}</b><small>Detected in Telegram</small></span>
       <i>CONNECT →</i>
     </button>`;
@@ -2459,6 +2459,14 @@ function renderProjectQWalletDialog(message = '') {
       <small>Never share a seed phrase or private key.</small>
     </footer>`;
 
+  dialog.querySelectorAll('.wallet-brand-mark img').forEach(image => {
+    image.addEventListener('error', () => {
+      const mark = image.closest('.wallet-brand-mark');
+      if (!mark) return;
+      mark.textContent = mark.dataset.brandFallback || '◎';
+      mark.classList.add('wallet-generic-mark');
+    }, { once: true });
+  });
   dialog.querySelector('[aria-label="Close wallet connection"]').onclick = () => dialog.close();
   dialog.querySelectorAll('[data-wallet-index]').forEach(button => {
     button.onclick = () => verifyProjectQDetectedWallet(projectQWallets[Number(button.dataset.walletIndex)]);
