@@ -242,6 +242,16 @@ function safeHttpsUrl(value) {
   }
 }
 
+const CRAB_ARMY_RANK_ASSET_KEY = /^crab_army_rank_(0[1-9]|[1-4][0-9]|50)$/;
+
+function crabArmyRankAssetUrl(assetKey) {
+  const key = String(assetKey || '').trim();
+  return CRAB_ARMY_RANK_ASSET_KEY.test(key)
+    ? `/campaign-app/assets/ranks/${key}.webp`
+    : null;
+}
+
+
 function telegramDisplayName(user) {
   return [user?.firstName || user?.first_name, user?.lastName || user?.last_name]
     .filter((part) => typeof part === 'string' && part.trim())
@@ -1896,6 +1906,7 @@ function universalProfileHeroMarkup() {
     : 'Oracle progression unavailable';
   const qualifiedReferrals = Number(state.referrals?.counts?.qualified || 0);
   const photo = safeHttpsUrl(p.photoUrl) || '/campaign-app/assets/system/q-id.webp';
+  const rankAsset = crabArmyRankAssetUrl(army?.badgeAssetKey);
 
   return `<section class="universal-profile-hero" aria-label="Oracle Universal Profile">
     <div class="universal-profile-main">
@@ -1913,7 +1924,10 @@ function universalProfileHeroMarkup() {
         </div>
       </div>
       <div class="universal-rank-block" data-rank-asset="${escapeHtml(army?.badgeAssetKey || 'pending')}">
-        <div class="universal-rank-medallion"><span>${army ? Number(army.level) : '—'}</span></div>
+        <div class="universal-rank-art">
+          <div class="universal-rank-medallion"><span>${army ? Number(army.level) : '—'}</span></div>
+          ${rankAsset ? `<img class="universal-rank-insignia" data-rank-insignia src="${escapeHtml(rankAsset)}" alt="${escapeHtml((army?.rankName || 'Crab Army rank') + ' insignia')}" />` : ''}
+        </div>
         <small>CRAB ARMY RANK</small>
         <strong>${escapeHtml(army?.rankName || 'SYNCING')}</strong>
       </div>
@@ -2092,6 +2106,9 @@ function render() {
   screen.classList.add('screen-rendering');
   document.body.classList.toggle('q-terminal', state.screen === 'home');
   screen.innerHTML = state.screen === 'home' ? `${markup}${systemStatusMarkup()}` : `${systemStatusMarkup()}${markup}`;
+  screen.querySelectorAll('img[data-rank-insignia]').forEach((image) => {
+    image.addEventListener('error', () => image.remove(), { once: true });
+  });
   screen.dataset.currentScreen = state.screen;
   screen.querySelectorAll('details[data-persist-open]').forEach((panel) => {
     if (openPanels.includes(panel.dataset.persistOpen)) panel.open = true;
