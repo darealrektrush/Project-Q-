@@ -29,3 +29,5 @@ Pack order is canonical:
 Do not redraw, reorder or reinterpret ranks in Project Q.
 
 The Oracle repository provides the export path that validates all 50 stickers and writes each web file using its canonical `badge_asset_key`.
+
+Generated rank binaries are intentionally added only after an authorized Oracle export validates the complete 50-sticker source pack.
