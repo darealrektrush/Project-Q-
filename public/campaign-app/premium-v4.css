@@ -1284,3 +1284,87 @@ body.q-shell-v2{background:var(--q-page);color:var(--q-ink-premium)}
   .q-shell-v2 .universal-pass-oracle{grid-column:1/-1;border-right:0;border-bottom:1px solid rgba(103,172,198,.11)}
   .q-shell-v2 .universal-pass-link:nth-child(4){grid-column:1/-1;border-top:1px solid rgba(103,172,198,.11)}
 }
+
+
+/* Premium V6.2 — compact Universal Profile identity pass */
+.q-shell-v2 .universal-pass-details{
+  margin-top:7px;padding:0;border:0;background:transparent;color:#74cbe9;
+  font:800 7px/1 var(--q-ui);letter-spacing:.08em
+}
+.q-shell-v2 .universal-pass-main{
+  grid-template-columns:82px minmax(0,1.55fr) minmax(92px,.62fr) minmax(112px,.76fr)!important;
+  gap:11px!important;padding:13px 14px 10px!important;
+}
+.q-shell-v2 .universal-pass-avatar,
+.q-shell-v2 .universal-pass-avatar-ring{width:74px!important;height:74px!important}
+.q-shell-v2 .universal-pass-identity h2{font-size:clamp(21px,4vw,28px)!important}
+.q-shell-v2 .universal-pass-identity>small{margin-top:3px!important}
+.q-shell-v2 .universal-pass-chips{margin-top:6px!important}
+.q-shell-v2 .universal-pass-rank,
+.q-shell-v2 .universal-pass-level{min-height:74px!important;padding-left:11px!important}
+.q-shell-v2 .universal-pass-level>strong{font-size:27px!important}
+
+.q-shell-v2 .universal-pass-footer{
+  border-top:1px solid rgba(103,172,198,.13);
+  background:rgba(4,12,18,.55);
+}
+.q-shell-v2 .universal-pass-metrics{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.q-shell-v2 .universal-pass-metrics>div{
+  min-width:0;padding:8px 9px;border-right:1px solid rgba(103,172,198,.10)
+}
+.q-shell-v2 .universal-pass-metrics>div:last-child{border-right:0}
+.q-shell-v2 .universal-pass-metrics span{
+  display:block;color:#78afc2;font:700 6px/1 var(--q-ui);letter-spacing:.10em
+}
+.q-shell-v2 .universal-pass-metrics b{
+  display:block;margin-top:3px;color:#f1f3ee;font:700 14px/1 var(--q-display)
+}
+.q-shell-v2 .universal-pass-connections{
+  display:grid;grid-template-columns:minmax(105px,1.2fr) repeat(3,minmax(0,.7fr));
+  border-top:1px solid rgba(103,172,198,.09)
+}
+.q-shell-v2 .universal-pass-oracle.compact,
+.q-shell-v2 .universal-pass-connections .universal-pass-link{
+  min-height:34px!important;padding:5px 7px!important
+}
+.q-shell-v2 .universal-pass-oracle.compact>span{
+  width:22px!important;height:22px!important;font-size:10px
+}
+.q-shell-v2 .universal-pass-oracle.compact small{font-size:5.5px!important}
+.q-shell-v2 .universal-pass-oracle.compact b{font-size:7px!important}
+.q-shell-v2 .universal-pass-connections .universal-pass-link>span{
+  width:20px!important;height:20px!important
+}
+.q-shell-v2 .universal-pass-connections .universal-pass-link small{
+  margin-left:auto;font-size:5.5px!important
+}
+.q-shell-v2 .universal-pass-connections .access-solana-mark.mini{width:20px!important;height:20px!important}
+.q-shell-v2 .universal-pass-connections .access-solana-mark.mini i{width:12px!important;height:2.5px!important}
+
+@media(max-width:620px){
+  .q-shell-v2 .universal-pass-main{
+    grid-template-columns:64px minmax(0,1fr)!important;
+    gap:9px!important;padding:11px 11px 8px!important
+  }
+  .q-shell-v2 .universal-pass-avatar,
+  .q-shell-v2 .universal-pass-avatar-ring{width:58px!important;height:58px!important}
+  .q-shell-v2 .universal-pass-identity h2{font-size:21px!important}
+  .q-shell-v2 .universal-pass-rank,
+  .q-shell-v2 .universal-pass-level{min-height:53px!important;padding:7px 9px!important}
+  .q-shell-v2 .universal-pass-rank-art{width:28px!important;height:28px!important}
+  .q-shell-v2 .universal-pass-rank-art .universal-rank-medallion{width:28px!important;height:28px!important}
+  .q-shell-v2 .universal-pass-rank-art .universal-rank-insignia{width:27px!important;height:27px!important}
+  .q-shell-v2 .universal-pass-rank>b{font-size:11px!important}
+  .q-shell-v2 .universal-pass-level>strong{font-size:22px!important}
+  .q-shell-v2 .universal-pass-metrics>div{padding:7px 5px;text-align:center}
+  .q-shell-v2 .universal-pass-metrics b{font-size:12px}
+  .q-shell-v2 .universal-pass-connections{
+    grid-template-columns:minmax(92px,1.15fr) repeat(3,minmax(0,.75fr))
+  }
+  .q-shell-v2 .universal-pass-oracle.compact,
+  .q-shell-v2 .universal-pass-connections .universal-pass-link{
+    min-height:31px!important;padding:4px 5px!important
+  }
+}
