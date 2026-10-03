@@ -101,3 +101,34 @@ test('fails closed on invalid or incomplete Oracle identity responses', async ()
     /invalid/
   );
 });
+
+
+test('retries transient Oracle identity resolver failures before failing closed', async () => {
+  let attempts = 0;
+  const waits = [];
+  const client = {
+    rpc: async () => [{ profile_id: '11111111-1111-4111-8111-111111111111' }],
+  };
+  const identity = await ensureCampaignProfile(client, {
+    campaignId: 'bond-the-duck-2026',
+    telegramUserId: 42,
+  }, {
+    env: {
+      ORACLE_PROJECT_Q_IDENTITY_URL: 'https://oracle.example/platform/integrations/project-q/identity/resolve',
+      ORACLE_PROJECT_Q_EVENT_SECRET: 'x'.repeat(32),
+    },
+    waitImpl: async (ms) => { waits.push(ms); },
+    fetchImpl: async () => {
+      attempts += 1;
+      if (attempts === 1) return { ok: false, status: 503, text: async () => '' };
+      return { ok: true, status: 200, text: async () => JSON.stringify({
+        profile_id: '11111111-1111-4111-8111-111111111111',
+        profile_state: 'provisional',
+        telegram_verified: true,
+      }) };
+    },
+  });
+  assert.equal(attempts, 2);
+  assert.deepEqual(waits, [150]);
+  assert.equal(identity.profileId, '11111111-1111-4111-8111-111111111111');
+});
